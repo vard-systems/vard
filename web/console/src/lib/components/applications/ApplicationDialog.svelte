@@ -43,35 +43,26 @@
 	import TokenPreviewPanel from './TokenPreviewPanel.svelte';
 
 	type Props = {
-		/** The application being edited, or null to register one. */
 		application: Application | null;
-		/** Whether the administrator may change this application (or, for a
-		    new one, register applications at all). */
 		editable: boolean;
-		/** The signed-in administrator, for the token preview. */
 		admin: Admin;
 		open: boolean;
 	};
 
 	let { application, editable, admin, open = $bindable(false) }: Props = $props();
 
-	/** The tab on show, once the application exists. */
 	let tab = $state('settings');
 
 	const queryClient = useQueryClient();
 
-	/** The application as last saved here, so a registration that returns a
-	    secret carries on as an edit of what was just made. */
 	let current = $state<Application | null>(null);
 
-	/** The secret the server just made, shown until the panel closes. */
 	let secret = $state('');
 
 	let form = $state<ApplicationInput>(blank('web'));
 	let redirects = $state('');
 	let logoutRedirects = $state('');
 
-	/** Lifetimes are edited in the units people think in. */
 	let accessMinutes = $state('60');
 	let idMinutes = $state('60');
 	let refreshDays = $state('30');
@@ -83,16 +74,8 @@
 	const kind = $derived(types[form.type]);
 	const machine = $derived(form.type === 'm2m');
 
-	/**
-	 * Flows the application can use: the default and every enabled one, plus its current flow
-	 * even if disabled. Without permission to read flows the picker is hidden and the flow is
-	 * kept.
-	 */
 	const flows = createQuery(() => loginFlowChoicesOptions());
 
-	/** What the picker calls "no flow of its own". The request says that with
-	    an empty string, which a select reads as nothing chosen — and a flow id
-	    is always a uuid, so this cannot be one. */
 	const DEFAULT_FLOW = 'default';
 
 	const flowOptions = $derived.by<SelectOption<string>[]>(() => {
@@ -130,7 +113,6 @@
 	}));
 
 	$effect(() => {
-		// Closing puts the panel back on its settings, for the next one opened.
 		if (!open) {
 			tab = 'settings';
 			return;
@@ -142,9 +124,6 @@
 		fill(application ? asInput(application) : blank('web'));
 	});
 
-	/** An application as the form edits it. The flow is the one field the two
-	    shapes spell differently: an application that names none has null, and
-	    the form — like the request — says so with an empty string. */
 	function asInput(app: Application): ApplicationInput {
 		return { ...app, login_flow_id: app.login_flow_id ?? '' };
 	}
@@ -164,8 +143,6 @@
 		refreshDays = String(Math.round(input.refresh_token_lifetime / 86400));
 	}
 
-	/** Picking a type on a new application starts its settings over from what
-	    that type should have, keeping only what was typed about it. */
 	function changeType(type: ApplicationType) {
 		const { name, description, logo_url, website_url, privacy_url, terms_url } = form;
 		fill({ ...blank(type), name, description, logo_url, website_url, privacy_url, terms_url });
@@ -188,8 +165,6 @@
 		};
 	}
 
-	/** Whatever was saved, the list and the pickers elsewhere are refilled,
-	    and a secret that came back is shown. */
 	async function saved(result: ApplicationWithSecret) {
 		await queryClient.invalidateQueries({ queryKey: keys.applications.all });
 
@@ -207,8 +182,6 @@
 		mutationFn: () =>
 			current ? applicationsApi.update(current.id, payload()) : applicationsApi.create(payload()),
 		onSuccess: (result: ApplicationWithSecret) => {
-			// A new application's secret is shown in its panel, which it can be
-			// copied from; the toast only points there.
 			notify.success(
 				current ? 'Application saved' : 'Application created',
 				result.client_secret ? 'Copy its secret now: it is shown once.' : undefined
@@ -255,28 +228,21 @@
 		rotate.mutate();
 	}
 
-	/** The roles page, showing this application's roles. */
 	const rolesHref = $derived(
 		current
 			? `${resolve('/admin/(panel)/dashboard/roles')}?tab=application&application=${current.id}`
 			: ''
 	);
 
-	/** The grants a client of this kind may be offered: a public client has
-	    no secret to act as itself with. */
 	const offeredGrants = $derived(
 		grants.filter((grant) => grant.value !== 'client_credentials' || !kind.public)
 	);
 
-	/** The secret as it is shown once made: only its last characters are
-	    kept, so the rest is dots. */
 	const maskedSecret = $derived(
 		current?.has_secret ? `••••••••••••••••${current.secret_hint}` : 'No secret yet'
 	);
 </script>
 
-<!-- The settings form, shown on its own for a new application and on the
-     Settings tab once it exists. -->
 {#snippet settings()}
 	<fieldset disabled={!editable}>
 		<FormSection title="General" description="How the application is named and presented.">
@@ -550,8 +516,6 @@
 {/snippet}
 
 {#snippet actions()}
-	<!-- A secret is shown once, so the way out after one is a plain
-	     "Done" rather than a Cancel that sounds like it undoes something. -->
 	{#if secret}
 		<Button onclick={() => (open = false)}>Done</Button>
 	{:else if editable && tab === 'settings'}
@@ -574,7 +538,6 @@
 	{/if}
 
 	{#if current}
-		<!-- What the application is, at a glance, before its settings. -->
 		<div class="summary">
 			<span class="mark"><Icon icon={kind.icon} size="1.25rem" /></span>
 			<div class="summary-text">

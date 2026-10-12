@@ -9,18 +9,13 @@ import (
 	"sort"
 )
 
-// Where generated files go. The server embeds its OpenAPI copies; the docs app
-// keeps its own because its image copies only the app.
 const (
 	serverDocuments = "internal/api/reference"
 	docsDocuments   = "web/docs/static/openapi"
-	// The Postman collections, which Bruno imports too, beside them.
 	docsCollections = "web/docs/static/collections"
 	docsPages       = "web/docs/src/content/reference"
 )
 
-// Generate is every file the reference is made of, by its path relative to
-// root.
 func Generate(root string) (map[string][]byte, error) {
 	b, err := build(root)
 	if err != nil {
@@ -50,8 +45,6 @@ func Generate(root string) (map[string][]byte, error) {
 	return files, nil
 }
 
-// Stale lists generated files that differ, are missing, or are no longer
-// generated.
 func Stale(root string, files map[string][]byte) ([]string, error) {
 	var out []string
 
@@ -72,8 +65,6 @@ func Stale(root string, files map[string][]byte) ([]string, error) {
 	return out, nil
 }
 
-// Write puts the files on disk, and removes generated pages nothing makes
-// any more — a handler package that was removed, say.
 func Write(root string, files map[string][]byte) error {
 	orphans, err := orphans(root, files)
 	if err != nil {
@@ -98,8 +89,6 @@ func Write(root string, files map[string][]byte) error {
 	return nil
 }
 
-// orphans are the files in the generated pages directory that Generate
-// did not make.
 func orphans(root string, files map[string][]byte) ([]string, error) {
 	var out []string
 	dir := filepath.Join(root, filepath.FromSlash(docsPages))

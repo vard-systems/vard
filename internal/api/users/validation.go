@@ -14,12 +14,8 @@ import (
 	"loginer/internal/store"
 )
 
-// minPasswordLength is the shortest password an administrator may give a
-// user. Length is all that is asked of it, as for the super admin's.
 const minPasswordLength = 8
 
-// validate checks the built-in fields. A password is required only when
-// `creating`.
 func (r *userRequest) validate(creating bool) error {
 	r.clean()
 
@@ -29,21 +25,14 @@ func (r *userRequest) validate(creating bool) error {
 
 	switch {
 	case r.Password == "" && creating:
-		return badRequest("password is required")
+		return respond.Invalid("password is required")
 	case r.Password != "" && utf8.RuneCountInString(r.Password) < minPasswordLength:
-		return badRequest(fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		return respond.Invalid(fmt.Sprintf("password must be at least %d characters", minPasswordLength))
 	}
 
 	return nil
 }
 
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
-}
-
-// normalise checks submitted values against the field definitions (type,
-// bounds, prefix, uniqueness) and returns what to store. `self` is the user
-// being written, or uuid.Nil on create, so its own value is not a clash.
 func normalise(
 	ctx context.Context,
 	st *store.Store,
@@ -59,8 +48,6 @@ func normalise(
 			return nil, respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
 		}
 
-		// A field with no value is left out rather than stored as null, so
-		// removing a field leaves nothing behind.
 		if value == nil {
 			continue
 		}

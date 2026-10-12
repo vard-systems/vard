@@ -27,14 +27,12 @@
 		{ key: 'admins', label: 'Administrators', icon: RiAdminLine, min: '8rem' }
 	];
 
-	/** How many permissions a cell shows before it says "and N more". */
 	const SHOWN = 3;
 
 	function shortId(id: string): string {
 		return id.replace(/-/g, '').slice(0, 15);
 	}
 
-	/** The administrators page, filtered to the holders of one role. */
 	function holders(role: AdminRole): string {
 		return `${resolve('/admin/(panel)/dashboard/admins')}?role=${role.id}`;
 	}

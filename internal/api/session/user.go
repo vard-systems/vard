@@ -14,9 +14,6 @@ import (
 // must never sign anyone in to the panel.
 const UserCookie = brand.UserSessionCookie
 
-// SetUser stores the session cookie. Without `remember` ("stay signed in") it
-// has no Max-Age and disappears with the browser window; the session's own
-// lifetime is the login flow's either way.
 func SetUser(c *gin.Context, token string, expires time.Time, remember, secure bool) {
 	maxAge := 0
 	if remember {
@@ -26,13 +23,10 @@ func SetUser(c *gin.Context, token string, expires time.Time, remember, secure b
 	writeUser(c, token, maxAge, secure)
 }
 
-// ClearUser removes it again.
 func ClearUser(c *gin.Context, secure bool) {
 	writeUser(c, "", -1, secure)
 }
 
-// maxAge is seconds: positive sets Max-Age, zero makes a browser-session
-// cookie, negative deletes it.
 func writeUser(c *gin.Context, value string, maxAge int, secure bool) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     UserCookie,
@@ -56,14 +50,10 @@ const SignInStateCookie = brand.SignInStateCookie
 // only ones that ever read it.
 const signInStatePath = "/oauth2"
 
-// SetSignInState stores the state of a sign-in just started, as a
-// browser-session cookie; the database row bounds its lifetime.
 func SetSignInState(c *gin.Context, state string, secure bool) {
 	writeSignInState(c, state, 0, secure)
 }
 
-// ClearSignInState forgets it. The callback clears it however it ends, so a
-// state cannot be presented twice even before the row expires.
 func ClearSignInState(c *gin.Context, secure bool) {
 	writeSignInState(c, "", -1, secure)
 }
@@ -81,7 +71,6 @@ func UserToken(c *gin.Context) string {
 	return single(c, UserCookie)
 }
 
-// single reads a cookie only when exactly one of that name was sent.
 func single(c *gin.Context, name string) string {
 	named := c.Request.CookiesNamed(name)
 	if len(named) != 1 {

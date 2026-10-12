@@ -5,10 +5,7 @@
 	import { Alert, Panel, SwitchField, Tag, ConfirmDialog, notify } from '$lib/components/ui';
 
 	type Props = {
-		/** How administrators are made to sign in, as the page loaded it. */
 		security: AdminSecurity;
-		/** Whether the administrator reading this has an authenticator, so the
-		    panel can warn them what turning it on does to their own session. */
 		selfHasMFA: boolean;
 	};
 
@@ -46,8 +43,6 @@
 	}));
 
 	function set(required: boolean) {
-		// Turning it on is asked about first; turning it off takes nothing
-		// away from anybody and is done as asked.
 		if (required && !confirming) {
 			confirming = true;
 			return;

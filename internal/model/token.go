@@ -7,26 +7,16 @@ import (
 	"time"
 )
 
-// TokenRequest is everything EvaluateToken needs, already loaded, whether
-// previewed in the panel or issued.
 type TokenRequest struct {
 	Application Application
 
-	// User is who the token is for, or nil for a machine-to-machine token,
-	// which the application asks for as itself.
-	User *User
-	// Roles are every role the user holds, inheritance followed, each with
-	// the API scopes it grants loaded.
+	User  *User
 	Roles []UserRole
 
-	// API is the audience asked for, or nil when none was.
-	API *API
-	// Authorized says the application may ask for tokens for API, and
-	// Allowed names the API's scopes it may ask for.
+	API        *API
 	Authorized bool
 	Allowed    []string
 
-	// Requested is the scope parameter, split on spaces.
 	Requested []string
 
 	Issuer string
@@ -58,8 +48,6 @@ type TokenPreview struct {
 	IDToken           map[string]any `json:"id_token,omitempty"`
 }
 
-// The claims a token carries roles under: the global roles, and the roles of
-// the application the token is for.
 const (
 	ClaimGlobalRoles      = "global_roles"
 	ClaimApplicationRoles = "roles"
@@ -135,8 +123,6 @@ func EvaluateToken(r TokenRequest) TokenPreview {
 		}
 	}
 
-	// apiDecision is the rule for one scope of the audience, whether it was
-	// requested or is a default.
 	apiDecision := func(apiScope APIScope) (bool, string) {
 		switch {
 		case !slices.Contains(r.Allowed, apiScope.Name):
@@ -183,8 +169,6 @@ func EvaluateToken(r TokenRequest) TokenPreview {
 		}
 	}
 
-	// The audience's default scopes join the request. A refused default is
-	// still reported, so it is clear why it is missing.
 	if r.API != nil {
 		for _, apiScope := range r.API.Scopes {
 			if !apiScope.IsDefault || slices.Contains(requested, apiScope.Name) {
@@ -291,7 +275,6 @@ func findScope(api *API, name string) (APIScope, bool) {
 	return APIScope{}, false
 }
 
-// unique keeps each non-empty value once, in the order given.
 func unique(values []string) []string {
 	out := []string{}
 	for _, value := range values {

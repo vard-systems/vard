@@ -169,8 +169,6 @@ func newMappingsResponse(
 	return out
 }
 
-// sortKey orders the role mapping: global roles first, then by application
-// name, then by role name.
 func sortKey(role mappedRole) string {
 	if role.Application == nil {
 		return "0\x00" + role.Name

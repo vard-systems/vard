@@ -6,29 +6,19 @@
 
 	type Props = {
 		group: SidebarGroup;
-		/** Showing its pages. Ignored while the column is folded to icons,
-		    where every page is one icon and there is nothing to fold. */
 		open: boolean;
 		onToggle: () => void;
-		/** Which page is being read. */
 		isCurrent: (route: Section) => boolean;
-		/** The column is folded to its icons. */
 		collapsed: boolean;
 	};
 
 	let { group, open, onToggle, isCurrent, collapsed }: Props = $props();
 
-	/** A folded group still says it holds the page being read, so hiding a
-	    group never hides where you are. */
 	const holdsCurrent = $derived(group.items.some((item) => isCurrent(item.route)));
 
 	const shown = $derived(open || collapsed);
 </script>
 
-<!-- A heading and its pages. The heading is quiet — small, and in the hint
-     colour — so the column reads as its pages, sorted, rather than as a
-     tree. It folds its group; folded to icons, it is a rule between groups
-     instead, and every page is an icon with its name in a tooltip. -->
 <section
 	class="group"
 	class:collapsed
@@ -57,9 +47,6 @@
 		</h2>
 	{/if}
 
-	<!-- Kept in the markup while folded, so unfolding is a height change
-	     rather than a mount; hidden from the keyboard and assistive
-	     technology while it is. -->
 	<div id="pages-{group.id}" class="pages" class:open={shown} inert={!shown}>
 		<ul>
 			{#each group.items as item (item.route)}
@@ -125,7 +112,6 @@
 		white-space: nowrap;
 	}
 
-	/* A folded group that holds the page being read. */
 	.dot {
 		flex: none;
 		width: 6px;
@@ -134,8 +120,6 @@
 		background: var(--nav-current);
 	}
 
-	/* The chevron is quiet until the heading is under the pointer, and always
-	   there on a folded group, which is the one that needs finding. */
 	.chevron {
 		display: inline-flex;
 		flex: none;
@@ -155,8 +139,6 @@
 		transform: rotate(-90deg);
 	}
 
-	/* Unfolding is a height, not a jump. The list is the grid item that can
-	   shrink to nothing. */
 	.pages {
 		display: grid;
 		grid-template-rows: 0fr;
@@ -183,8 +165,6 @@
 		list-style: none;
 	}
 
-	/* Folded to icons: a short rule between groups, centred under the icons,
-	   and none above the first. */
 	hr {
 		width: 20px;
 		margin: 6px auto;

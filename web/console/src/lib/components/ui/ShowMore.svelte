@@ -3,10 +3,7 @@
 
 	type Props = {
 		onclick: () => void;
-		/** True while the next page is on its way. */
 		loading?: boolean;
-		/** How many rows are shown, and how many there are in all when the
-		    list knows its total: "50 of 600", or "50 shown" without one. */
 		shown?: number;
 		total?: number;
 	};

@@ -9,24 +9,12 @@ import (
 	"loginer/i18n"
 )
 
-// Problem is one thing that can go wrong: a status, a code, and which apps may
-// be shown it. Every error carries its code,
-//
-//	{"error": "Wrong email or password.", "code": "invalid_credentials"}
-//
-// and the app shows `error.<code>` from its catalog in the reader's language.
-// The English sentence is the base language's text for that key, in
-// i18n/<app>/en/. Define a problem next to the code that returns it;
-// TestErrorCodesMatchTheCatalogs keeps definitions and catalogs in step.
 type Problem struct {
 	Status int
 	Code   string
-	// Apps are the apps that may be shown this problem and whose catalogs must
-	// define it.
-	Apps []i18n.App
+	Apps   []i18n.App
 }
 
-// Who a problem is for.
 var (
 	Public = []i18n.App{i18n.ID}
 	Admin  = []i18n.App{i18n.Console}
@@ -54,7 +42,6 @@ func Define(status int, code string, apps []i18n.App) Problem {
 	return problem
 }
 
-// Lookup finds a problem by its code.
 func Lookup(code string) (Problem, bool) {
 	registryMu.Lock()
 	defer registryMu.Unlock()
@@ -64,7 +51,6 @@ func Lookup(code string) (Problem, bool) {
 	return problem, ok
 }
 
-// Problems is every problem defined so far, by code.
 func Problems() []Problem {
 	registryMu.Lock()
 	defer registryMu.Unlock()
@@ -78,13 +64,10 @@ func Problems() []Problem {
 	return out
 }
 
-// Key is the catalog key an app shows for a problem.
 func (p Problem) Key() string {
 	return "error." + p.Code
 }
 
-// English is the base-language sentence with parameters filled in, or the code
-// if missing (tests prevent that).
 func (p Problem) English(params map[string]any) string {
 	for _, app := range p.Apps {
 		if text, ok := i18n.Text(app, p.Key()); ok {
@@ -95,8 +78,6 @@ func (p Problem) English(params map[string]any) string {
 	return p.Code
 }
 
-// With returns the problem as an error with name/value parameters: return
-// passwordTooShort.With("min", 8)
 func (p Problem) With(pairs ...any) Fault {
 	params := map[string]any{}
 	for i := 0; i+1 < len(pairs); i += 2 {
@@ -106,7 +87,6 @@ func (p Problem) With(pairs ...any) Fault {
 	return p.Fault(params)
 }
 
-// Fault is the problem as an error, with its parameters.
 func (p Problem) Fault(params map[string]any) Fault {
 	if len(params) == 0 {
 		params = nil
@@ -115,7 +95,6 @@ func (p Problem) Fault(params map[string]any) Fault {
 	return Fault{Status: p.Status, Code: p.Code, Params: params, Message: p.English(params)}
 }
 
-// The problems either server can give, whatever the endpoint.
 var (
 	InvalidBody = Define(http.StatusBadRequest, "invalid_body", Both)
 	NotFoundAny = Define(http.StatusNotFound, "not_found", Both)
@@ -123,7 +102,5 @@ var (
 	NotSignedIn = Define(http.StatusUnauthorized, "not_signed_in", Both)
 	NotAllowed  = Define(http.StatusForbidden, "forbidden", Both)
 
-	// LanguageNotFound is a language code nothing has: the sign-in pages
-	// asking for one that was removed, or the panel for one it never had.
 	LanguageNotFound = Define(http.StatusNotFound, "language_not_found", Both)
 )

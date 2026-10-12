@@ -1,7 +1,6 @@
 package languages
 
 import (
-	"net/http"
 	"strings"
 
 	"loginer/internal/api/respond"
@@ -9,8 +8,6 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo checks the request and copies it onto a language. Making a language
-// the default also enables it.
 func (r *languageRequest) applyTo(language *model.Language) error {
 	if err := validate.Struct(r); err != nil {
 		return err
@@ -32,7 +29,6 @@ func (r *languageRequest) applyTo(language *model.Language) error {
 	return settle(language)
 }
 
-// newLanguage checks a create request and makes the language it describes.
 func (r *createRequest) newLanguage() (*model.Language, error) {
 	r.Code = normalizeCode(r.Code)
 	r.Name = strings.TrimSpace(r.Name)
@@ -53,8 +49,6 @@ func (r *createRequest) newLanguage() (*model.Language, error) {
 	return language, settle(language)
 }
 
-// settle applies the rules a language is always held to, whoever wrote it,
-// and validates what is left.
 func settle(language *model.Language) error {
 	if language.IsDefault {
 		language.IsEnabled = true
@@ -67,14 +61,12 @@ func settle(language *model.Language) error {
 	}
 
 	if err := language.Validate(); err != nil {
-		return badRequest(err.Error())
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
 }
 
-// normalizeCode writes a tag canonically ("pt-BR", "sr-Latn") so case variants
-// are one language.
 func normalizeCode(code string) string {
 	parts := strings.Split(strings.TrimSpace(code), "-")
 
@@ -92,9 +84,4 @@ func normalizeCode(code string) string {
 	}
 
 	return strings.Join(parts, "-")
-}
-
-// badRequest is a 400 carrying what was wrong with the request.
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }

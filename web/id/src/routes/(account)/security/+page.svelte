@@ -33,7 +33,6 @@
 			await account.changePassword({ current_password: current, new_password: next });
 			current = next = confirm = '';
 			notify.success(t('security.password_changed'));
-			// Every other session has ended: the list below shrinks.
 			await invalidateAll();
 		} catch (err) {
 			notify.error(messageOf(err, t));

@@ -15,22 +15,14 @@
 	import InsertEdge, { type InsertEdgeData } from './InsertEdge.svelte';
 	import StepNode, { type StepNodeData } from './StepNode.svelte';
 
-	/**
-	 * The flow as one column on Svelte Flow: start at the top, steps in order, session at the
-	 * bottom. Dragging reorders; a step dropped from the palette goes into the nearest gap.
-	 */
 	type Props = {
 		steps: LoginStep[];
 		kinds: LoginStepSpec[];
-		/** What each step's card says about its settings. */
 		summaryOf: (step: LoginStep) => string[];
-		/** What the start and end say: the flow's name, the session length. */
 		startDetail: string;
 		endDetail: string;
-		/** The node whose settings the inspector shows: 'start', 'end' or a step. */
 		selected: string;
 		editable: boolean;
-		/** The gap waiting for a step from the palette, if any. */
 		waiting: number | null;
 		onSelect: (id: string) => void;
 		onReorder: (steps: LoginStep[]) => void;
@@ -57,7 +49,6 @@
 
 	const { screenToFlowPosition, fitView } = useSvelteFlow();
 
-	/** How far apart the rows are drawn. */
 	const ROW = 150;
 	const nodeTypes = { step: StepNode, end: EndNode };
 	const edgeTypes = { insert: InsertEdge };
@@ -131,8 +122,6 @@
 		return drawn;
 	});
 
-	// Between every two nodes; the gap after the start is not a place for a
-	// step, since the first step is always the one that asks who it is.
 	let edges = $derived.by((): Edge[] =>
 		nodes.slice(1).map((node, index) => ({
 			id: `${nodes[index].id}->${node.id}`,
@@ -150,8 +139,6 @@
 		}))
 	);
 
-	/** The index in the steps a point on the canvas falls into: after every
-	    step whose middle is above it, and never before the first. */
 	function gapAt(y: number): number {
 		let index = 1;
 		steps.forEach((_, at) => {
@@ -193,9 +180,6 @@
 
 	let fitted = false;
 
-	// A step added or removed changes how tall the flow is: the view follows,
-	// so the end the flow arrives at never slides out of sight. Once the new
-	// nodes have been measured, which is after they are drawn.
 	let count = 0;
 	$effect(() => {
 		const now = steps.length;
@@ -249,8 +233,6 @@
 		background: var(--color-body);
 	}
 
-	/* Svelte Flow's own look, told the panel's tokens, so it is one app in
-	   both themes rather than a white box in the dark one. */
 	.canvas :global(.svelte-flow) {
 		--xy-background-color: var(--color-body);
 		--xy-background-pattern-color: var(--color-border);
@@ -261,9 +243,6 @@
 		--xy-controls-button-color: var(--color-text);
 		--xy-controls-button-border-color: var(--color-border);
 		--xy-node-border-radius: var(--radius-surface);
-		/* An edge's label is the + between two steps, a button that draws
-		   its own circle: the box Svelte Flow puts behind a label — white
-		   unless told the colour mode — has nothing to add. */
 		--xy-edge-label-background-color: transparent;
 		--xy-edge-label-color: inherit;
 		--xy-edge-stroke-selected: var(--color-info);

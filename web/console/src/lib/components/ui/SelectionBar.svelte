@@ -5,13 +5,9 @@
 	import Button from './Button.svelte';
 
 	type Props = {
-		/** How many rows are ticked. The bar shows itself when this is
-		    anything but zero. */
 		count: number;
-		/** What one row is called, e.g. 'record' or 'session'. */
 		noun?: string;
 		onReset: () => void;
-		/** The buttons that act on the selection. */
 		children: Snippet;
 	};
 
@@ -19,8 +15,6 @@
 </script>
 
 {#if count > 0}
-	<!-- The bar rides the bottom of the window while there is table left to
-	     scroll, and comes to rest under the last row when there is not. -->
 	<div class="bar" role="status" transition:fly={{ y: 12, duration: 150 }}>
 		<span class="count">
 			Selected <strong>{count}</strong>
@@ -70,8 +64,6 @@
 		margin-left: var(--space-3);
 	}
 
-	/* Every button in the bar is rounded like the bar that holds it. The ones
-	   in .actions come from the caller, hence the global match. */
 	.bar :global(.control) {
 		border-radius: var(--radius-pill);
 	}

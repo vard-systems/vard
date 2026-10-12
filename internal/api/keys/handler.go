@@ -1,6 +1,3 @@
-// Package keys lets a super admin see the signing keys and rotate them now,
-// optionally revoking the old ones after a leak. Normal rotation is automatic
-// (LOGINER_KEY_ROTATION_DAYS).
 package keys
 
 import (
@@ -14,7 +11,6 @@ import (
 	"loginer/internal/oidc"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	provider *oidc.Service
 	audit    audit.Recorder

@@ -2,13 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { isCurrentSection, type Section } from './sections';
 
-/**
- * This is the one question behind every "where am I" mark in the panel: the
- * row filled in the brand colour in the column, the one carrying aria-current,
- * and the page named in the flyout a folded section opens. It is compared
- * between route ids rather than through resolve(), which answers a path — and
- * answers it relatively, so comparing it to the pathname marked nothing at all.
- */
 describe('isCurrentSection', () => {
 	const dashboard = '/admin/(panel)/dashboard';
 	const users = '/admin/(panel)/dashboard/users';

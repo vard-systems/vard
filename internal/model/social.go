@@ -11,9 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// SocialProvider is a provider users may sign in with, holding what its console
-// issued. ClientSecret and PrivateKey are sealed with the server's secret key.
-// Endpoints are not stored: they live in SocialKinds.
 type SocialProvider struct {
 	Base
 
@@ -23,41 +20,26 @@ type SocialProvider struct {
 	// (/oauth2/social/<slug>/callback), so it never changes.
 	Slug string `gorm:"size:64;not null;uniqueIndex" json:"slug"`
 
-	// Name is what the button says: "Continue with <name>".
 	Name string `gorm:"size:100;not null" json:"name"`
 
 	ClientID string `gorm:"size:255;not null" json:"client_id"`
 
-	// ClientSecret is sealed with the server's secret key. Apple has none —
-	// see PrivateKey.
 	ClientSecret []byte `gorm:"type:bytea" json:"-"`
 
-	// Scopes is what to ask the provider for. The kind's defaults are used
-	// when it is empty.
 	Scopes StringList `gorm:"serializer:json" json:"scopes"`
 
 	IsEnabled bool `gorm:"not null" json:"is_enabled"`
 
-	// Position is where the button sits among the others.
 	Position int `gorm:"not null" json:"position"`
 
-	// LinkVerifiedEmails links a sign-in to the account with the same address
-	// when the provider says it is verified; off, a taken address is refused.
 	LinkVerifiedEmails bool `gorm:"not null" json:"link_verified_emails"`
 
-	// AllowRegistration lets someone the server has never seen make an
-	// account by signing in with this provider.
 	AllowRegistration bool `gorm:"not null" json:"allow_registration"`
 
-	// The endpoints, for the kinds that have none built in. A kind that does
-	// ignores them.
 	AuthorizeURL string `gorm:"size:512" json:"authorize_url"`
 	TokenURL     string `gorm:"size:512" json:"token_url"`
 	UserinfoURL  string `gorm:"size:512" json:"userinfo_url"`
 
-	// TokenAuth is how the secret is sent to the token endpoint for kinds
-	// without a known provider (Basic or body, RFC 6749). Empty is the kind's
-	// default.
 	TokenAuth SocialTokenAuth `gorm:"type:varchar(32)" json:"token_auth"`
 
 	// Apple's client secret is a JWT signed per request with the team's key;
@@ -67,13 +49,10 @@ type SocialProvider struct {
 	PrivateKey []byte `gorm:"type:bytea" json:"-"`
 }
 
-// TableName pins the table name.
 func (SocialProvider) TableName() string {
 	return "social_providers"
 }
 
-// StringList is a list of strings stored as JSON. It is its own type so an
-// empty list is stored as [] rather than null.
 type StringList []string
 
 // SocialIdentity links a provider's subject to a user. The subject is the only
@@ -85,7 +64,6 @@ type SocialIdentity struct {
 	ProviderID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_social_identities_subject,priority:1" json:"provider_id"`
 	Subject    string    `gorm:"size:255;not null;uniqueIndex:idx_social_identities_subject,priority:2" json:"subject"`
 
-	// Email is the address the provider gave when connected, for display.
 	Email       string     `gorm:"size:255" json:"email"`
 	LastLoginAt *time.Time `json:"last_login_at"`
 
@@ -93,7 +71,6 @@ type SocialIdentity struct {
 	User     *User           `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 }
 
-// TableName pins the table name.
 func (SocialIdentity) TableName() string {
 	return "social_identities"
 }
@@ -121,29 +98,21 @@ type SocialLogin struct {
 	StateHash  string    `gorm:"size:64;not null;uniqueIndex" json:"-"`
 	ProviderID uuid.UUID `gorm:"type:uuid;not null;index" json:"provider_id"`
 
-	// Verifier is the PKCE code verifier, for the providers that take one.
 	Verifier string `gorm:"size:128" json:"-"`
 
-	// Request is the sign-in under way, to return to the asking application;
-	// empty for the account page.
 	Request string `gorm:"size:64" json:"-"`
 
-	// Next is where to send the browser when there is no application waiting.
 	Next string `gorm:"size:512" json:"-"`
 
 	ExpiresAt time.Time `gorm:"not null;index" json:"-"`
 }
 
-// TableName pins the table name.
 func (SocialLogin) TableName() string {
 	return "social_logins"
 }
 
-// SocialLoginLifetime is how long a sign-in may take at the provider before
-// the answer is no longer accepted.
 const SocialLoginLifetime = 15 * time.Minute
 
-// SocialKind is which provider a record is for.
 type SocialKind string
 
 const (
@@ -152,39 +121,26 @@ const (
 	SocialFacebook SocialKind = "facebook"
 	SocialYandex   SocialKind = "yandex"
 	SocialVK       SocialKind = "vk"
-	// SocialOIDC is any other OpenID Connect provider: Keycloak, Okta,
-	// Microsoft Entra, another server of this one's own kind.
-	SocialOIDC SocialKind = "oidc"
-	// SocialOAuth2 is a provider that is not OpenID Connect but hands out
-	// access tokens and has somewhere to read a profile from.
-	SocialOAuth2 SocialKind = "oauth2"
+	SocialOIDC     SocialKind = "oidc"
+	SocialOAuth2   SocialKind = "oauth2"
 )
 
-// SocialTokenAuth is how a client proves itself at a token endpoint.
 type SocialTokenAuth string
 
 const (
-	// SocialTokenAuthBasic sends the credentials as HTTP Basic, which RFC
-	// 6749 section 2.3.1 says every authorization server must accept.
 	SocialTokenAuthBasic SocialTokenAuth = "basic"
-	// SocialTokenAuthPost sends them in the request body, which is what the
-	// big providers document.
-	SocialTokenAuthPost SocialTokenAuth = "post"
+	SocialTokenAuthPost  SocialTokenAuth = "post"
 )
 
-// SocialTokenAuths lists both, for validation and for the panel's picker.
 var SocialTokenAuths = []SocialTokenAuth{SocialTokenAuthBasic, SocialTokenAuthPost}
 
-// SocialClaims are paths into the provider's JSON: dots step into objects,
-// numbers into arrays (VK's `response.0.id`).
 type SocialClaims struct {
 	Subject       string `json:"subject"`
 	Email         string `json:"email"`
 	EmailVerified string `json:"email_verified"`
 	FirstName     string `json:"first_name"`
 	LastName      string `json:"last_name"`
-	// FullName is used when there are no separate names to read.
-	FullName string `json:"full_name"`
+	FullName      string `json:"full_name"`
 }
 
 // SocialSpec is what is the same for a kind in every installation: endpoints,
@@ -203,43 +159,26 @@ type SocialSpec struct {
 	// Scopes is what to ask for unless the record says otherwise.
 	Scopes []string `json:"scopes"`
 
-	// Claims is where to read the identity from.
 	Claims SocialClaims `json:"-"`
 
 	// Custom says the endpoints come from the record, and the panel asks for
 	// them.
 	Custom bool `json:"custom"`
 
-	// IdentityInIDToken reads the identity out of the id_token that came with
-	// the access token, for a provider with no userinfo endpoint (Apple).
 	IdentityInIDToken bool `json:"-"`
 
-	// IDTokenIssuer is the iss a known provider's id_token must name; empty for
-	// per-installation kinds.
 	IDTokenIssuer string `json:"-"`
 
-	// EmailInTokenResponse reads the address from the token response beside
-	// the access token, where the profile endpoint does not give one (VK).
 	EmailInTokenResponse bool `json:"-"`
 
-	// UserInfoScheme is how the access token is presented to the profile
-	// endpoint: "Bearer" for nearly everyone, "OAuth" for Yandex.
 	UserInfoScheme string `json:"-"`
 
-	// AuthorizeParams are added to every authorization request, for the
-	// providers that need one: Apple's response_mode, VK's API version.
 	AuthorizeParams map[string]string `json:"-"`
 
-	// UserInfoParams are added to the profile request, for an API that is
-	// versioned in the query (VK).
 	UserInfoParams map[string]string `json:"-"`
 
-	// UserInfoTokenParam passes the access token as a query parameter of that
-	// name, for an API that reads it there rather than from a header (VK).
 	UserInfoTokenParam string `json:"-"`
 
-	// PKCE sends a code challenge, which every provider here supports except
-	// the ones where it is known to break.
 	PKCE bool `json:"-"`
 
 	// SignedSecret says the client secret is a JWT this server signs with a
@@ -250,16 +189,12 @@ type SocialSpec struct {
 	// record of a custom kind may say otherwise.
 	TokenAuth SocialTokenAuth `json:"token_auth"`
 
-	// AssumeEmailVerified is for a provider that only ever hands out
-	// addresses it has verified itself, and says so nowhere in the answer.
 	AssumeEmailVerified bool `json:"-"`
 
 	// Docs is where an administrator registers this server with the provider.
 	Docs string `json:"docs"`
 }
 
-// SocialSpecs lists every kind in panel order, following each provider's own
-// documentation.
 var SocialSpecs = []SocialSpec{
 	{
 		Kind:         SocialGoogle,
@@ -309,9 +244,8 @@ var SocialSpecs = []SocialSpec{
 		Label:        "Facebook",
 		AuthorizeURL: "https://www.facebook.com/v21.0/dialog/oauth",
 		TokenURL:     "https://graph.facebook.com/v21.0/oauth/access_token",
-		// Graph returns only the fields that are asked for.
-		UserInfoURL: "https://graph.facebook.com/v21.0/me?fields=id,email,first_name,last_name,name",
-		Scopes:      []string{"email", "public_profile"},
+		UserInfoURL:  "https://graph.facebook.com/v21.0/me?fields=id,email,first_name,last_name,name",
+		Scopes:       []string{"email", "public_profile"},
 		Claims: SocialClaims{
 			Subject:   "id",
 			Email:     "email",
@@ -341,7 +275,6 @@ var SocialSpecs = []SocialSpec{
 			LastName:  "last_name",
 			FullName:  "real_name",
 		},
-		// Yandex reads its own scheme rather than Bearer.
 		UserInfoScheme: "OAuth",
 		PKCE:           true,
 		// Yandex does not say the address was confirmed, so it can create an
@@ -357,15 +290,12 @@ var SocialSpecs = []SocialSpec{
 		UserInfoURL:  "https://api.vk.com/method/users.get",
 		Scopes:       []string{"email"},
 		Claims: SocialClaims{
-			// users.get answers with a list under "response".
 			Subject:   "response.0.id",
 			FirstName: "response.0.first_name",
 			LastName:  "response.0.last_name",
 		},
-		// VK's API reads the token and its version from the query.
-		UserInfoParams:     map[string]string{"v": "5.131"},
-		UserInfoTokenParam: "access_token",
-		// VK sends the address back with the access token, not in the profile.
+		UserInfoParams:       map[string]string{"v": "5.131"},
+		UserInfoTokenParam:   "access_token",
 		EmailInTokenResponse: true,
 		AuthorizeParams:      map[string]string{"v": "5.131"},
 		// VK gives no proof the address was confirmed, so it can create an
@@ -412,7 +342,6 @@ var SocialSpecs = []SocialSpec{
 	},
 }
 
-// SocialSpecFor returns what is known about a kind.
 func SocialSpecFor(kind SocialKind) (SocialSpec, bool) {
 	for _, spec := range SocialSpecs {
 		if spec.Kind == kind {
@@ -423,14 +352,11 @@ func SocialSpecFor(kind SocialKind) (SocialSpec, bool) {
 	return SocialSpec{}, false
 }
 
-// Spec is what is known about this provider's kind.
 func (p SocialProvider) Spec() SocialSpec {
 	spec, _ := SocialSpecFor(p.Kind)
 	return spec
 }
 
-// Endpoints are the addresses to use for this provider: the kind's, or the
-// record's own where the kind has none.
 func (p SocialProvider) Endpoints() (authorize, token, userInfo string) {
 	spec := p.Spec()
 	if spec.Custom {
@@ -440,8 +366,6 @@ func (p SocialProvider) Endpoints() (authorize, token, userInfo string) {
 	return spec.AuthorizeURL, spec.TokenURL, spec.UserInfoURL
 }
 
-// TokenAuthMethod is how to present the secret at the token endpoint: what
-// the record says, or the kind's own way.
 func (p SocialProvider) TokenAuthMethod() SocialTokenAuth {
 	if p.TokenAuth != "" {
 		return p.TokenAuth
@@ -454,8 +378,6 @@ func (p SocialProvider) TokenAuthMethod() SocialTokenAuth {
 	return SocialTokenAuthBasic
 }
 
-// AskedScopes is what to ask the provider for: what the record says, or the
-// kind's own defaults.
 func (p SocialProvider) AskedScopes() []string {
 	if len(p.Scopes) > 0 {
 		return p.Scopes
@@ -464,18 +386,12 @@ func (p SocialProvider) AskedScopes() []string {
 	return p.Spec().Scopes
 }
 
-// CallbackURL is the redirect URI to register with the provider, built from the
-// issuer.
 func (p SocialProvider) CallbackURL(issuer string) string {
 	return strings.TrimRight(issuer, "/") + "/oauth2/social/" + p.Slug + "/callback"
 }
 
-// socialSlugPattern is what a provider may be called in an address: lower
-// case letters, numbers and dashes.
 var socialSlugPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
 
-// Validate reports the first problem with the record itself; credentials are
-// only proven by signing in.
 func (p SocialProvider) Validate() error {
 	spec, known := SocialSpecFor(p.Kind)
 	if !known {
@@ -536,8 +452,6 @@ func (p SocialProvider) Validate() error {
 			return err
 		}
 
-		// OpenID Connect can answer with an id_token instead; plain OAuth 2.0
-		// has nowhere else to read a profile from.
 		if err := socialEndpoint("userinfo_url", p.UserinfoURL, p.Kind == SocialOAuth2, true); err != nil {
 			return err
 		}
@@ -556,7 +470,6 @@ func (p SocialProvider) Validate() error {
 	return nil
 }
 
-// socialEndpoint checks an absolute http(s) URL, optionally required.
 func socialEndpoint(field, value string, required, secure bool) error {
 	if value == "" {
 		if required {
@@ -574,8 +487,7 @@ func socialEndpoint(field, value string, required, secure bool) error {
 		return fmt.Errorf("%s must be a full address starting with http:// or https://", field)
 	}
 
-	// Endpoints the server fetches must be https, except on this machine.
-	if secure && parsed.Scheme == "http" && !isLocalhost(parsed) {
+	if secure && parsed.Scheme == "http" && !IsLocalhost(parsed) {
 		return fmt.Errorf("%s must use https", field)
 	}
 
@@ -589,20 +501,4 @@ func socialKindNames() []string {
 	}
 
 	return names
-}
-
-// DefaultSocialProvider is a new provider of a kind with the usual settings
-// filled in.
-func DefaultSocialProvider(kind SocialKind) SocialProvider {
-	spec, _ := SocialSpecFor(kind)
-
-	return SocialProvider{
-		Kind:               kind,
-		Slug:               string(kind),
-		Name:               spec.Label,
-		Scopes:             slices.Clone(spec.Scopes),
-		IsEnabled:          true,
-		LinkVerifiedEmails: true,
-		AllowRegistration:  true,
-	}
 }

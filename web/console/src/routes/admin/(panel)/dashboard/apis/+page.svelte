@@ -32,13 +32,9 @@
 
 	const apis = createQuery(() => apisOptions(data.search, data.apis));
 
-	/** How many of them are on screen. The endpoint answers with every one,
-	    so "Show more" reveals the next page of what is already here; a new
-	    search starts again from one page. */
 	let shown = $derived(firstPage(data.search));
 	const rows = $derived(apis.data.slice(0, shown));
 
-	/** Changing APIs is a whole-panel permission. */
 	const canWrite = $derived(can(data.admin, 'apis.write'));
 
 	let search = $derived(data.search);
@@ -49,7 +45,6 @@
 	const visible = $derived(new Set(rows.map((api) => api.id)));
 	const chosen = $derived(selected.filter((id) => visible.has(id)));
 
-	/** How many applications lose access if the chosen APIs go. */
 	const affected = $derived(
 		apis.data
 			.filter((api) => chosen.includes(api.id))
@@ -81,7 +76,6 @@
 		timer = setTimeout(() => apply({ search }), 250);
 	}
 
-	/** An API is managed on its own page; the dialog only registers one. */
 	function openApi(api: API) {
 		goto(resolve('/admin/(panel)/dashboard/apis/[id]', { id: api.id }));
 	}

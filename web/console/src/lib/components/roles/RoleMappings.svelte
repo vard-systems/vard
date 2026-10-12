@@ -11,17 +11,14 @@
 	import { usersApi, type Admin, type Application, type Role, type RoleMapping } from '$lib/api';
 	import { Alert, Button, Icon, IconButton, Switch, Tooltip, notify } from '$lib/components/ui';
 	import { canAnywhere } from '$lib/permissions';
-	import { keys } from '$lib/query';
+	import { keys, roleMappingsOptions } from '$lib/query';
 	import { countOf } from '$lib/utils/format';
 	import RolePicker from './RolePicker.svelte';
 	import { canAssign } from './roles';
 
 	type Props = {
-		/** The user whose roles these are. */
 		userId: string;
-		/** Every role the administrator can see, to offer as ones to assign. */
 		roles: Role[];
-		/** The applications the administrator can see, to name role scopes. */
 		applications: Application[];
 		admin: Admin;
 	};
@@ -30,19 +27,13 @@
 
 	const queryClient = useQueryClient();
 
-	/** Every role the user holds, given directly or inherited. */
-	const mappings = createQuery(() => ({
-		queryKey: keys.users.mappings(userId),
-		queryFn: async () => (await usersApi.roleMappings(userId)).roles
-	}));
+	const mappings = createQuery(() => roleMappingsOptions(userId));
 
-	/** The roles the user holds, or the list that assigns more. */
 	let mode = $state<'held' | 'assign'>('held');
 
 	let showInherited = $state(false);
 	let picked = $state<string[]>([]);
 
-	/** The role being taken away, so only its chip shows the wait. */
 	let removing = $state<string | null>(null);
 
 	let busy = $state(false);
@@ -53,8 +44,6 @@
 	const assigned = $derived(held.filter((it) => it.assigned));
 	const inherited = $derived(held.filter((it) => !it.assigned));
 
-	/** One row per scope — global first, then each application by name — each
-	    holding its roles, assigned ones before inherited. */
 	const rows = $derived.by(() => {
 		const out: { key: string; name: string; clientId?: string; roles: RoleMapping[] }[] = [];
 
@@ -84,8 +73,6 @@
 		return out;
 	});
 
-	/** What a chip's tooltip says: the description, and where the role comes
-	    from or what else it gives. */
 	function explain(role: RoleMapping): string {
 		const parts = [role.description];
 
@@ -103,16 +90,12 @@
 		return parts.filter(Boolean).join(' · ') || role.name;
 	}
 
-	/** The roles the assign list offers: those the user was not given
-	    directly. */
 	const assignable = $derived(roles.filter((role) => !assigned.some((it) => it.id === role.id)));
 
 	function scopeOf(mapping: RoleMapping) {
 		return { application_id: mapping.application?.id ?? null };
 	}
 
-	/** After a change the users table and the roles' counts are stale too, so
-	    both are refilled along with the mapping. */
 	async function refill(next: RoleMapping[]) {
 		queryClient.setQueryData(keys.users.mappings(userId), next);
 		await Promise.all([
@@ -341,9 +324,6 @@
 		margin: 0 4px;
 	}
 
-	/* The roles as one panel: a row per scope, the scope on the left and its
-	   roles as chips beside it, so a user holding a dozen roles still fits in
-	   a glance. */
 	.panel {
 		overflow: hidden;
 		border: 1px solid var(--color-border);

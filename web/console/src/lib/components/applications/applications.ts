@@ -2,7 +2,6 @@ import type { ComponentType } from 'svelte';
 import { RiAppsLine, RiComputerLine, RiServerLine, RiSmartphoneLine } from 'svelte-remixicon';
 import type { ApplicationInput, ApplicationType, AuthMethod, GrantType, Scope } from '$lib/api';
 
-/** What each kind of application is, said the way the panel offers it. */
 export const types: Record<
 	ApplicationType,
 	{ label: string; description: string; icon: ComponentType; public: boolean }
@@ -84,13 +83,10 @@ export function blank(type: ApplicationType): ApplicationInput {
 		require_role_assignment: false,
 		is_enabled: true,
 		allow_registration: type !== 'm2m',
-		// Empty is the default flow, which is what a new application should
-		// sign people in with until somebody says otherwise.
 		login_flow_id: ''
 	};
 }
 
-/** URIs typed one per line, as the API wants them: trimmed, no blanks. */
 export function lines(text: string): string[] {
 	return text
 		.split('\n')
@@ -98,6 +94,4 @@ export function lines(text: string): string[] {
 		.filter((line) => line !== '');
 }
 
-/** The application the server makes for calling its admin API with, which
-    the panel marks as built-in and the server will not delete. */
 export const ADMIN_CLI = 'admin-cli';

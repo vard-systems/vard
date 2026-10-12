@@ -16,8 +16,6 @@ import (
 	"loginer/internal/store"
 )
 
-// filterInvalid is a filter the logs cannot be read by: a date that is not
-// one, a cursor that was not handed out, an action that could not be one.
 var filterInvalid = respond.Define(http.StatusBadRequest, "logs_filter_invalid", respond.Admin)
 
 // actionPattern is "<resource>.<action>"; names are checked and lists capped
@@ -26,18 +24,8 @@ var actionPattern = regexp.MustCompile(`^[a-z_]{1,64}\.[a-z_]{1,64}$`)
 
 const maxActions = 100
 
-// dayLayout is a date on its own, as the page's date fields send it.
 const dayLayout = "2006-01-02"
 
-// parseFilter reads the logs' query string:
-//
-//	q        text anywhere in who, what, where from, and the target's id
-//	action   an action's name; repeat it for several
-//	actor    one address, exactly
-//	from     a date or a moment; entries at or after it
-//	to       a date — that whole day included — or a moment; entries before it
-//	before   the cursor the previous page ended with
-//	limit    how many to a page
 func parseFilter(c *gin.Context, limit int) (store.AuditFilter, error) {
 	filter := store.AuditFilter{
 		Search: strings.TrimSpace(c.Query("q")),
@@ -79,8 +67,6 @@ func parseFilter(c *gin.Context, limit int) (store.AuditFilter, error) {
 	return filter, nil
 }
 
-// moment parses a bound. A bare date is its first instant, or as an end bound
-// the next day's, so "to 12 March" includes the 12th.
 func moment(raw string, end bool) (time.Time, error) {
 	if raw == "" {
 		return time.Time{}, nil
@@ -96,8 +82,6 @@ func moment(raw string, end bool) (time.Time, error) {
 	return time.Parse(time.RFC3339, raw)
 }
 
-// A cursor is the last entry's moment in nanoseconds and its id, which is
-// opaque to the page: it hands back what it was given.
 func formatCursor(cursor *store.AuditCursor) string {
 	if cursor == nil {
 		return ""

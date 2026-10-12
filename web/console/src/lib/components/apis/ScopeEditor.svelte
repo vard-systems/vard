@@ -15,8 +15,6 @@
 	}
 </script>
 
-<!-- A table of the API's scopes: what each is called, what it allows, and
-     whether tokens for the API carry it by default. -->
 <div class="editor">
 	{#if rows.length > 0}
 		<div class="table" role="table" aria-label="Scopes">

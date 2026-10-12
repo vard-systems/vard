@@ -11,23 +11,15 @@ import (
 	"loginer/internal/model"
 )
 
-// ApplicationQuery is what a listing of applications asks for.
 type ApplicationQuery struct {
-	// Search matches the name, the description or the client id.
-	Search string
-	// Type filters on the application type. Empty means every type.
-	Type model.ApplicationType
-	// Enabled filters on the is_enabled flag. Nil means both.
+	Search  string
+	Type    model.ApplicationType
 	Enabled *bool
-	// Only keeps these applications, for an administrator whose roles reach
-	// just some of them. Nil means every application.
-	Only   []uuid.UUID
-	Limit  int
-	Offset int
+	Only    []uuid.UUID
+	Limit   int
+	Offset  int
 }
 
-// Applications returns a page of applications, sorted by name, and how many
-// match the query in total.
 func (s *Store) Applications(ctx context.Context, q ApplicationQuery) ([]model.Application, int64, error) {
 	query := s.db.WithContext(ctx).Model(&model.Application{})
 
@@ -65,7 +57,6 @@ func (s *Store) Applications(ctx context.Context, q ApplicationQuery) ([]model.A
 	return apps, total, err
 }
 
-// Application returns one application by id.
 func (s *Store) Application(ctx context.Context, id uuid.UUID) (*model.Application, error) {
 	var app model.Application
 	if err := s.db.WithContext(ctx).First(&app, "id = ?", id).Error; err != nil {
@@ -75,24 +66,18 @@ func (s *Store) Application(ctx context.Context, id uuid.UUID) (*model.Applicati
 	return &app, nil
 }
 
-// ApplicationRoleCounts says how many roles each application defines, by id.
 func (s *Store) ApplicationRoleCounts(ctx context.Context) (map[uuid.UUID]int64, error) {
 	return s.countBy(ctx, "user_roles", "application_id", nil)
 }
 
-// CreateApplication writes a new application.
 func (s *Store) CreateApplication(ctx context.Context, app *model.Application) error {
 	return translate(s.db.WithContext(ctx).Create(app).Error)
 }
 
-// SaveApplication writes an application back.
 func (s *Store) SaveApplication(ctx context.Context, app *model.Application) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Save(app).Error), cache.Clients, cache.Admins)
 }
 
-// DeleteApplication removes an application with its roles and their grants,
-// scoped admin roles and API access. Joins are deleted explicitly rather than
-// relying on FK constraints.
 func (s *Store) DeleteApplication(ctx context.Context, app *model.Application) error {
 	// Administrators with a role scoped to it lose that role, so every one of
 	// them is read again.

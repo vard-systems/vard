@@ -3,10 +3,6 @@ import { resolve } from '$app/paths';
 import { adminApi, mfaApi } from '$lib/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * Authenticator setup, for an administrator who must have one or wants one. Anyone else is
- * redirected.
- */
 export const load: PageServerLoad = async ({ fetch }) => {
 	const { state } = await adminApi.session(fetch).catch(() => ({ state: 'none' as const }));
 

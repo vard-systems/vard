@@ -1,6 +1,3 @@
-// Package mfa lets an administrator set up, replace and remove their
-// authenticator and regenerate recovery codes. Setup is the only thing a
-// half-signed-in session may do when a factor is required.
 package mfa
 
 import (
@@ -15,7 +12,6 @@ import (
 	"loginer/internal/auth"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	auth *auth.Service
 	log  *slog.Logger
@@ -46,7 +42,7 @@ func (h *Handler) Begin(c *gin.Context) {
 		return
 	}
 
-	enrolment, err := h.auth.BeginTOTP(c.Request.Context(), session.Admin(c), req.Code, requestOf(c))
+	enrolment, err := h.auth.BeginTOTP(c.Request.Context(), session.Admin(c), req.Code, session.RequestOf(c))
 	if err != nil {
 		h.fail(c, err, "starting an authenticator set-up failed")
 		return
@@ -66,7 +62,7 @@ func (h *Handler) Confirm(c *gin.Context) {
 
 	token, _ := c.Cookie(session.Cookie)
 
-	codes, err := h.auth.ConfirmTOTP(c.Request.Context(), session.Admin(c), token, req.Code, requestOf(c))
+	codes, err := h.auth.ConfirmTOTP(c.Request.Context(), session.Admin(c), token, req.Code, session.RequestOf(c))
 	if err != nil {
 		h.fail(c, err, "confirming an authenticator failed")
 		return
@@ -85,7 +81,7 @@ func (h *Handler) Disable(c *gin.Context) {
 
 	token, _ := c.Cookie(session.Cookie)
 
-	if err := h.auth.DisableTOTP(c.Request.Context(), session.Admin(c), token, req.Code, requestOf(c)); err != nil {
+	if err := h.auth.DisableTOTP(c.Request.Context(), session.Admin(c), token, req.Code, session.RequestOf(c)); err != nil {
 		h.fail(c, err, "turning two-factor sign-in off failed")
 		return
 	}
@@ -101,7 +97,7 @@ func (h *Handler) RecoveryCodes(c *gin.Context) {
 		return
 	}
 
-	codes, err := h.auth.RegenerateRecoveryCodes(c.Request.Context(), session.Admin(c), req.Code, requestOf(c))
+	codes, err := h.auth.RegenerateRecoveryCodes(c.Request.Context(), session.Admin(c), req.Code, session.RequestOf(c))
 	if err != nil {
 		h.fail(c, err, "regenerating recovery codes failed")
 		return
@@ -110,7 +106,6 @@ func (h *Handler) RecoveryCodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"recovery_codes": codes})
 }
 
-// fail answers the errors of managing a factor with the status each means.
 func (h *Handler) fail(c *gin.Context, err error, note string) {
 	switch {
 	case errors.Is(err, auth.ErrInvalidCode):
@@ -122,8 +117,4 @@ func (h *Handler) fail(c *gin.Context, err error, note string) {
 	default:
 		respond.Failure(c, h.log, err, note)
 	}
-}
-
-func requestOf(c *gin.Context) auth.Request {
-	return auth.Request{IP: c.ClientIP(), UserAgent: c.Request.UserAgent()}
 }

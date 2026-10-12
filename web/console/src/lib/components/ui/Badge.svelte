@@ -14,7 +14,6 @@
 </span>
 
 <style>
-	/* PocketBase's label: a small filled pill with a 5px radius. */
 	.badge {
 		display: inline-flex;
 		align-items: center;

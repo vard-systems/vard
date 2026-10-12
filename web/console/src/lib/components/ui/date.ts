@@ -6,8 +6,6 @@ import { parseDate, type DateValue } from '@ark-ui/svelte/date-picker';
 
 const pad = (n: number, width = 2) => String(n).padStart(width, '0');
 
-/** An ISO date as the picker's own kind of value, or nothing for anything
-    that is not one. */
 export function toDate(iso: string | undefined): DateValue | undefined {
 	if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return undefined;
 
@@ -30,18 +28,14 @@ export function todayIso(): string {
 	return `${pad(now.getFullYear(), 4)}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-/** The picker's value back as an ISO date. */
 export function toIso(date: DateValue): string {
 	return `${pad(date.year, 4)}-${pad(date.month)}-${pad(date.day)}`;
 }
 
-/** A day as it is shown: "12/03/2026". */
 export function formatDay(date: DateValue): string {
 	return `${pad(date.day)}/${pad(date.month)}/${pad(date.year, 4)}`;
 }
 
-/** What can be typed: the day as it is shown, with slashes, dots or dashes
-    between its parts, or an ISO date pasted in. */
 export function parseDay(text: string): DateValue | undefined {
 	const trimmed = text.trim();
 

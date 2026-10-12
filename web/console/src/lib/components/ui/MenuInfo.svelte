@@ -3,22 +3,16 @@
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		/** The icon before the words, unless `lead` draws something else. */
 		icon?: ComponentType;
-		/** Drawn in place of the icon: an avatar, say. */
 		lead?: Snippet;
 		label: string;
 		description?: string;
-		/** Anything at the far end: a key, a tag. */
 		end?: Snippet;
 	};
 
 	let { icon, lead, label, description, end }: Props = $props();
 </script>
 
-<!-- A row that tells rather than does — who is signed in, a shortcut — laid
-     out as the rows around it are, so the menu reads as one list, but with no
-     hover and no place in the arrow keys' order. -->
 <div class="info">
 	{#if lead}{@render lead()}{:else if icon}<Icon {icon} />{/if}
 	<span class="text">

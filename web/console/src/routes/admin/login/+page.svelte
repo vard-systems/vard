@@ -37,7 +37,6 @@
 				return;
 			}
 
-			// One navigation that reloads the data: the session changed.
 			const target = result.next === 'enroll' ? '/admin/mfa-setup' : '/admin/dashboard';
 			await goto(resolve(target), { replaceState: true, invalidateAll: true });
 		} catch (err) {
@@ -58,7 +57,6 @@
 			await adminApi.verifyMfa(code.trim());
 			await goto(resolve('/admin/dashboard'), { replaceState: true, invalidateAll: true });
 		} catch (err) {
-			// An expired half sign-in starts over from the password.
 			if (err instanceof ApiError && err.message.includes('expired')) step = 'password';
 			error = err instanceof ApiError ? err.message : 'Something went wrong';
 			code = '';

@@ -3,7 +3,6 @@
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		/** `danger`, the default, is an error; the others are notices. */
 		tone?: 'danger' | 'success' | 'info' | 'warning';
 		children: Snippet;
 	};

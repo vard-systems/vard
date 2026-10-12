@@ -8,15 +8,12 @@ import (
 	"loginer/internal/model"
 )
 
-// validate checks the sign-in form before anything is looked up.
 func (r *loginRequest) validate() error {
 	r.Username = strings.TrimSpace(r.Username)
 
 	return validate.Struct(r)
 }
 
-// validate trims and lower-cases the address (it is also the username) and
-// checks the form.
 func (r *profileRequest) validate() error {
 	r.FirstName = strings.TrimSpace(r.FirstName)
 	r.LastName = strings.TrimSpace(r.LastName)
@@ -36,8 +33,6 @@ func (r *profileRequest) validate() error {
 	return nil
 }
 
-// validate checks a password change. The new password is taken as it was
-// typed; only its length is a rule here.
 func (r *passwordRequest) validate() error {
 	if err := validate.Struct(r); err != nil {
 		return err

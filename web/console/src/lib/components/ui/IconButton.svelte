@@ -7,10 +7,7 @@
 
 	type Props = Omit<ControlProps, 'icon'> & {
 		icon: ComponentType;
-		/** What the button does. It is both the tooltip and the name the
-		    button is read out by, so it is never left out. */
 		label: string;
-		/** Which side the tooltip appears on. */
 		placement?: 'top' | 'bottom' | 'left' | 'right';
 		onclick?: () => void;
 	};
@@ -27,7 +24,6 @@
 		onclick
 	}: Props = $props();
 
-	/** The glyph is a share of the button, so every size stays in proportion. */
 	const glyph: Record<Size, string> = { sm: '1rem', md: '1.125rem', lg: '1.25rem' };
 </script>
 

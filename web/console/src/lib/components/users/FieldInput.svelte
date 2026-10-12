@@ -5,18 +5,11 @@
 
 	type Props = {
 		field: UserField;
-		/**
-		 * Booleans stay booleans, everything else is input text; the form converts. It may be
-		 * undefined before the form fills in, so there is deliberately no default (Svelte errors
-		 * binding undefined to a prop with one).
-		 */
 		value: string | boolean | undefined;
 	};
 
 	let { field, value = $bindable() }: Props = $props();
 
-	/** The input type that suits the field, so numbers get the browser's
-	    own stepper. Dates have a picker of their own, below. */
 	const inputType = $derived(field.type === 'number' ? 'number' : 'text');
 </script>
 

@@ -4,11 +4,10 @@
 	import { RiCodeBoxLine, RiShieldCheckLine } from 'svelte-remixicon';
 	import { applicationsApi, type APIAccess } from '$lib/api';
 	import { Alert, Badge, Checkbox, Icon, Note, Switch, notify } from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { keys, applicationAccessOptions } from '$lib/query';
 
 	type Props = {
 		applicationId: string;
-		/** Whether the administrator may change what the application may do. */
 		editable: boolean;
 	};
 
@@ -16,16 +15,10 @@
 
 	const queryClient = useQueryClient();
 
-	const access = createQuery(() => ({
-		queryKey: keys.applications.access(applicationId),
-		queryFn: async () => (await applicationsApi.apiAccess(applicationId)).apis
-	}));
+	const access = createQuery(() => applicationAccessOptions(applicationId));
 
-	/** The API being saved, so only its card shows the wait. */
 	let saving = $state<string | null>(null);
 
-	/** Changes are saved as they are made, the way the role mapping is: the
-	    answer is the whole list, so the cache is set straight from it. */
 	const change = createMutation(() => ({
 		mutationFn: ({ api, scopes }: { api: APIAccess; scopes: string[] | null }) =>
 			scopes === null

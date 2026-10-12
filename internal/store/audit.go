@@ -21,45 +21,29 @@ func (s *Store) WriteAudit(ctx context.Context, entry *model.AuditLog) error {
 	return s.db.WithContext(ctx).Create(entry).Error
 }
 
-// AuditLog returns the newest entries: the dashboard's latest activity.
 func (s *Store) AuditLog(ctx context.Context, limit int) ([]model.AuditLog, error) {
 	events, _, err := s.AuditQuery(ctx, AuditFilter{Limit: limit})
 	return events, err
 }
 
-// AuditCursor marks where a page ended; the id breaks ties between entries at
-// the same moment.
 type AuditCursor struct {
 	At time.Time
 	ID uuid.UUID
 }
 
-// AuditFilter narrows the log. Every field left zero matches everything.
 type AuditFilter struct {
-	// Search is matched, case-insensitively and anywhere, against who acted,
-	// what they did, where from, and the id of what it was done to.
-	Search string
-	// Actions are the kinds of entry wanted, by their exact names.
-	Actions []string
-	// Actor is one person's address, exactly.
-	Actor string
-	// From and To bound when it happened: from inclusive, to exclusive.
-	From, To time.Time
-	// Before continues from the end of the previous page.
-	Before *AuditCursor
-	// HideUserActors stops actor searches matching users' own actions, for
-	// administrators who may not read users.
+	Search         string
+	Actions        []string
+	Actor          string
+	From, To       time.Time
+	Before         *AuditCursor
 	HideUserActors bool
 	Limit          int
 }
 
-// AuditQuery returns a page of the log, newest first, and the cursor for the
-// next page (nil at the end). Keyset paging keeps every page as cheap as the
-// first and stable under new writes.
 func (s *Store) AuditQuery(ctx context.Context, filter AuditFilter) ([]model.AuditLog, *AuditCursor, error) {
 	query := s.db.WithContext(ctx).Model(&model.AuditLog{})
 
-	// What users did at the sign-in pages: no administrator, a user target.
 	const byUser = "(admin_id IS NULL AND target_type = 'user')"
 
 	if term := strings.TrimSpace(filter.Search); term != "" {
@@ -97,8 +81,6 @@ func (s *Store) AuditQuery(ctx context.Context, filter AuditFilter) ([]model.Aud
 		query = query.Where("(created_at, id) < (?, ?)", filter.Before.At, filter.Before.ID)
 	}
 
-	// One more than asked for, to learn whether there is a next page without
-	// counting the rest.
 	var events []model.AuditLog
 	err := query.Order("created_at DESC, id DESC").Limit(filter.Limit + 1).Find(&events).Error
 	if err != nil {
@@ -115,8 +97,6 @@ func (s *Store) AuditQuery(ctx context.Context, filter AuditFilter) ([]model.Aud
 	return events, &AuditCursor{At: last.CreatedAt, ID: last.ID}, nil
 }
 
-// The actions signing in leaves behind, as the admin and account services
-// record them.
 const (
 	actionLogin            = "admin.login"
 	actionLoginFailed      = "admin.login_failed"
@@ -141,9 +121,6 @@ type Counts struct {
 	ActiveSessions      int64 `json:"active_sessions"`
 }
 
-// Counts totals what the dashboard reports in one query, so the numbers agree.
-// The activity log is not counted (it grows without end); any failure fails the
-// whole answer.
 func (s *Store) Counts(ctx context.Context, now, since time.Time) (Counts, error) {
 	var counts Counts
 
@@ -175,8 +152,6 @@ type SignIns struct {
 	Blocked   int64     `json:"blocked"`
 }
 
-// SignInsSince counts administrator and user sign-ins that worked, the wrong
-// passwords, and the attempts on accounts that may not sign in, since `since`.
 func (s *Store) SignInsSince(ctx context.Context, since time.Time) (SignIns, error) {
 	out := SignIns{Since: since}
 
@@ -208,11 +183,7 @@ type DayCount struct {
 	Failures int64 `json:"failures"`
 }
 
-// DailyActivity counts entries per day for the last `days` days, oldest first,
-// with zero days included.
 func (s *Store) DailyActivity(ctx context.Context, now time.Time, days int) ([]DayCount, error) {
-	// Empty rather than nil, so an answer with nothing in it is a list and
-	// not null.
 	out := []DayCount{}
 
 	err := s.db.WithContext(ctx).Raw(`
@@ -252,8 +223,6 @@ type ActorCount struct {
 	Events int64  `json:"events"`
 }
 
-// TopActors are the busiest administrators since `since`, excluding sign-ins
-// and users' own actions.
 func (s *Store) TopActors(ctx context.Context, since time.Time, limit int) ([]ActorCount, error) {
 	// Empty rather than nil: a week with no changes is an empty list in the
 	// JSON, which the panel can count, and not null, which it cannot.
@@ -273,7 +242,6 @@ func (s *Store) TopActors(ctx context.Context, since time.Time, limit int) ([]Ac
 	return out, err
 }
 
-// TargetName is a log target's current name and its application, if any.
 type TargetName struct {
 	Name          string
 	ApplicationID *uuid.UUID
@@ -294,8 +262,6 @@ var targetTables = map[string]struct{ table, name, application string }{
 	"sso_connection": {table: "sso_connections", name: "name"},
 }
 
-// TargetNames looks up target names by id; missing targets and unknown kinds
-// are simply absent.
 func (s *Store) TargetNames(ctx context.Context, targetType string, ids []string) (map[string]TargetName, error) {
 	where, ok := targetTables[targetType]
 	names := map[string]TargetName{}

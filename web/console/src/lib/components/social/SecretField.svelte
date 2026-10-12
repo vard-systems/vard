@@ -4,16 +4,11 @@
 	import { Button, CopyButton, Icon, Input, Textarea } from '$lib/components/ui';
 
 	type Props = {
-		/** The provider this belongs to, or null while one is being added —
-		    where there is nothing stored to show yet. */
 		providerId?: string | null;
-		/** Whether a secret is already stored. */
 		stored: boolean;
 		label: string;
 		hint?: string;
-		/** A new value, when one is being typed. Empty leaves the stored one. */
 		value: string;
-		/** A key runs over several lines; a secret is one. */
 		multiline?: boolean;
 		disabled?: boolean;
 	};
@@ -28,9 +23,6 @@
 		disabled = false
 	}: Props = $props();
 
-	/** What the field is doing: showing that a secret is stored, showing the
-	    secret itself, or taking a new one. With nothing stored there is only
-	    ever the last. */
 	type Mode = 'stored' | 'revealed' | 'replacing';
 
 	let mode = $state<Mode>('stored');

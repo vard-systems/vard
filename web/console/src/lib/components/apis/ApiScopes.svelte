@@ -31,7 +31,6 @@
 
 	const valid = $derived(rows.every((row) => scopeProblem(rows, row) === undefined));
 
-	/** Compared as the server would store them, so a stray space is no change. */
 	const dirty = $derived(
 		JSON.stringify(scopeInput(rows)) !==
 			JSON.stringify(

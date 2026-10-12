@@ -1,6 +1,3 @@
-// Package middleware holds what every request passes through: the request log
-// and panic recovery. Configuration-dependent pieces (CORS, sessions) are built
-// elsewhere and passed in.
 package middleware
 
 import (

@@ -21,15 +21,12 @@ import (
 	"loginer/internal/api/respond"
 )
 
-// What a refused request is told.
 var (
 	unsupportedBody = respond.Define(http.StatusUnsupportedMediaType, "unsupported_body", respond.Both)
 	crossOrigin     = respond.Define(http.StatusForbidden, "cross_origin", respond.Both)
 	crossSite       = respond.Define(http.StatusForbidden, "cross_site", respond.Both)
 )
 
-// New guards the routes it is mounted on. `origins` are the exact origins
-// allowed to make changes.
 func New(origins []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		switch c.Request.Method {

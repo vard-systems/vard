@@ -8,13 +8,10 @@ import (
 	"loginer/internal/model"
 )
 
-// The rule an admin role's name keeps: the same shape as a user role's.
 func init() {
 	validate.Register("adminrole", model.RoleNamePattern.MatchString)
 }
 
-// applyTo copies the request onto a role, storing permissions once each in
-// catalog order and refusing unknown names.
 func (r *roleRequest) applyTo(role *model.AdminRole) error {
 	r.clean()
 

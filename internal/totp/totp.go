@@ -16,7 +16,6 @@ import (
 	"time"
 )
 
-// Period is the length of one step, and Digits the length of a code.
 const (
 	Period = 30 * time.Second
 	Digits = 6
@@ -28,8 +27,6 @@ const Skew = 1
 
 var encoding = base32.StdEncoding.WithPadding(base32.NoPadding)
 
-// NewSecret returns a new secret: 160 random bits, the size RFC 4226
-// recommends for SHA-1, base32 encoded as authenticator apps expect.
 func NewSecret() (string, error) {
 	var b [20]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -39,12 +36,10 @@ func NewSecret() (string, error) {
 	return encoding.EncodeToString(b[:]), nil
 }
 
-// Step is the number of the thirty-second step a moment falls in.
 func Step(at time.Time) int64 {
 	return at.Unix() / int64(Period/time.Second)
 }
 
-// Code is the code for one step.
 func Code(secret string, step int64) (string, error) {
 	key, err := encoding.DecodeString(strings.ToUpper(secret))
 	if err != nil {
@@ -92,8 +87,6 @@ func Verify(secret, code string, at time.Time, after int64) (int64, bool) {
 	return 0, false
 }
 
-// URI is the otpauth:// URI an authenticator app reads from a QR code. The
-// label names the account within the issuer, so one app can hold several.
 func URI(issuer, account, secret string) string {
 	label := url.PathEscape(issuer) + ":" + url.PathEscape(account)
 

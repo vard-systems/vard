@@ -14,7 +14,6 @@ import (
 	"loginer/internal/model"
 )
 
-// SSOConnections returns every connection, by name.
 func (s *Store) SSOConnections(ctx context.Context) ([]model.SSOConnection, error) {
 	var connections []model.SSOConnection
 	err := s.db.WithContext(ctx).Order("name").Find(&connections).Error
@@ -22,7 +21,6 @@ func (s *Store) SSOConnections(ctx context.Context) ([]model.SSOConnection, erro
 	return connections, err
 }
 
-// SSOConnection returns one connection by id.
 func (s *Store) SSOConnection(ctx context.Context, id uuid.UUID) (*model.SSOConnection, error) {
 	var connection model.SSOConnection
 	if err := s.db.WithContext(ctx).First(&connection, "id = ?", id).Error; err != nil {
@@ -32,7 +30,6 @@ func (s *Store) SSOConnection(ctx context.Context, id uuid.UUID) (*model.SSOConn
 	return &connection, nil
 }
 
-// SSOConnectionBySlug returns the connection an address names.
 func (s *Store) SSOConnectionBySlug(ctx context.Context, slug string) (*model.SSOConnection, error) {
 	var connection model.SSOConnection
 	if err := s.db.WithContext(ctx).First(&connection, "slug = ?", slug).Error; err != nil {
@@ -42,8 +39,6 @@ func (s *Store) SSOConnectionBySlug(ctx context.Context, slug string) (*model.SS
 	return &connection, nil
 }
 
-// SSOConnectionForEmail returns the enabled connection owning an address's
-// domain, or ErrNotFound.
 func (s *Store) SSOConnectionForEmail(ctx context.Context, email string) (*model.SSOConnection, error) {
 	_, domain, ok := strings.Cut(strings.ToLower(strings.TrimSpace(email)), "@")
 	if !ok || domain == "" {
@@ -61,8 +56,6 @@ func (s *Store) SSOConnectionForEmail(ctx context.Context, email string) (*model
 	return &connection, nil
 }
 
-// SSOButtons are the enabled connections that put a button on the sign-in
-// page, by name.
 func (s *Store) SSOButtons(ctx context.Context) ([]model.SSOConnection, error) {
 	return cached(ctx, s, cache.SSOButtons, "buttons", func() ([]model.SSOConnection, error) {
 		var connections []model.SSOConnection
@@ -75,8 +68,6 @@ func (s *Store) SSOButtons(ctx context.Context) ([]model.SSOConnection, error) {
 	})
 }
 
-// AnySSOConnectionEnabled reports whether an enabled connection with domains
-// exists, so "Sign in with SSO" only shows when useful.
 func (s *Store) AnySSOConnectionEnabled(ctx context.Context) (bool, error) {
 	return cached(ctx, s, cache.SSOButtons, "available", func() (bool, error) {
 		var count int64
@@ -88,7 +79,6 @@ func (s *Store) AnySSOConnectionEnabled(ctx context.Context) (bool, error) {
 	})
 }
 
-// SSODomainsTaken is which of these domains another connection already has.
 func (s *Store) SSODomainsTaken(ctx context.Context, domains []string, except uuid.UUID) ([]string, error) {
 	connections, err := s.SSOConnections(ctx)
 	if err != nil {
@@ -110,7 +100,6 @@ func (s *Store) SSODomainsTaken(ctx context.Context, domains []string, except uu
 	return taken, nil
 }
 
-// CreateSSOConnection adds a connection.
 func (s *Store) CreateSSOConnection(ctx context.Context, connection *model.SSOConnection) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Create(connection).Error), cache.SSOButtons)
 }
@@ -131,8 +120,6 @@ func (s *Store) SaveSSOConnection(ctx context.Context, connection *model.SSOConn
 	}), cache.SSOButtons)
 }
 
-// DeleteSSOConnection removes a connection, its identities and pending
-// sign-ins; the accounts stay.
 func (s *Store) DeleteSSOConnection(ctx context.Context, connection *model.SSOConnection) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, child := range []any{&model.SSOIdentity{}, &model.SSOLogin{}} {
@@ -145,8 +132,6 @@ func (s *Store) DeleteSSOConnection(ctx context.Context, connection *model.SSOCo
 	}), cache.SSOButtons)
 }
 
-// SSOIdentityCounts is how many people have signed in through each
-// connection, by connection id.
 func (s *Store) SSOIdentityCounts(ctx context.Context) (map[uuid.UUID]int64, error) {
 	var rows []struct {
 		ConnectionID uuid.UUID
@@ -170,7 +155,6 @@ func (s *Store) SSOIdentityCounts(ctx context.Context) (map[uuid.UUID]int64, err
 	return out, nil
 }
 
-// SSOIdentity returns the identity a connection's subject is, or ErrNotFound.
 func (s *Store) SSOIdentity(ctx context.Context, connection uuid.UUID, subject string) (*model.SSOIdentity, error) {
 	var identity model.SSOIdentity
 	err := s.db.WithContext(ctx).First(&identity, "connection_id = ? AND subject = ?", connection, subject).Error
@@ -181,27 +165,20 @@ func (s *Store) SSOIdentity(ctx context.Context, connection uuid.UUID, subject s
 	return &identity, nil
 }
 
-// CreateSSOIdentity connects a person at a connection's provider to a user.
 func (s *Store) CreateSSOIdentity(ctx context.Context, identity *model.SSOIdentity) error {
 	return translate(s.db.WithContext(ctx).Create(identity).Error)
 }
 
-// MarkSSOIdentityUsed notes a sign-in through an identity, and keeps the
-// address the provider gave this time.
 func (s *Store) MarkSSOIdentityUsed(ctx context.Context, identity *model.SSOIdentity, email string, at time.Time) error {
 	return translate(s.db.WithContext(ctx).
 		Model(identity).
 		Updates(map[string]any{"last_login_at": at, "email": email}).Error)
 }
 
-// CreateSSOLogin records a sign-in sent to a connection's provider. The ones
-// nobody came back from are swept once they expire (Sweep).
 func (s *Store) CreateSSOLogin(ctx context.Context, login *model.SSOLogin) error {
 	return translate(s.db.WithContext(ctx).Create(login).Error)
 }
 
-// TakeSSOLogin returns and deletes the sign-in a state belongs to, so an answer
-// is accepted once. Missing or expired is ErrNotFound.
 func (s *Store) TakeSSOLogin(ctx context.Context, stateHash string, now time.Time) (*model.SSOLogin, error) {
 	var login model.SSOLogin
 

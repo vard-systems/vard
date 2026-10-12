@@ -5,13 +5,9 @@
 
 	type Props = {
 		value: string;
-		/** What is being searched, read out in place of a visible label. */
 		label: string;
 		placeholder?: string;
-		/** `md` in a page's toolbar, `sm` inside a panel. */
 		size?: Exclude<Size, 'lg'>;
-		/** Given, Enter submits the search as a form; left out, the box is a
-		    filter that reacts as it is typed in. */
 		onsubmit?: () => void;
 		id?: string;
 		name?: string;
@@ -31,7 +27,6 @@
 		onkeydown
 	}: Props = $props();
 
-	/** Search boxes are fields too, even when they sit outside a form. */
 	const uid = $props.id();
 </script>
 
@@ -49,9 +44,6 @@
 	/>
 {/snippet}
 
-<!-- The search box every list has: the same outlined box as a field — it
-     wears .field-box, so its border, hover and focus are the field's
-     (styles/fields.css) — at a control's height, with the magnifier inside. -->
 {#if onsubmit}
 	<form
 		class="search field-box"
@@ -71,9 +63,6 @@
 {/if}
 
 <style>
-	/* It takes the width a toolbar row leaves it, and holds its height in a
-	   column: a basis of auto, so growing never squeezes it, and a max
-	   height, so a tall column cannot stretch it either. */
 	.search {
 		--search-height: var(--control-height);
 

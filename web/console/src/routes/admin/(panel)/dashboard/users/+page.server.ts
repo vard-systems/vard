@@ -4,10 +4,6 @@ import { canAnywhere } from '$lib/permissions';
 import { apiGet, requirePermission } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * Search and filter live in the URL. The roles the administrator can see load too, with their
- * applications, for the table and the role mapping.
- */
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	const { admin } = await parent();
 	requirePermission(admin, 'users.read');

@@ -26,18 +26,13 @@ import type { ActivityEvent } from '$lib/api';
  * tone, shared by every list of activity. Unlisted actions show their raw name.
  */
 
-/** The kind of thing an entry is about, which picks its colour. */
 export type Category = 'access' | 'users' | 'roles' | 'applications' | 'apis' | 'admins' | 'other';
 
-/** How much an entry deserves attention. */
 export type Tone = 'neutral' | 'success' | 'danger' | 'warning';
 
 type Action = {
-	/** A short name for a badge or a filter: "Application created". */
 	label: string;
-	/** What the actor did, before the target: "created application". */
 	verb: string;
-	/** What comes after the target, if the sentence goes on. */
 	after?: string;
 	category: Category;
 	tone?: Tone;
@@ -566,7 +561,6 @@ const actions: Record<string, Action> = {
 	}
 };
 
-/** What a target is called when its name is not there to say. */
 const unnamed: Record<string, string> = {
 	user: 'a user',
 	user_field: 'a field',
@@ -583,16 +577,11 @@ const unnamed: Record<string, string> = {
 	otp: 'the one-time code settings'
 };
 
-/** One entry, ready to show. */
 export type Described = {
 	label: string;
-	/** Who did it: the administrator's address, or "System". */
 	actor: string;
 	verb: string;
-	/** The target's name, set apart in the sentence; empty when the entry
-	    has no target worth naming, such as signing in. */
 	subject: string;
-	/** Whether the subject is a real name rather than "a user". */
 	named: boolean;
 	after: string;
 	detail: string;
@@ -601,7 +590,6 @@ export type Described = {
 	icon: ComponentType;
 };
 
-/** Signing in names the account in the actor already. */
 const selfTargeted = new Set([
 	'admin.login',
 	'admin.logout',
@@ -655,8 +643,6 @@ export function describe(event: ActivityEvent): Described {
 		};
 	}
 
-	// "gave shop access to https://api…" reads better naming the API than
-	// saying "an API", when the server said which.
 	let after = known.after ?? '';
 	let detail = event.detail ?? '';
 	if (event.action === 'application.api_authorized' && detail) {
@@ -692,18 +678,12 @@ export function categoryOf(action: string): Category {
 	return actions[action]?.category ?? 'other';
 }
 
-/** Every action the panel has a sentence for in one category: what the logs
-    page sends the server when a category is picked, so the filtering happens
-    there, over the whole log, and not over the page already loaded. */
 export function actionsIn(category: Category): string[] {
 	return Object.entries(actions)
 		.filter(([, action]) => action.category === category)
 		.map(([name]) => name);
 }
 
-/** The sign-ins that were turned away — a wrong password, a code that was
-    not right, an account that may not sign in — for the dashboard's links to
-    them. */
 export const refusedActions = [
 	'admin.login_failed',
 	'admin.login_blocked',

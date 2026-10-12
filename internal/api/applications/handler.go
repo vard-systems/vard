@@ -1,5 +1,3 @@
-// Package applications manages OAuth clients: registration, authentication
-// methods, API access and secrets.
 package applications
 
 import (
@@ -21,13 +19,11 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
 	log   *slog.Logger
 
-	// issuer is the provider's: the iss its tokens carry.
 	issuer string
 }
 
@@ -141,8 +137,6 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	// Moving from no secret to one — which only a confidential client can do
-	// — needs a secret to exist, so it is issued and shown now.
 	secret, err := issueIfNeeded(app)
 	if err != nil {
 		respond.Failure(c, h.log, err, "making a client secret failed")
@@ -215,7 +209,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// systemApplication is the answer to deleting admin-cli.
 var systemApplication = respond.Define(http.StatusConflict, "system_application", respond.Admin)
 
 // changeable reports whether the administrator may change this application or
@@ -242,8 +235,6 @@ func (h *Handler) changeable(c *gin.Context, app *model.Application) bool {
 	return true
 }
 
-// systemApplicationChange is the answer to changing an application the admin
-// API trusts, or rotating its secret, without being a super admin.
 var systemApplicationChange = respond.Define(http.StatusForbidden, "system_application_change", respond.Admin)
 
 // APIAccess lists every API with what the application may do with it:
@@ -308,8 +299,6 @@ func (h *Handler) AuthorizeAPI(c *gin.Context) {
 	h.APIAccess(c)
 }
 
-// systemAPIAccess is the answer to giving or taking an application's access to
-// one of the server's own APIs without being a super admin.
 var systemAPIAccess = respond.Define(http.StatusForbidden, "system_api_access", respond.Admin)
 
 // RevokeAPI stops the application asking for tokens for an API.
@@ -409,8 +398,6 @@ func (h *Handler) TokenPreview(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"preview": model.EvaluateToken(request)})
 }
 
-// apiMetadata is what an access change records beyond its target, so the API's
-// own log can find it too.
 func apiMetadata(app *model.Application, api *model.API) map[string]any {
 	return map[string]any{
 		"api_id":      api.ID.String(),
@@ -419,8 +406,6 @@ func apiMetadata(app *model.Application, api *model.API) map[string]any {
 	}
 }
 
-// findAPI loads the API named in the path, answering the request itself if
-// there is no such API.
 func (h *Handler) findAPI(c *gin.Context) (*model.API, bool) {
 	id, err := uuid.Parse(c.Param("api"))
 	if err != nil {
@@ -442,8 +427,6 @@ func (h *Handler) findAPI(c *gin.Context) (*model.API, bool) {
 	return api, true
 }
 
-// withCount builds the response for one application with how many roles it
-// defines. A count that cannot be read is not worth failing the request for.
 func (h *Handler) withCount(c *gin.Context, app *model.Application) applicationResponse {
 	counts, err := h.store.ApplicationRoleCounts(c.Request.Context())
 	if err != nil {
@@ -486,8 +469,6 @@ func (h *Handler) find(c *gin.Context, permission string) (*model.Application, b
 	return app, true
 }
 
-// issueIfNeeded gives a confidential client that has no secret yet its first
-// one, and returns it. Anything else returns "".
 func issueIfNeeded(app *model.Application) (string, error) {
 	if !app.HasSecret() || app.ClientSecretHash != "" {
 		return "", nil

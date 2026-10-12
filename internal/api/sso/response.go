@@ -94,7 +94,6 @@ func newConnectionResponse(connection model.SSOConnection, users int64, issuer s
 	return out
 }
 
-// describeIdentityProvider is what a provider's metadata says, briefly.
 func describeIdentityProvider(descriptor *saml.EntityDescriptor) *identityProvider {
 	idp := descriptor.IDPSSODescriptors[0]
 	out := &identityProvider{EntityID: descriptor.EntityID}
@@ -121,8 +120,6 @@ func describeIdentityProvider(descriptor *saml.EntityDescriptor) *identityProvid
 	return out
 }
 
-// certificateExpiry is when a certificate in metadata — base64 DER, as SAML
-// carries it, often broken over lines — stops being valid.
 func certificateExpiry(data string) (time.Time, bool) {
 	der, err := base64.StdEncoding.DecodeString(strings.Join(strings.Fields(data), ""))
 	if err != nil {

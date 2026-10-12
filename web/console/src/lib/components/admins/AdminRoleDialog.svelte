@@ -23,9 +23,7 @@
 	import { byGroup } from './permissions';
 
 	type Props = {
-		/** The role being edited, or null to create one. */
 		role: AdminRole | null;
-		/** The permission catalog, to offer as ones to grant. */
 		catalog: AdminPermission[];
 		open: boolean;
 	};
@@ -38,12 +36,10 @@
 	let description = $state('');
 	let granted = $state<AdminPermissionName[]>([]);
 
-	/** True while the role is being written. */
 	let saving = $state(false);
 
 	const editing = $derived(role !== null);
 
-	/** super_admin is built in: it is shown, never changed. */
 	const locked = $derived(role?.is_builtin ?? false);
 
 	const groups = $derived(byGroup(catalog));
@@ -64,8 +60,6 @@
 		return { name: tidyName(name), description: description.trim(), permissions: granted };
 	}
 
-	/** A role changes what its administrators may do, and the administrators
-	    list shows what each holds, so both are refilled. */
 	const save = createMutation(() => ({
 		mutationFn: () =>
 			role ? adminsApi.updateRole(role.id, payload()) : adminsApi.createRole(payload()),

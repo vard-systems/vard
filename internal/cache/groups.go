@@ -14,8 +14,6 @@ import (
 // forget what they change.
 const TTL = time.Hour
 
-// Get reads one entry into `dst`. A miss, an undecodable value and an
-// unreachable Redis all report false.
 func (c *Cache) Get(ctx context.Context, group, entry string, dst any) bool {
 	if c == nil || !c.available() || !c.settle(ctx) {
 		return false
@@ -42,7 +40,6 @@ func (c *Cache) Get(ctx context.Context, group, entry string, dst any) bool {
 	return json.Unmarshal(raw, dst) == nil
 }
 
-// Set caches one entry of a group.
 func (c *Cache) Set(ctx context.Context, group, entry string, value any) {
 	if c == nil || !c.available() || !c.settle(ctx) {
 		return
@@ -95,8 +92,6 @@ func (c *Cache) Forget(ctx context.Context, groups ...string) {
 	}
 }
 
-// settle delivers pending invalidations and reports whether the cache may be
-// used.
 func (c *Cache) settle(ctx context.Context) bool {
 	c.mu.Lock()
 	groups := make([]string, 0, len(c.pending))
@@ -140,7 +135,6 @@ func (c *Cache) settle(ctx context.Context) bool {
 	return true
 }
 
-// incr moves each group on to its next generation.
 func (c *Cache) incr(ctx context.Context, groups []string) error {
 	pipe := c.client.Pipeline()
 	for _, group := range groups {
@@ -158,8 +152,6 @@ func (c *Cache) generationKey(group string) string {
 	return c.key("cache", group, "generation")
 }
 
-// generation reads which generation of a group is current. A group nobody has
-// forgotten yet has no counter, which is generation zero.
 func (c *Cache) generation(ctx context.Context, group string) (int64, error) {
 	generation, err := c.client.Get(ctx, c.generationKey(group)).Int64()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -169,12 +161,10 @@ func (c *Cache) generation(ctx context.Context, group string) (int64, error) {
 	return generation, nil
 }
 
-// keyAt is where an entry of a group lives in a named generation.
 func (c *Cache) keyAt(group string, generation int64, entry string) string {
 	return c.key("cache", group, "v"+strconv.FormatInt(generation, 10), entry)
 }
 
-// entryKey is where an entry of a group lives in the current generation.
 func (c *Cache) entryKey(ctx context.Context, group, entry string) (string, error) {
 	generation, err := c.generation(ctx, group)
 	if err != nil {
@@ -184,9 +174,6 @@ func (c *Cache) entryKey(ctx context.Context, group, entry string) (string, erro
 	return c.keyAt(group, generation, entry), nil
 }
 
-// GetAt reads an entry and returns the generation it read under, so a caller
-// that misses can write the loaded value back into that same generation
-// (SetAt). Otherwise a write that forgot the group in between would be undone.
 func (c *Cache) GetAt(ctx context.Context, group, entry string, dst any) (int64, bool) {
 	if c == nil || !c.available() || !c.settle(ctx) {
 		return 0, false

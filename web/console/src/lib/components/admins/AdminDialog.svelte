@@ -28,15 +28,10 @@
 	import { grantedBy } from './permissions';
 
 	type Props = {
-		/** The administrator being edited, or null to create one. */
 		admin: AdminRecord | null;
-		/** The signed-in administrator's id. */
 		self: string;
-		/** Every admin role, to offer as ones to hold. */
 		roles: AdminRole[];
-		/** Every application, to offer as a role's scope. */
 		applications: Application[];
-		/** The permission catalog, to show what the roles add up to. */
 		catalog: AdminPermission[];
 		open: boolean;
 	};
@@ -45,11 +40,8 @@
 
 	const queryClient = useQueryClient();
 
-	/** The scope value that stands for the whole panel. */
 	const PANEL = 'panel';
 
-	/** One role being given, with a key of its own so the rows keep their
-	    identity while they are edited. */
 	type Row = { key: number; role: string; scope: string };
 
 	let email = $state('');
@@ -125,7 +117,6 @@
 			(editing || password !== '')
 	);
 
-	/** What the whole-panel roles add up to. */
 	const panelPermissions = $derived(
 		grantedBy(
 			rows.filter((row) => row.scope === PANEL).map((row) => row.role),
@@ -134,7 +125,6 @@
 		)
 	);
 
-	/** What roles held for each application add there, beyond the panel's. */
 	const scopedPermissions = $derived(
 		applications
 			.map((app) => ({
@@ -160,8 +150,6 @@
 		return (role?.permissions ?? []).filter((name) => !scopable.has(name));
 	}
 
-	/** The row holding your own whole-panel super_admin, which you cannot
-	    remove or change. */
 	function locked(row: Row): boolean {
 		return isSelf && row.role === superRole?.id && row.scope === PANEL;
 	}
@@ -191,7 +179,6 @@
 	}
 
 	function setRole(key: number, role: string) {
-		// super_admin is only ever held for the whole panel.
 		rows = rows.map((row) =>
 			row.key === key ? { ...row, role, scope: role === superRole?.id ? PANEL : row.scope } : row
 		);
@@ -215,7 +202,6 @@
 		};
 	}
 
-	/** Admin roles count their holders, so they are refilled with the list. */
 	const save = createMutation(() => ({
 		mutationFn: () => (admin ? adminsApi.update(admin.id, payload()) : adminsApi.create(payload())),
 		onSuccess: async () => {

@@ -3,7 +3,7 @@
 	import { notify } from '$lib/toast.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { account } from '$lib/api';
-	import { Button, Icon, Panel, TextField } from '$lib/components';
+	import { Button, Icon, Panel, PasswordField, TextField } from '$lib/components';
 	import { formatDate, initials } from '$lib/utils/format';
 	import type { PageProps } from './$types';
 
@@ -19,33 +19,34 @@
 	let lastName = $state(data.user.last_name);
 	let saving = $state(false);
 
-	/** Changing the address somebody signs in with, where the login flow
-	    allows it. It is not part of the form above: the name is saved, while
-	    the address is only asked for — a link goes to it, and the account
-	    moves when that link is opened. */
 	const mayChangeEmail = $derived(data.login?.allow_email_change ?? false);
 
 	let changingEmail = $state(false);
 	let newEmail = $state('');
+	/** The address and a password reset are the whole account, so the
+	    server asks for the password before it sends the link. */
+	let emailPassword = $state('');
 	let sendingEmail = $state(false);
 
 	function startEmailChange() {
 		changingEmail = true;
 		newEmail = '';
+		emailPassword = '';
 	}
 
 	async function sendEmailChange(event: SubmitEvent) {
 		event.preventDefault();
 
 		const address = newEmail.trim();
-		if (sendingEmail || address === '') return;
+		if (sendingEmail || address === '' || emailPassword === '') return;
 
 		sendingEmail = true;
 
 		try {
-			await account.changeEmail({ email: address });
+			await account.changeEmail({ email: address, current_password: emailPassword });
 			notify.success(t('account.email_change_sent', { email: address }));
 			changingEmail = false;
+			emailPassword = '';
 		} catch (err) {
 			notify.error(messageOf(err, t));
 		} finally {
@@ -141,6 +142,11 @@
 						maxlength={255}
 						disabled={sendingEmail}
 					/>
+					<PasswordField
+						label={t('field.current_password')}
+						bind:value={emailPassword}
+						disabled={sendingEmail}
+					/>
 
 					<div class="email-actions">
 						<Button
@@ -152,7 +158,7 @@
 						</Button>
 						<Button
 							loading={sendingEmail}
-							disabled={sendingEmail || newEmail.trim() === ''}
+							disabled={sendingEmail || newEmail.trim() === '' || emailPassword === ''}
 							onclick={(event: MouseEvent) => sendEmailChange(event as unknown as SubmitEvent)}
 						>
 							{t('account.email_change_submit')}
@@ -204,8 +210,6 @@
 </div>
 
 <style>
-	/* The buttons that go with the address: at the end of the row, apart from
-	   the form's own footer, because this is not saved with the name. */
 	.email-actions {
 		display: flex;
 		justify-content: flex-end;

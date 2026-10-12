@@ -1,5 +1,3 @@
-// Package admins lets a super admin manage administrators, their admin roles
-// and whether they may sign in.
 package admins
 
 import (
@@ -21,7 +19,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	auth  *auth.Service
@@ -127,8 +124,6 @@ func (h *Handler) Update(c *gin.Context) {
 	h.answer(c, http.StatusOK, admin)
 }
 
-// answer writes an administrator as stored, read back so each assignment
-// carries its role's and application's names.
 func (h *Handler) answer(c *gin.Context, status int, admin *model.Admin) {
 	stored, err := h.store.AdminByID(c.Request.Context(), admin.ID)
 	if err != nil {
@@ -177,8 +172,6 @@ func (h *Handler) UpdateSecurity(c *gin.Context) {
 	h.answerSecurity(c)
 }
 
-// answerSecurity writes the settings together with what they mean for the
-// administrators there are.
 func (h *Handler) answerSecurity(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -291,8 +284,6 @@ func (h *Handler) build(c *gin.Context, req *adminRequest, into *model.Admin) (*
 		admin.LockedUntil = nil
 	}
 
-	// The address is the account, the same as for the first administrator:
-	// it is what they sign in with.
 	admin.Username = req.Email
 	admin.Email = req.Email
 	admin.FirstName = req.FirstName
@@ -303,8 +294,6 @@ func (h *Handler) build(c *gin.Context, req *adminRequest, into *model.Admin) (*
 	return admin, nil
 }
 
-// assignments turns submitted assignments into rows, checking roles and
-// applications exist. Duplicates collapse, and super_admin is panel-wide only.
 func (h *Handler) assignments(c *gin.Context, requested []assignmentRequest) ([]model.AdminRoleAssignment, error) {
 	ctx := c.Request.Context()
 
@@ -362,8 +351,6 @@ func (h *Handler) assignments(c *gin.Context, requested []assignmentRequest) ([]
 	return out, nil
 }
 
-// find loads the administrator named in the path, answering the request
-// itself if the id is not a uuid or there is no such administrator.
 func (h *Handler) find(c *gin.Context) (*model.Admin, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -385,8 +372,6 @@ func (h *Handler) find(c *gin.Context) (*model.Admin, bool) {
 	return admin, true
 }
 
-// respondWrite turns a failed write into an answer, telling a taken address
-// apart from anything else because that one is the writer's to fix.
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
 		respond.Conflict(c, "an administrator with that email already exists")

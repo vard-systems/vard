@@ -9,19 +9,10 @@
 	type Props = {
 		columns: Column[];
 		rows: Row[];
-		/** Shown in place of the rows when there are none. */
 		empty: string;
-		/** One row's cells, in column order, as `<td>` elements. */
 		row: Snippet<[Row]>;
-		/** Given when a row leads somewhere: rows become clickable and a
-		    column of arrows is pinned against the right edge. */
 		onOpen?: (row: Row) => void;
-		/** What that row's arrow is called, for anyone not looking at it. */
 		label?: (row: Row) => string;
-		/**
-		 * Ids of the ticked rows; with onSelect it adds a checkbox column. The caller owns the
-		 * list.
-		 */
 		selected?: string[];
 		onSelect?: (ids: string[]) => void;
 	};
@@ -32,7 +23,6 @@
 	const ticked = $derived(new Set(selected ?? []));
 	const allTicked = $derived(rows.length > 0 && rows.every((item) => ticked.has(item.id)));
 
-	/** Ticked, part-ticked, or not, for the box in the header. */
 	const headerState = $derived<boolean | 'indeterminate'>(
 		allTicked ? true : rows.some((item) => ticked.has(item.id)) ? 'indeterminate' : false
 	);
@@ -47,12 +37,8 @@
 		onSelect?.(checked ? [...ids, id] : ids.filter((it) => it !== id));
 	}
 
-	/** No labels, no header: the activity and session tables are lists of
-	    self-evident values and read better without one. */
 	const heading = $derived(columns.some((column) => column.label));
 
-	/** True once the table has been scrolled sideways, which is when the
-	    pinned column needs an edge to show what is passing under it. */
 	let scrolled = $state(false);
 
 	function track(event: Event) {
@@ -93,7 +79,6 @@
 				{#each rows as item (item.id)}
 					<tr class:clickable={onOpen !== undefined} onclick={() => onOpen?.(item)}>
 						{#if selectable}
-							<!-- Ticking a row is not opening it, so the click stops here. -->
 							<td class="tick" onclick={(event) => event.stopPropagation()}>
 								<Checkbox
 									checked={ticked.has(item.id)}
@@ -107,9 +92,6 @@
 
 						{#if onOpen}
 							<td class="pin">
-								<!-- The row itself is clickable; this is the same action as
-							     something to tab to, and the click it fires on its way up
-							     is the one the row handles. -->
 								<IconButton
 									icon={RiArrowRightLine}
 									label={label?.(item) ?? 'Open'}
@@ -135,9 +117,6 @@
 </div>
 
 <style>
-	/* The table is a card: framed and rounded, so it reads as one object on
-	   the page at any width, and scrolls sideways inside its frame when its
-	   columns need more room than the page has. */
 	.table-card {
 		overflow: hidden;
 		border: 1px solid var(--color-border);
@@ -175,8 +154,6 @@
 		border-bottom: none;
 	}
 
-	/* The header is a tinted band of small labels: it names the columns
-	   without competing with what is in them. */
 	th {
 		height: 40px;
 		background: var(--color-surface-alt);
@@ -205,8 +182,6 @@
 		text-align: right;
 	}
 
-	/* The first and last cells are inset a little further than the gaps
-	   between columns, so the text does not crowd the frame. */
 	th:first-child,
 	table :global(td:first-child) {
 		padding-left: var(--space-4);
@@ -221,23 +196,16 @@
 		cursor: pointer;
 	}
 
-	/* A whole row changing colour is a lot of colour, so the wash is faint:
-	   enough to follow the pointer across a wide table, not enough to shout.
-	   The pinned cells take it too, or they would stay white over it. */
 	tr.clickable:hover :global(td) {
 		background: var(--row-hover);
 	}
 
-	/* The checkboxes hold the left edge the way the arrows hold the right,
-	   so a wide table can still be ticked while it is scrolled. */
 	.tick {
 		position: sticky;
 		left: 0;
 		z-index: 1;
 		width: 1%;
 		padding-right: 0;
-		/* The checkbox is the cell's only content; without a line box around
-		   it, it sits on the row's centre rather than on a text baseline. */
 		line-height: 0;
 		background: var(--color-surface);
 		transition: background-color var(--speed-fast);
@@ -267,8 +235,6 @@
 		box-shadow: 8px 0 8px -8px rgb(0 0 0 / 25%);
 	}
 
-	/* The arrow stays against the right edge while the rest of the row
-	   scrolls under it, so the way into a record is always in view. */
 	.pin {
 		position: sticky;
 		right: 0;
@@ -283,9 +249,6 @@
 		background: var(--color-surface-alt);
 	}
 
-	/* An edge on the pinned column, drawn only once something is passing
-	   under it. The line reads in both themes where a shadow alone would
-	   disappear against the dark one. */
 	.pin::before {
 		position: absolute;
 		top: 0;
@@ -306,7 +269,6 @@
 		opacity: 1;
 	}
 
-	/* The arrow is quiet until the row is under the pointer. */
 	.pin :global(.control) {
 		margin-left: auto;
 		color: var(--color-text-disabled);

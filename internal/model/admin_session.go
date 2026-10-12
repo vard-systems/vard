@@ -6,8 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// AdminSession is one issued refresh token. Only the hash of the token is
-// stored, so a leaked database cannot be replayed as a login.
 type AdminSession struct {
 	Base
 
@@ -26,12 +24,10 @@ type AdminSession struct {
 	IP        string `gorm:"size:45" json:"ip,omitempty"`
 }
 
-// TableName pins the table name.
 func (AdminSession) TableName() string {
 	return "admin_sessions"
 }
 
-// IsActive reports whether the session can still be exchanged for a new token.
 func (s AdminSession) IsActive(now time.Time) bool {
 	return s.RevokedAt == nil && s.IsMFAPassed && now.Before(s.ExpiresAt)
 }

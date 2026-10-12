@@ -1,18 +1,9 @@
-/**
- * What the Languages page does with translation files and language tags,
- * apart from drawing them.
- */
 import { flatten } from './flatten';
 
-/** The `{name}` parameters a text has, which the app fills in when it shows
-    it — `{app}`, `{count}`. */
 function parameters(text: string): Set<string> {
 	return new Set([...text.matchAll(/\{(\w+)\}/g)].map((match) => `{${match[1]}}`));
 }
 
-/** The parameters the English has and a translation lost. A translation
-    without `{app}` still reads, but never says which application — which is
-    easy to miss, and worth saying beside the text. */
 export function missingParameters(english: string, translation: string): string[] {
 	const kept = parameters(translation);
 
@@ -22,11 +13,6 @@ export function missingParameters(english: string, translation: string): string[
 export type ReadResult =
 	{ ok: true; messages: Record<string, string>; skipped: number } | { ok: false };
 
-/**
- * Reads an imported translation file, nested or flat. Unknown keys are skipped and counted,
- * `$name`/`$native` are ignored, and empty texts are left out so a partial file never erases
- * anything.
- */
 export async function readTranslationFile(file: File, known: string[]): Promise<ReadResult> {
 	let parsed: unknown;
 	try {
@@ -55,7 +41,6 @@ export async function readTranslationFile(file: File, known: string[]): Promise<
 	return { ok: true, messages, skipped };
 }
 
-/** Hands the browser a file to save. */
 export function download(filename: string, text: string) {
 	const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
 
@@ -67,14 +52,8 @@ export function download(filename: string, text: string) {
 	URL.revokeObjectURL(url);
 }
 
-/** A language tag as the server accepts one: a two- or three-letter
-    language, then optionally a script or a region. */
 export const languageCode = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/i;
 
-/**
- * A language's English and native names from its tag, using the browser's Intl data; null when
- * the browser cannot name it.
- */
 export function namesOf(code: string): { name: string; native: string } | null {
 	try {
 		const [tag] = Intl.getCanonicalLocales(code);
@@ -89,8 +68,6 @@ export function namesOf(code: string): { name: string; native: string } | null {
 	}
 }
 
-/** Many languages write their own name in lower case — "русский",
-    "español" — which reads as a mistake at the start of a line in a picker. */
 function capitalise(text: string, tag: string): string {
 	return text.charAt(0).toLocaleUpperCase(tag) + text.slice(1);
 }

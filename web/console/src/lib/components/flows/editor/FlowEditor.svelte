@@ -27,17 +27,10 @@
 	import Inspector from './Inspector.svelte';
 	import Palette from './Palette.svelte';
 
-	/**
-	 * The login flow editor: canvas, palette and inspector. Edits are a local draft, validated as
-	 * drawn, saved only on Save, and leaving with unsaved changes asks first.
-	 */
 	type Props = {
-		/** The flow being edited, or null for a new one. */
 		flow: LoginFlow | null;
-		/** Where the draft starts: the flow, or a template or an import. */
 		initial: FlowDraft;
 		kinds: LoginStepSpec[];
-		/** Every flow there is, for choosing an identifier nobody has. */
 		taken: string[];
 		editable: boolean;
 	};
@@ -55,16 +48,12 @@
 	const problems = $derived(problemsOf(draft));
 
 	let selected = $state('start');
-	/** The gap a "+" on the canvas is waiting to fill from the palette. */
 	let waiting = $state<number | null>(null);
 
 	let busy = $state(false);
 	let confirmingDelete = $state(false);
-	/** Set on the way out after a save or a delete, which leave nothing to lose. */
 	let leaving = false;
 
-	/** Where the reader was going when they were asked whether to leave
-	    their changes behind. */
 	let leavingFor = $state<URL | null>(null);
 	let confirmingLeave = $state(false);
 
@@ -326,10 +315,6 @@
 		gap: 2px;
 	}
 
-	/* The editor takes the rest of the screen: the canvas is the page, and a
-	   canvas that scrolls with the page is one that fights every drag. It is
-	   framed the way a table is, so the palette, the canvas and the inspector
-	   read as one tool. */
 	.workspace {
 		display: grid;
 		grid-template-columns: 260px minmax(0, 1fr) 320px;

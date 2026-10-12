@@ -17,21 +17,16 @@ import (
 	"time"
 )
 
-// Message is one plain-text email.
 type Message struct {
 	To      string
 	Subject string
 	Body    string
 }
 
-// Sender sends a message. The provider holds one; tests hand in their own to
-// read what would have been sent.
 type Sender interface {
 	Send(ctx context.Context, msg Message) error
 }
 
-// Encryption is how the SMTP connection is protected; values mirror
-// model.MailEncryption.
 type Encryption string
 
 const (
@@ -40,51 +35,38 @@ const (
 	None     Encryption = "none"
 )
 
-// Settings is a mail server, as sending one message needs it.
 type Settings struct {
-	// Enabled is whether anything is sent at all. Off, the message is
-	// logged.
 	Enabled bool
 
 	Host       string
 	Port       int
 	Encryption Encryption
 	Username   string
-	// Password is the plain one: whoever hands these over has unsealed it.
-	Password string
+	Password   string
 
 	FromAddress string
 	FromName    string
 }
 
-// Address is the host and port to connect to.
 func (s Settings) Address() string {
 	return net.JoinHostPort(s.Host, strconv.Itoa(s.Port))
 }
 
-// From is the address messages are sent from, with the name a mail client
-// shows in front of it.
 func (s Settings) From() *mail.Address {
 	return &mail.Address{Name: s.FromName, Address: s.FromAddress}
 }
 
-// Source gives the settings for the next message, asked per message so panel
-// changes apply at once.
 type Source func(ctx context.Context) (Settings, error)
 
-// New returns the sender the settings of the moment ask for.
 func New(source Source, log *slog.Logger) Sender {
 	return &Mailer{source: source, log: log}
 }
 
-// Mailer sends through whichever server its source names when a message goes
-// out, and logs the message when none is configured.
 type Mailer struct {
 	source Source
 	log    *slog.Logger
 }
 
-// Send sends one message.
 func (m *Mailer) Send(ctx context.Context, msg Message) error {
 	settings, err := m.source(ctx)
 	if err != nil {
@@ -102,8 +84,6 @@ func (m *Mailer) Send(ctx context.Context, msg Message) error {
 	return Deliver(ctx, settings, msg)
 }
 
-// Deliver sends one message with the given settings: Send's last step, and the
-// panel's test send with unsaved settings.
 func Deliver(ctx context.Context, settings Settings, msg Message) error {
 	from := settings.From()
 	if _, err := mail.ParseAddress(from.Address); err != nil {
@@ -130,12 +110,8 @@ func Deliver(ctx context.Context, settings Settings, msg Message) error {
 	}
 }
 
-// dialTimeout bounds connecting, so a silent host cannot hold the request that
-// is sending.
 const dialTimeout = 15 * time.Second
 
-// sendTimeout bounds the whole SMTP exchange, so a relay that stalls after
-// connecting cannot hold a goroutine forever.
 const sendTimeout = 60 * time.Second
 
 // deliver connects itself rather than using smtp.SendMail, which cannot speak
@@ -196,8 +172,6 @@ func deliver(settings Settings, from, to *mail.Address, body []byte) error {
 	return client.Quit()
 }
 
-// dial opens the connection, with TLS from the start where that is what the
-// server expects.
 func dial(settings Settings) (net.Conn, error) {
 	dialer := &net.Dialer{Timeout: dialTimeout}
 

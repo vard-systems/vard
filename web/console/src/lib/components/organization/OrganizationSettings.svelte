@@ -30,9 +30,7 @@
 	import { formatDate, initials } from '$lib/utils/format';
 
 	type Props = {
-		/** What the server rendered, to seed the query with. */
 		initial: Organization;
-		/** Whether the administrator may change any of this. */
 		editable: boolean;
 	};
 
@@ -44,9 +42,6 @@
 
 	const organization = $derived(settings.data.organization);
 
-	/** The stored record, without the bookkeeping the form cannot change.
-	    Taking it as "the rest of the record" means a setting added to the API
-	    reaches the form without this line naming it. */
 	function settingsOf({ created_at, ...settings }: Organization): OrganizationSettings {
 		void created_at;
 		return settings;
@@ -59,13 +54,10 @@
 
 	let saving = $state(false);
 
-	/** Puts the form back to what is stored. */
 	function discard() {
 		form = settingsOf(organization);
 	}
 
-	/** What the form holds, as the API takes it. A short name is compared
-	    rather than read, so it is sent lower case. */
 	const input = $derived<OrganizationSettings>({
 		name: form.name.trim(),
 		slug: form.slug.trim().toLowerCase(),
@@ -77,10 +69,6 @@
 		timezone: form.timezone
 	});
 
-	/** Every zone this browser knows, which is the IANA database. UTC is not
-	    always among them — engines list places, and UTC is not one — and a
-	    stored zone this browser calls by another name is kept, so the select
-	    never shows a saved value as nothing chosen. */
 	const timezones = $derived.by(() => {
 		const zones = ['UTC', organization.timezone, ...Intl.supportedValuesOf('timeZone')];
 		return zones
@@ -94,21 +82,12 @@
 		)
 	);
 
-	/** What has to be filled in before there is anything to save. */
 	const complete = $derived(input.name !== '' && input.slug !== '');
 
-	/** Two letters standing in for a logo there is none of, or none that
-	    loads: the initials of a name in several words, or the start of a name
-	    in one. */
 	const monogram = $derived(initials(input.name));
 
-	/** Shown as the logo while the address looks like one; Thumb falls back
-	    to the monogram if it does not load. */
 	const logo = $derived(/^https?:\/\/\S+$/.test(input.logo_url) ? input.logo_url : '');
 
-	/** What the sign-in pages show when it is filled in, so the summary can
-	    say how much of it is still missing rather than the page looking
-	    finished. */
 	const details = $derived([
 		{ label: 'Logo', filled: input.logo_url !== '' },
 		{ label: 'Support email', filled: input.support_email !== '' },
@@ -121,8 +100,6 @@
 
 	const missing = $derived(details.filter((detail) => !detail.filled));
 
-	/** The zone's distance from UTC, as "GMT+06:00": the same on the server
-	    and in the browser, which the time of day would not be. */
 	const offset = $derived.by(() => {
 		try {
 			return (
@@ -141,8 +118,6 @@
 			queryClient.setQueryData(keys.organization.settings, result);
 			form = settingsOf(result.organization);
 			notify.success('Settings saved', 'The sign-in pages and the discovery document follow.');
-			// The log gains an entry for the change, and the header shows the
-			// name and logo it was loaded with.
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.admin.overview }),
 				invalidate(ADMIN_DEPENDENCY)
@@ -167,9 +142,6 @@
 </script>
 
 <form onsubmit={submit}>
-	<!-- The organisation as it stands, and as it is being typed: the card
-	     follows the fields, so a logo or a name is seen before it is saved,
-	     and it says how much of what the sign-in pages can show is there. -->
 	<section class="summary" aria-label="Organization">
 		<div class="identity">
 			<Thumb src={logo} text={monogram} size="md" shape="circle" tone="accent" />
@@ -343,7 +315,6 @@
 		gap: var(--space-5);
 	}
 
-	/* FormSection spaces the sections itself. */
 	fieldset {
 		min-width: 0;
 		margin: 0;
@@ -351,9 +322,6 @@
 		border: none;
 	}
 
-	/* The organisation at a glance: who it is on the left, how much of it
-	   the sign-in pages can show on the right. Measured on its own width, so
-	   it stacks wherever it is narrow. */
 	.summary {
 		display: flex;
 		flex-wrap: wrap;

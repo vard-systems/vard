@@ -1,5 +1,3 @@
-// Package audit records what an administrator did, which is what the activity
-// list and the logs page are made of.
 package audit
 
 import (
@@ -13,19 +11,15 @@ import (
 	"loginer/internal/store"
 )
 
-// Recorder writes those lines. Handlers that change something hold one.
 type Recorder struct {
 	store *store.Store
 	log   *slog.Logger
 }
 
-// New returns a Recorder.
 func New(st *store.Store, log *slog.Logger) Recorder {
 	return Recorder{store: st, log: log}
 }
 
-// Record logs what the signed-in administrator did. A logging failure is
-// logged, never failing the request.
 func (r Recorder) Record(c *gin.Context, action, targetType, targetID string) {
 	r.RecordWith(c, action, targetType, targetID, nil)
 }

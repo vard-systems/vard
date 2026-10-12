@@ -2,29 +2,19 @@ import { getContext, setContext } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { rememberClosedGroups, rememberSidebar, type SidebarState } from './sidebar';
 
-/**
- * The sidebar's width and folded groups, shared by the header and sidebar. Created per page
- * view and passed as context; module state would be shared across requests on the server.
- */
 export type Shell = {
 	readonly collapsed: boolean;
 	toggle: () => void;
 
-	/** Whether a group of the sidebar is showing its pages. */
 	isOpen: (id: string) => boolean;
 	toggleGroup: (id: string) => void;
 
-	/** Whether the sidebar is open as a panel over the page, which is what it
-	    is on a screen too narrow for a column beside one. It is not
-	    remembered: a panel somebody left open is not a preference, and a page
-	    that loads with one over it is a page nobody asked for. */
 	readonly menuOpen: boolean;
 	setMenu: (open: boolean) => void;
 };
 
 const key = Symbol('shell');
 
-/** Makes the shared state, starting as the cookies the server read say. */
 export function provideShell(initial: SidebarState, closedGroups: string[]): Shell {
 	let collapsed = $state(initial === 'mini');
 
@@ -70,7 +60,6 @@ export function provideShell(initial: SidebarState, closedGroups: string[]): She
 	return setContext(key, shell);
 }
 
-/** The shared state, from a component inside the panel layout. */
 export function useShell(): Shell {
 	const shell = getContext<Shell | undefined>(key);
 	if (!shell) throw new Error('useShell() needs the panel layout above it');

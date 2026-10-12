@@ -11,8 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// domainPattern is a host name and nothing else: labels joined by dots, with
-// no scheme, no port and no path.
 var domainPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)
 
 // SSOConnection is an organisation's identity provider (Okta, Entra ID, Google
@@ -69,9 +67,7 @@ type SSOConnection struct {
 	NameIDFormat SSONameIDFormat `gorm:"type:varchar(16)" json:"name_id_format"`
 	// SignRequests signs the authentication requests sent to the provider,
 	// for the providers that require it.
-	SignRequests bool `gorm:"not null" json:"sign_requests"`
-	// SPKey is our sealed PEM signing key and SPCertificate its self-signed
-	// certificate, both made with the connection.
+	SignRequests  bool   `gorm:"not null" json:"sign_requests"`
 	SPKey         []byte `gorm:"type:bytea" json:"-"`
 	SPCertificate string `gorm:"type:text" json:"sp_certificate"`
 
@@ -97,12 +93,10 @@ type SSOConnection struct {
 	SyncRoles bool `gorm:"not null" json:"sync_roles"`
 }
 
-// TableName pins the table name.
 func (SSOConnection) TableName() string {
 	return "sso_connections"
 }
 
-// SSOProtocol is which protocol a connection speaks.
 type SSOProtocol string
 
 const (
@@ -110,20 +104,15 @@ const (
 	SSOProtocolSAML SSOProtocol = "saml"
 )
 
-// SSOMatching decides what happens when an address already has an account
-// (authentik's user matching modes).
 type SSOMatching string
 
 const (
 	// SSOMatchLink signs them in to that account and connects the provider to
 	// it: the provider is trusted for the domain, so it is the same person.
 	SSOMatchLink SSOMatching = "link"
-	// SSOMatchDeny refuses, so an existing account is only ever reached the
-	// way it was made.
 	SSOMatchDeny SSOMatching = "deny"
 )
 
-// SSONameIDFormat is what a SAML provider is asked to identify people by.
 type SSONameIDFormat string
 
 const (
@@ -132,7 +121,6 @@ const (
 	SSONameIDUnspecified SSONameIDFormat = "unspecified"
 )
 
-// URN is the format's name in SAML.
 func (f SSONameIDFormat) URN() string {
 	switch f {
 	case SSONameIDEmail:
@@ -150,10 +138,8 @@ type SSORoleMapping struct {
 	RoleID uuid.UUID `json:"role_id"`
 }
 
-// SSORoleMappings is a list of them, stored as JSON; an empty one is [].
 type SSORoleMappings []SSORoleMapping
 
-// Roles are the roles the mappings can give, each once.
 func (m SSORoleMappings) Roles() []uuid.UUID {
 	var out []uuid.UUID
 	for _, mapping := range m {
@@ -165,8 +151,6 @@ func (m SSORoleMappings) Roles() []uuid.UUID {
 	return out
 }
 
-// For returns the roles mapped to the given groups, compared
-// case-insensitively.
 func (m SSORoleMappings) For(groups []string) []uuid.UUID {
 	var out []uuid.UUID
 	for _, mapping := range m {
@@ -179,8 +163,6 @@ func (m SSORoleMappings) For(groups []string) []uuid.UUID {
 	return out
 }
 
-// SSOAttributeDefaults are where common providers put each attribute, tried in
-// order when a connection names none.
 var SSOAttributeDefaults = map[SSOProtocol]map[string][]string{
 	SSOProtocolOIDC: {
 		"email":      {"email"},
@@ -212,8 +194,6 @@ var SSOAttributeDefaults = map[SSOProtocol]map[string][]string{
 	},
 }
 
-// Attribute is where to look for "email", "first_name", "last_name" or
-// "groups": the connection's name or the protocol's defaults.
 func (c SSOConnection) Attribute(what string) []string {
 	named := map[string]string{
 		"email":      c.EmailAttribute,
@@ -229,7 +209,6 @@ func (c SSOConnection) Attribute(what string) []string {
 	return SSOAttributeDefaults[c.Protocol][what]
 }
 
-// AskedScopes are the connection's scopes with openid always included.
 func (c SSOConnection) AskedScopes() []string {
 	scopes := []string{"openid", "email", "profile"}
 	if len(c.Scopes) > 0 {
@@ -248,8 +227,6 @@ func (c SSOConnection) OwnsEmail(email string) bool {
 	return ok && (len(c.Domains) == 0 || slices.Contains(c.Domains, domain))
 }
 
-// Addresses given to the provider, all under the issuer: the OIDC redirect URI,
-// the SAML ACS, our metadata, and the entity ID (the metadata address).
 func (c SSOConnection) CallbackURL(issuer string) string { return c.base(issuer) + "/callback" }
 func (c SSOConnection) ACSURL(issuer string) string      { return c.base(issuer) + "/acs" }
 func (c SSOConnection) MetadataURLFor(issuer string) string {
@@ -261,20 +238,14 @@ func (c SSOConnection) base(issuer string) string {
 	return strings.TrimRight(issuer, "/") + "/oauth2/sso/" + c.Slug
 }
 
-// ValidDomain reports whether a domain looks like one: labels of letters,
-// numbers and dashes, at least two of them.
 func ValidDomain(domain string) bool {
 	return domainPattern.MatchString(domain)
 }
 
-// NormalizeDomain is a domain as connections store it: lower case, without an
-// "@" or a trailing dot.
 func NormalizeDomain(domain string) string {
 	return strings.TrimSuffix(strings.TrimPrefix(strings.ToLower(strings.TrimSpace(domain)), "@"), ".")
 }
 
-// Validate reports the first thing wrong with a connection. It checks what a
-// connection is, not whether its provider answers — that is the panel's test.
 func (c SSOConnection) Validate() error {
 	switch {
 	case !socialSlugPattern.MatchString(c.Slug) || len(c.Slug) > 64:
@@ -303,7 +274,7 @@ func (c SSOConnection) Validate() error {
 
 	switch c.Protocol {
 	case SSOProtocolOIDC:
-		if parsed, err := url.Parse(c.Issuer); err != nil || parsed.Scheme != "https" && !isLocalhost(parsed) || parsed.Host == "" {
+		if parsed, err := url.Parse(c.Issuer); err != nil || parsed.Scheme != "https" && !IsLocalhost(parsed) || parsed.Host == "" {
 			return fmt.Errorf("issuer must be an https URL")
 		}
 		if strings.TrimSpace(c.ClientID) == "" {
@@ -327,13 +298,11 @@ func (c SSOConnection) Validate() error {
 
 // isLocalhost lets a provider on this machine be plain http, which is how one
 // is tried out; anywhere else the identity it vouches for travels over TLS.
-func isLocalhost(u *url.URL) bool {
+func IsLocalhost(u *url.URL) bool {
 	host := u.Hostname()
 	return u.Scheme == "http" && (host == "localhost" || host == "127.0.0.1" || host == "::1")
 }
 
-// SSOIdentity links a provider's subject (OIDC sub or SAML NameID) to a user;
-// the address is kept for display.
 type SSOIdentity struct {
 	Base
 
@@ -347,14 +316,10 @@ type SSOIdentity struct {
 	User       *User          `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 }
 
-// TableName pins the table name.
 func (SSOIdentity) TableName() string {
 	return "sso_identities"
 }
 
-// SSOLogin is a sign-in sent to a connection and not yet back: the hashed
-// (relay) state and what the answer must match (PKCE verifier and nonce, or the
-// SAML request ID). Like SocialLogin it is single use.
 type SSOLogin struct {
 	Base
 
@@ -365,8 +330,6 @@ type SSOLogin struct {
 	Nonce         string `gorm:"size:128" json:"-"`
 	SAMLRequestID string `gorm:"size:128" json:"-"`
 
-	// Request is the sign-in under way to continue, and Next where to go when
-	// there is none.
 	Request string `gorm:"size:64" json:"-"`
 	Next    string `gorm:"size:512" json:"-"`
 
@@ -375,7 +338,6 @@ type SSOLogin struct {
 	Connection *SSOConnection `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 }
 
-// TableName pins the table name.
 func (SSOLogin) TableName() string {
 	return "sso_logins"
 }

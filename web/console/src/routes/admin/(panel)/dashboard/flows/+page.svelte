@@ -27,21 +27,14 @@
 
 	const queryClient = useQueryClient();
 
-	// The list is a query seeded with what the server rendered: a save in the
-	// editor or the refresh button refills the cache rather than reloading.
 	const flows = createQuery(() =>
 		loginFlowsOptions({ flows: data.flows, step_kinds: data.stepKinds })
 	);
 
 	const canWrite = $derived(can(data.admin, 'login_flows.write'));
 
-	// Typing updates it, and it follows the URL again whenever that changes,
-	// so the back button and a shared link both put the right term in the box.
 	let search = $derived(data.search);
 
-	/** The rows the search leaves. There are as many flows as somebody has
-	    written — a handful — so narrowing them here is cheaper than asking
-	    again, and a shared link arrives already filtered. */
 	const visible = $derived.by(() => {
 		const term = data.search.trim().toLowerCase();
 		if (term === '') return flows.data.flows;
@@ -51,9 +44,6 @@
 		);
 	});
 
-	/** How many of them are on screen. The endpoint answers with every one,
-	    so "Show more" reveals the next page of what is already here; a new
-	    search starts again from one page. */
 	let shown = $derived(firstPage(data.search));
 	const rows = $derived(visible.slice(0, shown));
 
@@ -87,8 +77,6 @@
 		goto(resolve('/admin/(panel)/dashboard/flows/[id]', { id: flow.id }));
 	}
 
-	/** A flow exported from here or another installation, made a flow of this
-	    one under an identifier nobody has, and opened. */
 	async function importFile(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const chosen = input.files?.[0];

@@ -1,5 +1,3 @@
-// Package adminroles lets a super admin manage admin roles: named sets of
-// permissions from the catalog.
 package adminroles
 
 import (
@@ -16,7 +14,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -125,8 +122,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// withCount builds the response for one role, with how many hold it. A count
-// that cannot be read is not worth failing a write that already happened.
 func (h *Handler) withCount(c *gin.Context, role *model.AdminRole) roleResponse {
 	counts, err := h.store.AdminRoleMemberCounts(c.Request.Context())
 	if err != nil {
@@ -136,8 +131,6 @@ func (h *Handler) withCount(c *gin.Context, role *model.AdminRole) roleResponse 
 	return newRoleResponse(*role, counts[role.ID])
 }
 
-// findEditable loads the role named in the path, answering the request itself
-// if there is no such role or it is super_admin, which is built in.
 func (h *Handler) findEditable(c *gin.Context) (*model.AdminRole, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -162,8 +155,6 @@ func (h *Handler) findEditable(c *gin.Context) (*model.AdminRole, bool) {
 	return role, true
 }
 
-// respondWrite turns a failed write into an answer, telling a taken name apart
-// from anything else because that one is the writer's to fix.
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
 		respond.Conflict(c, "an admin role with that name already exists")

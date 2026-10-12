@@ -4,10 +4,6 @@ import { adminApi } from '$lib/api';
 import { setupRequired } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * Routes by sign-in state: signed in goes to the panel, MFA setup or code entry goes there, and
- * a panel without administrators goes to setup.
- */
 export const load: PageServerLoad = async ({ fetch }) => {
 	const { state } = await adminApi.session(fetch).catch(() => ({ state: 'none' as const }));
 

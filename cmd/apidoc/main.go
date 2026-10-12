@@ -1,8 +1,3 @@
-// Command apidoc writes the OpenAPI documents and the docs app's reference
-// pages from the source.
-//
-//	go run ./cmd/apidoc          write the files
-//	go run ./cmd/apidoc -check   fail if any is behind the code
 package main
 
 import (

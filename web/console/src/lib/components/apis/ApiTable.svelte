@@ -12,7 +12,6 @@
 	type Props = {
 		apis: API[];
 		onOpen: (api: API) => void;
-		/** Left out, the rows cannot be ticked. */
 		selected?: string[];
 		onSelect?: (ids: string[]) => void;
 	};
@@ -27,7 +26,6 @@
 		{ key: 'applications', label: 'Applications', icon: RiAppsLine, min: '8rem', align: 'end' }
 	];
 
-	/** How many scope names a cell shows before it says "and N more". */
 	const SHOWN = 3;
 </script>
 

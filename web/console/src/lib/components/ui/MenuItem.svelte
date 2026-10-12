@@ -5,16 +5,11 @@
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		/** Identifies the row within its menu. */
 		value: string;
 		icon: ComponentType;
 		label: string;
-		/** A quieter line under the label, saying what the row leads to. */
 		description?: string;
-		/** Somewhere off this site. The row becomes a link that opens a tab of
-		    its own, and says so with a mark at its end. */
 		href?: string;
-		/** A row that cannot be taken back, such as signing out. */
 		danger?: boolean;
 		onSelect?: () => void;
 	};

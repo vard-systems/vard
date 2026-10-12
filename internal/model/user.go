@@ -2,7 +2,9 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -18,8 +20,6 @@ type User struct {
 	LastName        string `gorm:"size:100" json:"last_name"`
 	IsActive        bool   `gorm:"not null" json:"is_active"`
 
-	// PasswordHash is empty for a user without a password and never leaves the
-	// server.
 	PasswordHash string `gorm:"size:255;not null;default:''" json:"-"`
 	// IsPasswordTemporary marks a password an administrator chose for the
 	// user, which the user is expected to replace the next time they sign in.
@@ -33,9 +33,7 @@ type User struct {
 	SocialAccounts []SocialAccount `gorm:"-" json:"social_accounts"`
 
 	// LastLoginAt is when the user last signed in to an application.
-	LastLoginAt *time.Time `json:"last_login_at"`
-	// FailedLoginCount and LockedUntil lock the account for a while after
-	// repeated wrong passwords, as for administrators.
+	LastLoginAt      *time.Time `json:"last_login_at"`
 	FailedLoginCount int        `gorm:"not null;default:0" json:"-"`
 	LockedUntil      *time.Time `json:"locked_until"`
 
@@ -54,26 +52,45 @@ func (User) TableName() string {
 // no further than 72 bytes, and refuses rather than quietly ignoring the rest.
 var ErrPasswordTooLong = errors.New("password must be at most 72 bytes")
 
+// Wrong passwords in a row that lock an account, an administrator's or a
+// user's, and for how long: long enough to stop guessing, short enough that an
+// attacker cannot keep the owner out.
+const (
+	MaxFailedLogins = 5
+	LockoutDuration = 15 * time.Minute
+)
+
+var dummyHash = sync.OnceValue(func() []byte {
+	hash, err := bcrypt.GenerateFromPassword([]byte("not a password anyone has"), bcrypt.DefaultCost)
+	if err != nil {
+		panic(fmt.Sprintf("model: make the dummy hash: %v", err))
+	}
+	return hash
+})
+
+// CompareDummyPassword does the work of checking a password against nothing,
+// so refusing an unknown or locked account takes as long as a wrong password
+// and timing cannot tell which accounts exist.
+func CompareDummyPassword(password string) {
+	_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+}
+
 // NormalizeEmail trims and lower-cases an address, so the unique index on
 // users.email both finds users and stops "Ada@x" duplicating "ada@x".
 func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-// BeforeSave stores the address normalized, whoever wrote it — the sign-up
-// page, the panel, a provider's answer.
 func (u *User) BeforeSave(*gorm.DB) error {
 	u.Email = NormalizeEmail(u.Email)
 	return nil
 }
 
-// AfterFind fills in HasPassword for a record read from the database.
 func (u *User) AfterFind(*gorm.DB) error {
 	u.HasPassword = u.PasswordHash != ""
 	return nil
 }
 
-// SetPassword replaces the user's password with a hash of the one given.
 func (u *User) SetPassword(password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
@@ -89,8 +106,6 @@ func (u *User) SetPassword(password string) error {
 	return nil
 }
 
-// CanSignIn reports whether the user may sign in now: active, and not locked
-// after too many wrong passwords.
 func (u User) CanSignIn(now time.Time) bool {
 	return u.IsActive && (u.LockedUntil == nil || now.After(*u.LockedUntil))
 }

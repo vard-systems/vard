@@ -17,8 +17,6 @@
 		firstName.trim() !== '' && email.trim() !== '' && password.length >= 10 && !creating
 	);
 
-	/** Makes the account, then signs in with it: whoever just chose these
-	    credentials should not have to type them again to use them. */
 	async function create(event: SubmitEvent) {
 		event.preventDefault();
 		if (!canSubmit) return;
@@ -36,8 +34,6 @@
 
 			const result = await adminApi.login(email.trim(), password);
 
-			// Where two-factor sign-in is required, the new account sets it up
-			// before it can use the panel.
 			const target = result.next === 'enroll' ? '/admin/mfa-setup' : '/admin/dashboard';
 			await goto(resolve(target), { replaceState: true, invalidateAll: true });
 		} catch (err) {

@@ -4,9 +4,6 @@ import { filterFrom } from '$lib/components/activity/filters';
 import { LOGS_PAGE_SIZE } from '$lib/query';
 import type { PageServerLoad } from './$types';
 
-/** The first page of the log as the address filters it. Every filter is in
-    the address, so a filtered view can be bookmarked, shared, and linked to
-    from the dashboard. */
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	requirePermission((await parent()).admin, 'activity.read');
 

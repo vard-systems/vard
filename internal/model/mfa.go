@@ -6,8 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// MFA is one second factor enrolled by an admin. An admin may have more than
-// one, so a lost phone is not a lockout.
 type MFA struct {
 	Base
 
@@ -21,8 +19,6 @@ type MFA struct {
 	// it is written; the database should never hold it in the clear.
 	Secret string `gorm:"size:255;not null" json:"-"`
 
-	// RecoveryCodes holds the hashes of the one-time recovery codes, never the
-	// codes themselves.
 	RecoveryCodes []string `gorm:"serializer:json" json:"-"`
 
 	ConfirmedAt *time.Time `json:"confirmed_at,omitempty"`
@@ -31,7 +27,6 @@ type MFA struct {
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
 }
 
-// TableName pins the table name.
 func (MFA) TableName() string {
 	return "mfa_factors"
 }
@@ -53,8 +48,6 @@ func (a Admin) HasMFA() bool {
 	return false
 }
 
-// UsedStep is the last TOTP step a factor accepted. LastUsedAt is written as
-// the start of that step, so the step can be read back from it exactly.
 func (m MFA) UsedStep(period time.Duration) int64 {
 	if m.LastUsedAt == nil {
 		return 0

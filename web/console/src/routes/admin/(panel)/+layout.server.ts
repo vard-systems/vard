@@ -5,10 +5,6 @@ import { apiGet } from '$lib/server/api';
 import { isSidebarState, parseClosedGroups, type SidebarState } from '$lib/state/sidebar';
 import type { LayoutServerLoad } from './$types';
 
-/**
- * Everything here needs a session, checked on the server so pages render already signed in. The
- * sidebar's width and folded groups are read here because the header shares that column.
- */
 export const load: LayoutServerLoad = async ({ cookies, depends, fetch }) => {
 	depends(ADMIN_DEPENDENCY);
 

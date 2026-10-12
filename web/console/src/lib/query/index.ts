@@ -1,11 +1,16 @@
-// One import path for the query layer:
-//   import { keys, usersOptions } from '$lib/query';
 export { createQueryClient } from './client';
 export { keys } from './keys';
 export { firstPage, LIST_PAGE_SIZE, nextOffset, uniqueById } from './paging';
 export { LOGS_PAGE_SIZE, logsOptions } from './logs';
 export { mfaStatusOptions, profileSessionsOptions } from './profile';
-export { usersOptions, userFieldsOptions, type UserListParams } from './users';
+export {
+	roleMappingsOptions,
+	USER_SEARCH_LIMIT,
+	userFieldsOptions,
+	userSearchOptions,
+	usersOptions,
+	type UserListParams
+} from './users';
 export { roleChoicesOptions, rolesOptions, ROLE_CHOICES_LIMIT, type RoleListParams } from './roles';
 export {
 	adminPermissionsOptions,
@@ -15,11 +20,12 @@ export {
 } from './admins';
 export {
 	APPLICATION_CHOICES_LIMIT,
+	applicationAccessOptions,
 	applicationChoicesOptions,
 	applicationsOptions,
 	type ApplicationListParams
 } from './applications';
-export { apiOptions, apisOptions } from './apis';
+export { apiApplicationsOptions, apiLogsOptions, apiOptions, apisOptions } from './apis';
 export { SESSIONS_PAGE_SIZE, sessionsOptions, type SessionListParams } from './sessions';
 export { loginFlowChoicesOptions, loginFlowsOptions } from './flows';
 export { languagesOptions, translationOptions } from './languages';
@@ -31,6 +37,7 @@ export {
 	CACHE_PAGE_SIZE,
 	cacheKeysOptions,
 	cacheOverviewOptions,
+	cacheValueOptions,
 	type CacheKeyParams
 } from './cache';
 export { socialProvidersOptions } from './social';

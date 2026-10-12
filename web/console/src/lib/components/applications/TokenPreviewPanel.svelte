@@ -9,7 +9,6 @@
 	} from 'svelte-remixicon';
 	import {
 		applicationsApi,
-		usersApi,
 		type Admin,
 		type Application,
 		type TokenPreview,
@@ -26,7 +25,7 @@
 		notify
 	} from '$lib/components/ui';
 	import { can } from '$lib/permissions';
-	import { keys } from '$lib/query';
+	import { applicationAccessOptions, userSearchOptions } from '$lib/query';
 
 	type Props = {
 		application: Application;
@@ -37,7 +36,6 @@
 
 	const NO_AUDIENCE = 'none';
 
-	/** Who the token is for: a user signing in, or the application itself. */
 	const forUsers = $derived(application.grant_types.includes('authorization_code'));
 	const forItself = $derived(application.grant_types.includes('client_credentials'));
 
@@ -52,25 +50,17 @@
 	let running = $state(false);
 
 	$effect(() => {
-		// A machine-to-machine application has no users to sign in.
 		if (!forUsers && forItself) subject = 'client';
 	});
 
 	const mayPickUsers = $derived(can(admin, 'users.read'));
 
-	/** The users matching what is typed, a handful at a time. */
 	const users = createQuery(() => ({
-		queryKey: ['users', 'preview-search', userSearch.trim()],
-		queryFn: async () => (await usersApi.list({ search: userSearch.trim() })).users.slice(0, 6),
+		...userSearchOptions(userSearch.trim()),
 		enabled: subject === 'user' && mayPickUsers && user === null
 	}));
 
-	/** The APIs the application is authorised for, which are the audiences it
-	    can ask for. */
-	const access = createQuery(() => ({
-		queryKey: keys.applications.access(application.id),
-		queryFn: async () => (await applicationsApi.apiAccess(application.id)).apis
-	}));
+	const access = createQuery(() => applicationAccessOptions(application.id));
 
 	const audienceOptions = $derived<SelectOption[]>([
 		{
@@ -87,9 +77,6 @@
 
 	const audienceApi = $derived((access.data ?? []).find((api) => api.identifier === audience));
 
-	/** The scopes worth offering: the OpenID Connect scopes the application
-	    may use, for a user; and every scope of the chosen API, allowed or not,
-	    so a refusal can be seen. */
 	const offered = $derived([
 		...(subject === 'user' ? application.scopes : []),
 		...(audienceApi?.scopes.map((scope) => scope.name) ?? [])
@@ -101,7 +88,6 @@
 
 	function setAudience(value: string) {
 		audience = value;
-		// Keep the OpenID scopes, drop the previous API's.
 		chosen = chosen.filter((scope) => application.scopes.includes(scope as never));
 	}
 
@@ -146,7 +132,6 @@
 		}
 	}
 
-	/** The parts of the tokens there would be, in the order they are read. */
 	function blocks(result: TokenPreview): { title: string; value: unknown }[] {
 		return [
 			{ title: 'Access token header', value: result.access_token_header },

@@ -2,7 +2,6 @@ import { browser } from '$app/environment';
 
 import { COOKIES } from '$lib/brand';
 
-/** The panel is either light or dark. */
 export type Theme = 'light' | 'dark';
 
 /** The theme is kept in a cookie rather than localStorage so the server can
@@ -23,8 +22,6 @@ function fromCookie(): Theme | null {
 	return isTheme(value) ? value : null;
 }
 
-/** What the page is currently showing: the attribute the server set, or the
- *  system preference when it set none. */
 function initial(): Theme {
 	if (!browser) return 'light';
 
@@ -36,7 +33,6 @@ function initial(): Theme {
 	);
 }
 
-/** Whether to animate. Someone who asked for less motion gets none. */
 function wantsMotion(): boolean {
 	return browser && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -44,12 +40,10 @@ function wantsMotion(): boolean {
 class ThemeState {
 	current = $state<Theme>(initial());
 
-	/** Switches to the other theme. */
 	toggle() {
 		this.set(this.current === 'dark' ? 'light' : 'dark');
 	}
 
-	/** Applies a theme and remembers it. */
 	set(theme: Theme) {
 		if (!browser) {
 			this.current = theme;
@@ -62,9 +56,6 @@ class ThemeState {
 			document.cookie = `${COOKIE}=${theme}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
 		};
 
-		// A view transition cross-fades the old page into the new one, so the
-		// whole panel changes together rather than each surface animating on
-		// its own schedule. Browsers without it just get the change.
 		if (document.startViewTransition && wantsMotion()) {
 			document.startViewTransition(apply);
 			return;

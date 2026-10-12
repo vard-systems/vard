@@ -3,19 +3,14 @@
 	import type { Node } from '@xyflow/svelte';
 	import type { LoginStep } from '$lib/api';
 
-	/** A step on the canvas, and what the card says about it. */
 	export type StepNodeData = {
 		step: LoginStep;
 		label: string;
 		description: string;
 		icon: ComponentType;
-		/** The first step: it cannot be moved or removed. */
 		fixed: boolean;
-		/** Named by the flow, but not run by the sign-in pages yet. */
 		planned: boolean;
-		/** The settings this step carries, said in a few words each. */
 		summary: string[];
-		/** Given when the step may be removed. */
 		onRemove?: () => void;
 		removeLabel: string;
 		plannedLabel: string;

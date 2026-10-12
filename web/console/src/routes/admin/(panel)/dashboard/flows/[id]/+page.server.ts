@@ -3,8 +3,6 @@ import type { LoginFlow, LoginStepSpec } from '$lib/api';
 import { apiGet, requirePermission } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/** One flow in the editor, with the steps a flow can be made of and every
-    identifier already taken, for the copy Duplicate makes. */
 export const load: PageServerLoad = async ({ fetch, parent, params }) => {
 	requirePermission((await parent()).admin, 'login_flows.read');
 

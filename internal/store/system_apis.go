@@ -11,10 +11,6 @@ import (
 	"loginer/internal/model"
 )
 
-// EnsureSystemAPIs keeps the admin and account APIs in step with the server on
-// every start (the admin API's scopes are the permission catalog) and creates
-// admin-cli on the first. Scopes keep their ids; administrator-editable fields
-// are left alone.
 func (s *Store) EnsureSystemAPIs(ctx context.Context) error {
 	var admin *model.API
 
@@ -28,7 +24,6 @@ func (s *Store) EnsureSystemAPIs(ctx context.Context) error {
 		}
 	}
 
-	// A release may have renamed or added a system API's scopes.
 	return s.forgetting(ctx, s.ensureAdminCLI(ctx, admin), cache.Grants)
 }
 
@@ -58,8 +53,6 @@ func (s *Store) ensureSystemAPI(ctx context.Context, want model.API) (*model.API
 		scopes = append(scopes, scope)
 	}
 
-	// Most starts change nothing; only a release that moved the identifier or
-	// the catalog writes.
 	if found.Identifier == want.Identifier && sameScopes(found.Scopes, scopes) {
 		return &found, nil
 	}
@@ -73,8 +66,6 @@ func (s *Store) ensureSystemAPI(ctx context.Context, want model.API) (*model.API
 	return &found, nil
 }
 
-// sameScopes reports whether the stored scopes already are the wanted ones:
-// the same scopes, named, described and defaulted the same, in any order.
 func sameScopes(stored, wanted []model.APIScope) bool {
 	if len(stored) != len(wanted) {
 		return false
@@ -124,8 +115,6 @@ func (s *Store) ensureAdminCLI(ctx context.Context, admin *model.API) error {
 		return err
 	}
 
-	// Authorized for the admin API with no scopes: the panel then lists the
-	// admin API under admin-cli's API access, ready for scopes to be ticked.
 	if err := s.AuthorizeApplicationAPI(ctx, app.ID, admin.ID, nil); err != nil {
 		return err
 	}

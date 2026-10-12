@@ -16,15 +16,10 @@
 	let email = $state(data.signInRequest?.login_hint ?? '');
 	let error = $state('');
 	let submitting = $state(false);
-	/** The identity provider the browser is on its way to. */
 	let redirecting = $state('');
 
 	const canSubmit = $derived(email.trim().includes('@') && !submitting);
 
-	/**
-	 * Finds the organisation's provider from the address's domain and sends the browser there
-	 * with the address.
-	 */
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!canSubmit) return;

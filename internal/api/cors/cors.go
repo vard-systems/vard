@@ -1,4 +1,3 @@
-// Package cors decides which browser origins may call the API with credentials.
 package cors
 
 import (
@@ -9,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// What browsers are told they may send; every endpoint fits these.
 const (
 	allowedMethods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
 	allowedHeaders = "Authorization, Content-Type"
@@ -43,8 +41,6 @@ func New(origins []string) gin.HandlerFunc {
 			return
 		}
 
-		// No Origin means not cross-origin (curl, servers, SSR): no CORS
-		// headers.
 		if origin != "" && slices.Contains(origins, origin) {
 			h := c.Writer.Header()
 			h.Set("Access-Control-Allow-Origin", origin)

@@ -50,16 +50,12 @@ type userRequest struct {
 	Data map[string]any `json:"data"`
 }
 
-// clean tidies what can be tidied, so the rules below see the values that
-// would actually be stored.
 func (r *userRequest) clean() {
 	r.Email = trimmedLower(r.Email)
 	r.FirstName = strings.TrimSpace(r.FirstName)
 	r.LastName = strings.TrimSpace(r.LastName)
 }
 
-// listQuery reads the search box, the filter and the page out of the query
-// string, holding each to something sensible.
 func listQuery(c *gin.Context) store.UserQuery {
 	q := store.UserQuery{
 		Search:   c.Query("search"),
@@ -75,8 +71,6 @@ func listQuery(c *gin.Context) store.UserQuery {
 	return q
 }
 
-// trimmedLower is how an email is stored: no stray spaces, one case, so two
-// spellings of the same address cannot both be registered.
 func trimmedLower(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
 }

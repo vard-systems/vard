@@ -29,7 +29,7 @@
 		Thumb,
 		notify
 	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { keys, roleMappingsOptions } from '$lib/query';
 	import { markFor as providerMark } from '$lib/components/social/providers';
 	import { formatDate, formatRelative } from '$lib/utils/format';
 	import RoleMappings from '$lib/components/roles/RoleMappings.svelte';
@@ -37,19 +37,12 @@
 	import FieldInput from './FieldInput.svelte';
 
 	type Props = {
-		/** The user being edited, or null to create one. */
 		user: UserRecord | null;
 		fields: UserField[];
-		/** The applications the administrator can see, to name role scopes. */
 		applications: Application[];
-		/** Every role the administrator can see, global and application roles. */
 		roles: Role[];
-		/** The signed-in administrator, whose roles say which roles they may
-		    give. */
 		admin: Admin;
 		open: boolean;
-		/** False for an administrator who may look but not change users. Roles
-		    are allowed separately, by each role's scope. */
 		editable?: boolean;
 	};
 
@@ -65,39 +58,28 @@
 
 	const queryClient = useQueryClient();
 
-	/** The user as last saved here: a new user, once created, carries on as an
-	    edit of what was just made, so its roles can be given straight away. */
 	let current = $state<UserRecord | null>(null);
 
-	/** The tab on show: the record, or its role mapping. */
 	let tab = $state('user');
 
-	/** Said once, after a user is created. */
 	let created = $state(false);
 
-	// The built-in fields are the record's own columns, so they are named
-	// here; the additional ones are whatever this organisation added.
 	let email = $state('');
 	let isEmailVerified = $state(false);
 	let firstName = $state('');
 	let lastName = $state('');
 	let isActive = $state(true);
 
-	// The password is never sent back, so these start empty every time. On
-	// an edit, leaving them empty keeps the password the user has.
 	let password = $state('');
 	let confirmPassword = $state('');
 	let isPasswordTemporary = $state(false);
 
 	let values = $state<Record<string, string | boolean>>({});
 
-	/** True while the record is being written. Ours rather than the
-	    mutation's own isPending, so a form cannot be left saying "Saving…". */
 	let saving = $state(false);
 
 	const editing = $derived(current !== null);
 
-	/** The connection being disconnected, so only its own button spins. */
 	let disconnecting = $state('');
 
 	async function disconnect(identity: string) {
@@ -110,8 +92,6 @@
 			notify.success('Provider disconnected');
 			await queryClient.invalidateQueries({ queryKey: keys.users.all });
 
-			// The dialog is looking at the record it was given, so the
-			// provider goes from it here too rather than after a reopen.
 			current = {
 				...current,
 				social_accounts: current.social_accounts.filter((account) => account.id !== identity)
@@ -123,20 +103,13 @@
 		}
 	}
 
-	/** How many roles the user holds, for the tab's count. The role mapping
-	    shares this query, so opening the tab asks for nothing more. */
 	const mappings = createQuery(() => ({
-		queryKey: keys.users.mappings(current?.id ?? ''),
-		queryFn: async () => (await usersApi.roleMappings(current!.id)).roles,
+		...roleMappingsOptions(current?.id ?? ''),
 		enabled: open && current !== null
 	}));
 
-	/** Shown once the second box has something in it, not while it is still
-	    being typed into for the first time. */
 	const mismatch = $derived(confirmPassword !== '' && password !== confirmPassword);
 
-	/** A password can only be temporary if there is one. A new user always
-	    gets one, so the switch is only ever off-limits on an edit. */
 	const hasPassword = $derived(!editing || password !== '' || (current?.has_password ?? false));
 
 	const canSubmit = $derived(
@@ -147,17 +120,11 @@
 			(editing || password !== '')
 	);
 
-	/** The added fields, split the way they are filled in: values first, then
-	    the yes-or-no answers. */
 	const extras = $derived(additional(fields));
 	const details = $derived(extras.filter((field) => field.type !== 'bool'));
 	const flags = $derived(extras.filter((field) => field.type === 'bool'));
 
-	/** Fill the form whenever the dialog is opened for a different user.
-	    Dates are stored as timestamps and edited as days. */
 	$effect(() => {
-		// Closing puts the panel back on its first tab, so the next user opens
-		// on their record rather than on whatever tab was left showing.
 		if (!open) {
 			tab = 'user';
 			return;
@@ -166,8 +133,6 @@
 		current = user;
 		tab = 'user';
 		created = false;
-		// Filled without tracking what the form reads, so the fields being
-		// refilled in the background cannot wipe out what is being typed.
 		untrack(() => fill(user));
 	});
 
@@ -179,8 +144,6 @@
 		isActive = record?.is_active ?? true;
 		password = '';
 		confirmPassword = '';
-		// A password an administrator makes up for someone is one they should
-		// replace, so a new user's starts out temporary.
 		isPasswordTemporary = record ? record.is_password_temporary : true;
 
 		values = Object.fromEntries(
@@ -195,7 +158,6 @@
 		);
 	}
 
-	/** Empty text is left out entirely, which is how "not set" is stored. */
 	function payload() {
 		const data: Record<string, unknown> = {};
 
@@ -221,9 +183,6 @@
 		};
 	}
 
-	/** Writing the record. An edit closes the panel; a new user stays open on
-	    its role mapping, since giving roles is usually the next thing to do.
-	    Roles count their users, so they are refilled too. */
 	const save = createMutation(() => ({
 		mutationFn: () =>
 			current ? usersApi.update(current.id, payload()) : usersApi.create(payload()),
@@ -255,9 +214,6 @@
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
 
-		// Enter and a double click both submit; one save at a time is enough,
-		// and two would race each other to write the same record. The role
-		// mapping saves as it goes, so the form only ever writes the record.
 		if (tab !== 'user' || !canSubmit) return;
 
 		saving = true;
@@ -301,9 +257,6 @@
 	<Tabs {tabs} bind:value={tab} label="User sections">
 		{#snippet panel(value)}
 			{#if value === 'user'}
-				<!-- A disabled fieldset disables every control inside it at once,
-				     which is how the tab becomes read-only for someone who may
-				     only look. -->
 				<fieldset disabled={!editable}>
 					<FormSection
 						title="Account"
@@ -325,8 +278,6 @@
 						</FieldGrid>
 
 						{#if editing}
-							<!-- What every other system refers to this record by: shown and
-							     easy to copy, never edited. -->
 							<Input label="User ID" value={current?.id ?? ''} readOnly copyable />
 						{/if}
 					</FormSection>
@@ -450,7 +401,6 @@
 
 	{#snippet actions()}
 		{#if current}
-			<!-- Where they are signed in, and the way to sign them out. -->
 			<LinkButton
 				variant="ghost"
 				href={`${resolve('/admin/(panel)/dashboard/sessions')}?${new URLSearchParams({ user: current.id, email: current.email })}`}
@@ -494,8 +444,6 @@
 		flex-direction: column;
 	}
 
-	/* The organisation's yes-or-no fields are short, so they sit two to a
-	   row where there is room. */
 	.flags {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));

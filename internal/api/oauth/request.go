@@ -12,8 +12,6 @@ import (
 	"loginer/internal/oidc"
 )
 
-// authorizeParams reads an authorization request, from the query string or,
-// for a POST, the form (OpenID Connect Core section 3.1.2.1).
 func authorizeParams(c *gin.Context) (oidc.AuthorizeParams, error) {
 	if err := c.Request.ParseForm(); err != nil {
 		return oidc.AuthorizeParams{}, err
@@ -37,7 +35,6 @@ func authorizeParams(c *gin.Context) (oidc.AuthorizeParams, error) {
 	}, nil
 }
 
-// logoutParams reads an RP-initiated logout request.
 func logoutParams(c *gin.Context) (oidc.LogoutParams, error) {
 	if err := c.Request.ParseForm(); err != nil {
 		return oidc.LogoutParams{}, err
@@ -52,8 +49,6 @@ func logoutParams(c *gin.Context) (oidc.LogoutParams, error) {
 	}, nil
 }
 
-// tokenParams reads a token request: a form, never JSON, with the client's
-// credentials in HTTP Basic or in the form.
 func tokenParams(c *gin.Context) (oidc.TokenParams, error) {
 	form, err := readForm(c)
 	if err != nil {
@@ -77,8 +72,6 @@ func tokenParams(c *gin.Context) (oidc.TokenParams, error) {
 	}, nil
 }
 
-// tokenOnlyParams reads a revocation or introspection request: a client, and
-// the token it is about.
 func tokenOnlyParams(c *gin.Context) (oidc.ClientAuth, string, error) {
 	form, err := readForm(c)
 	if err != nil {
@@ -93,8 +86,6 @@ func tokenOnlyParams(c *gin.Context) (oidc.ClientAuth, string, error) {
 	return auth, form.Get("token"), nil
 }
 
-// readForm requires a form body. JSON is refused with a clear message, since it
-// is the most common mistake at the token endpoint.
 func readForm(c *gin.Context) (url.Values, error) {
 	if c.Request.Method != http.MethodPost {
 		return nil, invalidRequest("this endpoint only accepts POST")

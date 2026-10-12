@@ -74,7 +74,6 @@
 		timer = setTimeout(() => apply({ search }), 250);
 	}
 
-	/** Another database has other kinds and groups, so its filters start over. */
 	function switchTo(name: CacheDatabaseName) {
 		apply({ database: name === 'cache' ? '' : name, kind: '', group: '', search: '' });
 	}

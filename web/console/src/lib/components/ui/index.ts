@@ -1,10 +1,3 @@
-// The design system, imported from one path:
-//
-//     import { Button, Input, Select } from '$lib/components/ui';
-//
-// Styling lives in styles/controls.css and styles/palettes.css.
-
-// Controls
 export { default as Button } from './Button.svelte';
 export { default as IconButton } from './IconButton.svelte';
 export { default as IconLink } from './IconLink.svelte';
@@ -12,7 +5,6 @@ export { default as CopyButton } from './CopyButton.svelte';
 export { default as LinkButton } from './LinkButton.svelte';
 export type { ColorPalette, ControlProps, Size, Variant } from './control';
 
-// Form fields
 export { default as Field } from './Field.svelte';
 export { default as FieldGrid } from './FieldGrid.svelte';
 export { default as Input } from './Input.svelte';
@@ -30,7 +22,6 @@ export { default as Checkbox } from './Checkbox.svelte';
 export { default as SegmentedControl } from './SegmentedControl.svelte';
 export { default as FilterChip } from './FilterChip.svelte';
 
-// Surfaces and feedback
 export { default as Alert } from './Alert.svelte';
 export { default as Toaster } from './Toaster.svelte';
 export { notify } from './toast';
@@ -59,7 +50,6 @@ export { default as SelectionBar } from './SelectionBar.svelte';
 export { default as Tabs } from './Tabs.svelte';
 export { default as Tooltip } from './Tooltip.svelte';
 
-// Data and page furniture
 export { default as DataTable } from './DataTable.svelte';
 export { default as ShowMore } from './ShowMore.svelte';
 export { default as List } from './List.svelte';

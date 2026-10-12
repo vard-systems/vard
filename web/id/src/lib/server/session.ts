@@ -2,7 +2,6 @@ import { error, redirect, type Cookies } from '@sveltejs/kit';
 import { ApiError, account, type User } from '$lib/api';
 import { COOKIES } from '$lib/brand';
 
-/** The signed-in user, or null for a request without a usable session. */
 export async function currentUser(
 	cookies: Cookies,
 	fetch: typeof globalThis.fetch
@@ -20,7 +19,6 @@ export async function currentUser(
 	}
 }
 
-/** The signed-in user; anyone else is sent to sign in, and brought back here. */
 export async function requireUser(
 	cookies: Cookies,
 	fetch: typeof globalThis.fetch,
@@ -35,8 +33,6 @@ export async function requireUser(
 	return user;
 }
 
-/** Calls an account endpoint from a server load, as the signed-in user. A
-    session that ended meanwhile sends the reader to sign in. */
 export async function asUser<T>(call: () => Promise<T>, url: URL): Promise<T> {
 	try {
 		return await call();

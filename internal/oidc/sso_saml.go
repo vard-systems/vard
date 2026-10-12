@@ -20,11 +20,6 @@ import (
 	"loginer/internal/model"
 )
 
-// The SAML 2.0 half of enterprise SSO: metadata, the redirect with a request,
-// and verifying the posted response.
-
-// ParseSAMLMetadata checks the metadata has an HTTP-Redirect sign-in address
-// and a signing certificate.
 func ParseSAMLMetadata(metadata []byte) (*saml.EntityDescriptor, error) {
 	descriptor, err := samlsp.ParseMetadata(metadata)
 	if err != nil {
@@ -60,7 +55,6 @@ func ParseSAMLMetadata(metadata []byte) (*saml.EntityDescriptor, error) {
 	return descriptor, nil
 }
 
-// FetchSAMLMetadata reads an identity provider's metadata from its address.
 func (s *Service) FetchSAMLMetadata(ctx context.Context, address string) (string, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
 	if err != nil {
@@ -90,8 +84,6 @@ func (s *Service) FetchSAMLMetadata(ctx context.Context, address string) (string
 	return string(body), nil
 }
 
-// samlProvider is this server as the service provider one connection's
-// identity provider knows.
 func (s *Service) samlProvider(connection *model.SSOConnection) (*saml.ServiceProvider, error) {
 	key, err := s.sealer.Open(connection.SPKey)
 	if err != nil {
@@ -213,7 +205,6 @@ func (s *Service) completeSAML(connection *model.SSOConnection, login *model.SSO
 	if assertion.Subject != nil && assertion.Subject.NameID != nil {
 		person.Subject = assertion.Subject.NameID.Value
 
-		// An address as the NameID is the address when nothing else says one.
 		if person.Email == "" && strings.Contains(person.Subject, "@") {
 			person.Email = person.Subject
 		}
@@ -222,8 +213,6 @@ func (s *Service) completeSAML(connection *model.SSOConnection, login *model.SSO
 	return person, nil
 }
 
-// SSOMetadata is this server's metadata as one SAML connection's service
-// provider: what the identity provider is given to trust it.
 func (s *Service) SSOMetadata(ctx context.Context, slug string) ([]byte, error) {
 	connection, err := s.store.SSOConnectionBySlug(ctx, slug)
 	if err != nil || connection.Protocol != model.SSOProtocolSAML {
@@ -232,8 +221,6 @@ func (s *Service) SSOMetadata(ctx context.Context, slug string) ([]byte, error) 
 
 	provider, err := s.samlProvider(connection)
 	if err != nil {
-		// Metadata for a connection whose provider has not been described yet
-		// is still worth handing out: it is what the provider needs first.
 		provider, err = s.bareSAMLProvider(connection)
 		if err != nil {
 			return nil, err
@@ -248,7 +235,6 @@ func (s *Service) SSOMetadata(ctx context.Context, slug string) ([]byte, error) 
 	return xml.MarshalIndent(document, "", "  ")
 }
 
-// bareSAMLProvider is samlProvider without the identity provider's side.
 func (s *Service) bareSAMLProvider(connection *model.SSOConnection) (*saml.ServiceProvider, error) {
 	key, err := s.sealer.Open(connection.SPKey)
 	if err != nil {

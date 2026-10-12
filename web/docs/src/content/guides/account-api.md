@@ -110,16 +110,15 @@ requests.patch(
 
 ### Everything it can do
 
-| Do                           | Call                                                                       | Scope           |
-| ---------------------------- | -------------------------------------------------------------------------- | --------------- |
-| Read the profile             | `GET /api/v1/account/me`                                                   | `account.read`  |
-| Change the name              | `PATCH /api/v1/account/me`                                                 | `account.write` |
-| Change the password          | `POST /api/v1/account/password` with `current_password`, `new_password`    | `account.write` |
-| Change the email             | `POST /api/v1/account/email` with `email` — a link goes to the new address | `account.write` |
-| List where they're signed in | `GET /api/v1/account/sessions`                                             | `account.read`  |
-| Sign one browser out         | `DELETE /api/v1/account/sessions/{id}`                                     | `account.write` |
-| List connected applications  | `GET /api/v1/account/connected-applications`                               | `account.read`  |
-| Disconnect an application    | `DELETE /api/v1/account/connected-applications/{client_id}`                | `account.write` |
+| Do                           | Call                                                                    | Scope           |
+| ---------------------------- | ----------------------------------------------------------------------- | --------------- |
+| Read the profile             | `GET /api/v1/account/me`                                                | `account.read`  |
+| Change the name              | `PATCH /api/v1/account/me`                                              | `account.write` |
+| Change the password          | `POST /api/v1/account/password` with `current_password`, `new_password` | `account.write` |
+| List where they're signed in | `GET /api/v1/account/sessions`                                          | `account.read`  |
+| Sign one browser out         | `DELETE /api/v1/account/sessions/{id}`                                  | `account.write` |
+| List connected applications  | `GET /api/v1/account/connected-applications`                            | `account.read`  |
+| Disconnect an application    | `DELETE /api/v1/account/connected-applications/{client_id}`             | `account.write` |
 
 Each is in the [Account reference](/reference/public/account), with its fields and errors.
 
@@ -127,6 +126,7 @@ Each is in the [Account reference](/reference/public/account), with its fields a
 
 - **The same API, two ways in.** The sign-in app calls these routes with the user's session cookie; your application calls them with a token. A request with a token is judged by the token alone.
 - **Changing the password signs the user out everywhere** and revokes every application's refresh tokens for them — yours included. Expect to sign them in again.
+- **The email cannot be changed with a token.** A new address plus a password reset is the whole account, so `POST /api/v1/account/email` takes the user's session in the sign-in app and their current password; a token gets `403 email_change_not_offered`.
 - **No session is "current"** for a token: the sessions list marks none, and any of them can be ended.
 - **Errors:** `401 account_token_refused` for a token that expired, was issued for another API, or whose user can no longer sign in; `403 account_scope_missing` when it lacks the scope a route needs.
 - **From a browser app** on another origin, add that origin to `{{envPrefix}}CORS_ORIGINS` so the browser may send the token.

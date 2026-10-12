@@ -26,22 +26,13 @@
 
 	let { fields, open = $bindable(false) }: Props = $props();
 
-	/** The two kinds, drawn as two lists: the built-in ones are columns of
-	    the record and are shown so an admin knows what is already there; the
-	    additional ones are this organisation's, and are the only ones that
-	    can be changed. */
 	const builtinFields = $derived(builtins(fields));
 	const addedFields = $derived(additional(fields));
 
 	const queryClient = useQueryClient();
 
-	/** A field changes what every user record looks like, so the fields and
-	    the rows are both refilled after a write. */
 	const refill = () => queryClient.invalidateQueries({ queryKey: keys.users.all });
 
-	/** The kinds of value a field can hold, each with the icon the table
-	    header and the record panel already use for it. Picking one is the
-	    single decision here that cannot be changed afterwards. */
 	const types: SelectOption<FieldType>[] = [
 		{ value: 'text', label: 'Plain text', icon: fieldIcons.text },
 		{ value: 'number', label: 'Number', icon: fieldIcons.number },
@@ -50,9 +41,6 @@
 		{ value: 'date', label: 'Date', icon: fieldIcons.date }
 	];
 
-	/** The field being edited, or null while a new one is being written. A
-	    field's name and type are fixed once records hold values under them,
-	    so editing offers its rules only. */
 	let editing = $state<UserField | null>(null);
 
 	let name = $state('');
@@ -64,19 +52,12 @@
 	let max = $state('');
 	let startsWith = $state('');
 
-	/** True while a field is being written or removed. Ours rather than the
-	    mutations' own isPending, so the panel cannot be left disabled by a
-	    flag we do not control. */
 	let busy = $state(false);
 
-	/** Which rules this type of field can keep. Bools and dates carry none of
-	    them, so the inputs are not offered. */
 	const bounded = $derived(type === 'number' || type === 'text' || type === 'email');
 	const prefixed = $derived(type === 'text' || type === 'email');
 	const lengths = $derived(type !== 'number');
 
-	/** A field name is a column name: the panel suggests one from the label so
-	    nobody has to think about the rule. */
 	function suggestName(from: string): string {
 		return from
 			.trim()
@@ -111,7 +92,6 @@
 		startsWith = field.starts_with;
 	}
 
-	/** An empty box means "no bound", which the API reads as null. */
 	function bound(value: string): number | null {
 		const trimmed = value.trim();
 		if (trimmed === '') return null;
@@ -132,9 +112,6 @@
 	}
 
 	const save = createMutation(() => ({
-		// Only an added field is ever edited here, and an added field is a
-		// row, so it has an id. A built-in one is never in `editing`: the
-		// list below offers no way to pick one.
 		mutationFn: () =>
 			editing?.id
 				? usersApi.updateField(editing.id, rules())
@@ -171,15 +148,12 @@
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
 
-		// One write at a time: a second one would race the first, and both
-		// would refill the same list.
 		if (busy) return;
 
 		busy = true;
 		save.mutate();
 	}
 
-	/** What a field expects, said in a few words for the list. */
 	function summary(field: UserField): string[] {
 		const said: string[] = [];
 
@@ -369,7 +343,6 @@
 		background: var(--row-hover);
 	}
 
-	/* A built-in field is here to be read, not pressed. */
 	.fields li.locked {
 		opacity: 0.75;
 	}
@@ -393,8 +366,6 @@
 		font-size: var(--text-sm);
 	}
 
-	/* The rules take the space left over, so the buttons stay in a column
-	   down the right whatever a field expects. */
 	.rules {
 		flex: 1;
 		display: flex;

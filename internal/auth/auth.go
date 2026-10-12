@@ -1,5 +1,3 @@
-// Package auth signs administrators in and out, with a password and an optional
-// or required second factor.
 package auth
 
 import (
@@ -10,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,71 +18,36 @@ import (
 	"loginer/internal/store"
 )
 
-// SessionLifetime is how long a session lasts before the administrator has to
-// sign in again.
 const SessionLifetime = 12 * time.Hour
-
-// MaxFailedLogins wrong passwords in a row lock an account for LockoutDuration:
-// long enough to stop guessing, short enough that an attacker cannot keep an
-// administrator out.
-const (
-	MaxFailedLogins = 5
-	LockoutDuration = 15 * time.Minute
-)
-
-// dummyHash is compared for unknown usernames so they take as long as a wrong
-// password. It must be a real hash at full cost.
-var dummyHash = sync.OnceValue(func() []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte("not a password anyone has"), bcrypt.DefaultCost)
-	if err != nil {
-		panic(fmt.Sprintf("auth: make the dummy hash: %v", err))
-	}
-
-	return hash
-})
 
 // ErrInvalidCredentials covers an unknown user, a wrong password and a disabled
 // account alike, so usernames cannot be probed.
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
-// ErrNoSession is returned when a request carries no usable session.
 var ErrNoSession = errors.New("no active session")
 
-// State is how far a session has got.
 type State string
 
 const (
-	// StateNone is no usable session at all.
-	StateNone State = "none"
-	// StateSignedIn is a session that may use the panel.
+	StateNone     State = "none"
 	StateSignedIn State = "signed_in"
-	// StateMFA is a session whose password was right, waiting for a code
-	// from the administrator's authenticator. It can do nothing but give one.
-	StateMFA State = "mfa"
-	// StateEnroll is a password-verified session that must set up a second
-	// factor before anything else.
-	StateEnroll State = "enroll"
+	StateMFA      State = "mfa"
+	StateEnroll   State = "enroll"
 )
 
-// How long a session may wait half signed in.
 const (
 	challengeLifetime = 10 * time.Minute
 	enrolmentLifetime = 30 * time.Minute
 )
 
-// Service signs administrators in and out.
 type Service struct {
 	store  *store.Store
 	sealer *jose.Sealer
 	log    *slog.Logger
 
-	// issuer names the panel in authenticator apps.
 	issuer string
 }
 
-// New returns a Service. `sealer` encrypts TOTP secrets and `issuer` is what
-// authenticator apps list the account under. Whether MFA is required is read
-// from the database each time, so a change applies on the next sign-in.
 func New(st *store.Store, sealer *jose.Sealer, log *slog.Logger, issuer string) *Service {
 	return &Service{store: st, sealer: sealer, log: log, issuer: issuer}
 }
@@ -102,17 +64,11 @@ func (s *Service) MFARequired(ctx context.Context) bool {
 	return security.RequireMFA
 }
 
-// Request describes where a call came from, which is recorded on the session
-// and in the log.
 type Request struct {
 	IP        string
 	UserAgent string
 }
 
-// Login checks the credentials and starts a session. The returned token is the
-// only copy; the database keeps its hash. An administrator who still owes a
-// second factor gets a session in StateMFA or StateEnroll that can do nothing
-// else.
 func (s *Service) Login(ctx context.Context, username, password string, req Request) (string, *model.Admin, State, error) {
 	admin, err := s.store.AdminByUsername(ctx, username)
 
@@ -120,7 +76,7 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 	case errors.Is(err, store.ErrNotFound):
 		// Still hash something, so a missing username and a wrong password
 		// take the same time to answer.
-		_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+		model.CompareDummyPassword(password)
 		s.record(ctx, nil, username, "admin.login_failed", req, "unknown username")
 		return "", nil, StateNone, ErrInvalidCredentials
 	case err != nil:
@@ -130,12 +86,12 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 	// The attempt is reserved before comparing, so parallel guesses cannot pass
 	// a lock, and a locked account takes as long to refuse as a wrong password.
 	now := time.Now()
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, MaxFailedLogins, LockoutDuration)
+	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, model.MaxFailedLogins, model.LockoutDuration)
 	if err != nil {
 		return "", nil, StateNone, err
 	}
 	if !allowed {
-		_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+		model.CompareDummyPassword(password)
 		s.record(ctx, &admin.ID, admin.Username, "admin.login_blocked", req, "locked")
 
 		return "", nil, StateNone, ErrInvalidCredentials
@@ -153,18 +109,22 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 		return "", nil, StateNone, ErrInvalidCredentials
 	}
 
-	// A right password returns the attempt now, so right passwords waiting on a
-	// second factor never lock anyone out.
-	if err := s.store.ClearAdminFailedLogins(ctx, admin); err != nil {
-		return "", nil, StateNone, err
-	}
-
 	state, lifetime := StateSignedIn, SessionLifetime
 	switch {
 	case admin.HasMFA():
 		state, lifetime = StateMFA, challengeLifetime
 	case s.MFARequired(ctx):
 		state, lifetime = StateEnroll, enrolmentLifetime
+	}
+
+	// Codes are counted against the same attempts, so while one is owed the
+	// password must not give them back: signing in again between guesses
+	// would otherwise make the lockout unreachable. The code itself clears
+	// them (signedIn).
+	if state != StateMFA {
+		if err := s.store.ClearAdminFailedLogins(ctx, admin); err != nil {
+			return "", nil, StateNone, err
+		}
 	}
 
 	token, err := newToken()
@@ -193,8 +153,6 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 	return token, admin, state, nil
 }
 
-// signedIn finishes a sign-in: the last sign-in is recorded, the wrong
-// passwords before it forgotten, and the log told how it happened.
 func (s *Service) signedIn(ctx context.Context, admin *model.Admin, req Request, method string) error {
 	if err := s.store.MarkAdminSignedIn(ctx, admin, time.Now(), req.IP); err != nil {
 		return err
@@ -205,8 +163,6 @@ func (s *Service) signedIn(ctx context.Context, admin *model.Admin, req Request,
 	return nil
 }
 
-// Session returns the session a token carries, whatever state it is in, with
-// its administrator.
 func (s *Service) Session(ctx context.Context, token string) (*model.Admin, *model.AdminSession, State, error) {
 	if token == "" {
 		return nil, nil, StateNone, ErrNoSession
@@ -244,14 +200,10 @@ func (s *Service) Session(ctx context.Context, token string) (*model.Admin, *mod
 	case s.MFARequired(ctx):
 		return admin, session, StateEnroll, nil
 	default:
-		// Waiting for a factor that has since been removed, where none is
-		// required: sign in again.
 		return nil, nil, StateNone, ErrNoSession
 	}
 }
 
-// Authenticate returns the administrator and session for a fully signed-in
-// token; a half-signed-in session is refused.
 func (s *Service) Authenticate(ctx context.Context, token string) (*model.Admin, *model.AdminSession, error) {
 	admin, session, state, err := s.Session(ctx, token)
 	if err != nil {
@@ -265,8 +217,6 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*model.Admin,
 	return admin, session, nil
 }
 
-// Logout revokes the session the token belongs to. Signing out twice is not
-// an error.
 func (s *Service) Logout(ctx context.Context, token string, req Request) error {
 	if token == "" {
 		return nil
@@ -291,8 +241,6 @@ func (s *Service) Logout(ctx context.Context, token string, req Request) error {
 	return nil
 }
 
-// record writes to the activity log; a failure is logged but never fails the
-// request.
 func (s *Service) record(ctx context.Context, adminID *uuid.UUID, actor, action string, req Request, note string) {
 	var metadata map[string]any
 	if note != "" {
@@ -302,8 +250,6 @@ func (s *Service) record(ctx context.Context, adminID *uuid.UUID, actor, action 
 	s.recordWith(ctx, adminID, actor, action, req, metadata)
 }
 
-// recordWith is record with metadata of the caller's choosing. Empty values are
-// left out.
 func (s *Service) recordWith(ctx context.Context, adminID *uuid.UUID, actor, action string, req Request, metadata map[string]any) {
 	entry := model.AuditLog{
 		AdminID:    adminID,
@@ -332,7 +278,6 @@ func (s *Service) recordWith(ctx context.Context, adminID *uuid.UUID, actor, act
 	}
 }
 
-// newToken returns a session token: 256 bits of randomness, hex encoded.
 func newToken() (string, error) {
 	var b [32]byte
 	if _, err := rand.Read(b[:]); err != nil {

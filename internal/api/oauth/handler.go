@@ -1,7 +1,3 @@
-// Package oauth serves the OAuth 2.0 and OpenID Connect endpoints. They follow
-// their RFCs rather than the JSON API's conventions (form bodies, {"error",
-// "error_description"}, redirects, WWW-Authenticate); the decisions live in
-// internal/oidc.
 package oauth
 
 import (
@@ -17,7 +13,6 @@ import (
 	"loginer/internal/oidc"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	provider *oidc.Service
 	log      *slog.Logger
@@ -44,7 +39,6 @@ func (h *Handler) JWKS(c *gin.Context) {
 		return
 	}
 
-	// Short enough that a new key reaches every API within minutes.
 	c.Header("Cache-Control", "public, max-age=300")
 	c.JSON(http.StatusOK, keys)
 }
@@ -110,8 +104,6 @@ func (h *Handler) SocialCallback(c *gin.Context) {
 		code, state = c.PostForm("code"), c.PostForm("state")
 	}
 
-	// The provider refused, or the person changed their mind there. What it
-	// said is for the log; the page says the sign-in did not happen.
 	if refused := c.Query("error"); refused != "" {
 		h.log.Info("a social provider refused a sign-in",
 			"provider", c.Param("slug"), "error", refused,
@@ -133,8 +125,6 @@ func (h *Handler) SocialCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, h.provider.SocialLanding(ctx, result))
 }
 
-// socialFailed shows the sign-in app's error page; unexpected errors are logged
-// as the server's fault.
 func (h *Handler) socialFailed(c *gin.Context, err error, note string) {
 	if !oidc.IsSocialFailure(err) {
 		h.log.Error(note, "provider", c.Param("slug"), "error", err)
@@ -204,7 +194,6 @@ func (h *Handler) SSOMetadata(c *gin.Context) {
 	c.Data(http.StatusOK, "application/samlmetadata+xml; charset=utf-8", document)
 }
 
-// ssoFinished signs the browser in and sends it on, or to the error page.
 func (h *Handler) ssoFinished(c *gin.Context, result *oidc.SocialResult, err error) {
 	if err != nil {
 		h.ssoFailed(c, err, "completing a single sign-on failed")
@@ -217,7 +206,6 @@ func (h *Handler) ssoFinished(c *gin.Context, result *oidc.SocialResult, err err
 	c.Redirect(http.StatusFound, h.provider.SocialLanding(c.Request.Context(), result))
 }
 
-// ssoFailed sends the browser to the sign-in app's error page.
 func (h *Handler) ssoFailed(c *gin.Context, err error, note string) {
 	if !oidc.IsSSOFailure(err) {
 		h.log.Error(note, "connection", c.Param("slug"), "error", err)
@@ -325,8 +313,6 @@ func (h *Handler) Introspect(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// oauthError answers an error in the token endpoint's format. Anything that
-// is not an OAuth error is the server's, and says no more than server_error.
 func (h *Handler) oauthError(c *gin.Context, err error) {
 	var failure *oidc.Error
 	if !errors.As(err, &failure) {
@@ -344,8 +330,6 @@ func (h *Handler) oauthError(c *gin.Context, err error) {
 	c.JSON(failure.Status, errorResponse{Error: failure.Code, Description: failure.Description})
 }
 
-// bearerError answers a userinfo error the way RFC 6750 says: in the
-// WWW-Authenticate header, with the same in the body for people reading it.
 func (h *Handler) bearerError(c *gin.Context, err error) {
 	var failure *oidc.Error
 	if !errors.As(err, &failure) {
@@ -358,7 +342,6 @@ func (h *Handler) bearerError(c *gin.Context, err error) {
 	c.JSON(failure.Status, errorResponse{Error: failure.Code, Description: failure.Description})
 }
 
-// serverError is for the endpoints that answer with a page rather than JSON.
 func (h *Handler) serverError(c *gin.Context, err error, note string) {
 	h.log.Error(note, "error", err)
 	c.String(http.StatusInternalServerError, "something went wrong")

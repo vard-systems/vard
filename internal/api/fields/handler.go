@@ -1,5 +1,3 @@
-// Package fields manages the additional fields of a user record and the rules
-// their values keep.
 package fields
 
 import (
@@ -16,7 +14,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -55,7 +52,6 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// New fields go to the end.
 	field.Position = h.store.NextFieldPosition(c.Request.Context())
 
 	if err := h.store.CreateUserField(c.Request.Context(), field); err != nil {
@@ -120,8 +116,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// find loads the field named in the path, answering the request itself if
-// there is no such field.
 func (h *Handler) find(c *gin.Context) (*model.UserField, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

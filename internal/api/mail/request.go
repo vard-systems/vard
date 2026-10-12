@@ -6,7 +6,6 @@ const (
 	targetType = "mail"
 	targetID   = "settings"
 
-	// Email text is its own activity log target, named by language.
 	contentTargetType = "mail_content"
 )
 

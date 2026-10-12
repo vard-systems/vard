@@ -14,7 +14,6 @@
 </script>
 
 {#if empty}
-	<!-- An empty cell is still a cell: saying so is clearer than a blank. -->
 	<span class="empty">N/A</span>
 {:else if type === 'bool'}
 	<Badge tone={value ? 'success' : 'neutral'}>{value ? 'True' : 'False'}</Badge>

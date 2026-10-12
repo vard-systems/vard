@@ -2,7 +2,6 @@ import type { API } from '$lib/api';
 import { apiGet, requireAnywhere } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/** The resource servers tokens are issued for. The search lives in the URL. */
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	requireAnywhere((await parent()).admin, 'apis.read');
 

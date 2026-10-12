@@ -4,7 +4,6 @@
 
 	type Props = {
 		codes: string[];
-		/** What finishing means: continuing to the panel, or closing. */
 		doneLabel?: string;
 		onDone: () => void;
 	};

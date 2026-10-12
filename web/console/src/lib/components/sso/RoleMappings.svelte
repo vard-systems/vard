@@ -6,11 +6,7 @@
 
 	type Props = {
 		mappings: SSORoleMapping[];
-		/** The roles a group can be given. Empty for an administrator who may
-		    not read them, who sees the ids already mapped. */
 		roles: Role[];
-		/** Whether the administrator may read roles, which tells an empty
-		    `roles` because there are none from one they may not see. */
 		canRead: boolean;
 		readOnly?: boolean;
 	};

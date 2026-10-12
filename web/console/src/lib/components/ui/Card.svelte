@@ -2,7 +2,6 @@
 	import type { Snippet } from 'svelte';
 
 	type Props = {
-		/** Padding is off by default so a card can hold a flush table. */
 		padded?: boolean;
 		children: Snippet;
 	};

@@ -15,7 +15,6 @@
 	type Props = {
 		applications: Application[];
 		onOpen: (application: Application) => void;
-		/** Left out, the rows cannot be ticked. */
 		selected?: string[];
 		onSelect?: (ids: string[]) => void;
 	};
@@ -31,7 +30,6 @@
 		{ key: 'is_enabled', label: 'Is Enabled', icon: RiToggleLine, min: '7rem' }
 	];
 
-	/** The roles page, showing this application's roles. */
 	function roles(application: Application): string {
 		return `${resolve('/admin/(panel)/dashboard/roles')}?application=${application.id}`;
 	}

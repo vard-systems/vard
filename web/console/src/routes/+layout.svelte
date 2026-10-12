@@ -23,5 +23,4 @@
 	{@render children()}
 </QueryClientProvider>
 
-<!-- Every page's toasts, the sign-in pages' included. -->
 <Toaster />

@@ -16,12 +16,11 @@
 		Tag,
 		notify
 	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { keys, cacheValueOptions } from '$lib/query';
 	import { formatBytes, formatTTL, kinds } from './cache';
 
 	type Props = {
 		database: CacheDatabaseName;
-		/** The key opened, as the listing described it. */
 		key: CacheKey | null;
 		open: boolean;
 	};
@@ -33,10 +32,8 @@
 	/** What the key holds is read when it is opened, not with the listing: a
 	    page of keys would otherwise carry every value in it. */
 	const value = createQuery(() => ({
-		queryKey: keys.cache.key(database, key?.name ?? ''),
-		queryFn: () => cacheApi.key(database, key?.name ?? ''),
-		enabled: open && key !== null,
-		staleTime: 0
+		...cacheValueOptions(database, key?.name ?? ''),
+		enabled: open && key !== null
 	}));
 
 	const current = $derived(value.data?.key);
@@ -51,11 +48,8 @@
 		ttl = '';
 	});
 
-	// The value as it was read, laid out to be read and edited: typing changes
-	// it, and reading the key again puts back what Redis holds.
 	let text = $derived(current ? JSON.stringify(current.value, null, 2) : '');
 
-	/** Whether the text is JSON the server will take: any but null. */
 	const parsed = $derived.by(() => {
 		try {
 			const value: unknown = JSON.parse(text);
@@ -111,7 +105,6 @@
 		save.mutate();
 	}
 
-	/** What removing the key does, said before it is done. */
 	const consequence = $derived.by(() => {
 		switch (current?.kind) {
 			case 'session':

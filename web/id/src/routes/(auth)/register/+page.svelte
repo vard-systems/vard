@@ -20,13 +20,9 @@
 
 	const app = $derived(data.signInRequest?.application ?? null);
 
-	/** What the account is being made under: the application's agreements
-	    where it has them, and the organisation's otherwise. With neither
-	    there is nothing to agree to, and no box to tick. */
 	const agreements = $derived(legalLinks(app, data.organization));
 	const needsConsent = $derived(agreements.length > 0);
 
-	/** The shortest password the server takes. */
 	const minLength = 8;
 
 	let firstName = $state('');
@@ -37,8 +33,6 @@
 	let confirm = $state('');
 	let accepted = $state(false);
 	let error = $state('');
-	/** The account was made, and the flow wants its address confirmed before
-	    anybody signs in with it: a link has been sent. */
 	let sent = $state('');
 	let submitting = $state(false);
 
@@ -66,8 +60,6 @@
 				first_name: firstName.trim(),
 				last_name: lastName.trim(),
 				accept_terms: accepted,
-				// A new account is remembered wherever the flow allows it; there is no checkbox on this
-				// form.
 				remember: data.login.allow_remember_me
 			});
 
@@ -78,8 +70,6 @@
 
 			submitting = false;
 		} catch (err) {
-			// A domain that signs in through its organisation's provider makes
-			// its account and keeps its password there: go there instead.
 			const sso = requiredSSO(err);
 			if (sso) {
 				leaveTo(ssoHref(sso.slug, { request: data.request, email: email.trim() }));

@@ -13,8 +13,6 @@ type roleRequest struct {
 	Permissions []string `json:"permissions"`
 }
 
-// clean tidies what can be tidied, so the rules see the values that would
-// actually be stored.
 func (r *roleRequest) clean() {
 	r.Name = strings.ToLower(strings.TrimSpace(r.Name))
 	r.Description = strings.TrimSpace(r.Description)

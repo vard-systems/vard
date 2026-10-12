@@ -49,9 +49,6 @@
 
 	const queryClient = useQueryClient();
 
-	// The list and every role are queries, seeded with what the server has
-	// already rendered: the first paint costs no request, and everything
-	// after is the cache being refilled.
 	const roles = createInfiniteQuery(() =>
 		rolesOptions(
 			{
@@ -71,25 +68,18 @@
 	const globalCount = $derived(choices.data.filter((role) => role.application_id === null).length);
 	const appCount = $derived(choices.data.length - globalCount);
 
-	/** Whether this administrator can make a role anywhere at all. */
 	const canCreate = $derived(
 		canEditRoles(data.admin, null) ||
 			applications.data.some((app) => canEditRoles(data.admin, app.id))
 	);
 
-	/** Rows can be ticked for deleting when the administrator may change the
-	    roles on screen: the global roles, or every application's. Someone who
-	    looks after one application removes its roles from the role panel. */
 	const canWrite = $derived(canEditRoles(data.admin, null));
 
-	// A writable derived: typing updates it, and it goes back to following the
-	// URL whenever that changes.
 	let search = $derived(data.search);
 
 	let editing = $state<Role | null>(null);
 	let roleOpen = $state(false);
 
-	/** The rows that are ticked, by id. */
 	let selected = $state<string[]>([]);
 
 	/** The ticked rows that are actually on screen: a search can take a
@@ -99,17 +89,12 @@
 	const chosen = $derived(selected.filter((id) => visible.has(id)));
 	let confirmingDelete = $state(false);
 
-	/** True while the chosen roles are being deleted. */
 	let busy = $state(false);
 
-	/** How many users lose a role if the chosen ones are deleted, which is
-	    worth saying before it happens. */
 	const holders = $derived(
 		rows.filter((role) => chosen.includes(role.id)).reduce((sum, role) => sum + role.user_count, 0)
 	);
 
-	/** The search and the filter are the URL, so the server renders the
-	    result and the back button walks through it. */
 	async function apply(changes: {
 		tab?: string;
 		application?: string;
@@ -132,7 +117,6 @@
 		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
 	}
 
-	/** Searching as you type, but only once you have paused. */
 	let timer: ReturnType<typeof setTimeout>;
 
 	function debounced() {
@@ -147,9 +131,6 @@
 
 	let refreshing = $state(false);
 
-	/** Asks for the rows again. The spin is held for a moment even when the
-	    answer comes back at once, so the button reads as having done
-	    something. */
 	async function refresh() {
 		refreshing = true;
 
@@ -168,13 +149,10 @@
 		confirmingDelete = false;
 	}
 
-	/** The roles behind the ticked ids, in the order the table shows them. */
 	function chosenRoles(): Role[] {
 		return rows.filter((role) => chosen.includes(role.id));
 	}
 
-	/** Deleting what is ticked, one call each. Users who held a deleted role
-	    change too, so their list is refilled as well. */
 	const removeSelected = createMutation(() => ({
 		mutationFn: async (ids: string[]) => {
 			for (const id of ids) {
@@ -198,8 +176,6 @@
 		}
 	}));
 
-	/** Hands the chosen roles to the browser as a file, built from what the
-	    page already has. */
 	function download() {
 		const blob = new Blob([JSON.stringify(chosenRoles(), null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
@@ -357,8 +333,6 @@
 />
 
 <style>
-	/* The two kinds of role are the first choice on the page, so they are
-	   tabs across it rather than a field in the toolbar. */
 	.tabs {
 		display: flex;
 		gap: var(--space-1);

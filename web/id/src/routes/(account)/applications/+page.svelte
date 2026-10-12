@@ -11,10 +11,6 @@
 
 	const t = useTranslator();
 
-	/** What each scope lets an application do, said plainly. */
-	/** What each scope lets an application do, said to the person whose
-	    account it is. The scope's own name is shown for one nobody has
-	    written a sentence for. */
 	const scopeKeys: Record<string, string> = {
 		openid: 'apps.scope_openid',
 		profile: 'apps.scope_profile',

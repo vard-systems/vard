@@ -9,21 +9,11 @@
 	type Props = {
 		open: boolean;
 		title: string;
-		/** A line under the title: what the dialog is for. */
 		description?: string;
-		/** A tag beside the title, for a record's id and the like. */
 		meta?: string;
-		/** Given when the body is a form, so the submit button among the
-		    actions belongs to it and Enter saves. Without it the dialog is a
-		    plain container. */
 		onsubmit?: (event: SubmitEvent) => void;
 		children: Snippet;
-		/** The buttons, at the right of the bar: a cancel and the one that
-		    saves. A dialog that only shows something passes none — the bar's
-		    close button is how it is left. */
 		actions?: Snippet;
-		/** A few words before the buttons about why they are as they are —
-		    what is unsaved, what is still missing. */
 		status?: Snippet;
 	};
 
@@ -38,9 +28,6 @@
 		status
 	}: Props = $props();
 
-	/** Where focus goes when it opens: the sheet itself, so the first thing a
-	    keyboard user tabs to is the close button and then the first field, and
-	    nothing is ringed before anyone has pressed a key. */
 	let sheet = $state<HTMLElement | null>(null);
 </script>
 
@@ -87,10 +74,6 @@
 						</div>
 					</div>
 
-					<!-- After the body in the markup, so the keyboard reaches the
-					     fields before the button that saves them; the grid draws
-					     it at the right of the bar, or along the bottom on a
-					     phone. -->
 					{#if actions || status}
 						<div class="actions">
 							{#if status}<span class="status">{@render status()}</span>{/if}
@@ -104,9 +87,6 @@
 </Dialog.Root>
 
 <style>
-	/* The bar stays put and only the body scrolls, so the title and the
-	   button that saves are in view however long the form is. The bar and the
-	   actions share its first row; the body is the rest. */
 	.sheet {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
@@ -135,8 +115,6 @@
 		padding: var(--space-1) var(--space-3);
 	}
 
-	/* A sheet with no actions lets the title run the whole width; one with
-	   them keeps the title clear of the buttons. */
 	.sheet:has(> .actions) .bar {
 		grid-column: 1;
 	}
@@ -170,8 +148,6 @@
 		white-space: nowrap;
 	}
 
-	/* The record's id or address is the first thing to give way when the bar
-	   is short of room. */
 	.heading > :global(code) {
 		min-width: 0;
 	}
@@ -185,15 +161,10 @@
 		grid-row: 2;
 		grid-column: 1 / -1;
 		overflow-y: auto;
-		/* The room for the scrollbar is kept whether or not there is one, so
-		   a form does not shift sideways as it grows past the window. */
 		scrollbar-gutter: stable;
 		overscroll-behavior: contain;
 	}
 
-	/* One readable column, centred: at this width a section's title sits
-	   beside its fields (FormSection), and the form is read down the middle
-	   of the window rather than along its whole width. */
 	.column {
 		width: min(var(--dialog-column-width), 100%);
 		margin: 0 auto;
@@ -207,9 +178,6 @@
 		line-height: 1.5;
 	}
 
-	/* On a phone the bar keeps the close button and the title, and the
-	   actions move to the bottom edge, under the thumb, each an equal share
-	   of the width. */
 	@media (max-width: 40rem) {
 		.sheet {
 			grid-template-columns: minmax(0, 1fr);
@@ -231,7 +199,6 @@
 			flex: 1;
 		}
 
-		/* A row of its own over the buttons, which share the width below. */
 		.status {
 			flex-basis: 100%;
 			text-align: center;

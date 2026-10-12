@@ -10,12 +10,8 @@
 	type Props = {
 		users: UserRecord[];
 		fields: UserField[];
-		/** The applications the roles belong to, to name them. */
 		applications: Application[];
-		/** Called with the user whose row was chosen. */
 		onOpen: (user: UserRecord) => void;
-		/** The ids of the ticked rows, and how to say that they changed. Left
-		    out, the rows cannot be ticked. */
 		selected?: string[];
 		onSelect?: (ids: string[]) => void;
 	};
@@ -24,9 +20,6 @@
 
 	const appNames = $derived(new Map(applications.map((app) => [app.id, app.name])));
 
-	/** The id, then every field the API listed — the built-in ones first and
-	    then whatever this organisation added — then the roles. One list, so a
-	    new field needs no change here. */
 	const columns = $derived<Column[]>([
 		{ key: 'id', label: 'ID', icon: idIcon, min: '10rem' },
 		...fields.map((field) => ({
@@ -39,9 +32,6 @@
 		{ key: 'signs_in_with', label: 'Signs in with', icon: RiShareLine, min: '9rem' }
 	]);
 
-	/** The first characters of the id, which is all anyone reads of it. */
-	/** The mark for a provider is the panel's own, so a row and the dialog
-	    show the same thing. */
 	function markFor(kind: SocialKind) {
 		return providerMark(kind);
 	}
@@ -70,9 +60,6 @@
 		<td>
 			<span class="roles">
 				{#each user.roles ?? [] as role (role.id)}
-					<!-- A global role reads as itself; an application role is
-					     prefixed with its application, since the same name can be
-					     a role in two of them. -->
 					<Badge>
 						{#if role.application_id}
 							<span class="app">{appNames.get(role.application_id) ?? '?'}</span>
@@ -85,8 +72,6 @@
 			</span>
 		</td>
 
-		<!-- How this person gets in: a password, an account somewhere else,
-		     or both. A record with neither cannot sign in at all. -->
 		<td>
 			<span class="ways">
 				{#each user.social_accounts ?? [] as account (account.id)}
@@ -116,7 +101,6 @@
 </DataTable>
 
 <style>
-	/* The ways in, side by side: one small mark each. */
 	.ways {
 		display: inline-flex;
 		align-items: center;
@@ -139,8 +123,6 @@
 		gap: var(--space-1);
 	}
 
-	/* The application a role belongs to, quieter than the role: the same
-	   name can be a role in two applications. */
 	.app {
 		margin-right: 4px;
 		opacity: 0.65;
@@ -154,7 +136,4 @@
 		color: var(--color-text-disabled);
 		font-size: var(--text-sm);
 	}
-
-	/* PocketBase shows the id as a small chip rather than raw text, which
-	   stops it competing with the values beside it. */
 </style>

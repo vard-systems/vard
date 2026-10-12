@@ -1,5 +1,3 @@
-// Package users answers the endpoints for the people an organisation manages:
-// the records themselves, as opposed to the administrators who edit them.
 package users
 
 import (
@@ -20,7 +18,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -87,8 +84,6 @@ func (h *Handler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-// fillSocialAccounts loads the providers each user on the page signs in with,
-// in one query.
 func (h *Handler) fillSocialAccounts(c *gin.Context, users ...*model.User) error {
 	ids := make([]uuid.UUID, 0, len(users))
 	for _, user := range users {
@@ -107,8 +102,6 @@ func (h *Handler) fillSocialAccounts(c *gin.Context, users ...*model.User) error
 	return nil
 }
 
-// pointersTo is the page's users as pointers, so what is filled in reaches
-// the rows that are about to be written out rather than copies of them.
 func pointersTo(users []model.User) []*model.User {
 	out := make([]*model.User, len(users))
 	for i := range users {
@@ -365,8 +358,6 @@ func (h *Handler) UnassignRole(c *gin.Context) {
 	h.RoleMappings(c)
 }
 
-// roleContext loads what describing a user's roles needs: the applications
-// the administrator can see, and the whole role graph.
 func (h *Handler) roleContext(c *gin.Context) ([]model.Application, model.RoleGraph, bool) {
 	ctx := c.Request.Context()
 
@@ -405,8 +396,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// build checks a submitted record and returns the user to write, filling in
-// `into` when updating.
 func (h *Handler) build(c *gin.Context, req *userRequest, into *model.User) (*model.User, error) {
 	ctx := c.Request.Context()
 
@@ -453,8 +442,6 @@ func (h *Handler) build(c *gin.Context, req *userRequest, into *model.User) (*mo
 	}
 
 	if into == nil {
-		// New users get the default global roles and every enabled
-		// application's default roles.
 		roles, err := h.store.DefaultUserRoles(ctx)
 		if err != nil {
 			return nil, err
@@ -466,8 +453,6 @@ func (h *Handler) build(c *gin.Context, req *userRequest, into *model.User) (*mo
 	return user, nil
 }
 
-// setPassword applies a new password if given, and the temporary flag. An empty
-// password on update keeps the current one.
 func setPassword(user *model.User, req *userRequest) error {
 	if req.Password != "" {
 		err := user.SetPassword(req.Password)
@@ -493,16 +478,12 @@ func setPassword(user *model.User, req *userRequest) error {
 	return nil
 }
 
-// visibleRoles leaves only the roles the administrator can see on a user
-// about to be answered with.
 func visibleRoles(c *gin.Context, user *model.User) {
 	user.Roles = slices.DeleteFunc(user.Roles, func(role model.UserRole) bool {
 		return !session.SeesRole(c, role)
 	})
 }
 
-// find loads the user named in the path, answering the request itself if the
-// id is not a uuid or there is no such user.
 func (h *Handler) find(c *gin.Context) (*model.User, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -524,8 +505,6 @@ func (h *Handler) find(c *gin.Context) (*model.User, bool) {
 	return user, true
 }
 
-// respondWrite answers a failed write, telling a duplicate email apart because
-// the caller can fix it. Unique additional fields are checked before the write.
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
 		respond.Conflict(c, "a user with that email already exists")

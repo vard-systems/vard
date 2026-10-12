@@ -13,7 +13,6 @@
 
 	type Props = {
 		admins: AdminRecord[];
-		/** The signed-in administrator, who is marked in the list. */
 		self: string;
 		onOpen: (admin: AdminRecord) => void;
 		selected: string[];

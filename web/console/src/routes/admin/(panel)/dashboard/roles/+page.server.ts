@@ -5,11 +5,6 @@ import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE, ROLE_CHOICES_LIMIT } from '$
 import { apiGet } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * Roles on two tabs, global and per application, with tab, search and filter in the URL
- * (`application` narrows the second tab). All visible roles load too, for tab counts and
- * cross-scope inheritance.
- */
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	const { admin } = await parent();
 
@@ -24,8 +19,6 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	const search = url.searchParams.get('search')?.trim() ?? '';
 	const isDefault = url.searchParams.get('default') ?? '';
 
-	// The API scopes a role can grant, for an administrator who may see APIs;
-	// null otherwise, so the role panel leaves grants alone.
 	const apis = can(admin, 'apis.read')
 		? (await apiGet<{ apis: API[] }>('/admin/apis', fetch)).apis
 		: null;

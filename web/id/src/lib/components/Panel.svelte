@@ -5,9 +5,7 @@
 		title: string;
 		description?: string;
 		children: Snippet;
-		/** The row of actions at the bottom: a save button. */
 		footer?: Snippet;
-		/** Something beside the title, such as a count. */
 		aside?: Snippet;
 	};
 

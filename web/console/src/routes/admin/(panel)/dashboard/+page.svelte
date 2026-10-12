@@ -41,8 +41,6 @@
 	const admin = $derived(data.admin);
 	const overview = $derived(data.overview);
 
-	/** The ranges the page can be read over. The chart, the sign-ins, the
-	    busiest people and "new" all follow the one chosen. */
 	const ranges: { value: `${OverviewDays}`; label: string }[] = [
 		{ value: '7', label: '7 days' },
 		{ value: '14', label: '14 days' },
@@ -58,11 +56,8 @@
 		await goto(days === '14' ? path : `${path}?days=${days}`, { noScroll: true, keepFocus: true });
 	}
 
-	/* Every number on the page leads to the entries behind it: the logs,
-	   narrowed to the same range and to what the number counts. */
 	const logsPage = resolve('/admin/(panel)/dashboard/logs');
 
-	/** The first day of the range, as the logs' date filter takes it. */
 	const rangeStart = $derived(overview?.daily[0]?.day ?? '');
 
 	const links = $derived({
@@ -94,14 +89,10 @@
 
 	const count = (n: number) => n.toLocaleString();
 
-	/** One line from the parts that apply, in a middot-separated list. */
 	function note(...parts: (string | false)[]) {
 		return parts.filter(Boolean).join(' · ');
 	}
 
-	/** What each number is a number of, as the one line its card shows beside
-	    it. A part that does not apply this week is left out rather than shown
-	    as a zero. */
 	const notes = $derived.by(() => {
 		if (!overview) return null;
 
@@ -124,8 +115,6 @@
 		};
 	});
 
-	/** The one note that is not a count: an administrator locked out is the
-	    exception on this page, so their card is the one that changes colour. */
 	const sessionsTone = $derived(
 		overview && overview.counts.locked_admins > 0 ? 'warning' : 'neutral'
 	);
@@ -267,9 +256,6 @@
 		gap: var(--space-4);
 	}
 
-	/* The metrics are a strip rather than a row of boxes, so the gap between
-	   them is smaller than the gap down to the panels below: they are read
-	   together, and a 5px step says so. */
 	.stats {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -303,8 +289,6 @@
 		}
 	}
 
-	/* Below this a note beside its number has nowhere to go without being cut
-	   off, so the cards go down the page instead and each is the full width. */
 	@media (max-width: 34rem) {
 		.stats {
 			grid-template-columns: minmax(0, 1fr);

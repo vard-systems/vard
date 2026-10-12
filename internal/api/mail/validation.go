@@ -10,9 +10,6 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo copies the request onto the settings using the model's rules and
-// returns what changed for the activity log. Nothing is saved if any rule
-// fails.
 func (r *settingsRequest) applyTo(settings *model.MailSettings, sealer *jose.Sealer) ([]string, error) {
 	updated := *settings
 	updated.IsEnabled = validate.Flag(r.IsEnabled, settings.IsEnabled)
@@ -71,12 +68,9 @@ func (r *settingsRequest) applyTo(settings *model.MailSettings, sealer *jose.Sea
 	return changed, nil
 }
 
-// settings is what a test message is sent with: the stored record overlaid with
-// the form, using the stored password when none was typed.
 func (r *testRequest) settings(stored *model.MailSettings, sealer *jose.Sealer) (mail.Settings, error) {
 	trying := *stored
 
-	// A test sends even when sending is off: you test first, then turn it on.
 	trying.IsEnabled = true
 	trying.Host = validate.Lower(r.Host, stored.Host)
 	trying.Port = validate.Number(r.Port, stored.Port)
@@ -105,8 +99,6 @@ func (r *testRequest) settings(stored *model.MailSettings, sealer *jose.Sealer) 
 	return mail.Of(trying, password), nil
 }
 
-// validate refuses any key that is not an email's: anything else would be a
-// client bug.
 func (r *contentRequest) validate() error {
 	for key, text := range r.Messages {
 		if !model.IsMailMessageKey(key) {

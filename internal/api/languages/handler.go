@@ -1,7 +1,3 @@
-// Package languages serves the Languages page. A language is a row plus one
-// JSON text per app, all in the database, so changes apply on the next page
-// load without a rebuild. The keys are defined by the base language's shipped
-// groups.
 package languages
 
 import (
@@ -22,7 +18,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -39,7 +34,6 @@ func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 func (h *Handler) List(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Asking for the default creates it if missing.
 	if _, err := h.store.DefaultLanguage(ctx); err != nil {
 		respond.Failure(c, h.log, err, "loading the default language failed")
 		return
@@ -87,8 +81,6 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// Bringing back a shipped language needs no names typed in: the file
-	// has them.
 	if file != nil && normalizeCode(req.Code) == file.Code {
 		req.Name = firstOf(req.Name, file.Name)
 		req.NativeName = firstOf(req.NativeName, file.Native)
@@ -100,8 +92,6 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// Copy only apps a language is translated for, so stale rows are not
-	// carried forward.
 	for app := range text {
 		if !i18n.ServesApp(language.Code, i18n.App(app)) {
 			delete(text, app)
@@ -127,8 +117,6 @@ func (h *Handler) Create(c *gin.Context) {
 	h.answer(c, http.StatusCreated, language)
 }
 
-// startingText is a new language's text by app: copied from an installed
-// language, or from a shipped one (also returned).
 func (h *Handler) startingText(c *gin.Context, from string) (map[string]map[string]string, *i18n.File, error) {
 	if from == "" {
 		return nil, nil, nil
@@ -332,8 +320,6 @@ func (h *Handler) SaveTranslation(c *gin.Context) {
 	c.JSON(http.StatusOK, savedResponse{Language: one, Ignored: ignored})
 }
 
-// find loads the language named in the path, answering the request itself if
-// there is no such language.
 func (h *Handler) find(c *gin.Context) (*model.Language, bool) {
 	language, err := h.store.Language(c.Request.Context(), c.Param("code"))
 
@@ -349,8 +335,6 @@ func (h *Handler) find(c *gin.Context) (*model.Language, bool) {
 	return language, true
 }
 
-// findWithApp is find plus the app in the path; only the sign-in pages are
-// translatable.
 func (h *Handler) findWithApp(c *gin.Context) (*model.Language, i18n.App, bool) {
 	app, known := i18n.ParseApp(c.Param("app"))
 	if !known {
@@ -363,7 +347,6 @@ func (h *Handler) findWithApp(c *gin.Context) (*model.Language, i18n.App, bool) 
 	return language, app, ok
 }
 
-// answer writes one language as the panel lists it.
 func (h *Handler) answer(c *gin.Context, status int, language *model.Language) {
 	one, err := h.describe(c, language)
 	if err != nil {
@@ -374,7 +357,6 @@ func (h *Handler) answer(c *gin.Context, status int, language *model.Language) {
 	c.JSON(status, response{Language: one})
 }
 
-// describe is one language as the panel lists it, coverage and all.
 func (h *Handler) describe(c *gin.Context, language *model.Language) (languageResponse, error) {
 	text, err := h.store.Translations(c.Request.Context(), language.ID)
 	if err != nil {
@@ -394,7 +376,6 @@ func (h *Handler) describe(c *gin.Context, language *model.Language) (languageRe
 	return newLanguageResponse(*language, text[language.ID], codes), nil
 }
 
-// firstOf is the value when there is one, and the fallback otherwise.
 func firstOf(value, fallback string) string {
 	if strings.TrimSpace(value) != "" {
 		return value

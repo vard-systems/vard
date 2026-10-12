@@ -1,5 +1,3 @@
-// Package cachetest opens the Redis named by LOGINER_TEST_REDIS (host:port) for
-// a test. Each test gets its own key prefix, removed when it ends.
 package cachetest
 
 import (
@@ -21,11 +19,8 @@ import (
 	"loginer/internal/config"
 )
 
-// Env names the Redis the tests may use.
 const Env = "LOGINER_TEST_REDIS"
 
-// Open returns the test Redis (databases 14 and 15) or nil when none is
-// configured; the server must work either way.
 func Open(t *testing.T) *cache.Redis {
 	t.Helper()
 
@@ -59,8 +54,6 @@ func Open(t *testing.T) *cache.Redis {
 	}
 
 	t.Cleanup(func() {
-		// A test that closed the cache on purpose — to see what the server
-		// does without Redis — could not have written anything after.
 		for _, c := range r.Databases() {
 			if err := c.Flush(context.Background()); err != nil && !errors.Is(err, redis.ErrClosed) {
 				t.Errorf("remove the test's keys: %v", err)
@@ -72,8 +65,6 @@ func Open(t *testing.T) *cache.Redis {
 	return r
 }
 
-// Require is Open for a test that means nothing without a Redis: it skips
-// when there is none.
 func Require(t *testing.T) *cache.Redis {
 	t.Helper()
 

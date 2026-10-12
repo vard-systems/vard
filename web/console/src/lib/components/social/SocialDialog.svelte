@@ -28,9 +28,7 @@
 
 	type Props = {
 		open: boolean;
-		/** The provider being changed, or null to register one. */
 		provider?: SocialProvider | null;
-		/** The kinds this server knows, which fill the form in. */
 		kinds: SocialSpec[];
 	};
 
@@ -62,13 +60,9 @@
 
 	const spec = $derived(kinds.find((one) => one.kind === kind));
 
-	/** Apple signs its secret with a key instead of holding one. */
 	const signs = $derived(spec?.signed_secret ?? false);
-	/** The two custom kinds are the ones whose addresses have to be typed in. */
 	const custom = $derived(spec?.custom ?? false);
 
-	/** Everything that has to be filled in before there is anything to save.
-	    A stored secret counts, since it cannot be shown to be retyped. */
 	const ready = $derived(
 		name.trim() !== '' &&
 			clientID.trim() !== '' &&
@@ -80,8 +74,6 @@
 			(!custom || (authorizeURL.trim() !== '' && tokenURL.trim() !== ''))
 	);
 
-	// The form is filled in each time the panel opens: with the provider
-	// being changed, or with what the chosen kind already knows.
 	$effect(() => {
 		if (!open) return;
 
@@ -113,8 +105,6 @@
 		allowRegistration = true;
 	});
 
-	/** Choosing a kind fills in everything that kind already decides: its
-	    name, the scopes it is usually asked for, and its addresses. */
 	function fillFromKind(chosen: SocialKind) {
 		kind = chosen;
 
@@ -247,7 +237,6 @@
 
 		{#if spec?.docs}
 			<p class="note">
-				<!-- The provider's own console, on its own site. -->
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a href={spec.docs} target="_blank" rel="noopener noreferrer">
 					Register this server with {spec.label}

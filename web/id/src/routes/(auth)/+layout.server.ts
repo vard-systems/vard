@@ -10,11 +10,6 @@ import {
 } from '$lib/api';
 import type { LayoutServerLoad } from './$types';
 
-/**
- * Loads the sign-in handle (from `?request=`), the organisation, providers and flow options
- * once for every sign-in page, so the first response shows the application. Expired handles are
- * shown, not errors, and failed loads fall back to defaults.
- */
 export const load: LayoutServerLoad = async ({ url, fetch, setHeaders }) => {
 	// A sign-in page is never cached: it is about one sign-in, for one person.
 	setHeaders({ 'cache-control': 'no-store' });
@@ -74,8 +69,6 @@ export const load: LayoutServerLoad = async ({ url, fetch, setHeaders }) => {
     refuses. */
 const fallback: LoginOptions = {
 	steps: ['identifier', 'password', 'social'],
-	// Open, for the same reason: a page that says sign-ins are closed because
-	// one request failed is worse than one that asks and is refused.
 	allow_sign_in: true,
 	allow_registration: true,
 	allow_password_reset: true,

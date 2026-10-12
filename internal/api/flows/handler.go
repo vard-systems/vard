@@ -1,5 +1,3 @@
-// Package flows manages login flows and serves the catalog of steps they can
-// contain, including which steps this server runs today.
 package flows
 
 import (
@@ -16,7 +14,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -33,8 +30,6 @@ func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 func (h *Handler) List(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Asking for the default first creates one on an installation that has
-	// none, so the page is never empty of the flow everything falls back to.
 	if _, err := h.store.DefaultLoginFlow(ctx); err != nil {
 		respond.Failure(c, h.log, err, "loading the default login flow failed")
 		return
@@ -73,8 +68,6 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// What a new flow is before anything is typed in: the default one's
-	// shape, under its own name, and not yet offered.
 	flow := model.DefaultLoginFlow()
 	flow.IsDefault = false
 	flow.IsEnabled = false
@@ -167,8 +160,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// find loads the flow named in the path, answering the request itself if
-// there is no such flow.
 func (h *Handler) find(c *gin.Context) (*model.LoginFlow, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -190,7 +181,6 @@ func (h *Handler) find(c *gin.Context) (*model.LoginFlow, bool) {
 	return flow, true
 }
 
-// answer writes one flow, with how many applications sign people in with it.
 func (h *Handler) answer(c *gin.Context, status int, flow *model.LoginFlow) {
 	counts, err := h.store.LoginFlowApplications(c.Request.Context())
 	if err != nil {

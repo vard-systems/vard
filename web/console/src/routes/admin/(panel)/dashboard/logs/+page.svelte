@@ -40,9 +40,6 @@
 	// svelte-ignore state_referenced_locally
 	let search = $state(data.view.q);
 
-	/** The kinds that can be asked for: the catalog's categories that have
-	    actions in them, and the refused sign-ins. "Other" is whatever the
-	    catalog has no sentence for, which the server cannot pick out by name. */
 	const kinds = (Object.keys(kindLabels) as Kind[])
 		.filter((kind) => kind === 'refused' || actionsIn(kind).length > 0)
 		.map((kind) => ({ value: kind, label: kindLabels[kind] }));
@@ -116,8 +113,6 @@
 	{/snippet}
 
 	{#snippet actions()}
-		<!-- The file the filters describe, up to ten thousand entries, with
-		     the same names hidden that the page hides. -->
 		<LinkButton href={activityApi.exportUrl(data.view.filter)} variant="subtle" download>
 			<Icon icon={RiDownload2Line} />
 			Export CSV
@@ -205,7 +200,6 @@
 		gap: var(--space-2);
 	}
 
-	/* Room for the label, the day, and the clear and calendar buttons. */
 	.dates > :global(*) {
 		width: 14rem;
 	}

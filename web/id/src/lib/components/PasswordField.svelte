@@ -9,7 +9,6 @@
 		disabled?: boolean;
 		hint?: string;
 		error?: string;
-		/** A link beside the label, such as "Forgot password?". */
 		aside?: { label: string; href: string };
 	};
 

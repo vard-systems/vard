@@ -9,14 +9,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// The kinds of session the session database holds, each under its own key.
 const (
 	AdminSession = "admin"
 	UserSession  = "user"
 )
 
-// SessionTTL bounds how long a session lives in Redis; writes replace it
-// directly, so this only limits damage from an outage.
 const SessionTTL = 10 * time.Minute
 
 // Sessions are found by token hash, which no write knows in advance, so they
@@ -26,8 +23,6 @@ const SessionTTL = 10 * time.Minute
 // So a reader that loaded a session just before it was revoked cannot put it
 // back.
 
-// Session reads the session a token hash names into `dst`, and reports
-// whether it was there.
 func (c *Cache) Session(ctx context.Context, kind, hash string, dst any) bool {
 	if c == nil || !c.available() || !c.settle(ctx) {
 		return false
@@ -92,8 +87,6 @@ func (c *Cache) PutSession(ctx context.Context, kind, hash string, session any, 
 	}
 }
 
-// forgetKeys remembers keys a write could not bring up to date, to remove them
-// once Redis answers again.
 func (c *Cache) forgetKeys(err error, keys ...string) {
 	c.mu.Lock()
 	if c.pendingKeys == nil {
@@ -107,19 +100,14 @@ func (c *Cache) forgetKeys(err error, keys ...string) {
 	c.log.Error("cache: could not update sessions; not using redis until they are removed", "sessions", len(keys), "error", err)
 }
 
-// sessionKey is where the session a token hash names is kept.
 func (c *Cache) sessionKey(kind, hash string) string {
 	return c.key("session", kind, hash)
 }
 
-// sessionTTL is SessionTTL or the time left, whichever is shorter; readers
-// check expiry themselves.
 func sessionTTL(expires time.Time) time.Duration {
 	return max(time.Second, min(SessionTTL, time.Until(expires)))
 }
 
-// DropSessions removes swept sessions. Only expired sessions are swept, which
-// readers reject anyway.
 func (c *Cache) DropSessions(ctx context.Context, kind string, hashes ...string) {
 	if c == nil || len(hashes) == 0 {
 		return

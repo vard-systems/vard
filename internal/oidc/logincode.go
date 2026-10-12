@@ -40,15 +40,11 @@ type CodeChallenge struct {
 	AttemptsLeft int `json:"attempts_left"`
 }
 
-// codeContext is what one request needs to work on a waiting sign-in: the row
-// and the settings of the moment, which are read together every time.
 type codeContext struct {
 	code     *model.LoginCode
 	settings *model.OTPSettings
 }
 
-// sendLoginCode holds a sign-in back and emails a code. A new code replaces the
-// user's previous one.
 func (s *Service) sendLoginCode(
 	ctx context.Context,
 	user *model.User,
@@ -94,8 +90,6 @@ func (s *Service) sendLoginCode(
 	return &SignInResult{Code: &answer}, nil
 }
 
-// SubmitLoginCode finishes a sign-in that was waiting for a code. Each guess is
-// counted before comparing, against the sign-in rather than the address.
 func (s *Service) SubmitLoginCode(ctx context.Context, handle, typed string, client Client) (*SignInResult, error) {
 	waiting, err := s.waitingCode(ctx, handle)
 	if err != nil {
@@ -147,8 +141,6 @@ func (s *Service) SubmitLoginCode(ctx context.Context, handle, typed string, cli
 	return s.startSession(ctx, user, flow, waiting.code.Request, waiting.code.RememberMe, client, "user.login")
 }
 
-// ResendLoginCode sends another code without restarting: the handle and spent
-// guesses stay.
 func (s *Service) ResendLoginCode(ctx context.Context, handle string, client Client) (*CodeChallenge, error) {
 	waiting, err := s.waitingCode(ctx, handle)
 	if err != nil {
@@ -170,10 +162,7 @@ func (s *Service) ResendLoginCode(ctx context.Context, handle string, client Cli
 		return nil, err
 	}
 
-	// The sign-in keeps its own life rather than gaining another: a code
-	// asked for again and again would otherwise never expire.
-	expires := now.Add(waiting.settings.Lifetime())
-	if err := s.store.ResendLoginCode(ctx, waiting.code, codeHash, now, expires); err != nil {
+	if err := s.store.ResendLoginCode(ctx, waiting.code, codeHash, now); err != nil {
 		return nil, err
 	}
 
@@ -186,8 +175,6 @@ func (s *Service) ResendLoginCode(ctx context.Context, handle string, client Cli
 	return &answer, nil
 }
 
-// waitingCode reads the sign-in a handle names. Every unusable case gets the
-// same answer, since the page restarts the sign-in either way.
 func (s *Service) waitingCode(ctx context.Context, handle string) (*codeContext, error) {
 	if handle == "" {
 		return nil, ErrCodeExpired
@@ -213,8 +200,6 @@ func (s *Service) waitingCode(ctx context.Context, handle string) (*codeContext,
 	return &codeContext{code: code, settings: settings}, nil
 }
 
-// challenge describes a waiting sign-in. The handle is passed in because only
-// its hash is stored.
 func challenge(handle string, code model.LoginCode, settings model.OTPSettings, email string, now time.Time) CodeChallenge {
 	wait := int(code.SentAt.Add(settings.Resend()).Sub(now).Round(time.Second).Seconds())
 	if wait < 0 {
@@ -230,7 +215,6 @@ func challenge(handle string, code model.LoginCode, settings model.OTPSettings, 
 	}
 }
 
-// mailCode sends the code in the background, in the reader's language.
 func (s *Service) mailCode(
 	ctx context.Context,
 	user *model.User,
@@ -259,7 +243,6 @@ func (s *Service) mailCode(
 	}
 
 	go func() {
-		// The request that asked may be long gone by the time this sends.
 		sendCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 		defer cancel()
 
@@ -269,8 +252,6 @@ func (s *Service) mailCode(
 	}()
 }
 
-// maskEmail hides the middle of the local part: "alexander@example.com" becomes
-// "al•••••••r@example.com".
 func maskEmail(email string) string {
 	at := strings.LastIndex(email, "@")
 	if at < 1 {

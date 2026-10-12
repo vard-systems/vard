@@ -1,6 +1,3 @@
-// Package otp reads and updates the single record that decides how emailed
-// one-time codes behave. Which sign-ins ask for a code is decided by the login
-// flow.
 package otp
 
 import (
@@ -14,7 +11,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder

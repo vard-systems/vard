@@ -24,17 +24,10 @@
 	import { canEditRoles, mayInherit, reachable, scopeName, tidyName, wouldCycle } from './roles';
 
 	type Props = {
-		/** The role being edited, or null to create one. */
 		role: Role | null;
-		/** Where a new role starts out: an application's id, or null for a
-		    global role. It can be changed before the role is created. */
 		initialScope: string | null;
-		/** Every role the administrator can see, to offer as ones to include. */
 		roles: Role[];
-		/** The applications the administrator can see. */
 		applications: Application[];
-		/** Every API, to offer scopes from; null for an administrator who
-		    cannot see APIs, whose edits then leave the role's grants alone. */
 		apis: API[] | null;
 		admin: Admin;
 		open: boolean;
@@ -50,24 +43,18 @@
 		open = $bindable(false)
 	}: Props = $props();
 
-	/** The ids of the API scopes the role grants. */
 	let granted = $state<string[]>([]);
 
-	/** Whether the list that adds API scopes is open, and what is picked in
-	    it. */
 	let addingScopes = $state(false);
 	let pickedScopes = $state<string[]>([]);
 	let scopeSearch = $state('');
 
-	/** The granted scopes, grouped under their API. */
 	const grantedByApi = $derived(
 		(apis ?? [])
 			.map((api) => ({ api, scopes: api.scopes.filter((scope) => granted.includes(scope.id)) }))
 			.filter((group) => group.scopes.length > 0)
 	);
 
-	/** The scopes that can still be added, matching the search, grouped under
-	    their API. */
 	const scopeCandidates = $derived(
 		(apis ?? [])
 			.map((api) => ({
@@ -88,15 +75,12 @@
 
 	const queryClient = useQueryClient();
 
-	/** Where the role applies: "global", or an application's id. */
 	let target = $state('global');
 	let name = $state('');
 	let description = $state('');
 	let isDefault = $state(false);
 	let inherits = $state<string[]>([]);
 
-	/** Whether the list that adds included roles is open, and what is picked
-	    in it. */
 	let adding = $state(false);
 	let picked = $state<string[]>([]);
 
@@ -104,18 +88,13 @@
 
 	const editing = $derived(role !== null);
 
-	/** The role's scope: its application, or null for a global role. */
 	const scope = $derived(
 		role ? role.application_id : target === 'global' ? null : target || undefined
 	);
 
-	/** The applications this administrator may make roles in. */
 	const writableApps = $derived(applications.filter((app) => canEditRoles(admin, app.id)));
 	const mayWriteGlobal = $derived(canEditRoles(admin, null));
 
-	/** The scopes a role can be made in: global, when the administrator may,
-	    and each application they may make roles in. An existing role shows
-	    its own scope, which cannot change. */
 	const targetOptions = $derived<SelectOption[]>([
 		...((role ? role.application_id === null : mayWriteGlobal)
 			? [
@@ -141,17 +120,12 @@
 
 	const ready = $derived(scope !== undefined && name.trim() !== '');
 
-	/** The roles included directly, as roles. */
 	const direct = $derived(roles.filter((other) => inherits.includes(other.id)));
 
-	/** Everything a user holding this role also holds, inheritance followed. */
 	const effective = $derived(
 		roles.filter((other) => reachable(inherits, roles).has(other.id) && other.id !== role?.id)
 	);
 
-	/** The roles that can still be added: allowed by the scope rule, not this
-	    role, not included already, and in a scope the administrator manages
-	    roles of — including a role hands it out, so the server asks that too. */
 	const candidates = $derived(
 		scope === undefined
 			? []
@@ -190,7 +164,6 @@
 		picked = [];
 	});
 
-	/** Changing the scope of a new role drops what it can no longer include. */
 	function keepAllowed() {
 		const now = target === 'global' ? null : target;
 		inherits = inherits.filter((id) => {
@@ -218,14 +191,10 @@
 			description: description.trim(),
 			is_default: isDefault,
 			inherits,
-			// Sent only by someone who can see APIs; left out, the role keeps
-			// the grants it has.
 			...(apis ? { api_scopes: granted } : {})
 		};
 	}
 
-	/** A role changes what its users hold and how the users table reads, so
-	    both lists and every open role mapping are refilled after a write. */
 	const save = createMutation(() => ({
 		mutationFn: () => (role ? rolesApi.update(role.id, payload()) : rolesApi.create(payload())),
 		onSuccess: async () => {

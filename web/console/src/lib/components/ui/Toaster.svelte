@@ -1,12 +1,3 @@
-<!--
-	@component
-	Draws the panel's toasts (see ./toast.ts) centred at the bottom of the screen. Mounted once
-	in the root layout.
-
-	Inverted against the theme, with an icon whose shape tells success from failure. A toast with
-	a description becomes a rounded card. It pauses on hover and is announced to assistive
-	technology.
--->
 <script lang="ts">
 	import { Toast, Toaster } from '@ark-ui/svelte/toast';
 	import { RiCheckboxCircleFill, RiCloseLine, RiErrorWarningFill } from 'svelte-remixicon';
@@ -37,8 +28,6 @@
 </Toaster>
 
 <style>
-	/* Positioned and animated by Ark, through these variables; the rest is
-	   the pill. */
 	:global(.toast) {
 		display: flex;
 		align-items: center;
@@ -68,8 +57,6 @@
 		transition-timing-function: cubic-bezier(0.21, 1.02, 0.73, 1);
 	}
 
-	/* Two lines: a card, the icon and the close button held to the title's
-	   line rather than centred on the pair. */
 	:global(.toast.detailed) {
 		align-items: flex-start;
 		padding: 12px 10px 12px 14px;
@@ -98,7 +85,6 @@
 		color: var(--toast-icon);
 	}
 
-	/* The title on a line of its own, and the detail under it. */
 	.message {
 		display: flex;
 		flex: 1;

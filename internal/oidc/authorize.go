@@ -14,7 +14,6 @@ import (
 	"loginer/internal/store"
 )
 
-// AuthorizeParams are the parameters of an authorization request.
 type AuthorizeParams struct {
 	ClientID            string
 	RedirectURI         string
@@ -31,8 +30,6 @@ type AuthorizeParams struct {
 	ResponseMode        string
 }
 
-// Size limits for authorization request parameters: generous for their purpose,
-// small beside the body limit.
 const (
 	maxState     = 1024
 	maxNonce     = 256
@@ -42,8 +39,6 @@ const (
 	maxAudience  = 255
 )
 
-// oversized says what is wrong with the size or encoding of the parameters
-// that are stored, or "" when nothing is.
 func (p AuthorizeParams) oversized() string {
 	limits := []struct {
 		name  string
@@ -70,10 +65,6 @@ func (p AuthorizeParams) oversized() string {
 	return ""
 }
 
-// Authorize handles an authorization request and returns where to send the
-// browser: back to the application, to the sign-in page, or, when the request
-// cannot be trusted with a redirect, to the error page. With a live `session`
-// the user is not asked for their password again unless the request says so.
 func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Session) (string, error) {
 	app, err := s.store.ApplicationByClientID(ctx, p.ClientID)
 	switch {
@@ -154,8 +145,6 @@ func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Ses
 
 	now := s.now()
 
-	// A session counts only when it is recent enough for max_age and the
-	// application did not ask for the password again.
 	if session != nil {
 		tooOld := maxAge >= 0 && now.Sub(session.Record.AuthenticatedAt) > time.Duration(maxAge)*time.Second
 		if tooOld || slices.Contains(prompts, "login") {
@@ -228,15 +217,12 @@ func sessionSatisfies(flow *model.LoginFlow, session *Session, now time.Time) bo
 	return true
 }
 
-// PendingRequest is what the sign-in page shows about a sign-in under way.
 type PendingRequest struct {
 	Application *model.Application
 	LoginHint   string
 	ExpiresAt   time.Time
 }
 
-// Pending returns a sign-in under way by handle; expired, used or unknown is
-// ErrRequestExpired.
 func (s *Service) Pending(ctx context.Context, handle string) (*PendingRequest, error) {
 	req, err := s.pending(ctx, handle)
 	if err != nil {
@@ -266,8 +252,6 @@ func (s *Service) pending(ctx context.Context, handle string) (*model.Authorizat
 	return req, nil
 }
 
-// Continue finishes a sign-in under way for a user who has just signed in on
-// the sign-in page, and returns where to send the browser.
 func (s *Service) Continue(ctx context.Context, handle string, session *Session) (string, error) {
 	req, err := s.pending(ctx, handle)
 	if err != nil {
@@ -277,8 +261,6 @@ func (s *Service) Continue(ctx context.Context, handle string, session *Session)
 	return s.finish(ctx, req, session.User, &session.Record)
 }
 
-// finish ends an authorization request for a signed-in user: a code back to
-// the application, or an error when the user may not have tokens for it.
 func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, user *model.User, session *model.UserSession) (string, error) {
 	app := req.Application
 
@@ -295,7 +277,6 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, u
 	// token is refused before a code is issued.
 	token, err := s.evaluate(ctx, app, user, strings.Fields(req.Scope), req.Audience)
 	if errors.Is(err, errUnknownAudience) {
-		// Deleted since the sign-in began.
 		return s.redirectError(req.RedirectURI, req.State, ErrAccessDenied, "no API has the identifier "+req.Audience), nil
 	}
 	if err != nil {
@@ -349,11 +330,8 @@ func (s *Service) redirectError(redirectURI, state, code, description string) st
 	})
 }
 
-// errUnknownAudience is a token request naming an API that does not exist.
 var errUnknownAudience = oauthError(ErrInvalidRequest, "audience: no API has this identifier")
 
-// evaluate loads what model.EvaluateToken needs and runs it. `user` is nil for
-// a client credentials token.
 func (s *Service) evaluate(ctx context.Context, app *model.Application, user *model.User, scopes []string, audience string) (model.TokenPreview, error) {
 	request := model.TokenRequest{
 		Application: *app,

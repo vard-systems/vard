@@ -22,7 +22,6 @@ type writeRequest struct {
 	TTLSeconds int `json:"ttl_seconds"`
 }
 
-// parseKeyQuery reads a listing's filters from the query string.
 func parseKeyQuery(c *gin.Context) (cache.KeyQuery, error) {
 	query := cache.KeyQuery{
 		Kind:   c.Query("kind"),
@@ -51,7 +50,6 @@ func parseKeyQuery(c *gin.Context) (cache.KeyQuery, error) {
 	return query, nil
 }
 
-// keyName reads the key a request names, without the server's prefix.
 func keyName(c *gin.Context) (string, error) {
 	name := c.Query("name")
 	if err := checkName(name); err != nil {

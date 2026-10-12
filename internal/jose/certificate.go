@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-// SelfSigned makes a self-signed PEM certificate for a key, which is all a SAML
-// identity provider needs: it trusts the exact certificate in our metadata.
 func SelfSigned(key crypto.Signer, commonName string, validFor time.Duration) (string, error) {
 	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 126))
 	if err != nil {
@@ -37,7 +35,6 @@ func SelfSigned(key crypto.Signer, commonName string, validFor time.Duration) (s
 	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})), nil
 }
 
-// ParseCertificate reads a certificate from PEM.
 func ParseCertificate(certificate string) (*x509.Certificate, error) {
 	block, _ := pem.Decode([]byte(certificate))
 	if block == nil || block.Type != "CERTIFICATE" {

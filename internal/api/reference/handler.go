@@ -1,5 +1,3 @@
-// Package reference serves each server's embedded OpenAPI document (written by
-// `make docs`) with the server's own address added.
 package reference
 
 import (
@@ -17,7 +15,6 @@ var (
 	adminDocument []byte
 )
 
-// Handler answers one server's document.
 type Handler struct {
 	document []byte
 }

@@ -26,7 +26,6 @@
 		{ key: 'size', label: 'Size', icon: RiHardDrive2Line, min: '6rem', align: 'end' }
 	];
 
-	/** DataTable finds rows by id; a key's name is unique in its database. */
 	const rows = $derived(keys.map((key) => ({ ...key, id: key.name })));
 </script>
 

@@ -3,24 +3,18 @@
 	import { Checkbox } from '$lib/components/ui';
 
 	type Props = {
-		/** The role or permission, as code refers to it. */
 		name: string;
 		description?: string;
 		checked: boolean;
 		onChange: (checked: boolean) => void;
 		disabled?: boolean;
-		/** Why it cannot be chosen, said under the description. */
 		reason?: string;
-		/** Badges drawn against the right edge. */
 		badges?: Snippet;
 	};
 
 	let { name, description, checked, onChange, disabled, reason, badges }: Props = $props();
 </script>
 
-<!-- One row of a list of things to hold: the box, the name as code spells it,
-     what it is for, and anything worth flagging on the right. The whole row
-     is the label's click target, so a long list is easy to tick through. -->
 <div class="choice" class:checked class:disabled>
 	<Checkbox {checked} {onChange} {disabled} title={name} />
 

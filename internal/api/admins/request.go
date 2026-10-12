@@ -42,7 +42,6 @@ type assignmentRequest struct {
 	ApplicationID *uuid.UUID `json:"application_id"`
 }
 
-// clean tidies what can be tidied. The password is taken as it was typed.
 func (r *adminRequest) clean() {
 	r.Email = strings.ToLower(strings.TrimSpace(r.Email))
 	r.FirstName = strings.TrimSpace(r.FirstName)
@@ -50,8 +49,6 @@ func (r *adminRequest) clean() {
 	r.Status = strings.TrimSpace(r.Status)
 }
 
-// listQuery reads the search box, the filters and the page out of the query
-// string, holding each to something sensible.
 func listQuery(c *gin.Context) store.AdminQuery {
 	q := store.AdminQuery{
 		Search: c.Query("search"),

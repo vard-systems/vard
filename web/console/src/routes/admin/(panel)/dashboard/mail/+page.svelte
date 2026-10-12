@@ -15,9 +15,6 @@
 	const settings = createQuery(() => mailOptions(data.mail));
 	const content = createQuery(() => mailContentOptions(data.content));
 
-	/** The server on one tab and the words on the other: they are two jobs,
-	    and a page that asks for a host name and a translation at once is a
-	    page nobody finishes. */
 	let tab = $state('server');
 
 	const tabs = [
@@ -43,8 +40,6 @@
 
 <Tabs {tabs} bind:value={tab} label="Mail settings">
 	{#snippet panel(value)}
-		<!-- Each section puts what it is beside its fields, as the General
-		     page does, which needs more than a form's column. -->
 		<PageContainer size="lg">
 			{#if value === 'server'}
 				<MailServer settings={settings.data} />

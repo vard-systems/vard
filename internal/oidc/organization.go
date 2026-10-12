@@ -19,7 +19,6 @@ type PublicOrganization struct {
 	Timezone string `json:"timezone"`
 }
 
-// PublicOrg returns those fields of an organisation.
 func PublicOrg(organization *model.Organization) PublicOrganization {
 	return PublicOrganization{
 		Name:         organization.Name,
@@ -32,7 +31,6 @@ func PublicOrg(organization *model.Organization) PublicOrganization {
 	}
 }
 
-// Organization is what the sign-in pages ask for when they draw themselves.
 func (s *Service) Organization(ctx context.Context) (PublicOrganization, error) {
 	organization, err := s.store.Organization(ctx)
 	if err != nil {

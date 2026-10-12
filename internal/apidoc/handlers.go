@@ -9,12 +9,8 @@ import (
 	"strings"
 )
 
-// maxCallDepth is how deep a handler's own package calls are followed when
-// reading it.
 const maxCallDepth = 3
 
-// handlerReading is what one handler's body, and the functions of its own
-// package it calls, were found to read and answer.
 type handlerReading struct {
 	route   route
 	schemas *schemas
@@ -26,7 +22,6 @@ type handlerReading struct {
 	params    map[string]bool
 }
 
-// operation reads one route's handler into an operation.
 func (l *loader) operation(r route, s *schemas) Operation {
 	op := Operation{
 		Method:        r.method,
@@ -56,8 +51,6 @@ func (l *loader) operation(r route, s *schemas) Operation {
 	for _, response := range reading.responses {
 		reading.op.Responses = append(reading.op.Responses, response)
 	}
-	// By status, with the default answer — status 0 — last, where a reader
-	// looks for "anything else".
 	sort.Slice(reading.op.Responses, func(i, j int) bool {
 		a, b := reading.op.Responses[i].Status, reading.op.Responses[j].Status
 		if a == 0 || b == 0 {
@@ -88,8 +81,6 @@ func (l *loader) operation(r route, s *schemas) Operation {
 	return reading.op
 }
 
-// read walks one function's body. Calls into the handler's own package are
-// followed; the rest of the module is somebody else's subject.
 func (l *loader) read(r *handlerReading, s *site, depth int) {
 	if r.seen[s.decl] || s.decl.Body == nil {
 		return
@@ -122,8 +113,6 @@ func (l *loader) read(r *handlerReading, s *site, depth int) {
 	})
 }
 
-// context reads a call on the request — a *gin.Context, its *http.Request,
-// or a url.Values read from it — and reports whether it was one.
 func (l *loader) context(r *handlerReading, s *site, call *ast.CallExpr) bool {
 	info := s.pkg.TypesInfo
 	sel, ok := call.Fun.(*ast.SelectorExpr)
@@ -170,8 +159,6 @@ func (l *loader) context(r *handlerReading, s *site, call *ast.CallExpr) bool {
 				r.param(&r.op.FormParams, "form", literal(0), "")
 			}
 		case "GetHeader":
-			// The body's media type is said by the body itself, in both the
-			// OpenAPI document and the pages.
 			if name := literal(0); !strings.EqualFold(name, "Content-Type") {
 				r.param(&r.op.Headers, "header", name, helperDoc)
 			}
@@ -200,8 +187,6 @@ func (l *loader) context(r *handlerReading, s *site, call *ast.CallExpr) bool {
 		if sel.Sel.Name != "Get" {
 			return false
 		}
-		// PostForm is only the body; Form is the query and the body, which
-		// is the query for a GET and the form for anything else.
 		fromBody := false
 		if inner, ok := sel.X.(*ast.SelectorExpr); ok && inner.Sel.Name == "PostForm" {
 			fromBody = true
@@ -226,7 +211,6 @@ func (r *handlerReading) param(into *[]Param, where, name, description string) {
 	*into = append(*into, Param{Name: name, Description: description, Schema: &Schema{Type: "string"}})
 }
 
-// queryStruct reads a struct bound from the query, by its form tags.
 func (r *handlerReading) queryStruct(t types.Type) {
 	schema := r.schemas.forRequest(t)
 	st, ok := t.Underlying().(*types.Struct)
@@ -254,8 +238,6 @@ func (r *handlerReading) queryStruct(t types.Type) {
 	}
 }
 
-// respond records an answer; a non-constant status is the default answer.
-// Server failures are left to the errors page.
 func (r *handlerReading) respond(status int, contentType string, t types.Type, expr ast.Expr, info *types.Info) {
 	if status >= http.StatusInternalServerError {
 		return
@@ -275,7 +257,6 @@ func (r *handlerReading) respond(status int, contentType string, t types.Type, e
 	r.responses[status] = response
 }
 
-// object is the shape of a gin.H literal: its keys, and what each holds.
 func (r *handlerReading) object(lit *ast.CompositeLit, info *types.Info) *Schema {
 	schema := &Schema{Type: "object"}
 	for _, element := range lit.Elts {
@@ -303,7 +284,6 @@ func isGinH(t types.Type) bool {
 	return typeName(t) == "github.com/gin-gonic/gin.H"
 }
 
-// typeName is package/path.Name for a named type or a pointer to one.
 func typeName(t types.Type) string {
 	if p, ok := t.(*types.Pointer); ok {
 		t = p.Elem()
@@ -321,7 +301,6 @@ func typeName(t types.Type) string {
 	return named.Obj().Pkg().Path() + "." + named.Obj().Name()
 }
 
-// calledFunction is the function or method a call calls, when it names one.
 func calledFunction(info *types.Info, call *ast.CallExpr) *types.Func {
 	switch fun := call.Fun.(type) {
 	case *ast.SelectorExpr:
@@ -338,8 +317,6 @@ func calledFunction(info *types.Info, call *ast.CallExpr) *types.Func {
 	return nil
 }
 
-// summary splits a doc comment into its first sentence and the rest, with
-// Go's leading name taken off: "Login signs a user in." is "Signs a user in."
 func summary(name string, doc *ast.CommentGroup) (string, string) {
 	if doc == nil {
 		return "", ""
@@ -358,8 +335,6 @@ func summary(name string, doc *ast.CommentGroup) (string, string) {
 	return first, rest
 }
 
-// sentenceEnd is where the first sentence ends: a full stop followed by a
-// space or a paragraph, not one inside "e.g." or a file name.
 func sentenceEnd(text string) int {
 	for i := 0; i < len(text)-1; i++ {
 		if text[i] != '.' {

@@ -2,7 +2,6 @@ package apis
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 
@@ -11,8 +10,6 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo checks the request and copies it onto an API; the identifier is read
-// only when `creating`.
 func (r *apiRequest) applyTo(api *model.API, creating bool) error {
 	r.clean()
 
@@ -21,7 +18,7 @@ func (r *apiRequest) applyTo(api *model.API, creating bool) error {
 	}
 
 	if len(r.Scopes) > maxScopes {
-		return badRequest(fmt.Sprintf("an API may have at most %d scopes", maxScopes))
+		return respond.Invalid(fmt.Sprintf("an API may have at most %d scopes", maxScopes))
 	}
 
 	// A scope sent with an id has to be one of this API's own: an id from
@@ -37,7 +34,7 @@ func (r *apiRequest) applyTo(api *model.API, creating bool) error {
 
 		if sent.ID != uuid.Nil {
 			if creating || !own[sent.ID.String()] {
-				return badRequest("scopes: " + sent.Name + " refers to a scope this API does not have")
+				return respond.Invalid("scopes: " + sent.Name + " refers to a scope this API does not have")
 			}
 			scope.ID = sent.ID
 		}
@@ -57,12 +54,8 @@ func (r *apiRequest) applyTo(api *model.API, creating bool) error {
 	api.Scopes = scopes
 
 	if err := api.Validate(); err != nil {
-		return badRequest(err.Error())
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
-}
-
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }

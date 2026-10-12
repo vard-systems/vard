@@ -1,6 +1,3 @@
-// Package caching lets a super admin inspect Redis key by key and clear some or
-// all of it. Every value is a copy the store can reload, so removing one only
-// slows the next request; see internal/cache/inspect.go for what is refused.
 package caching
 
 import (
@@ -16,7 +13,6 @@ import (
 	"loginer/internal/cache"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	redis *cache.Redis
 	audit audit.Recorder
@@ -42,8 +38,6 @@ func (h *Handler) Overview(c *gin.Context) {
 	for _, database := range databases {
 		stats, err := database.Stats(c.Request.Context())
 		if err != nil {
-			// One database not answering is worth showing rather than
-			// failing the page over: the other may be fine.
 			h.log.Warn("reading a redis database failed", "database", database.Name(), "error", err)
 			stats = cache.Stats{Name: database.Name(), Number: database.Number()}
 		}
@@ -193,7 +187,6 @@ func (h *Handler) Flush(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// database finds the database the path names, or answers why not.
 func (h *Handler) database(c *gin.Context) (*cache.Cache, bool) {
 	if h.redis.Databases() == nil {
 		respond.Fail(c, notConfigured)
@@ -211,7 +204,6 @@ func (h *Handler) database(c *gin.Context) (*cache.Cache, bool) {
 	return nil, false
 }
 
-// key finds the database and the key a request names.
 func (h *Handler) key(c *gin.Context) (*cache.Cache, string, bool) {
 	database, ok := h.database(c)
 	if !ok {
@@ -227,8 +219,6 @@ func (h *Handler) key(c *gin.Context) (*cache.Cache, string, bool) {
 	return database, name, true
 }
 
-// fail answers the errors the cache package names with their problems, and
-// anything else as a failure.
 func (h *Handler) fail(c *gin.Context, err error, message string) {
 	switch {
 	case errors.Is(err, cache.ErrNoKey):

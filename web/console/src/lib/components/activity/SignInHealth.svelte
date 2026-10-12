@@ -5,9 +5,7 @@
 
 	type Props = {
 		signIns: Overview['sign_ins'];
-		/** Administrators locked out right now. */
 		locked: number;
-		/** Where each kind of attempt is listed, making its row a link. */
 		hrefs?: { succeeded?: string; failed?: string; blocked?: string };
 	};
 

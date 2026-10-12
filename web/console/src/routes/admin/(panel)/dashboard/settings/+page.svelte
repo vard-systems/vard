@@ -13,8 +13,6 @@
 
 	const queryClient = useQueryClient();
 
-	/** Only the tabs the administrator's roles let them read: the server left
-	    out whatever they may not. */
 	const tabs = $derived([
 		...(data.organization
 			? [{ value: 'organization', label: 'Organization', icon: RiBuildingLine }]
@@ -45,9 +43,6 @@
 <Tabs {tabs} bind:value={tab} label="Settings">
 	{#snippet panel(value)}
 		{#if value === 'organization' && data.organization}
-			<!-- Each section puts what it is beside its fields, which needs more
-			     than a form's column; the language table below needs the whole
-			     width for its columns. -->
 			<PageContainer size="lg">
 				<OrganizationSettings
 					initial={data.organization}

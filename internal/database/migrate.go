@@ -10,13 +10,9 @@ import (
 	"gorm.io/gorm"
 
 	"loginer/internal/config"
-	// Registers the migrations with goose. They are Go functions, so they
-	// exist only in a binary that imports them.
 	_ "loginer/migrations"
 )
 
-// Migrate applies pending migrations; goose tracks them in goose_db_version, so
-// it is safe on every start.
 func Migrate(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
 	sqlDB, err := prepareGoose(db)
 	if err != nil {
@@ -46,7 +42,6 @@ func Migrate(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
 	return nil
 }
 
-// MigrateDown rolls the newest migration back, one step.
 func MigrateDown(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
 	sqlDB, err := prepareGoose(db)
 	if err != nil {
@@ -67,21 +62,17 @@ func MigrateDown(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
 	return nil
 }
 
-// MigrateStatus prints which migrations have run and which have not.
 func MigrateStatus(db *gorm.DB, cfg config.DB) error {
 	sqlDB, err := prepareGoose(db)
 	if err != nil {
 		return err
 	}
 
-	// Status is a table meant to be read, so let goose print it itself.
 	goose.SetLogger(printLogger{})
 
 	return goose.Status(sqlDB, cfg.MigrateDir)
 }
 
-// printLogger lets goose print its own status table. Fatalf exists only to
-// satisfy goose's interface.
 type printLogger struct{}
 
 func (printLogger) Printf(format string, v ...any) {
@@ -93,8 +84,6 @@ func (printLogger) Fatalf(format string, v ...any) {
 	os.Exit(1)
 }
 
-// prepareGoose hands goose the underlying connection and tells it which
-// database it is talking to.
 func prepareGoose(db *gorm.DB) (*sql.DB, error) {
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -105,8 +94,6 @@ func prepareGoose(db *gorm.DB) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Goose prints its own progress; we log the outcome ourselves so the
-	// format matches the rest of the server.
 	goose.SetLogger(goose.NopLogger())
 
 	return sqlDB, nil

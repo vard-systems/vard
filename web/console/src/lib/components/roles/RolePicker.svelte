@@ -6,14 +6,10 @@
 	import { byScope } from './roles';
 
 	type Props = {
-		/** The roles that can be picked. */
 		roles: Role[];
 		applications: Application[];
-		/** The ids picked so far. */
 		picked: string[];
-		/** Why a role cannot be picked, or undefined when it can. */
 		reason?: (role: Role) => string | undefined;
-		/** Said when there is nothing to pick at all. */
 		empty?: string;
 	};
 
@@ -27,9 +23,6 @@
 
 	let search = $state('');
 
-	/** The roles matching the search, grouped under their scope: global
-	    first, then each application by name. The search matches the role and
-	    its application, so typing an application's name finds its roles. */
 	const groups = $derived(
 		byScope(
 			roles.filter((role) => {

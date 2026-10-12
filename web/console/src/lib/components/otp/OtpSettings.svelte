@@ -28,8 +28,6 @@
 	const stored = $derived(settings.otp);
 	const limits = $derived(settings.limits);
 
-	/** The stored record as the form holds it: every field is a number, and a
-	    field binds text. */
 	function formOf(otp: OTPResponse['otp']) {
 		return {
 			code_length: String(otp.code_length),
@@ -61,8 +59,6 @@
 		(Object.keys(input) as (keyof typeof input)[]).some((key) => input[key] !== stored[key])
 	);
 
-	/** The same bounds the server holds these to, so a value it would refuse
-	    is refused here first — with the button, rather than with an error. */
 	function within(value: number, min: number, max: number): boolean {
 		return Number.isInteger(value) && value >= min && value <= max;
 	}
@@ -74,9 +70,6 @@
 			within(input.resend_seconds, 0, limits.max_resend_seconds)
 	);
 
-	/** How many codes there are to guess at, against how many guesses one
-	    sign-in gets. It is the number these settings actually decide, so the
-	    page says it rather than leaving it to be worked out. */
 	const odds = $derived.by(() => {
 		if (!complete) return '';
 
@@ -94,7 +87,6 @@
 			queryClient.setQueryData(keys.otp.settings, result);
 			form = formOf(result.otp);
 			notify.success('Settings saved', 'The next code sent follows them.');
-			// The log gains an entry for the change.
 			await queryClient.invalidateQueries({ queryKey: keys.admin.overview });
 		},
 		onError: (err: unknown) => {
@@ -117,8 +109,6 @@
 
 <form onsubmit={submit}>
 	{#if settings.flows.length === 0}
-		<!-- Settings nothing reads are a note rather than a setting, so the
-		     page says so instead of looking as though it is doing something. -->
 		<Alert tone="warning">
 			No login flow asks for an emailed code yet, so nothing reads these. Add the
 			<strong>Emailed code</strong> step to a flow on the

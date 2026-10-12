@@ -7,7 +7,6 @@
 		disabled?: boolean;
 		id?: string;
 		name?: string;
-		/** The label, which may hold links. */
 		children: Snippet;
 	};
 

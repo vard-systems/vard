@@ -67,8 +67,6 @@
 		});
 	});
 
-	/** Creating the API opens its page, where its applications, logs and the
-	    rest of its settings are. */
 	const create = createMutation(() => ({
 		mutationFn: () =>
 			apisApi.create({

@@ -7,17 +7,14 @@
 		value: string;
 		label: string;
 		icon?: ComponentType;
-		/** A number beside the label, such as how many roles are held. */
 		count?: number;
 		disabled?: boolean;
 	};
 
 	type Props = {
 		tabs: Tab[];
-		/** The tab on show. */
 		value: string;
 		label: string;
-		/** One tab's content. */
 		panel: Snippet<[string]>;
 	};
 
@@ -25,9 +22,6 @@
 
 	const id = $props.id();
 
-	/** The tabs opened so far. A panel is mounted the first time its tab is
-	    opened and kept after, so what it loads is not asked for until then and
-	    what was typed in it survives switching away. */
 	const opened = new SvelteSet<string>();
 
 	$effect(() => {
@@ -36,8 +30,6 @@
 
 	let triggers: HTMLButtonElement[] = $state([]);
 
-	/** Arrow keys move between the tabs that can be chosen, and choose them,
-	    with Home and End for the first and last: the WAI-ARIA tabs pattern. */
 	function keydown(event: KeyboardEvent, index: number) {
 		const enabled = tabs.map((tab, i) => (tab.disabled ? -1 : i)).filter((i) => i >= 0);
 		const at = enabled.indexOf(index);
@@ -56,8 +48,6 @@
 	}
 </script>
 
-<!-- A row of tabs over the panels they switch between. Only the chosen tab
-     is in the tab order; the arrow keys reach the others. -->
 <div class="tabs">
 	<div class="list" role="tablist" aria-label={label}>
 		{#each tabs as tab, index (tab.value)}
@@ -101,9 +91,6 @@
 </div>
 
 <style>
-	/* The row scrolls on its own when the tabs outgrow a narrow panel, rather
-	   than widening the panel. The rule and the underline are inset shadows,
-	   so scrolling cannot clip them. */
 	.list {
 		display: flex;
 		gap: var(--space-1);

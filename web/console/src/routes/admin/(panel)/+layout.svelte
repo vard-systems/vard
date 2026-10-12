@@ -6,9 +6,6 @@
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-	/** Starts as the server rendered it and is the reader's from then on, so
-	    the values are read once on purpose: a later load returns the same
-	    cookies, and re-reading them would undo a toggle. */
 	const shell = provideShell(
 		untrack(() => data.sidebar),
 		untrack(() => data.closedGroups)
@@ -24,9 +21,6 @@
 </div>
 
 <style>
-	/* The column's width is one registered property, animated here, so the
-	   header's logo block and the sidebar under it are the same number on
-	   every frame of the fold rather than two animations kept in step. */
 	@property --sidebar-width {
 		syntax: '<length>';
 		inherits: true;
@@ -41,7 +35,6 @@
 		transition: --sidebar-width var(--speed-slow) cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
-	/* Folded, the column is just wide enough for the icons. */
 	.shell.mini {
 		--sidebar-width: 56px;
 	}
@@ -52,10 +45,6 @@
 		}
 	}
 
-	/*
-	 * The scrolling area under the header. It is positioned so absolutely positioned descendants
-	 * belong to it rather than the window, which would otherwise add a second scrollbar.
-	 */
 	main {
 		position: relative;
 		height: 100%;
@@ -65,9 +54,6 @@
 		scrollbar-gutter: stable;
 	}
 
-	/* The dashboard brings its own sidebar and pads its own content.
-	   .dashboard belongs to a child component, which is why :has has to match
-	   it globally. */
 	main:has(:global(.dashboard)) {
 		padding: var(--header-height) 0 0;
 	}

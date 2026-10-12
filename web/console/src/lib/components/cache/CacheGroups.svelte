@@ -5,9 +5,7 @@
 
 	type Props = {
 		groups: CacheGroup[];
-		/** The group the listing is narrowed to, if any. */
 		current: string;
-		/** The group being cleared, while it is. */
 		clearing?: string;
 		onFilter: (group: string) => void;
 		onClear: (group: string) => void;
@@ -22,9 +20,6 @@
 	}
 </script>
 
-<!-- Each group is forgotten as one: clearing it moves it on to its next
-     generation, for every server process at once, and what it held is left to
-     expire where nobody reads it. -->
 <Panel title="Groups" icon={RiDatabase2Line} flush>
 	<List label="Cache groups">
 		{#each groups as group (group.name)}

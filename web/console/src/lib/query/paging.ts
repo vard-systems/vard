@@ -1,14 +1,7 @@
-/** How many rows a list shows before "Show more", and asks the API for at a
-    time. The same as the API's own default. */
 export const LIST_PAGE_SIZE = 50;
 
-/** A page of a list the API pages by offset, and counts. */
 type OffsetPage = { total: number; offset: number };
 
-/**
- * Where the page after this one starts, or undefined on the last. `count` is
- * how many rows this page held; the next begins right after them.
- */
 export function nextOffset(page: OffsetPage, count: number): number | undefined {
 	const next = page.offset + count;
 

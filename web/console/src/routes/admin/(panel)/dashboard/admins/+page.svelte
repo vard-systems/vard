@@ -53,7 +53,6 @@
 	const catalog = createQuery(() => adminPermissionsOptions(data.catalog));
 	const applications = createQuery(() => applicationChoicesOptions(data.applications));
 
-	/** The role the list is filtered to, when the URL names one. */
 	const filterRole = $derived(roles.data.find((role) => role.id === data.role));
 
 	let search = $derived(data.search);
@@ -63,8 +62,6 @@
 
 	let selected = $state<string[]>([]);
 
-	/** The ticked rows on screen that can be deleted. Nobody can delete their
-	    own account, so ticking yourself offers nothing. */
 	const deletable = $derived(
 		new Set(rows.filter((admin) => admin.id !== data.admin.id).map((it) => it.id))
 	);

@@ -15,10 +15,8 @@ import (
 	"loginer/internal/model"
 )
 
-// ErrProtectedLanguage protects the base and default languages from removal.
 var ErrProtectedLanguage = errors.New("this language cannot be removed")
 
-// Languages returns every language, in the order the picker lists them.
 func (s *Store) Languages(ctx context.Context) ([]model.Language, error) {
 	return cached(ctx, s, cache.Languages, "all", func() ([]model.Language, error) {
 		var languages []model.Language
@@ -28,7 +26,6 @@ func (s *Store) Languages(ctx context.Context) ([]model.Language, error) {
 	})
 }
 
-// Language returns one language by code.
 func (s *Store) Language(ctx context.Context, code string) (*model.Language, error) {
 	return cached(ctx, s, cache.Languages, "code:"+code, func() (*model.Language, error) {
 		var language model.Language
@@ -40,8 +37,6 @@ func (s *Store) Language(ctx context.Context, code string) (*model.Language, err
 	})
 }
 
-// DefaultLanguage returns the language shown before anyone chooses, writing the
-// base language if none exists.
 func (s *Store) DefaultLanguage(ctx context.Context) (*model.Language, error) {
 	var found model.Language
 	if s.cache.Get(ctx, cache.Languages, "default", &found) {
@@ -69,8 +64,6 @@ func (s *Store) DefaultLanguage(ctx context.Context) (*model.Language, error) {
 	return &language, nil
 }
 
-// OfferedLanguages returns the languages the sign-in pages may offer, in
-// order: the enabled ones, which always includes the default.
 func (s *Store) OfferedLanguages(ctx context.Context) ([]model.Language, error) {
 	if _, err := s.DefaultLanguage(ctx); err != nil {
 		return nil, err
@@ -84,8 +77,6 @@ func (s *Store) OfferedLanguages(ctx context.Context) ([]model.Language, error) 
 	})
 }
 
-// CreateLanguage writes a new language and whatever text it starts with, by
-// app. Nothing is written unless all of it is.
 func (s *Store) CreateLanguage(ctx context.Context, language *model.Language, messages map[string]map[string]string) error {
 	language.Code = strings.TrimSpace(language.Code)
 
@@ -111,7 +102,6 @@ func (s *Store) CreateLanguage(ctx context.Context, language *model.Language, me
 	return nil
 }
 
-// SaveLanguage writes a language's settings back.
 func (s *Store) SaveLanguage(ctx context.Context, language *model.Language) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(language).Error; err != nil {
@@ -129,8 +119,6 @@ func (s *Store) SaveLanguage(ctx context.Context, language *model.Language) erro
 	return nil
 }
 
-// DeleteLanguage removes a language and all of its text. The base language
-// and the default are refused: see ErrProtectedLanguage.
 func (s *Store) DeleteLanguage(ctx context.Context, language *model.Language) error {
 	if language.Code == model.BaseLanguage || language.IsDefault {
 		return ErrProtectedLanguage
@@ -153,7 +141,6 @@ func (s *Store) DeleteLanguage(ctx context.Context, language *model.Language) er
 	return nil
 }
 
-// demoteOtherLanguages keeps exactly one default: the one just written wins.
 func demoteOtherLanguages(tx *gorm.DB, language *model.Language) error {
 	if !language.IsDefault {
 		return nil
@@ -166,14 +153,10 @@ func demoteOtherLanguages(tx *gorm.DB, language *model.Language) error {
 	return translate(err)
 }
 
-// NextLanguagePosition is where a new language goes in the picker: after the
-// last.
 func (s *Store) NextLanguagePosition(ctx context.Context) int {
 	return nextPosition(s.db.WithContext(ctx))
 }
 
-// Translations returns the text of the given languages, by language id and
-// then by app. A language or an app with no text has no entry.
 func (s *Store) Translations(ctx context.Context, languages ...uuid.UUID) (map[uuid.UUID]map[string]map[string]string, error) {
 	out := map[uuid.UUID]map[string]map[string]string{}
 	if len(languages) == 0 {
@@ -195,8 +178,6 @@ func (s *Store) Translations(ctx context.Context, languages ...uuid.UUID) (map[u
 	return out, nil
 }
 
-// Translation returns one language's text for one app, which is empty rather
-// than missing when nothing has been translated.
 func (s *Store) Translation(ctx context.Context, language uuid.UUID, app string) (map[string]string, error) {
 	var row model.Translation
 
@@ -211,16 +192,12 @@ func (s *Store) Translation(ctx context.Context, language uuid.UUID, app string)
 	return row.Messages, nil
 }
 
-// ResolvedTranslation is every key an app looks up in one language, falling
-// back to the base language in the database, then the shipped file. It is
-// cached whole per language and app.
 func (s *Store) ResolvedTranslation(ctx context.Context, language *model.Language, app i18n.App) (map[string]string, error) {
 	return cached(ctx, s, cache.Languages, "text:"+language.Code+":"+string(app), func() (map[string]string, error) {
 		return s.resolveTranslation(ctx, language, app)
 	})
 }
 
-// resolveTranslation is ResolvedTranslation without the cache.
 func (s *Store) resolveTranslation(ctx context.Context, language *model.Language, app i18n.App) (map[string]string, error) {
 	own, err := s.Translation(ctx, language.ID, string(app))
 	if err != nil {
@@ -247,8 +224,6 @@ func (s *Store) resolveTranslation(ctx context.Context, language *model.Language
 	return i18n.Resolve(app, own, english), nil
 }
 
-// SaveTranslation replaces one language's text for one app and bumps
-// updated_at, the version apps cache it by.
 func (s *Store) SaveTranslation(ctx context.Context, language *model.Language, app string, messages map[string]string) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := saveTranslation(tx, language.ID, app, messages); err != nil {
@@ -268,9 +243,6 @@ func (s *Store) SaveTranslation(ctx context.Context, language *model.Language, a
 	return nil
 }
 
-// SaveTranslationKeys merges some keys into one language's text for one app,
-// for pages that edit only a few (the Mail page). An empty value removes the
-// override, bringing the shipped text back.
 func (s *Store) SaveTranslationKeys(ctx context.Context, language *model.Language, app string, messages map[string]string) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row model.Translation
@@ -307,8 +279,6 @@ func (s *Store) SaveTranslationKeys(ctx context.Context, language *model.Languag
 	return nil
 }
 
-// saveTranslation writes the row for one language and app, whether or not
-// there is one already.
 func saveTranslation(tx *gorm.DB, language uuid.UUID, app string, messages map[string]string) error {
 	if messages == nil {
 		messages = map[string]string{}
@@ -324,13 +294,6 @@ func saveTranslation(tx *gorm.DB, language uuid.UUID, app string, messages map[s
 	return translate(err)
 }
 
-// EnsureLanguages syncs the database with the shipped languages. The first
-// start imports them all, enabled only for the base language. Later starts only
-// add keys a release introduced, never overwriting text or restoring a removed
-// language.
-//
-// So a message cleared in a shipped language comes back on the next start; to
-// empty a language, remove it.
 func (s *Store) EnsureLanguages(ctx context.Context, shipped []i18n.File) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := dropPanelText(tx); err != nil {
@@ -350,8 +313,6 @@ func (s *Store) EnsureLanguages(ctx context.Context, shipped []i18n.File) error 
 			err := translate(tx.First(&language, "code = ?", file.Code).Error)
 			switch {
 			case errors.Is(err, ErrNotFound) && !first:
-				// Removed on purpose or shipped after this installation
-				// started; the panel adds it.
 				continue
 			case errors.Is(err, ErrNotFound):
 				language = model.Language{
@@ -366,8 +327,6 @@ func (s *Store) EnsureLanguages(ctx context.Context, shipped []i18n.File) error 
 				return err
 			}
 
-			// A row written before languages had names — the migration's
-			// seed, on an older build — takes them from the file.
 			if language.Name == "" || language.NativeName == "" {
 				err := tx.Model(&language).Updates(map[string]any{"name": file.Name, "native_name": file.Native}).Error
 				if err != nil {
@@ -391,8 +350,6 @@ func (s *Store) EnsureLanguages(ctx context.Context, shipped []i18n.File) error 
 	return nil
 }
 
-// dropPanelText removes the panel's text, left over from when it was
-// translated, so an upgraded database matches a fresh one.
 func dropPanelText(tx *gorm.DB) error {
 	err := tx.Unscoped().
 		Where("app = ?", string(i18n.Console)).
@@ -401,8 +358,6 @@ func dropPanelText(tx *gorm.DB) error {
 	return translate(err)
 }
 
-// addShippedKeys copies into the database the keys a shipped catalog has and
-// the database's copy of the same language does not.
 func addShippedKeys(tx *gorm.DB, language *model.Language, file i18n.File) error {
 	for app, shipped := range file.Messages {
 		if !i18n.ServesApp(language.Code, app) {
@@ -439,8 +394,6 @@ func addShippedKeys(tx *gorm.DB, language *model.Language, file i18n.File) error
 	return nil
 }
 
-// nextPosition is one after the last language's position, on whichever
-// connection or transaction it is given.
 func nextPosition(tx *gorm.DB) int {
 	var last model.Language
 	if err := tx.Order("position DESC").First(&last).Error; err != nil {

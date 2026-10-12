@@ -2,22 +2,14 @@
 	import Button from './Button.svelte';
 
 	type Props = {
-		/** Whether the save is under way. */
 		saving?: boolean;
-		/** Whether the form can be saved as it stands — false while something
-		    it needs is missing. */
 		ready?: boolean;
-		/** Puts the form back to what is stored. */
 		ondiscard: () => void;
 	};
 
 	let { saving = false, ready = true, ondiscard }: Props = $props();
 </script>
 
-<!-- The buttons of a settings page that saves as a whole: shown only once
-     something has been changed, and then stuck to the foot of the window as a
-     floating card, so they are within reach of whichever field is being
-     edited. It submits the form it is in. -->
 <div class="save-bar" role="region" aria-label="Unsaved changes">
 	<span class="label"><span class="dot" aria-hidden="true"></span>Unsaved changes</span>
 

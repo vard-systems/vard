@@ -1,41 +1,22 @@
-/**
- * The navigation bar's timing, separate from drawing so it can be tested with a fake clock. It
- * starts at once, sweeps quickly for fast navigations and creeps for slow ones.
- */
-
-/** How often the bar creeps forward while the page is still loading, and
-    how far it may creep: it never reaches the end on its own, because only
-    the page arriving says the wait is over. */
 export const TRICKLE = 200;
 export const CEILING = 0.94;
 
-/** Where the bar jumps to as soon as it appears, so even a short wait shows
-    a clear line rather than a sliver. */
 export const START = 0.3;
 
-/** How long the full bar stays before it fades. */
 export const HOLD = 80;
 
 export class NavigationProgress {
-	/** How far along, from 0 to 1. */
 	value = $state(0);
 	visible = $state(false);
-	/** Set while the bar jumps back to the start, so it does not visibly
-	    slide backwards from the end. */
 	instant = $state(false);
 
-	/** A navigation is under way. */
 	#running = false;
-	/** Distinguishes overlapping navigations while a previous one settles. */
 	#navigation = 0;
-	/** Settles once the bar has been put back at the start on the page. */
 	#ready: Promise<void> = Promise.resolve();
 
 	#trickle: ReturnType<typeof setTimeout> | undefined;
 	#hide: ReturnType<typeof setTimeout> | undefined;
 
-	/** Puts the jump back to the start on the page before the bar moves
-	    again. Given by the component, which owns the element. */
 	readonly #settle: () => Promise<void>;
 
 	constructor(settle: () => Promise<void> = async () => {}) {
@@ -86,9 +67,6 @@ export class NavigationProgress {
 		);
 	}
 
-	/** Fills the bar and lets it go. A page that arrived before the bar was
-	    even in place still gets it drawn from the start and filled, so a
-	    quick navigation reads as a sweep rather than as nothing. */
 	async finish() {
 		if (!this.#running) return;
 
@@ -112,9 +90,6 @@ export class NavigationProgress {
 		clearTimeout(this.#hide);
 	}
 
-	/** Each step covers a share of what is left, so the bar slows as it goes
-	    and never quite arrives. A little randomness keeps it from looking
-	    like a metronome. */
 	#creep() {
 		this.#trickle = setTimeout(() => {
 			this.value += (CEILING - this.value) * (0.1 + Math.random() * 0.1);

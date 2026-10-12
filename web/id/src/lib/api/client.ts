@@ -1,8 +1,3 @@
-/**
- * A failed request as the server described it: `code` names the problem, translated as
- * `error.<code>` with `params`; `message` is the server's English fallback. `status` is 0 with
- * code `network` when unreachable, and `unknown` for an answer that was not the server's.
- */
 export class ApiError extends Error {
 	constructor(
 		readonly status: number,
@@ -63,9 +58,6 @@ export async function request<T>(path: string, options: Options = {}): Promise<T
 	return payload as T;
 }
 
-/** The identity provider an address has to sign in through, when a password
-    sign-in, registration or reset was refused for it — `sso_required`, which
-    names it — and null for any other error. */
 export function requiredSSO(err: unknown): { slug: string; name: string } | null {
 	if (!(err instanceof ApiError) || err.code !== 'sso_required') return null;
 

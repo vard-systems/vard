@@ -1,6 +1,3 @@
-// Package sessions serves the Sessions page: listing users' live sessions and
-// ending one, or all of a user's together with their applications' tokens.
-// Reading needs users.read and ending users.write.
 package sessions
 
 import (
@@ -19,7 +16,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler serves the Sessions page.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -46,8 +42,6 @@ func (h *Handler) List(c *gin.Context) {
 
 	limit := query.Int(c, "limit", pageSize, pageMax)
 
-	// One more than the page, to know whether there is a next one without
-	// counting.
 	found, err := h.store.ActiveSessions(c.Request.Context(), req.query(limit+1), h.now())
 	if err != nil {
 		respond.Failure(c, h.log, err, "listing sessions failed")

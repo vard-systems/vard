@@ -2,11 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	type Props = {
-		/** A box of its own: bordered and rounded, with rows inset to match.
-		    Leave it off for a list inside a flush Panel, whose box it already
-		    is. */
 		bordered?: boolean;
-		/** What the list is, for a screen reader. */
 		label?: string;
 		children: Snippet;
 	};
@@ -14,8 +10,6 @@
 	let { bordered = false, label, children }: Props = $props();
 </script>
 
-<!-- PocketBase's .list: rows one under another, each ruled off from the one
-     above. Fill it with ListItem. -->
 <ul class="list" class:bordered aria-label={label}>
 	{@render children()}
 </ul>

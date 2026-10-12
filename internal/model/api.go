@@ -12,67 +12,44 @@ import (
 	"loginer/internal/brand"
 )
 
-// API is a resource server applications request tokens for. A token is issued
-// for one API (its audience) and carries only that API's scopes the application
-// is allowed and, if roles are enforced, the user's roles grant.
 type API struct {
 	Base
 
-	Name string `gorm:"size:100;not null" json:"name"`
-	// Identifier is the audience (aud) applications request. It never changes,
-	// since services compare tokens against it.
+	Name        string `gorm:"size:100;not null" json:"name"`
 	Identifier  string `gorm:"size:255;not null;uniqueIndex" json:"identifier"`
 	Description string `gorm:"size:255" json:"description"`
 
-	// EnforceRoles limits a user's token to the scopes their roles grant; off,
-	// the application's allowed scopes decide.
 	EnforceRoles bool `gorm:"not null" json:"enforce_roles"`
 
 	// SigningAlgorithm is asymmetric, so the API verifies with published keys
 	// and never holds one that signs.
 	SigningAlgorithm string `gorm:"type:varchar(16);not null" json:"signing_algorithm"`
 
-	// TokenLifetime is how long an access token for the API lasts, in
-	// seconds. Zero leaves it to the application's access token lifetime.
 	TokenLifetime int `gorm:"not null" json:"token_lifetime"`
 
-	// AllowOfflineAccess lets an application get a refresh token alongside
-	// an access token for the API.
 	AllowOfflineAccess bool `gorm:"not null" json:"allow_offline_access"`
 
-	// System names the part of this server the API is (SystemAdminAPI,
-	// SystemAccountAPI), or is empty. System APIs are kept in step with the
-	// server at startup and cannot be edited or deleted.
 	System string `gorm:"type:varchar(16);not null;default:''" json:"system,omitempty"`
 
 	Scopes []APIScope `gorm:"constraint:OnDelete:CASCADE" json:"scopes,omitempty"`
 }
 
-// TableName pins the table name.
 func (API) TableName() string {
 	return "apis"
 }
 
-// This server's own APIs: the admin API (for services) and the account API (for
-// signed-in users).
 const (
 	SystemAdminAPI   = "admin"
 	SystemAccountAPI = "account"
 )
 
-// The account API's scopes: reading a user's own account, and changing it.
 const (
 	ScopeAccountRead  = "account.read"
 	ScopeAccountWrite = "account.write"
 )
 
-// AdminCLIClientID is the machine-to-machine application created at startup for
-// calling the admin API. It does nothing until given scopes and a secret.
 const AdminCLIClientID = "admin-cli"
 
-// SystemAPIs are the server's own APIs. The admin API's scopes are the admin
-// permissions one for one, each a default scope; super-admin routes are for a
-// person and are not among them.
 func SystemAPIs() []API {
 	admin := API{
 		Name:             "Admin API",
@@ -126,22 +103,17 @@ const (
 	AlgES256 = "ES256"
 )
 
-// SigningAlgorithms lists every algorithm, the default first.
 var SigningAlgorithms = []string{AlgRS256, AlgPS256, AlgES256}
 
-// Bounds on an API's own token lifetime, when it sets one.
 const (
 	minAPITokenLifetime = 60
 	maxAPITokenLifetime = 24 * 60 * 60
 )
 
-// TableName pins the table name.
 func (APIScope) TableName() string {
 	return "api_scopes"
 }
 
-// ApplicationAPI authorises an application to request tokens for an API;
-// without it the audience is refused.
 type ApplicationAPI struct {
 	ApplicationID uuid.UUID    `gorm:"type:uuid;primaryKey" json:"application_id"`
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE" json:"-"`
@@ -150,13 +122,10 @@ type ApplicationAPI struct {
 	CreatedAt     time.Time    `json:"created_at"`
 }
 
-// TableName pins the table name.
 func (ApplicationAPI) TableName() string {
 	return "application_apis"
 }
 
-// ApplicationAPIScope is one scope of an API an application may ask for: the
-// ceiling on what any token for the application carries, whoever the user.
 type ApplicationAPIScope struct {
 	ApplicationID uuid.UUID    `gorm:"type:uuid;primaryKey" json:"application_id"`
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE" json:"-"`
@@ -164,16 +133,12 @@ type ApplicationAPIScope struct {
 	APIScope      *APIScope    `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 }
 
-// TableName pins the table name.
 func (ApplicationAPIScope) TableName() string {
 	return "application_api_scopes"
 }
 
-// scopeNamePattern: lower-case words joined by colons, dots, dashes or
-// underscores ("orders:read", "billing.invoices.export").
 var scopeNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*([:._-][a-z0-9]+)*$`)
 
-// Validate reports the first thing wrong with an API and its scopes.
 func (a API) Validate() error {
 	if strings.TrimSpace(a.Name) == "" {
 		return fmt.Errorf("name is required")

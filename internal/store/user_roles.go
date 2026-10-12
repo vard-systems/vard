@@ -12,30 +12,19 @@ import (
 	"loginer/internal/model"
 )
 
-// RoleQuery is what a listing of roles asks for: which scopes, a search box,
-// a filter, and a page.
 type RoleQuery struct {
-	// Global includes the global roles.
-	Global bool
-	// Applications includes these applications' roles: nil means every
-	// application's, and an empty list none.
+	Global       bool
 	Applications []uuid.UUID
-	// Search matches the name or the description.
-	Search string
-	// Default filters on the is_default flag. Nil means both.
-	Default *bool
-	Limit   int
-	Offset  int
+	Search       string
+	Default      *bool
+	Limit        int
+	Offset       int
 }
 
-// byName orders what a preload brings back, so the roles a user holds or a
-// role inherits always come out in the same order.
 func byName(db *gorm.DB) *gorm.DB {
 	return db.Order("name")
 }
 
-// UserRoles returns a page of roles, sorted by name, along with how many
-// match the query in total.
 func (s *Store) UserRoles(ctx context.Context, q RoleQuery) ([]model.UserRole, int64, error) {
 	query := s.db.WithContext(ctx).Model(&model.UserRole{})
 
@@ -65,8 +54,6 @@ func (s *Store) UserRoles(ctx context.Context, q RoleQuery) ([]model.UserRole, i
 		return nil, 0, err
 	}
 
-	// Global roles first, then each application's roles together, by the
-	// application's name, so a list that mixes applications reads as groups.
 	var roles []model.UserRole
 	err := query.
 		Preload("Inherits", byName).
@@ -81,7 +68,6 @@ func (s *Store) UserRoles(ctx context.Context, q RoleQuery) ([]model.UserRole, i
 	return roles, total, err
 }
 
-// UserRole returns one role by id, with the roles it inherits.
 func (s *Store) UserRole(ctx context.Context, id uuid.UUID) (*model.UserRole, error) {
 	var role model.UserRole
 	err := s.db.WithContext(ctx).
@@ -95,8 +81,6 @@ func (s *Store) UserRole(ctx context.Context, id uuid.UUID) (*model.UserRole, er
 	return &role, nil
 }
 
-// UserRolesByID returns the roles with these ids, sorted by name. An id named
-// twice is one role, and an id with no role behind it is ErrNotFound.
 func (s *Store) UserRolesByID(ctx context.Context, ids []uuid.UUID) ([]model.UserRole, error) {
 	roles := []model.UserRole{}
 
@@ -107,8 +91,6 @@ func (s *Store) UserRolesByID(ctx context.Context, ids []uuid.UUID) ([]model.Use
 	return roles, nil
 }
 
-// DefaultUserRoles returns the roles every new user is given: the default
-// global roles, and each enabled application's default roles.
 func (s *Store) DefaultUserRoles(ctx context.Context) ([]model.UserRole, error) {
 	var roles []model.UserRole
 	err := s.db.WithContext(ctx).
@@ -120,8 +102,6 @@ func (s *Store) DefaultUserRoles(ctx context.Context) ([]model.UserRole, error) 
 	return roles, err
 }
 
-// AddUserRoles gives a user roles, directly. A role the user already holds is
-// left as it is.
 func (s *Store) AddUserRoles(ctx context.Context, userID uuid.UUID, roles []model.UserRole) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, role := range roles {
@@ -138,16 +118,12 @@ func (s *Store) AddUserRoles(ctx context.Context, userID uuid.UUID, roles []mode
 	})
 }
 
-// RemoveUserRole removes a directly held role; roles still implied by another
-// held role stay.
 func (s *Store) RemoveUserRole(ctx context.Context, userID, roleID uuid.UUID) error {
 	return s.db.WithContext(ctx).
 		Exec("DELETE FROM user_role_members WHERE user_id = ? AND user_role_id = ?", userID, roleID).
 		Error
 }
 
-// RoleGraph loads every role with its inheritance and scopes, through the
-// session cache, since every user token needs it.
 func (s *Store) RoleGraph(ctx context.Context) (model.RoleGraph, error) {
 	return cached(ctx, s, cache.Grants, "role_graph", func() (model.RoleGraph, error) {
 		var roles []model.UserRole
@@ -168,8 +144,6 @@ func (s *Store) RoleGraph(ctx context.Context) (model.RoleGraph, error) {
 	})
 }
 
-// RoleMemberCounts says how many users hold each of these roles directly, by
-// id. A role nobody holds is not in the map.
 func (s *Store) RoleMemberCounts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]int64, error) {
 	if len(ids) == 0 {
 		return map[uuid.UUID]int64{}, nil
@@ -178,14 +152,10 @@ func (s *Store) RoleMemberCounts(ctx context.Context, ids []uuid.UUID) (map[uuid
 	return s.countBy(ctx, "user_role_members", "user_role_id", ids)
 }
 
-// CreateUserRole writes a new role with its inheritance. The inherited roles
-// already exist, so only the joins are written.
 func (s *Store) CreateUserRole(ctx context.Context, role *model.UserRole) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Omit("Inherits.*", "APIScopes.*").Create(role).Error), cache.Grants)
 }
 
-// SaveUserRole writes a role and replaces its inheritance and scopes in one
-// transaction.
 func (s *Store) SaveUserRole(ctx context.Context, role *model.UserRole) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit(clause.Associations).Save(role).Error; err != nil {
@@ -200,8 +170,6 @@ func (s *Store) SaveUserRole(ctx context.Context, role *model.UserRole) error {
 	})), cache.Grants)
 }
 
-// DeleteUserRole removes a role with its inheritance, memberships and scope
-// grants, deleting joins explicitly rather than relying on FK constraints.
 func (s *Store) DeleteUserRole(ctx context.Context, role *model.UserRole) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		statements := []string{
@@ -220,8 +188,6 @@ func (s *Store) DeleteUserRole(ctx context.Context, role *model.UserRole) error 
 	}), cache.Grants)
 }
 
-// byID loads the rows with these ids into `into`, sorted by name, and says
-// ErrNotFound if any of them is missing. `found` reports how many were loaded.
 func (s *Store) byID(ctx context.Context, ids []uuid.UUID, into any, found func() int) error {
 	seen := make(map[uuid.UUID]bool, len(ids))
 	for _, id := range ids {
@@ -243,8 +209,6 @@ func (s *Store) byID(ctx context.Context, ids []uuid.UUID, into any, found func(
 	return nil
 }
 
-// countBy counts the rows of a join table per value of one of its columns,
-// optionally only for some values.
 func (s *Store) countBy(ctx context.Context, table, column string, only []uuid.UUID) (map[uuid.UUID]int64, error) {
 	var rows []struct {
 		ID    uuid.UUID

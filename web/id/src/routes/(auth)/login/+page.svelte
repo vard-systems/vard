@@ -23,19 +23,12 @@
 
 	const app = $derived(data.signInRequest?.application ?? null);
 
-	/** What the login flow behind this sign-in lets the page offer. The
-	    application's own "allow registration" still has to agree: a flow says
-	    what this installation allows, an application what it wants. */
 	const flow = $derived(data.login);
 	const offerSocial = $derived(flow.steps.includes('social'));
-	/** A flow without a password step signs people in through the buttons
-	    alone, and makes accounts that way too. */
 	const offerPassword = $derived(flow.steps.includes('password'));
 	const offerRegistration = $derived(
 		offerPassword && flow.allow_registration && app?.allow_registration === true
 	);
-	/** Sign-ins are closed for this flow: nothing on this page would work, so
-	     nothing is offered. The server refuses every way in regardless. */
 	const closed = $derived(!flow.allow_sign_in);
 	const offerRemember = $derived(flow.allow_remember_me);
 
@@ -47,26 +40,15 @@
 	    signing in on is not known to be theirs. */
 	let remember = $state(false);
 	let error = $state('');
-	/** Said instead of an error when the address has to be confirmed first:
-	    a link is on its way, which is news rather than a failure. */
 	let notice = $state('');
 	let submitting = $state(false);
-	/** The identity provider the browser is being sent to, when the address
-	    typed belongs to a domain that has to sign in through it. */
 	let redirecting = $state('');
-	/** A sign-in the flow held back for a code emailed to the address: the
-	    page swaps the password form for the code form until it is typed. */
 	let challenge = $state<CodeChallenge | null>(null);
 
 	const canSubmit = $derived(email.trim() !== '' && password !== '' && !submitting);
 
-	/**
-	 * Handles a finished sign-in, from either the password or the code form. The caller reads
-	 * `next` before awaiting, since the page data can change once the session does.
-	 */
 	async function arrive(result: SignedIn, next: string) {
 		if (result.password_change_required && result.reset_token) {
-			// A temporary password: the user chooses their own before going on.
 			let query = `token=${encodeURIComponent(result.reset_token)}&reason=temporary`;
 			if (data.request) query += `&request=${encodeURIComponent(data.request)}`;
 			// replaceState so the reset token does not stay in the browser's
@@ -78,8 +60,6 @@
 		}
 
 		if (result.code) {
-			// The flow asks for a code emailed to the address. Nobody is
-			// signed in until it is typed back.
 			challenge = result.code;
 			password = '';
 			submitting = false;
@@ -87,7 +67,6 @@
 		}
 
 		if (result.redirect_to) {
-			// Back to the application. The button stays busy until it loads.
 			leaveTo(result.redirect_to);
 			return;
 		}
@@ -99,7 +78,6 @@
 		await goto(next, { invalidateAll: true, replaceState: true });
 	}
 
-	/** The code was typed right, or the sign-in it belonged to ran out. */
 	function signedInWithCode(result: SignedIn) {
 		void arrive(result, data.next);
 	}
@@ -133,9 +111,6 @@
 
 			await arrive(result, next);
 		} catch (err) {
-			// A domain that signs in through its organisation's provider: go
-			// there, with the address, rather than asking for a password it
-			// does not use here.
 			const sso = requiredSSO(err);
 			if (sso) {
 				redirecting = sso.name;
@@ -173,8 +148,6 @@
 		{/snippet}
 	</AuthCard>
 {:else if closed}
-	<!-- Nothing on this page could work, so none of it is drawn: no form, no
-	     provider buttons, no way to a new account. -->
 	<AuthCard
 		organization={data.organization}
 		application={app}
@@ -184,9 +157,6 @@
 		<Alert tone="warning">{t('login.closed_body')}</Alert>
 	</AuthCard>
 {:else if challenge}
-	<!-- The sign-in is held for the code that was emailed. Nothing else on
-	     this page can finish it, so nothing else is offered: the buttons that
-	     start another sign-in would only lose this one. -->
 	<AuthCard
 		organization={data.organization}
 		application={app}
@@ -292,8 +262,6 @@
 		gap: var(--space-4);
 	}
 
-	/* The line under "Stay signed in": what ticking it means on a machine
-	   that is not yours. */
 	.aside {
 		display: block;
 		color: var(--color-text-muted);

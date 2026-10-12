@@ -10,12 +10,8 @@ import (
 	"time"
 )
 
-// maxOutboundRedirects caps how far a federation request will follow a
-// provider's redirects before giving up.
 const maxOutboundRedirects = 5
 
-// errBlockedAddress is a federation request aimed at an address that is not
-// out on the public internet.
 var errBlockedAddress = errors.New("oidc: refusing to connect to a non-public address")
 
 // newFederationClient is the HTTP client for every outbound social and SSO
@@ -68,7 +64,6 @@ func blockedAddress(ip net.IP) bool {
 
 var sharedAddressSpace = &net.IPNet{IP: net.IPv4(100, 64, 0, 0), Mask: net.CIDRMask(10, 32)}
 
-// onLoopback reports whether an address is served from this machine alone.
 func onLoopback(address string) bool {
 	parsed, err := url.Parse(address)
 	if err != nil {

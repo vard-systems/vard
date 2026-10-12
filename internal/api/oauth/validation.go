@@ -7,7 +7,6 @@ import (
 	"loginer/internal/oidc"
 )
 
-// invalidRequest is the error for a request this package could not read.
 func invalidRequest(description string) error {
 	return &oidc.Error{Code: oidc.ErrInvalidRequest, Description: description, Status: http.StatusBadRequest}
 }

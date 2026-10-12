@@ -15,14 +15,10 @@ import (
 	"loginer/internal/model"
 )
 
-// ErrAdminExists keeps the setup endpoint closed once any administrator exists.
 var ErrAdminExists = errors.New("an administrator already exists")
 
-// firstAdminLock names the advisory lock CreateFirstAdmin holds. Any number
-// will do, as long as nothing else locks the same one.
 const firstAdminLock = brand.AdminLock
 
-// AdminsExist reports whether anyone can sign in to the panel yet.
 func (s *Store) AdminsExist(ctx context.Context) (bool, error) {
 	var count int64
 	if err := s.db.WithContext(ctx).Model(&model.Admin{}).Count(&count).Error; err != nil {
@@ -32,9 +28,6 @@ func (s *Store) AdminsExist(ctx context.Context) (bool, error) {
 	return count > 0, nil
 }
 
-// CreateFirstAdmin writes the first administrator, refusing if one exists.
-// Check and write share a locked transaction, so two simultaneous setups cannot
-// both succeed.
 func (s *Store) CreateFirstAdmin(ctx context.Context, admin *model.Admin) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Without the lock, two concurrent setups would each count zero and
@@ -73,7 +66,6 @@ func (s *Store) CreateFirstAdmin(ctx context.Context, admin *model.Admin) error 
 	})
 }
 
-// withAssignments preloads roles (panel-wide first) and confirmed factors.
 func withAssignments(db *gorm.DB) *gorm.DB {
 	return db.
 		Preload("Assignments", func(db *gorm.DB) *gorm.DB {
@@ -84,8 +76,6 @@ func withAssignments(db *gorm.DB) *gorm.DB {
 		Preload("MFA", "confirmed_at IS NOT NULL")
 }
 
-// AdminByUsername loads an administrator and the roles they hold. It is what
-// signing in starts with.
 func (s *Store) AdminByUsername(ctx context.Context, username string) (*model.Admin, error) {
 	var admin model.Admin
 	err := withAssignments(s.db.WithContext(ctx)).
@@ -98,7 +88,6 @@ func (s *Store) AdminByUsername(ctx context.Context, username string) (*model.Ad
 	return &admin, nil
 }
 
-// AdminByID loads an administrator with their role assignments.
 func (s *Store) AdminByID(ctx context.Context, id uuid.UUID) (*model.Admin, error) {
 	var admin model.Admin
 	err := withAssignments(s.db.WithContext(ctx)).
@@ -110,8 +99,6 @@ func (s *Store) AdminByID(ctx context.Context, id uuid.UUID) (*model.Admin, erro
 	return &admin, nil
 }
 
-// principal is how an administrator is cached: account, assignments and
-// confirmed factors, without the password hash or factor secrets.
 type principal struct {
 	Admin       model.Admin                 `json:"admin"`
 	Assignments []model.AdminRoleAssignment `json:"assignments"`
@@ -141,8 +128,6 @@ func (s *Store) AdminPrincipal(ctx context.Context, id uuid.UUID) (*model.Admin,
 	return &admin, nil
 }
 
-// MarkAdminSignedIn records when and from where an administrator last signed
-// in, and forgets the wrong passwords that came before.
 func (s *Store) MarkAdminSignedIn(ctx context.Context, admin *model.Admin, at time.Time, ip string) error {
 	err := s.db.WithContext(ctx).Model(admin).Updates(map[string]any{
 		"last_login_at":      at,
@@ -157,9 +142,6 @@ func (s *Store) MarkAdminSignedIn(ctx context.Context, admin *model.Admin, at ti
 	return err
 }
 
-// ReserveAdminLogin counts an attempt before it is checked and reports false
-// when the account is locked; the `max`th in a row locks it for `lockFor`.
-// Counting first, in the database, holds the lockout against parallel attempts.
 func (s *Store) ReserveAdminLogin(ctx context.Context, admin *model.Admin, at time.Time, max int, lockFor time.Duration) (bool, error) {
 	var rows []struct {
 		LockedUntil *time.Time
@@ -177,14 +159,11 @@ func (s *Store) ReserveAdminLogin(ctx context.Context, admin *model.Admin, at ti
 		return false, err
 	}
 
-	// Sign-ins half way through read the account from the session database.
 	s.forget(ctx, cache.Admins)
 
 	return len(rows) > 0, nil
 }
 
-// ClearAdminFailedLogins gives back the attempts a right password took, for
-// a sign-in that is not finished yet — one waiting for a code.
 func (s *Store) ClearAdminFailedLogins(ctx context.Context, admin *model.Admin) error {
 	err := s.db.WithContext(ctx).Model(admin).Updates(map[string]any{
 		"failed_login_count": 0,
@@ -197,49 +176,14 @@ func (s *Store) ClearAdminFailedLogins(ctx context.Context, admin *model.Admin) 
 	return err
 }
 
-// RecordFailedLogin counts a wrong password atomically and, at the `max`th in a
-// row, locks the account for `lockFor`. It reports whether this attempt locked
-// it.
-func (s *Store) RecordFailedLogin(ctx context.Context, admin *model.Admin, at time.Time, max int, lockFor time.Duration) (bool, error) {
-	var row struct {
-		LockedUntil *time.Time
-	}
-
-	err := s.db.WithContext(ctx).Raw(`
-		UPDATE admins SET
-			locked_until = CASE WHEN failed_login_count + 1 >= @max THEN @until ELSE locked_until END,
-			failed_login_count = CASE WHEN failed_login_count + 1 >= @max THEN 0 ELSE failed_login_count + 1 END
-		WHERE id = @id
-		RETURNING locked_until`,
-		map[string]any{"max": max, "until": at.Add(lockFor), "id": admin.ID},
-	).Scan(&row).Error
-	if err != nil {
-		return false, err
-	}
-
-	// A lock has to reach the session database, or a request already signed
-	// in would go on as if the account were open.
-	s.forget(ctx, cache.Admins)
-
-	return row.LockedUntil != nil && row.LockedUntil.After(at), nil
-}
-
-// AdminQuery is what a listing of administrators asks for: a search box, a
-// filter, and a page.
 type AdminQuery struct {
-	// Search matches the username, the email or the name.
 	Search string
-	// Status filters on the account's status. Empty means every status.
 	Status model.Status
-	// Role keeps the administrators who hold this role, anywhere. Nil means
-	// everyone.
 	Role   *uuid.UUID
 	Limit  int
 	Offset int
 }
 
-// Admins returns a page of administrators, newest first, with their roles,
-// along with how many match the query in total.
 func (s *Store) Admins(ctx context.Context, q AdminQuery) ([]model.Admin, int64, error) {
 	query := s.db.WithContext(ctx).Model(&model.Admin{})
 
@@ -274,8 +218,6 @@ func (s *Store) Admins(ctx context.Context, q AdminQuery) ([]model.Admin, int64,
 	return admins, total, err
 }
 
-// CreateAdmin writes a new administrator with the roles they carry, in one
-// transaction.
 func (s *Store) CreateAdmin(ctx context.Context, admin *model.Admin) error {
 	return translate(s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit(clause.Associations).Create(admin).Error; err != nil {
@@ -286,8 +228,6 @@ func (s *Store) CreateAdmin(ctx context.Context, admin *model.Admin) error {
 	}))
 }
 
-// SaveAdmin writes an administrator back and replaces the roles they hold with
-// the ones they carry, in one transaction.
 func (s *Store) SaveAdmin(ctx context.Context, admin *model.Admin) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit(clause.Associations).Save(admin).Error; err != nil {
@@ -311,7 +251,6 @@ func (s *Store) SaveOwnAccount(ctx context.Context, admin *model.Admin) error {
 		Updates(admin).Error), cache.Admins)
 }
 
-// writeAssignments inserts only the assignment rows.
 func writeAssignments(tx *gorm.DB, admin *model.Admin) error {
 	for i := range admin.Assignments {
 		admin.Assignments[i].ID = uuid.Nil
@@ -325,8 +264,6 @@ func writeAssignments(tx *gorm.DB, admin *model.Admin) error {
 	return nil
 }
 
-// DeleteAdmin removes an administrator with their roles, sessions and factors.
-// The activity log keeps their username.
 func (s *Store) DeleteAdmin(ctx context.Context, admin *model.Admin) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		statements := []string{

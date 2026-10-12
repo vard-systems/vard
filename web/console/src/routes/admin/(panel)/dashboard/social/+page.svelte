@@ -37,24 +37,14 @@
 
 	const queryClient = useQueryClient();
 
-	// The list is a query seeded with what the server rendered, as on the
-	// users page: a save or the refresh button refills the cache rather than
-	// reloading the page.
 	const social = createQuery(() =>
 		socialProvidersOptions({ providers: data.providers, kinds: data.kinds })
 	);
 
 	const canWrite = $derived(can(data.admin, 'social.write'));
 
-	// A writable derived: typing updates it, and it follows the URL again
-	// whenever that changes, so the back button and a shared link both put the
-	// right term in the box.
 	let search = $derived(data.search);
 
-	/**
-	 * Providers left by the search and filter (both in the URL), filtered here since the endpoint
-	 * returns them all. Runs during SSR too, so shared links arrive filtered.
-	 */
 	const providers = $derived.by(() => {
 		const term = data.search.trim().toLowerCase();
 
@@ -70,18 +60,12 @@
 		});
 	});
 
-	/** How many of them are on screen. The endpoint answers with every one,
-	    so "Show more" reveals the next page of what is already here; a new
-	    search starts again from one page. */
 	let shown = $derived(firstPage(data.search, data.status));
 	const rows = $derived(providers.slice(0, shown));
 
 	let editing = $state<SocialProvider | null>(null);
 	let dialogOpen = $state(false);
 
-	/** The rows that are ticked, by id, and the ones of those still on screen:
-	    a search can take a ticked row out of view, and acting on what nobody
-	    can see is not something a panel should offer. */
 	let selected = $state<string[]>([]);
 	const visible = $derived(new Set(rows.map((provider) => provider.id)));
 	const chosen = $derived(selected.filter((id) => visible.has(id)));
@@ -89,16 +73,12 @@
 	let confirmingRemove = $state(false);
 	let busy = $state(false);
 
-	/** How many accounts the ticked providers sign in, so removing them says
-	    what it costs before it is done. */
 	const chosenAccounts = $derived(
 		social.data.providers
 			.filter((provider) => chosen.includes(provider.id))
 			.reduce((sum, provider) => sum + provider.identities, 0)
 	);
 
-	/** The search and the filter are the URL, so the back button walks through
-	    them and a filtered list can be linked to. */
 	async function apply(changes: { search?: string; status?: string }) {
 		const params = new SvelteURLSearchParams(page.url.searchParams);
 
@@ -136,8 +116,6 @@
 		try {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.social.all }),
-				// A button that does something invisible in 20ms reads as one
-				// that did nothing.
 				new Promise((done) => setTimeout(done, 400))
 			]);
 		} finally {
@@ -150,10 +128,6 @@
 		confirmingRemove = false;
 	}
 
-	/**
-	 * Enables or disables the ticked providers, one PATCH each, then refetches so a partial
-	 * failure still leaves the list right.
-	 */
 	const setEnabled = createMutation(() => ({
 		mutationFn: async (enabled: boolean) => {
 			for (const id of chosen) {
@@ -186,7 +160,6 @@
 		onSuccess: (_result: void, ids: string[]) => {
 			notify.success(`${countOf(ids.length, 'provider')} removed`);
 			reset();
-			// Users lose a way in, so their records change with them.
 			return Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.social.all }),
 				queryClient.invalidateQueries({ queryKey: keys.users.all })

@@ -51,10 +51,6 @@
 
 	const queryClient = useQueryClient();
 
-	// The list and the fields are queries, seeded with what the server has
-	// already rendered: the first paint costs no request, and everything
-	// after — a save, the refresh button, coming back to the tab — is the
-	// cache being refilled rather than the page being reloaded.
 	const users = createInfiniteQuery(() =>
 		usersOptions({ search: data.search, verified: data.verified, role: data.role }, data.page)
 	);
@@ -64,27 +60,20 @@
 	const roles = createQuery(() => roleChoicesOptions(data.roles));
 	const applications = createQuery(() => applicationChoicesOptions(data.applications));
 
-	/** What this administrator may change. Without users.write the page is
-	    for looking; without user_fields.write the field settings are hidden. */
 	const canWrite = $derived(can(data.admin, 'users.write'));
 	const canEditFields = $derived(can(data.admin, 'user_fields.write'));
 
-	/** The role the list is filtered to, when the URL names one. */
 	const filterRole = $derived(roles.data.find((role) => role.id === data.role));
 	const filterApp = $derived(
 		applications.data.find((app) => app.id === filterRole?.application_id)
 	);
 
-	// A writable derived: typing updates it, and it goes back to following the
-	// URL whenever that changes, so the back button and a shared link both put
-	// the right term in the box.
 	let search = $derived(data.search);
 
 	let editing = $state<UserRecord | null>(null);
 	let userOpen = $state(false);
 	let fieldsOpen = $state(false);
 
-	/** The rows that are ticked, by id. */
 	let selected = $state<string[]>([]);
 
 	/**
@@ -95,12 +84,8 @@
 	const chosen = $derived(selected.filter((id) => visible.has(id)));
 	let confirmingDelete = $state(false);
 
-	/** True while the chosen records are being deleted. Ours rather than the
-	    mutation's own isPending, so the bar cannot be left disabled. */
 	let busy = $state(false);
 
-	/** The search and the filter are the URL, so the server renders the
-	    result and the back button walks through it. */
 	async function apply(changes: { search?: string; verified?: string; role?: string }) {
 		const params = new SvelteURLSearchParams(page.url.searchParams);
 
@@ -118,8 +103,6 @@
 		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
 	}
 
-	/** Searching as you type, but only once you have paused: every keystroke
-	    is a round trip to the server otherwise. */
 	let timer: ReturnType<typeof setTimeout>;
 
 	function debounced() {
@@ -134,10 +117,6 @@
 
 	let refreshing = $state(false);
 
-	/**
-	 * Refetches the rows. The spinner is held briefly so an instant answer still shows the button
-	 * did something.
-	 */
 	async function refresh() {
 		refreshing = true;
 
@@ -157,14 +136,10 @@
 		confirmingDelete = false;
 	}
 
-	/** The records behind the ticked ids, in the order the table shows them. */
 	function chosenRecords(): UserRecord[] {
 		return rows.filter((user) => chosen.includes(user.id));
 	}
 
-	/** Deleting what is ticked, one call each — the API removes one record at
-	    a time, and a half-finished delete should still leave the list right,
-	    which is what refilling the cache afterwards is for. */
 	const removeSelected = createMutation(() => ({
 		mutationFn: async (ids: string[]) => {
 			for (const id of ids) {
@@ -174,7 +149,6 @@
 		onSuccess: (_result: void, ids: string[]) => {
 			notify.success(`${countOf(ids.length, 'user')} deleted`);
 			reset();
-			// A role's count of users changes with them.
 			return Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.users.all }),
 				queryClient.invalidateQueries({ queryKey: keys.roles.all })
@@ -255,8 +229,6 @@
 	/>
 
 	{#if data.role}
-		<!-- Arriving from the roles page filters the list to one role's
-		     holders; this says so, and is the way back to everyone. -->
 		<FilterChip title="Clear the role filter" onclear={() => apply({ role: '' })}>
 			role: <strong>{filterRole?.name ?? 'unknown'}</strong>
 			{#if filterApp}in {filterApp.name}{/if}

@@ -12,10 +12,6 @@
 	} from '$lib/components/ui';
 </script>
 
-<!-- Where to read about the product, behind one button: the bar carries one
-     quiet icon instead of a row of them, and the menu has room to say what
-     each link is and that it leaves the panel. It is the same on every width,
-     so the links are never somewhere else on a phone. -->
 <DropdownMenu label="Help and resources">
 	{#snippet trigger()}<Icon icon={RiQuestionLine} size="1.125rem" />{/snippet}
 
@@ -38,8 +34,6 @@
 
 	<MenuSeparator />
 
-	<!-- Not a link: the one shortcut worth knowing, written down where
-	     somebody looking for help will find it. -->
 	<MenuInfo icon={RiKeyboardLine} label="Search the panel">
 		{#snippet end()}<Kbd>/</Kbd>{/snippet}
 	</MenuInfo>

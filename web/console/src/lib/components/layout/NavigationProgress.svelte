@@ -4,7 +4,6 @@
 	import { navigating } from '$app/state';
 	import { NavigationProgress } from '$lib/state/progress.svelte';
 
-	/** How long the finished bar takes to fade out. */
 	const FADE = 150;
 
 	let bar: HTMLDivElement;
@@ -44,10 +43,6 @@
 	$effect(() => () => progress.dispose());
 </script>
 
-<!--
-	The top loading bar, moved with a transform only. Timing lives in
-	lib/state/progress.svelte.ts.
--->
 <div
 	bind:this={bar}
 	class="progress"
@@ -77,7 +72,6 @@
 
 	.visible {
 		opacity: 1;
-		/* Only while it is out does it get a layer of its own. */
 		will-change: transform;
 		transition: transform 120ms linear;
 	}

@@ -6,11 +6,6 @@
  */
 import type { Theme } from './types';
 
-/* ---- Type ------------------------------------------------------------ */
-
-/** The system's faces: the fallback while Chirp downloads, and for scripts
-    it does not cover. The emoji faces keep an emoji in a name in colour
-    rather than as a box. */
 const systemSans = [
 	'system-ui',
 	'-apple-system',
@@ -38,24 +33,18 @@ const systemMono = [
 	'monospace'
 ].join(', ');
 
-/* ---- Colour ---------------------------------------------------------- */
-
 /**
  * The light palette, which names every colour token. Values are solid, since transparency would
  * differ over each surface.
  */
 const light = {
-	// The brand: whatever is chosen, pressed or current.
 	'color-brand': '#0088cc',
 	'color-brand-hover': '#0077b3',
 	'color-brand-text': '#fff',
-	// The brand as a quiet fill: a selected row, a chosen chip.
 	'color-brand-subtle': '#e5f3fa',
 
 	'color-surface': '#fff',
 	'color-body': '#fff',
-	// The faintest tint: the header strip of a panel, and the wash under a
-	// hovered row.
 	'color-surface-alt': '#f7f7f8',
 	'color-primary': 'var(--color-brand)',
 	'color-primary-hover': 'var(--color-brand-hover)',
@@ -65,15 +54,10 @@ const light = {
 	'color-accent': 'var(--color-brand)',
 	'color-accent-text': 'var(--color-brand-text)',
 
-	// Text is near-black and the hint a dark grey: a light grey on white
-	// reads as disabled rather than as secondary.
 	'color-text': '#16191d',
 	'color-text-hint': '#5b6168',
 	'color-text-disabled': '#969ba1',
 
-	// A field has no fill of its own and a hairline border, Telegram's: it
-	// takes the colour of whatever it sits on — the page, a panel, a dialog
-	// — so it never reads as a block of a different grey.
 	'color-input': 'transparent',
 	'color-input-border': '#d3d7dc',
 	'color-input-border-hover': '#aab0b7',
@@ -90,11 +74,9 @@ const light = {
 	'surface-warning': '#fcf1e3',
 
 	'shadow-sm': '0 1px 2px 0 rgb(0 0 0 / 8%)',
-	// The drop under an open panel.
 	'shadow-panel': '0 6px 16px -6px rgb(0 0 0 / 14%)',
 	'shadow-md': '0 4px 20px 0 rgb(0 0 0 / 10%)',
 	selection: '#b3dcf0',
-	// What the page behind an open dialog is dimmed with.
 	'color-overlay': 'rgb(0 0 0 / 30%)',
 
 	'scrollbar-thumb': '#d4d6da',
@@ -103,8 +85,6 @@ const light = {
 	'tooltip-surface': '#2b2b2e',
 	'tooltip-text': '#fff',
 
-	// A toast is the theme inverted, so it stands out without its own colour; its icon uses the
-	// other theme's brand colour, which reads on black.
 	'toast-surface': '#16191d',
 	'toast-text': '#fff',
 	'toast-hint': '#aab0b7',
@@ -112,8 +92,6 @@ const light = {
 
 	'row-hover': '#f7f7f8',
 
-	// The sidebar column, a step off the page with a darker hover. Page names use full text
-	// colour (grey reads as disabled); only the current row is filled with brand blue.
 	'nav-surface': 'var(--color-surface-alt)',
 	'nav-hover': 'var(--color-secondary-alt)',
 	'nav-text': 'var(--color-text)',
@@ -121,10 +99,6 @@ const light = {
 	'nav-current': 'var(--color-brand)',
 	'nav-current-text': 'var(--color-brand-text)',
 
-	// What floats over the page comes in two kinds, each with its own set: a
-	// popover — a menu, a select's list — and a dialog — a full-window one, a modal,
-	// the command palette. In the light theme both are white like the page,
-	// set apart by a hairline, a shadow and, for a dialog, the dimmed page.
 	'popover-surface': 'var(--color-surface)',
 	'popover-surface-alt': 'var(--color-surface-alt)',
 	'popover-secondary': 'var(--color-secondary)',
@@ -143,10 +117,6 @@ const light = {
 	'dialog-input-border-hover': 'var(--popover-input-border-hover)',
 	'dialog-row-hover': 'var(--popover-row-hover)',
 
-	// Code, highlighted (ui/CodeBlock): Shiki colours each token with one of
-	// these, so a block of JSON follows the theme like everything else. In
-	// JSON a key is a keyword, a string value a string, and a number, true,
-	// false or null a constant.
 	'syntax-foreground': 'var(--color-text)',
 	'syntax-background': 'transparent',
 	'syntax-token-keyword': '#0550ae',
@@ -159,23 +129,13 @@ const light = {
 	'syntax-token-punctuation': 'var(--color-text-hint)',
 	'syntax-token-link': 'var(--color-info)',
 
-	// Read by `color-scheme` in base.css, so native controls — a date
-	// picker, a scrollbar — follow the theme.
 	'color-scheme': 'light'
 } as const;
 
-/** Every colour token, by name. */
 export type ColorName = keyof typeof light;
 
-/** The black the dark theme is built on: the page, and the step every
-    surface above it is measured from. */
 const black = '#000';
 
-/**
- * The dark palette: only what differs from light. True black with cool, faintly blue greys;
- * elevation is lightness rather than shadow, so each raised surface (dialog, panel head,
- * popover) is one step up the same ramp.
- */
 const dark: Partial<Record<ColorName, string>> = {
 	'color-brand-hover': '#1a9ad9',
 	'color-brand-subtle': '#06202e',
@@ -197,24 +157,16 @@ const dark: Partial<Record<ColorName, string>> = {
 	'color-success': '#4cbb5e',
 	'color-danger': '#ef5350',
 	'color-warning': '#f0a040',
-	// Text-level brand, lifted so it reads on black; fills keep #0088cc.
 	'color-info': '#3ea6e6',
 
 	'surface-success': '#081a0f',
 	'surface-danger': '#220b0b',
 	'surface-warning': '#221808',
 
-	// Almost no shadows: surfaces are set apart by their colour and a
-	// hairline. The exception is what floats — a menu, a modal — whose
-	// shadow falls on nothing over the black page but gives it an edge over
-	// a dialog, which is lighter.
 	'shadow-sm': 'none',
 	'shadow-panel': 'none',
 	'shadow-md': '0 12px 32px -8px rgb(0 0 0 / 70%)',
 	selection: '#0a4d73',
-	// The page behind a dialog is dimmed with black, the theme's own colour:
-	// the page is black already, but its words, panels and borders are not,
-	// and dimming them is what brings the sheet forward.
 	'color-overlay': 'rgb(0 0 0 / 72%)',
 
 	'scrollbar-thumb': '#2f3336',
@@ -258,8 +210,6 @@ const dark: Partial<Record<ColorName, string>> = {
 	'color-scheme': 'dark'
 };
 
-/* ---- The theme ------------------------------------------------------- */
-
 export const theme: Theme<ColorName> = {
 	fonts: {
 		// Chirp, bundled from assets/fonts: weights 400, 500 and 700 (600 drawn from 700), Latin
@@ -292,9 +242,6 @@ export const theme: Theme<ColorName> = {
 				file: (subset, weight) =>
 					`google-sans-code/google-sans-code-${subset}-${weight}-normal.woff2`
 			},
-			// Poppins is the display face: the header's wordmark, and nothing
-			// that runs to a sentence. One weight in one alphabet is all a word
-			// in English needs. Open (SIL OFL 1.1), from @fontsource/poppins.
 			{
 				family: 'Poppins',
 				style: 'normal',
@@ -328,14 +275,11 @@ export const theme: Theme<ColorName> = {
 				md: '10px',
 				lg: '14px',
 				pill: '999px',
-				// Three kinds of corner: fields are tight (so they never read as buttons), controls are
-				// pills, surfaces are softly rounded.
 				field: 'var(--radius-sm)',
 				control: 'var(--radius-pill)',
 				surface: 'var(--radius-lg)'
 			}
 		},
-		// On a 5px step, like PocketBase.
 		{
 			prefix: 'space',
 			tokens: { 1: '5px', 2: '10px', 3: '15px', 4: '20px', 5: '30px', 6: '40px' }
@@ -343,37 +287,19 @@ export const theme: Theme<ColorName> = {
 		{
 			prefix: '',
 			tokens: {
-				// Every control is one of these heights: md is the default, and
-				// what a toolbar row is built from — a button, an input, a
-				// filter — so they line up without anyone measuring. sm is for
-				// controls inside a row or a bar.
 				'control-height': '45px',
 				'control-height-sm': '35px',
 				'control-height-lg': '52px',
-				// A row in a list of places to go, rather than a control to
-				// press: a column of 45px rows would be a column of buttons.
 				'nav-item-height': '34px',
 				'header-height': '55px',
 				'sidebar-width': '240px',
-				// Every dashboard page sits in one frame, centred and no wider
-				// than this, so a wide monitor gets margins rather than a search
-				// box two thousand pixels long.
 				'content-max-width': '1400px',
-				// How wide a form's column may grow inside that frame.
 				'form-max-width': '760px',
-				// The frame's inset from the window. It widens with the window:
-				// see `responsive` below.
 				'page-gutter': '16px',
-				// How wide the column of a full-window dialog is: a form beside
-				// the titles of its sections, not a line across the window.
 				'dialog-column-width': '880px',
-				// The thumb is drawn inside a transparent border, so the bar reads
-				// thinner than the space it reserves (styles/scrollbars.css).
 				'scrollbar-size': '10px'
 			}
 		},
-		// Motion. A dialog arrives and leaves, and the sidebar slides, over
-		// PocketBase's --modalAnimationSpeed.
 		{ prefix: '', tokens: { 'speed-fast': '70ms', speed: '140ms', 'speed-slow': '200ms' } }
 	],
 
@@ -381,14 +307,12 @@ export const theme: Theme<ColorName> = {
 		phone: '34rem',
 		small: '40rem',
 		tablet: '48rem',
-		// Below this the sidebar is a panel the header opens.
 		sidebar: '55rem',
 		laptop: '64rem',
 		desktop: '80rem',
 		wide: '90rem'
 	},
 
-	// The gutter widens with the window: tight on a phone, roomy on a monitor.
 	responsive: [
 		{ minWidth: '48rem', tokens: { 'page-gutter': '24px' } },
 		{ minWidth: '90rem', tokens: { 'page-gutter': '32px' } }
@@ -396,9 +320,6 @@ export const theme: Theme<ColorName> = {
 
 	colors: { light, dark },
 
-	// Inside anything that floats, the page's surface tokens are swapped for
-	// its set, so every component in it — panels, rows, fields, dividers — is
-	// drawn at that level without knowing where it is.
 	layers: {
 		swapped: {
 			'color-surface': 'surface',

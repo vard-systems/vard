@@ -14,9 +14,6 @@
 	let { label, checked = $bindable(false), onChange, disabled, id, name }: Props = $props();
 </script>
 
-<!-- A boolean is the toggle itself: no filled box around it, the way
-     PocketBase shows a record's true/false fields. The parts are styled once
-     in styles/ark.css. -->
 <Switch.Root
 	{id}
 	{name}

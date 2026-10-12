@@ -6,8 +6,6 @@
 
 	let { data }: { data: PageData } = $props();
 
-	/** The template's shape, named in the panel's language, under an
-	    identifier nobody has yet. */
 	const initial = $derived.by(() => {
 		const template = TEMPLATES.find((one) => one.id === data.template) ?? TEMPLATES[0];
 		const name = template.name;

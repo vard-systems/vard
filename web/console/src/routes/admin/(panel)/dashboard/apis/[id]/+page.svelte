@@ -31,8 +31,6 @@
 
 	let tab = $derived<string>(data.tab);
 
-	/** The tab is kept in the address, so reloading or sharing the link opens
-	    the same one, without a round trip to the server. */
 	function show(value: string) {
 		tab = value;
 

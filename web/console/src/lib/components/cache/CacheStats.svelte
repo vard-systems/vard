@@ -19,8 +19,6 @@
 	const megabytes = $derived(Math.round(database.memory_bytes / 1024 / 1024));
 </script>
 
-<!-- Four numbers for the database on show. Memory is the Redis server's, which
-     both databases share, so it reads the same on either. -->
 <div class="stats">
 	<StatCard
 		label="Keys"

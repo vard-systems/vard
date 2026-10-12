@@ -1,7 +1,6 @@
 package social
 
 import (
-	"net/http"
 	"strings"
 
 	"loginer/internal/api/respond"
@@ -10,14 +9,11 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo checks the request and copies it onto a provider. Kind and slug are
-// read only when `creating`, since they form the registered callback address.
-// Everything else changes only where the request mentions it.
 func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.Sealer, creating bool) error {
 	if creating {
 		kind := model.SocialKind(strings.ToLower(strings.TrimSpace(r.Kind)))
 		if _, known := model.SocialSpecFor(kind); !known {
-			return badRequest("kind must be one of: " + strings.Join(kindNames(), ", "))
+			return respond.Invalid("kind must be one of: " + strings.Join(kindNames(), ", "))
 		}
 
 		provider.Kind = kind
@@ -54,16 +50,13 @@ func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.S
 		return err
 	}
 
-	// What a provider of this kind has to carry is the model's to say.
 	if err := provider.Validate(); err != nil {
-		return badRequest(err.Error())
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
 }
 
-// lower is validate.Lower except that an empty value falls back to `current`,
-// the field's default, rather than clearing it.
 func lower(sent *string, current string) string {
 	if value := strings.ToLower(validate.Text(sent, current)); value != "" {
 		return value
@@ -72,7 +65,6 @@ func lower(sent *string, current string) string {
 	return strings.ToLower(current)
 }
 
-// cleanScopes drops the empty ones and the spaces around each.
 func cleanScopes(sent []string) model.StringList {
 	scopes := make(model.StringList, 0, len(sent))
 	for _, scope := range sent {
@@ -84,8 +76,6 @@ func cleanScopes(sent []string) model.StringList {
 	return scopes
 }
 
-// seal encrypts a secret that was sent, and leaves the stored one alone when
-// none was.
 func seal(sealer *jose.Sealer, sent *string, stored *[]byte) error {
 	if sent == nil {
 		return nil
@@ -114,8 +104,4 @@ func kindNames() []string {
 	}
 
 	return names
-}
-
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }

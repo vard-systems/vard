@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiAppsLine } from 'svelte-remixicon';
-	import { apisApi, applicationsApi, type Admin, type API, type APIApplication } from '$lib/api';
+	import { applicationsApi, type Admin, type API, type APIApplication } from '$lib/api';
 	import {
 		Alert,
 		Badge,
@@ -14,7 +14,7 @@
 		notify
 	} from '$lib/components/ui';
 	import { can } from '$lib/permissions';
-	import { keys } from '$lib/query';
+	import { keys, apiApplicationsOptions } from '$lib/query';
 	import { types } from '$lib/components/applications/applications';
 
 	type Props = {
@@ -26,14 +26,10 @@
 
 	const queryClient = useQueryClient();
 
-	const applications = createQuery(() => ({
-		queryKey: keys.apis.applications(api.id),
-		queryFn: async () => (await apisApi.applications(api.id)).applications
-	}));
+	const applications = createQuery(() => apiApplicationsOptions(api.id));
 
 	let search = $state('');
 
-	/** The application being saved, so only its row shows the wait. */
 	let saving = $state<string | null>(null);
 
 	const shown = $derived.by(() => {
@@ -43,7 +39,6 @@
 			? all.filter((app) => app.name.toLowerCase().includes(term) || app.client_id.includes(term))
 			: all;
 
-		// Authorised first: they are what this tab is usually opened to check.
 		return [...matching].sort((a, b) => Number(b.authorized) - Number(a.authorized));
 	});
 

@@ -9,15 +9,10 @@
 
 	const t = useTranslator();
 
-	// Whom to ask when signing in is not working. It is the organisation's
-	// contact rather than any application's: someone who cannot get in has no
-	// application to ask.
 	const support = $derived(supportLinks(data.organization));
 </script>
 
 <div class="shell">
-	<!-- Where somebody who cannot read the page looks first: the corner, not
-	     the footer below a form in a language they do not know. -->
 	<div class="corner">
 		<LanguagePicker languages={data.languages} current={data.language} />
 		<ThemeToggle />
@@ -35,7 +30,6 @@
 				{t('shell.trouble')}
 				{#each support as link, index (link.href)}
 					{#if index > 0}<span aria-hidden="true">·</span>{/if}
-					<!-- An address to write to, or a number to ring. -->
 					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 					<a href={link.href}>{link.label}</a>
 				{/each}
@@ -119,7 +113,6 @@
 		gap: var(--space-1);
 	}
 
-	/* On a phone the page itself is the surface. */
 	@media (max-width: 30rem) {
 		.shell {
 			min-height: 100dvh;
