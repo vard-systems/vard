@@ -19,35 +19,25 @@ import (
 	"strings"
 )
 
-// The algorithms a key can sign with.
 const (
 	RS256 = "RS256"
 	PS256 = "PS256"
 	ES256 = "ES256"
 )
 
-// Algorithms lists every algorithm, RS256 first: it is what every OpenID
-// Connect client has to support, so ID tokens use it.
 var Algorithms = []string{RS256, PS256, ES256}
 
-// ErrInvalid covers a malformed token, an unknown key and a bad signature
-// alike; callers treat them the same.
 var ErrInvalid = errors.New("invalid token")
 
 var b64 = base64.RawURLEncoding
 
-// Key is a private key and what it is published as — or, for a key somebody
-// else holds, only its public half, which is enough to verify with.
 type Key struct {
 	ID        string
 	Algorithm string
 	Private   crypto.Signer
-	// PublicKey is the public half of a key this server does not hold, such
-	// as an identity provider's (ParseJWK). It is ignored when Private is set.
 	PublicKey crypto.PublicKey
 }
 
-// public is the key's public half, whichever way it was given.
 func (k Key) public() crypto.PublicKey {
 	if k.Private != nil {
 		return k.Private.Public()
@@ -56,15 +46,12 @@ func (k Key) public() crypto.PublicKey {
 	return k.PublicKey
 }
 
-// Header is the part of a JWS header this package writes and reads.
 type Header struct {
 	Algorithm string `json:"alg"`
 	KeyID     string `json:"kid,omitempty"`
 	Type      string `json:"typ,omitempty"`
 }
 
-// Generate makes a new private key for an algorithm: a 2048-bit RSA key for
-// RS256 and PS256, a P-256 key for ES256.
 func Generate(algorithm string) (crypto.Signer, error) {
 	switch algorithm {
 	case RS256, PS256:
@@ -76,8 +63,6 @@ func Generate(algorithm string) (crypto.Signer, error) {
 	}
 }
 
-// Sign returns a compact JWS. `typ` is "at+jwt" for access tokens (RFC 9068) or
-// "JWT" for ID tokens.
 func Sign(key Key, typ string, claims any) (string, error) {
 	header, err := json.Marshal(Header{Algorithm: key.Algorithm, KeyID: key.ID, Type: typ})
 	if err != nil {
@@ -223,8 +208,6 @@ type JWK struct {
 	Y     string `json:"y,omitempty"`
 }
 
-// Public returns the key's public half as a JWK, which is what the JWKS
-// endpoint publishes.
 func (k Key) Public() (JWK, error) {
 	jwk := JWK{Use: "sig", Algorithm: k.Algorithm, KeyID: k.ID}
 
@@ -238,7 +221,6 @@ func (k Key) Public() (JWK, error) {
 		if err != nil {
 			return JWK{}, err
 		}
-		// Uncompressed point: 0x04, then X and Y, 32 bytes each on P-256.
 		jwk.KeyType = "EC"
 		jwk.Curve = "P-256"
 		jwk.X = b64.EncodeToString(point[1:33])
@@ -250,8 +232,6 @@ func (k Key) Public() (JWK, error) {
 	return jwk, nil
 }
 
-// ParseJWK reads another party's published public key. RSA keys verify RS256 or
-// PS256, P-256 keys ES256; a key without alg gets its type's usual one.
 func ParseJWK(jwk JWK) (Key, error) {
 	key := Key{ID: jwk.KeyID, Algorithm: jwk.Algorithm}
 

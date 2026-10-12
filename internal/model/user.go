@@ -18,8 +18,6 @@ type User struct {
 	LastName        string `gorm:"size:100" json:"last_name"`
 	IsActive        bool   `gorm:"not null" json:"is_active"`
 
-	// PasswordHash is empty for a user without a password and never leaves the
-	// server.
 	PasswordHash string `gorm:"size:255;not null;default:''" json:"-"`
 	// IsPasswordTemporary marks a password an administrator chose for the
 	// user, which the user is expected to replace the next time they sign in.
@@ -33,9 +31,7 @@ type User struct {
 	SocialAccounts []SocialAccount `gorm:"-" json:"social_accounts"`
 
 	// LastLoginAt is when the user last signed in to an application.
-	LastLoginAt *time.Time `json:"last_login_at"`
-	// FailedLoginCount and LockedUntil lock the account for a while after
-	// repeated wrong passwords, as for administrators.
+	LastLoginAt      *time.Time `json:"last_login_at"`
 	FailedLoginCount int        `gorm:"not null;default:0" json:"-"`
 	LockedUntil      *time.Time `json:"locked_until"`
 
@@ -60,20 +56,16 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-// BeforeSave stores the address normalized, whoever wrote it — the sign-up
-// page, the panel, a provider's answer.
 func (u *User) BeforeSave(*gorm.DB) error {
 	u.Email = NormalizeEmail(u.Email)
 	return nil
 }
 
-// AfterFind fills in HasPassword for a record read from the database.
 func (u *User) AfterFind(*gorm.DB) error {
 	u.HasPassword = u.PasswordHash != ""
 	return nil
 }
 
-// SetPassword replaces the user's password with a hash of the one given.
 func (u *User) SetPassword(password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
@@ -89,8 +81,6 @@ func (u *User) SetPassword(password string) error {
 	return nil
 }
 
-// CanSignIn reports whether the user may sign in now: active, and not locked
-// after too many wrong passwords.
 func (u User) CanSignIn(now time.Time) bool {
 	return u.IsActive && (u.LockedUntil == nil || now.After(*u.LockedUntil))
 }

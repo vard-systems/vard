@@ -14,7 +14,6 @@ func Truncate(value string, max int) string {
 		return value
 	}
 
-	// Back up off a continuation byte to the start of the rune it belongs to.
 	for max > 0 && !utf8.RuneStart(value[max]) {
 		max--
 	}

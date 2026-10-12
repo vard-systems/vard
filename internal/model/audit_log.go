@@ -18,11 +18,8 @@ type AuditLog struct {
 	AdminID    *uuid.UUID `gorm:"type:uuid;index" json:"admin_id,omitempty"`
 	ActorEmail string     `gorm:"size:255" json:"actor_email,omitempty"`
 
-	// Action is what happened, named "<resource>.<action>", matching the
-	// permission names.
 	Action string `gorm:"size:128;not null" json:"action"`
 
-	// TargetType and TargetID are what it happened to.
 	TargetType string `gorm:"index;size:64" json:"target_type,omitempty"`
 	TargetID   string `gorm:"index;size:64" json:"target_id,omitempty"`
 
@@ -35,13 +32,10 @@ type AuditLog struct {
 	RequestID string `gorm:"index;size:64" json:"request_id,omitempty"`
 }
 
-// TableName pins the table name.
 func (AuditLog) TableName() string {
 	return "audit_logs"
 }
 
-// BeforeCreate gives the row an id. AuditLog does not embed Base, so it needs
-// its own hook.
 func (a *AuditLog) BeforeCreate(*gorm.DB) error {
 	if a.ID != uuid.Nil {
 		return nil

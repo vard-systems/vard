@@ -13,7 +13,6 @@ type AdminPermission struct {
 	Scopable bool `json:"scopable"`
 }
 
-// The permissions an admin role can grant.
 const (
 	PermActivityRead    = "activity.read"
 	PermUsersRead       = "users.read"
@@ -44,8 +43,6 @@ const (
 	PermRoleAssignmentsWrite = "role_assignments.write"
 )
 
-// AdminPermissions is the catalog in panel order. Managing administrators is
-// not in it: it belongs to super_admin alone.
 var AdminPermissions = []AdminPermission{
 	{
 		Name:        PermActivityRead,
@@ -159,14 +156,11 @@ var AdminPermissions = []AdminPermission{
 	},
 }
 
-// IsAdminPermission reports whether a name is in the catalog.
 func IsAdminPermission(name string) bool {
 	_, ok := adminPermission(name)
 	return ok
 }
 
-// IsScopablePermission reports whether a permission can be granted for one
-// application.
 func IsScopablePermission(name string) bool {
 	permission, ok := adminPermission(name)
 	return ok && permission.Scopable
@@ -182,7 +176,6 @@ func adminPermission(name string) (AdminPermission, bool) {
 	return AdminPermission{}, false
 }
 
-// AdminPermissionNames is every name in the catalog, in catalog order.
 func AdminPermissionNames() []string {
 	names := make([]string, 0, len(AdminPermissions))
 	for _, permission := range AdminPermissions {

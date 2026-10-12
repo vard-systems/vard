@@ -31,21 +31,13 @@ type Application struct {
 	LogoURL    string `gorm:"size:512" json:"logo_url"`
 	WebsiteURL string `gorm:"size:512" json:"website_url"`
 
-	// PrivacyURL and TosURI (RFC 7591 names) are linked from the sign-in pages
-	// and agreed to on registration.
 	PrivacyURL string `gorm:"size:512" json:"privacy_url"`
 	TermsURL   string `gorm:"size:512" json:"terms_url"`
 
-	// AllowRegistration offers "Create an account"; such users get the default
-	// roles.
 	AllowRegistration bool `gorm:"not null" json:"allow_registration"`
 
-	// ClientID is what the application identifies itself with. It is made
-	// here and never changes.
 	ClientID string `gorm:"size:64;uniqueIndex;not null" json:"client_id"`
 
-	// ClientSecretHash is a SHA-256 of the secret, shown only once. SecretHint
-	// is its last four characters.
 	ClientSecretHash string     `gorm:"size:64" json:"-"`
 	SecretHint       string     `gorm:"size:8" json:"secret_hint"`
 	SecretCreatedAt  *time.Time `json:"secret_created_at"`
@@ -57,71 +49,49 @@ type Application struct {
 	PostLogoutRedirectURIs []string `gorm:"type:text;serializer:json" json:"post_logout_redirect_uris"`
 	Scopes                 []string `gorm:"type:text;serializer:json" json:"scopes"`
 
-	// RequirePKCE refuses an authorization request without a code challenge.
-	// It is always on for a public client.
 	RequirePKCE bool `gorm:"not null" json:"require_pkce"`
 
-	// Token lifetimes, in seconds.
 	AccessTokenLifetime  int `gorm:"not null" json:"access_token_lifetime"`
 	IDTokenLifetime      int `gorm:"not null" json:"id_token_lifetime"`
 	RefreshTokenLifetime int `gorm:"not null" json:"refresh_token_lifetime"`
 
-	// AssertRoles puts the user's roles in this application into tokens and
-	// userinfo; RequireRoleAssignment admits only users holding one of its
-	// roles.
 	AssertRoles           bool `gorm:"not null" json:"assert_roles"`
 	RequireRoleAssignment bool `gorm:"not null;default:false" json:"require_role_assignment"`
 
-	// LoginFlowID is this application's flow. Nil, or a flow that was turned
-	// off, means the default flow.
 	LoginFlowID *uuid.UUID `gorm:"type:uuid;index" json:"login_flow_id"`
 
-	// IsEnabled is false for an application that may not sign anyone in.
 	IsEnabled bool `gorm:"not null;index" json:"is_enabled"`
 }
 
-// TableName pins the table name.
 func (Application) TableName() string {
 	return "applications"
 }
 
-// ApplicationType is what kind of client an application is, which decides
-// whether it can keep a secret and which grants make sense for it.
 type ApplicationType string
 
 const (
-	// AppWeb is a server-rendered app with a backend that keeps a secret.
-	AppWeb ApplicationType = "web"
-	// AppSPA is a single-page app running entirely in the browser.
-	AppSPA ApplicationType = "spa"
-	// AppNative is a mobile or desktop app installed on a device.
+	AppWeb    ApplicationType = "web"
+	AppSPA    ApplicationType = "spa"
 	AppNative ApplicationType = "native"
-	// AppM2M is a service calling APIs as itself, with no user present.
-	AppM2M ApplicationType = "m2m"
+	AppM2M    ApplicationType = "m2m"
 )
 
-// ApplicationTypes lists every type, in the order the panel offers them.
 var ApplicationTypes = []ApplicationType{AppWeb, AppSPA, AppNative, AppM2M}
 
-// Valid reports whether t is a known type.
 func (t ApplicationType) Valid() bool {
 	return slices.Contains(ApplicationTypes, t)
 }
 
-// Public reports whether the type is a public client: one whose code ships to
-// the user's device, and so cannot keep a secret.
 func (t ApplicationType) Public() bool {
 	return t == AppSPA || t == AppNative
 }
 
-// AuthMethod is how a client proves who it is at the token endpoint.
 type AuthMethod string
 
 const (
 	AuthClientSecretBasic AuthMethod = "client_secret_basic"
 	AuthClientSecretPost  AuthMethod = "client_secret_post"
-	// AuthNone is a public client's: it has no secret, and PKCE stands in.
-	AuthNone AuthMethod = "none"
+	AuthNone              AuthMethod = "none"
 )
 
 // The grants an application may use. The implicit and resource owner password
@@ -132,11 +102,8 @@ const (
 	GrantClientCredentials = "client_credentials"
 )
 
-// GrantTypes lists every grant, in the order the panel offers them.
 var GrantTypes = []string{GrantAuthorizationCode, GrantRefreshToken, GrantClientCredentials}
 
-// The scopes an application may request. "roles" asks for the user's roles
-// in the application.
 const (
 	ScopeOpenID        = "openid"
 	ScopeProfile       = "profile"
@@ -145,25 +112,20 @@ const (
 	ScopeRoles         = "roles"
 )
 
-// Scopes lists every scope, in the order the panel offers them.
 var Scopes = []string{ScopeOpenID, ScopeProfile, ScopeEmail, ScopeOfflineAccess, ScopeRoles}
 
-// Default token lifetimes, in seconds.
 const (
 	DefaultAccessTokenLifetime  = 60 * 60
 	DefaultIDTokenLifetime      = 60 * 60
 	DefaultRefreshTokenLifetime = 30 * 24 * 60 * 60
 )
 
-// Bounds on the lifetimes an administrator may set.
 const (
 	minTokenLifetime        = 60
 	maxAccessTokenLifetime  = 24 * 60 * 60
 	maxRefreshTokenLifetime = 365 * 24 * 60 * 60
 )
 
-// ResponseTypes is what the application may ask the authorization endpoint
-// for. It follows from the grants (RFC 7591 section 2.1), so it is not stored.
 func (a Application) ResponseTypes() []string {
 	if slices.Contains(a.GrantTypes, GrantAuthorizationCode) {
 		return []string{"code"}
@@ -172,14 +134,10 @@ func (a Application) ResponseTypes() []string {
 	return []string{}
 }
 
-// HasSecret reports whether the application authenticates with a secret.
 func (a Application) HasSecret() bool {
 	return a.TokenAuthMethod != AuthNone
 }
 
-// Normalise applies what the type implies before Validate: public clients get
-// no secret and require PKCE; machine-to-machine clients get no redirects or
-// OpenID scopes.
 func (a *Application) Normalise() {
 	switch {
 	case a.Type.Public():
@@ -205,8 +163,6 @@ func (a *Application) Normalise() {
 	a.PostLogoutRedirectURIs = tidyURIs(a.PostLogoutRedirectURIs)
 }
 
-// Validate reports the first thing wrong with an application's settings, as
-// a sentence naming the field. Call Normalise first.
 func (a Application) Validate() error {
 	if !a.Type.Valid() {
 		return fmt.Errorf("type must be one of: web, spa, native, m2m")
@@ -234,7 +190,6 @@ func (a Application) Validate() error {
 
 	switch a.Type {
 	case AppM2M:
-		// Normalise has already settled everything for this type.
 	case AppWeb, AppSPA, AppNative:
 		if !code {
 			return fmt.Errorf("grant_types: a %s application signs users in, so it needs authorization_code", a.Type)
@@ -345,7 +300,6 @@ func loopback(host string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
-// NewClientID returns a client id: 128 random bits, hex encoded.
 func NewClientID() (string, error) {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -355,10 +309,8 @@ func NewClientID() (string, error) {
 	return hex.EncodeToString(b[:]), nil
 }
 
-// ErrNoSecret is returned when a secret is asked of a public client.
 var ErrNoSecret = errors.New("a public client has no secret")
 
-// IssueSecret replaces the client secret and returns it; only its hash is kept.
 func (a *Application) IssueSecret(now time.Time) (string, error) {
 	if !a.HasSecret() {
 		return "", ErrNoSecret
@@ -391,8 +343,6 @@ func (a Application) CheckSecret(secret string) bool {
 	return subtle.ConstantTimeCompare([]byte(hex.EncodeToString(sum[:])), []byte(a.ClientSecretHash)) == 1
 }
 
-// ordered keeps catalog values once each in catalog order, followed by unknown
-// values for Validate to refuse.
 func ordered(values, catalog []string) []string {
 	out := []string{}
 	for _, known := range catalog {
@@ -410,7 +360,6 @@ func ordered(values, catalog []string) []string {
 	return out
 }
 
-// tidyURIs trims each URI and drops blanks and repeats.
 func tidyURIs(uris []string) []string {
 	out := []string{}
 	for _, uri := range uris {

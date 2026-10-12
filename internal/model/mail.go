@@ -8,57 +8,39 @@ import (
 	"loginer/internal/brand"
 )
 
-// MailSettings is the single row saying how email is sent. It is seeded from
-// LOGINER_SMTP_* and read per message, so a fix applies to the next email.
-// Password is sealed with the secret key and never read back out.
 type MailSettings struct {
 	Base
 
-	// IsEnabled sends messages; off, they are logged instead.
 	IsEnabled bool `gorm:"not null" json:"is_enabled"`
 
 	Host string `gorm:"size:255" json:"host"`
 	Port int    `gorm:"not null" json:"port"`
 
-	// Encryption is how the connection is protected; see MailEncryption.
 	Encryption MailEncryption `gorm:"type:varchar(16);not null" json:"encryption"`
 
-	// Username is empty for a server that takes no credentials — a relay on
-	// the same host, usually. Password is then ignored.
 	Username string `gorm:"size:255" json:"username"`
 	Password []byte `gorm:"type:bytea" json:"-"`
 
-	// FromAddress and FromName are stored apart because only the address is
-	// validated.
 	FromAddress string `gorm:"size:255" json:"from_address"`
 	FromName    string `gorm:"size:100" json:"from_name"`
 }
 
-// TableName pins the table name.
 func (MailSettings) TableName() string {
 	return "mail_settings"
 }
 
-// MailEncryption is how the connection to the mail server is protected.
 type MailEncryption string
 
 const (
-	// MailStartTLS connects in the clear and upgrades with STARTTLS. It is
-	// what port 587 expects, and what almost every provider asks for.
 	MailStartTLS MailEncryption = "starttls"
 
-	// MailTLS connects with TLS from the first byte, which port 465 expects.
 	MailTLS MailEncryption = "tls"
 
-	// MailNone is no encryption at all: a relay on localhost, and nothing
-	// that crosses a network. The panel says so.
 	MailNone MailEncryption = "none"
 )
 
-// MailEncryptions is the catalog, in the order the panel offers them.
 var MailEncryptions = []MailEncryption{MailStartTLS, MailTLS, MailNone}
 
-// IsMailEncryption reports whether a value is one of them.
 func IsMailEncryption(value MailEncryption) bool {
 	for _, known := range MailEncryptions {
 		if known == value {
@@ -81,8 +63,6 @@ func DefaultMailSettings() MailSettings {
 	}
 }
 
-// Validate reports the first problem. Host and address are required only once
-// sending is on.
 func (m MailSettings) Validate() error {
 	if !IsMailEncryption(m.Encryption) {
 		return fmt.Errorf("encryption must be one of: %s", joinEncryptions())
@@ -158,8 +138,6 @@ type MailParam struct {
 	Description string `json:"description"`
 }
 
-// MailMessageSpecs is every email the server sends, in panel order. Add new
-// messages here.
 var MailMessageSpecs = []MailMessageSpec{
 	{
 		Kind:        "reset",
@@ -202,7 +180,6 @@ var MailMessageSpecs = []MailMessageSpec{
 	},
 }
 
-// MailMessageKeys is every key the Mail page edits.
 func MailMessageKeys() []string {
 	keys := make([]string, 0, len(MailMessageSpecs)*2)
 	for _, spec := range MailMessageSpecs {
@@ -212,7 +189,6 @@ func MailMessageKeys() []string {
 	return keys
 }
 
-// MailTextPrefix groups every key used in emails.
 const MailTextPrefix = "email."
 
 // IsMailTextKey keeps translators' saves off email text, where {link} places a

@@ -12,15 +12,11 @@ import (
 	"fmt"
 )
 
-// Sealer encrypts secrets at rest with AES-256-GCM under a key derived from the
-// server's secret, so a database dump alone cannot sign tokens.
 type Sealer struct {
 	aead cipher.AEAD
 	key  [sha256.Size]byte
 }
 
-// NewSealer derives the encryption key from `secret`. The secret is already
-// long and random, so a single SHA-256 is enough to shape it into a key.
 func NewSealer(secret string) (*Sealer, error) {
 	sum := sha256.Sum256([]byte(secret))
 
@@ -48,7 +44,6 @@ func (s *Sealer) Tag(purpose string, data []byte) []byte {
 	return mac.Sum(nil)
 }
 
-// Seal encodes a private key and encrypts it.
 func (s *Sealer) Seal(key crypto.Signer) ([]byte, error) {
 	der, err := x509.MarshalPKCS8PrivateKey(key)
 	if err != nil {
@@ -58,8 +53,6 @@ func (s *Sealer) Seal(key crypto.Signer) ([]byte, error) {
 	return s.SealBytes(der)
 }
 
-// SealBytes encrypts a secret that must be read back (a signing key, a TOTP
-// seed) as nonce plus ciphertext.
 func (s *Sealer) SealBytes(plain []byte) ([]byte, error) {
 	nonce := make([]byte, s.aead.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
@@ -69,7 +62,6 @@ func (s *Sealer) SealBytes(plain []byte) ([]byte, error) {
 	return s.aead.Seal(nonce, nonce, plain, nil), nil
 }
 
-// OpenBytes decrypts what SealBytes made.
 func (s *Sealer) OpenBytes(sealed []byte) ([]byte, error) {
 	size := s.aead.NonceSize()
 	if len(sealed) < size {
@@ -84,11 +76,8 @@ func (s *Sealer) OpenBytes(sealed []byte) ([]byte, error) {
 	return plain, nil
 }
 
-// ErrWrongSecret is returned when a stored key cannot be decrypted: almost
-// always because LOGINER_SECRET_KEY is not the one it was sealed with.
 var ErrWrongSecret = errors.New("jose: a signing key could not be decrypted; is LOGINER_SECRET_KEY the one it was made with?")
 
-// Open decrypts and decodes a key Seal made.
 func (s *Sealer) Open(sealed []byte) (crypto.Signer, error) {
 	der, err := s.OpenBytes(sealed)
 	if err != nil {

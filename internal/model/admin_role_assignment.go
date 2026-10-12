@@ -7,9 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// AdminRoleAssignment gives an administrator a role for the whole panel or for
-// one application. A scoped assignment grants only the role's scopable
-// permissions; super_admin is always panel-wide.
 type AdminRoleAssignment struct {
 	ID        uuid.UUID `gorm:"type:uuid;primarykey" json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -20,18 +17,14 @@ type AdminRoleAssignment struct {
 	RoleID uuid.UUID `gorm:"type:uuid;not null;index" json:"role_id"`
 	Role   AdminRole `gorm:"constraint:OnDelete:CASCADE" json:"role"`
 
-	// ApplicationID is the application the role is held for, or nil for the
-	// whole panel.
 	ApplicationID *uuid.UUID   `gorm:"type:uuid;index" json:"application_id"`
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE" json:"application,omitempty"`
 }
 
-// TableName pins the table name.
 func (AdminRoleAssignment) TableName() string {
 	return "admin_role_assignments"
 }
 
-// BeforeCreate gives the row its id.
 func (a *AdminRoleAssignment) BeforeCreate(*gorm.DB) error {
 	if a.ID != uuid.Nil {
 		return nil
@@ -46,13 +39,10 @@ func (a *AdminRoleAssignment) BeforeCreate(*gorm.DB) error {
 	return nil
 }
 
-// Global reports whether the assignment covers the whole panel.
 func (a AdminRoleAssignment) Global() bool {
 	return a.ApplicationID == nil
 }
 
-// Grants reports whether the assignment allows a permission for an application;
-// a nil application asks about the whole panel.
 func (a AdminRoleAssignment) Grants(permission string, application *uuid.UUID) bool {
 	if a.Global() {
 		return a.Role.Grants(permission)

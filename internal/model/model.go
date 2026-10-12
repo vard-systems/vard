@@ -1,5 +1,3 @@
-// Package model holds the database models. Every table in the database is
-// declared here as a struct, and registered in All so it gets migrated.
 package model
 
 import (
@@ -18,8 +16,6 @@ type Base struct {
 	DeletedAt gorm.DeletedAt `json:"-"`
 }
 
-// BeforeCreate gives a row its id before it is written. GORM finds this hook
-// through the embedded Base, so every model that embeds Base gets it.
 func (b *Base) BeforeCreate(*gorm.DB) error {
 	if b.ID != uuid.Nil {
 		return nil
@@ -40,8 +36,6 @@ func newID() (uuid.UUID, error) {
 	return uuid.NewV7()
 }
 
-// All returns every model in migration order (referenced tables first). New
-// models must be added here.
 func All() []any {
 	return []any{
 		&Organization{},

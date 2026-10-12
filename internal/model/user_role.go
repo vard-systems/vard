@@ -35,13 +35,10 @@ type UserRole struct {
 	APIScopes []APIScope `gorm:"many2many:user_role_api_scopes;constraint:OnDelete:CASCADE" json:"api_scopes,omitempty"`
 }
 
-// Global reports whether the role belongs to no application.
 func (r UserRole) Global() bool {
 	return r.ApplicationID == nil
 }
 
-// In reports whether the role belongs to this application. A nil application
-// asks about global roles.
 func (r UserRole) In(application *uuid.UUID) bool {
 	if r.ApplicationID == nil || application == nil {
 		return r.ApplicationID == nil && application == nil
@@ -50,27 +47,18 @@ func (r UserRole) In(application *uuid.UUID) bool {
 	return *r.ApplicationID == *application
 }
 
-// MayInherit: a global role may include any role; an application role, global
-// roles and its own application's.
 func (r UserRole) MayInherit(other UserRole) bool {
 	return r.Global() || other.Global() || other.In(r.ApplicationID)
 }
 
-// TableName pins the table name, and keeps these apart from the roles
-// administrators hold.
 func (UserRole) TableName() string {
 	return "user_roles"
 }
 
-// RoleNamePattern is what a role may be called: short, lower case, and safe
-// to put in a token or compare in code. Admin roles keep the same rule.
 var RoleNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,63}$`)
 
-// RoleGraph is every role by id with its inherited ids, resolved in memory.
 type RoleGraph map[uuid.UUID]UserRole
 
-// Reaches reports whether `to` can be reached from `from` by following what
-// roles inherit, `from` itself included.
 func (g RoleGraph) Reaches(from, to uuid.UUID) bool {
 	for _, role := range g.walk([]uuid.UUID{from}) {
 		if role.ID == to {
@@ -81,8 +69,6 @@ func (g RoleGraph) Reaches(from, to uuid.UUID) bool {
 	return false
 }
 
-// WouldCycle reports whether letting `role` inherit `inherits` would make it
-// inherit itself.
 func (g RoleGraph) WouldCycle(role uuid.UUID, inherits []uuid.UUID) bool {
 	for _, id := range inherits {
 		if id == role || g.Reaches(id, role) {
@@ -93,8 +79,6 @@ func (g RoleGraph) WouldCycle(role uuid.UUID, inherits []uuid.UUID) bool {
 	return false
 }
 
-// Effective is every role holding these amounts to, the held ones included,
-// each once and sorted by name. Ids not in the graph are skipped.
 func (g RoleGraph) Effective(held []uuid.UUID) []UserRole {
 	roles := g.walk(held)
 	sort.Slice(roles, func(i, j int) bool { return roles[i].Name < roles[j].Name })
@@ -128,9 +112,6 @@ func (g RoleGraph) walk(from []uuid.UUID) []UserRole {
 	return roles
 }
 
-// Via maps each role the held roles amount to onto the held roles it comes
-// through; a role lists itself only when given directly and implied by nothing
-// else.
 func (g RoleGraph) Via(held []uuid.UUID) map[uuid.UUID][]uuid.UUID {
 	via := map[uuid.UUID][]uuid.UUID{}
 
@@ -148,7 +129,6 @@ func (g RoleGraph) Via(held []uuid.UUID) map[uuid.UUID][]uuid.UUID {
 	return via
 }
 
-// Names returns the roles' names, in the order given.
 func Names(roles []UserRole) []string {
 	names := make([]string, 0, len(roles))
 	for _, role := range roles {
