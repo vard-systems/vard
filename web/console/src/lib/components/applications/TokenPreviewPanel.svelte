@@ -9,7 +9,6 @@
 	} from 'svelte-remixicon';
 	import {
 		applicationsApi,
-		usersApi,
 		type Admin,
 		type Application,
 		type TokenPreview,
@@ -26,7 +25,7 @@
 		notify
 	} from '$lib/components/ui';
 	import { can } from '$lib/permissions';
-	import { keys } from '$lib/query';
+	import { applicationAccessOptions, userSearchOptions } from '$lib/query';
 
 	type Props = {
 		application: Application;
@@ -60,17 +59,13 @@
 
 	/** The users matching what is typed, a handful at a time. */
 	const users = createQuery(() => ({
-		queryKey: ['users', 'preview-search', userSearch.trim()],
-		queryFn: async () => (await usersApi.list({ search: userSearch.trim() })).users.slice(0, 6),
+		...userSearchOptions(userSearch.trim()),
 		enabled: subject === 'user' && mayPickUsers && user === null
 	}));
 
 	/** The APIs the application is authorised for, which are the audiences it
 	    can ask for. */
-	const access = createQuery(() => ({
-		queryKey: keys.applications.access(application.id),
-		queryFn: async () => (await applicationsApi.apiAccess(application.id)).apis
-	}));
+	const access = createQuery(() => applicationAccessOptions(application.id));
 
 	const audienceOptions = $derived<SelectOption[]>([
 		{

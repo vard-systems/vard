@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
 	import { RiRefreshLine } from 'svelte-remixicon';
-	import { apisApi, type API, type APILogEntry } from '$lib/api';
+	import type { API, APILogEntry } from '$lib/api';
 	import { Alert, Badge, IconButton, Note } from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { apiLogsOptions } from '$lib/query';
 	import { formatDateTime } from '$lib/utils/format';
 
 	type Props = {
@@ -12,10 +12,7 @@
 
 	let { api }: Props = $props();
 
-	const logs = createQuery(() => ({
-		queryKey: keys.apis.logs(api.id),
-		queryFn: async () => (await apisApi.logs(api.id)).logs
-	}));
+	const logs = createQuery(() => apiLogsOptions(api.id));
 
 	const actions: Record<string, { label: string; tone: 'neutral' | 'success' | 'danger' }> = {
 		'api.created': { label: 'API created', tone: 'success' },

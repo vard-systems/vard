@@ -29,3 +29,22 @@ export function userFieldsOptions(initial: UserField[]) {
 		initialData: initial
 	});
 }
+
+/** Every role one user holds, with where each comes from. */
+export function roleMappingsOptions(userId: string) {
+	return queryOptions({
+		queryKey: keys.users.mappings(userId),
+		queryFn: async () => (await usersApi.roleMappings(userId)).roles
+	});
+}
+
+/** How many users a picker offers for a typed name. */
+export const USER_SEARCH_LIMIT = 6;
+
+/** The first few users matching a typed name, for pickers. */
+export function userSearchOptions(term: string) {
+	return queryOptions({
+		queryKey: keys.users.search(term),
+		queryFn: async () => (await usersApi.list({ search: term })).users.slice(0, USER_SEARCH_LIMIT)
+	});
+}

@@ -29,7 +29,7 @@
 		Thumb,
 		notify
 	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { keys, roleMappingsOptions } from '$lib/query';
 	import { markFor as providerMark } from '$lib/components/social/providers';
 	import { formatDate, formatRelative } from '$lib/utils/format';
 	import RoleMappings from '$lib/components/roles/RoleMappings.svelte';
@@ -126,8 +126,7 @@
 	/** How many roles the user holds, for the tab's count. The role mapping
 	    shares this query, so opening the tab asks for nothing more. */
 	const mappings = createQuery(() => ({
-		queryKey: keys.users.mappings(current?.id ?? ''),
-		queryFn: async () => (await usersApi.roleMappings(current!.id)).roles,
+		...roleMappingsOptions(current?.id ?? ''),
 		enabled: open && current !== null
 	}));
 

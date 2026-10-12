@@ -4,7 +4,7 @@
 	import { RiCodeBoxLine, RiShieldCheckLine } from 'svelte-remixicon';
 	import { applicationsApi, type APIAccess } from '$lib/api';
 	import { Alert, Badge, Checkbox, Icon, Note, Switch, notify } from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { keys, applicationAccessOptions } from '$lib/query';
 
 	type Props = {
 		applicationId: string;
@@ -16,10 +16,7 @@
 
 	const queryClient = useQueryClient();
 
-	const access = createQuery(() => ({
-		queryKey: keys.applications.access(applicationId),
-		queryFn: async () => (await applicationsApi.apiAccess(applicationId)).apis
-	}));
+	const access = createQuery(() => applicationAccessOptions(applicationId));
 
 	/** The API being saved, so only its card shows the wait. */
 	let saving = $state<string | null>(null);

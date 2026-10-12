@@ -52,3 +52,12 @@ export function cacheKeysOptions(params: CacheKeyParams, initial?: CacheKeyPage)
 		staleTime: 0
 	});
 }
+
+/** One key and what it holds. Read fresh each time: it is about to be edited. */
+export function cacheValueOptions(database: CacheDatabaseName, name: string) {
+	return queryOptions({
+		queryKey: keys.cache.key(database, name),
+		queryFn: () => cacheApi.key(database, name),
+		staleTime: 0
+	});
+}

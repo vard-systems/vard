@@ -33,3 +33,11 @@ export function applicationChoicesOptions(initial: Application[]) {
 		initialData: initial
 	});
 }
+
+/** What one application may do with each API. */
+export function applicationAccessOptions(id: string) {
+	return queryOptions({
+		queryKey: keys.applications.access(id),
+		queryFn: async () => (await applicationsApi.apiAccess(id)).apis
+	});
+}

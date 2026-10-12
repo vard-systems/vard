@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiAppsLine } from 'svelte-remixicon';
-	import { apisApi, applicationsApi, type Admin, type API, type APIApplication } from '$lib/api';
+	import { applicationsApi, type Admin, type API, type APIApplication } from '$lib/api';
 	import {
 		Alert,
 		Badge,
@@ -14,7 +14,7 @@
 		notify
 	} from '$lib/components/ui';
 	import { can } from '$lib/permissions';
-	import { keys } from '$lib/query';
+	import { keys, apiApplicationsOptions } from '$lib/query';
 	import { types } from '$lib/components/applications/applications';
 
 	type Props = {
@@ -26,10 +26,7 @@
 
 	const queryClient = useQueryClient();
 
-	const applications = createQuery(() => ({
-		queryKey: keys.apis.applications(api.id),
-		queryFn: async () => (await apisApi.applications(api.id)).applications
-	}));
+	const applications = createQuery(() => apiApplicationsOptions(api.id));
 
 	let search = $state('');
 

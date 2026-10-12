@@ -23,7 +23,9 @@ export const keys = {
 		/** The fields a user record is made of. */
 		fields: ['users', 'fields'] as const,
 		/** Every role one user holds. */
-		mappings: (id: string) => ['users', 'mappings', id] as const
+		mappings: (id: string) => ['users', 'mappings', id] as const,
+		/** A few users matching a typed name, for pickers. */
+		search: (term: string) => ['users', 'search', term] as const
 	},
 
 	apis: {

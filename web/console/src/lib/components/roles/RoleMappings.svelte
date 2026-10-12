@@ -11,7 +11,7 @@
 	import { usersApi, type Admin, type Application, type Role, type RoleMapping } from '$lib/api';
 	import { Alert, Button, Icon, IconButton, Switch, Tooltip, notify } from '$lib/components/ui';
 	import { canAnywhere } from '$lib/permissions';
-	import { keys } from '$lib/query';
+	import { keys, roleMappingsOptions } from '$lib/query';
 	import { countOf } from '$lib/utils/format';
 	import RolePicker from './RolePicker.svelte';
 	import { canAssign } from './roles';
@@ -31,10 +31,7 @@
 	const queryClient = useQueryClient();
 
 	/** Every role the user holds, given directly or inherited. */
-	const mappings = createQuery(() => ({
-		queryKey: keys.users.mappings(userId),
-		queryFn: async () => (await usersApi.roleMappings(userId)).roles
-	}));
+	const mappings = createQuery(() => roleMappingsOptions(userId));
 
 	/** The roles the user holds, or the list that assigns more. */
 	let mode = $state<'held' | 'assign'>('held');

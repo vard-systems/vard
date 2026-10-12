@@ -16,7 +16,7 @@
 		Tag,
 		notify
 	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { keys, cacheValueOptions } from '$lib/query';
 	import { formatBytes, formatTTL, kinds } from './cache';
 
 	type Props = {
@@ -33,10 +33,8 @@
 	/** What the key holds is read when it is opened, not with the listing: a
 	    page of keys would otherwise carry every value in it. */
 	const value = createQuery(() => ({
-		queryKey: keys.cache.key(database, key?.name ?? ''),
-		queryFn: () => cacheApi.key(database, key?.name ?? ''),
-		enabled: open && key !== null,
-		staleTime: 0
+		...cacheValueOptions(database, key?.name ?? ''),
+		enabled: open && key !== null
 	}));
 
 	const current = $derived(value.data?.key);

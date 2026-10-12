@@ -21,3 +21,19 @@ export function apiOptions(id: string, initial: API) {
 		initialData: initial
 	});
 }
+
+/** The applications that may, or may not, use one API. */
+export function apiApplicationsOptions(id: string) {
+	return queryOptions({
+		queryKey: keys.apis.applications(id),
+		queryFn: async () => (await apisApi.applications(id)).applications
+	});
+}
+
+/** The newest activity log entries about one API. */
+export function apiLogsOptions(id: string) {
+	return queryOptions({
+		queryKey: keys.apis.logs(id),
+		queryFn: async () => (await apisApi.logs(id)).logs
+	});
+}
