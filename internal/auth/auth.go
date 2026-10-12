@@ -153,18 +153,22 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 		return "", nil, StateNone, ErrInvalidCredentials
 	}
 
-	// A right password returns the attempt now, so right passwords waiting on a
-	// second factor never lock anyone out.
-	if err := s.store.ClearAdminFailedLogins(ctx, admin); err != nil {
-		return "", nil, StateNone, err
-	}
-
 	state, lifetime := StateSignedIn, SessionLifetime
 	switch {
 	case admin.HasMFA():
 		state, lifetime = StateMFA, challengeLifetime
 	case s.MFARequired(ctx):
 		state, lifetime = StateEnroll, enrolmentLifetime
+	}
+
+	// Codes are counted against the same attempts, so while one is owed the
+	// password must not give them back: signing in again between guesses
+	// would otherwise make the lockout unreachable. The code itself clears
+	// them (signedIn).
+	if state != StateMFA {
+		if err := s.store.ClearAdminFailedLogins(ctx, admin); err != nil {
+			return "", nil, StateNone, err
+		}
 	}
 
 	token, err := newToken()

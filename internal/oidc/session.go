@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"loginer/i18n"
@@ -56,6 +57,12 @@ var dummyHash = sync.OnceValue(func() []byte {
 	}
 	return hash
 })
+
+// InBrowser reports whether the session is a browser's, signed in at the
+// sign-in pages, rather than a user an application's access token names.
+func (s *Session) InBrowser() bool {
+	return s.Record.ID != uuid.Nil
+}
 
 // SessionFor returns the session a cookie carries, or nil when it carries none
 // that still signs a user in.
@@ -665,18 +672,26 @@ func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) 
 // RequestEmailChange emails a link to the new address; the account moves only
 // when it is used. It answers the same whether or not the address is taken, so
 // it cannot be used to discover accounts.
-func (s *Service) RequestEmailChange(ctx context.Context, session *Session, email string, client Client) error {
+//
+// A new address plus a password reset is the whole account, so it takes the
+// current password, and a browser session: an application's access token
+// may not move the account away from its owner.
+func (s *Service) RequestEmailChange(ctx context.Context, session *Session, email, password string, client Client) error {
 	flow, err := s.flowFor(ctx, "")
 	if err != nil {
 		return err
 	}
-	if !flow.AllowEmailChange {
+	if !flow.AllowEmailChange || !session.InBrowser() {
 		return ErrEmailChangeNotOffered
 	}
 
 	// An account on an SSO-only domain cannot move to another address here;
 	// that plus a password reset would bypass SSO.
 	if err := s.ssoRequiredFor(ctx, session.User.Email); err != nil {
+		return err
+	}
+
+	if err := s.checkCurrentPassword(ctx, session.User, password, client); err != nil {
 		return err
 	}
 

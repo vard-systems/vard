@@ -180,29 +180,6 @@ func (s *Store) ClearUserFailedLogins(ctx context.Context, user *model.User, at 
 	}).Error
 }
 
-// RecordUserFailedLogin counts a wrong password after the check, for paths
-// where the user is already signed in (changing a password). It reports whether
-// this attempt locked the account.
-func (s *Store) RecordUserFailedLogin(ctx context.Context, user *model.User, at time.Time, max int, lockFor time.Duration) (bool, error) {
-	var row struct {
-		LockedUntil *time.Time
-	}
-
-	err := s.db.WithContext(ctx).Raw(`
-		UPDATE users SET
-			locked_until = CASE WHEN failed_login_count + 1 >= @max THEN @until ELSE locked_until END,
-			failed_login_count = CASE WHEN failed_login_count + 1 >= @max THEN 0 ELSE failed_login_count + 1 END
-		WHERE id = @id
-		RETURNING locked_until`,
-		map[string]any{"max": max, "until": at.Add(lockFor), "id": user.ID},
-	).Scan(&row).Error
-	if err != nil {
-		return false, err
-	}
-
-	return row.LockedUntil != nil && row.LockedUntil.After(at), nil
-}
-
 // CreateAuthorizationRequest stores a sign-in under way.
 func (s *Store) CreateAuthorizationRequest(ctx context.Context, req *model.AuthorizationRequest) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(req).Error)

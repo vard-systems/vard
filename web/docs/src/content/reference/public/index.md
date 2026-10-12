@@ -82,7 +82,7 @@ The API behind the hosted sign-in pages and a user's account page. Applications 
 | [`GET /api/v1/account/me`](/reference/public/account#get-api-v1-account-me) | Returns the signed-in user. |
 | [`PATCH /api/v1/account/me`](/reference/public/account#patch-api-v1-account-me) | Changes the signed-in user's name. |
 | [`POST /api/v1/account/password`](/reference/public/account#post-api-v1-account-password) | Replaces the signed-in user's password. |
-| [`POST /api/v1/account/email`](/reference/public/account#post-api-v1-account-email) | Starts moving the signed-in user to another address. |
+| [`POST /api/v1/account/email`](/reference/public/account#post-api-v1-account-email) | Starts moving the signed-in user to another address, given their current password. |
 | [`GET /api/v1/account/sessions`](/reference/public/account#get-api-v1-account-sessions) | Lists where the signed-in user is signed in. |
 | [`DELETE /api/v1/account/sessions/:id`](/reference/public/account#delete-api-v1-account-sessions-id) | Signs one of the user's other browsers out. |
 | [`GET /api/v1/account/connected-applications`](/reference/public/account#get-api-v1-account-connected-applications) | Lists the applications that can still act for the user. |

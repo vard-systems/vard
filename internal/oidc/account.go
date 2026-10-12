@@ -18,7 +18,8 @@ import (
 // users only reach their own account.
 
 // ErrWrongPassword is a current password that does not match, when changing
-// it. It counts towards the lockout, as a wrong password at sign-in does.
+// it or the address. It counts towards the lockout, as a wrong password at
+// sign-in does, and a locked account gets it whatever was typed.
 var ErrWrongPassword = problem("wrong_password", "the current password is wrong")
 
 // ErrNotYours is a session or application that does not belong to the signed-in
@@ -62,13 +63,8 @@ func (s *Service) ChangePassword(ctx context.Context, session *Session, current,
 	user := session.User
 	now := s.now()
 
-	if user.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(current)) != nil {
-		if _, err := s.store.RecordUserFailedLogin(ctx, user, now, maxFailedLogins, lockoutDuration); err != nil {
-			return err
-		}
-		s.record(ctx, user, user.Email, "user.login_failed", client, map[string]any{"reason": "wrong current password"})
-
-		return ErrWrongPassword
+	if err := s.checkCurrentPassword(ctx, user, current, client); err != nil {
+		return err
 	}
 
 	if current == next {
@@ -89,6 +85,30 @@ func (s *Service) ChangePassword(ctx context.Context, session *Session, current,
 	s.record(ctx, user, user.Email, "user.password_changed_self", client, nil)
 
 	return nil
+}
+
+// checkCurrentPassword proves the person at a signed-in session knows the
+// password, before a change that would hand them the account. Each guess is
+// counted before comparing, like a sign-in, so a session cannot be used to
+// find the password past the lockout.
+func (s *Service) checkCurrentPassword(ctx context.Context, user *model.User, password string, client Client) error {
+	now := s.now()
+
+	allowed, err := s.store.ReserveUserLogin(ctx, user, now, maxFailedLogins, lockoutDuration)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "locked"})
+		return ErrWrongPassword
+	}
+
+	if user.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
+		s.record(ctx, user, user.Email, "user.login_failed", client, map[string]any{"reason": "wrong current password"})
+		return ErrWrongPassword
+	}
+
+	return s.store.ClearUserFailedLogins(ctx, user, now)
 }
 
 // SessionInfo is one browser a user is signed in on.

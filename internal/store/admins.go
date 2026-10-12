@@ -197,33 +197,6 @@ func (s *Store) ClearAdminFailedLogins(ctx context.Context, admin *model.Admin) 
 	return err
 }
 
-// RecordFailedLogin counts a wrong password atomically and, at the `max`th in a
-// row, locks the account for `lockFor`. It reports whether this attempt locked
-// it.
-func (s *Store) RecordFailedLogin(ctx context.Context, admin *model.Admin, at time.Time, max int, lockFor time.Duration) (bool, error) {
-	var row struct {
-		LockedUntil *time.Time
-	}
-
-	err := s.db.WithContext(ctx).Raw(`
-		UPDATE admins SET
-			locked_until = CASE WHEN failed_login_count + 1 >= @max THEN @until ELSE locked_until END,
-			failed_login_count = CASE WHEN failed_login_count + 1 >= @max THEN 0 ELSE failed_login_count + 1 END
-		WHERE id = @id
-		RETURNING locked_until`,
-		map[string]any{"max": max, "until": at.Add(lockFor), "id": admin.ID},
-	).Scan(&row).Error
-	if err != nil {
-		return false, err
-	}
-
-	// A lock has to reach the session database, or a request already signed
-	// in would go on as if the account were open.
-	s.forget(ctx, cache.Admins)
-
-	return row.LockedUntil != nil && row.LockedUntil.After(at), nil
-}
-
 // AdminQuery is what a listing of administrators asks for: a search box, a
 // filter, and a page.
 type AdminQuery struct {

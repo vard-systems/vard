@@ -31,7 +31,7 @@ func (s *Service) UpdateProfile(ctx context.Context, admin *model.Admin, profile
 	}
 
 	if profile.Email != admin.Email {
-		if err := matches(admin, currentPassword); err != nil {
+		if err := s.checkPassword(ctx, admin, currentPassword); err != nil {
 			return err
 		}
 	}
@@ -52,7 +52,7 @@ func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, sessio
 		return err
 	}
 
-	if err := matches(admin, current); err != nil {
+	if err := s.checkPassword(ctx, admin, current); err != nil {
 		return err
 	}
 
@@ -80,11 +80,21 @@ func (s *Service) withPassword(ctx context.Context, admin *model.Admin) error {
 	return nil
 }
 
-// matches says whether a password is the administrator's own.
-func matches(admin *model.Admin, password string) error {
+// checkPassword says whether a password is the administrator's own. Each
+// guess is counted before comparing, like a sign-in, so a session left open
+// cannot be used to find the password; a locked account is refused outright.
+func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, password string) error {
+	allowed, err := s.store.ReserveAdminLogin(ctx, admin, time.Now(), MaxFailedLogins, LockoutDuration)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return ErrWrongPassword
+	}
+
 	if password == "" || bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(password)) != nil {
 		return ErrWrongPassword
 	}
 
-	return nil
+	return s.store.ClearAdminFailedLogins(ctx, admin)
 }

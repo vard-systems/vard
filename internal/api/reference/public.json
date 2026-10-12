@@ -261,13 +261,18 @@
       "EmailRequest": {
         "description": "emailRequest is the body of POST /account/email: the address to move to.",
         "properties": {
+          "current_password": {
+            "description": "`current_password` proves the person at the session owns the account; a wrong one counts towards the lockout, as at sign-in. At most 128 characters.",
+            "type": "string"
+          },
           "email": {
             "description": "An email address, at most 255 characters.",
             "type": "string"
           }
         },
         "required": [
-          "email"
+          "email",
+          "current_password"
         ],
         "type": "object"
       },
@@ -1200,7 +1205,7 @@
     },
     "/api/v1/account/email": {
       "post": {
-        "description": "It answers the same whether or not the address is taken.",
+        "description": "It answers the same whether or not the address is taken, and only to a browser session: an access token is refused.",
         "operationId": "accountChangeEmail",
         "requestBody": {
           "content": {
@@ -1332,7 +1337,7 @@
             ]
           }
         ],
-        "summary": "Starts moving the signed-in user to another address",
+        "summary": "Starts moving the signed-in user to another address, given their current password",
         "tags": [
           "Account"
         ],

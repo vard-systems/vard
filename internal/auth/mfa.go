@@ -312,7 +312,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 			}
 		}
 		if ok {
-			return "recovery_code", nil
+			return "recovery_code", s.store.ClearAdminFailedLogins(ctx, admin)
 		}
 		return "", s.failed(ctx, admin, req, "wrong recovery code")
 	}
@@ -335,7 +335,9 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 		return "", s.failed(ctx, admin, req, "code used twice")
 	}
 
-	return "totp", nil
+	// A right code gives back the attempt it took, so codes asked for by
+	// changes made while signed in do not add up to a lockout.
+	return "totp", s.store.ClearAdminFailedLogins(ctx, admin)
 }
 
 // failed logs a wrong code. It was counted against the administrator before

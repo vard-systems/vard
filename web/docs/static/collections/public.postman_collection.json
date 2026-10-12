@@ -1596,9 +1596,9 @@
                   "language": "json"
                 }
               },
-              "raw": "{\n  \"email\": \"ada@example.com\"\n}"
+              "raw": "{\n  \"email\": \"ada@example.com\",\n  \"current_password\": \"correct horse battery staple\"\n}"
             },
-            "description": "Starts moving the signed-in user to another address.\n\nIt answers the same whether or not the address is taken.",
+            "description": "Starts moving the signed-in user to another address, given their current password.\n\nIt answers the same whether or not the address is taken, and only to a browser session: an access token is refused.",
             "header": [
               {
                 "key": "Content-Type",

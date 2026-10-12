@@ -1623,9 +1623,9 @@ response.raise_for_status()
 
 ## POST /api/v1/account/email {#post-api-v1-account-email}
 
-Starts moving the signed-in user to another address.
+Starts moving the signed-in user to another address, given their current password.
 
-It answers the same whether or not the address is taken.
+It answers the same whether or not the address is taken, and only to a browser session: an access token is refused.
 
 | | |
 | --- | --- |
@@ -1636,7 +1636,7 @@ It answers the same whether or not the address is taken.
 curl -X POST "$ISSUER/api/v1/account/email" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"email":"ada@example.com"}'
+  -d '{"email":"ada@example.com","current_password":"correct horse battery staple"}'
 ```
 
 ```java title="Java"
@@ -1646,7 +1646,8 @@ HttpRequest request = HttpRequest.newBuilder()
         .header("Content-Type", "application/json")
         .POST(BodyPublishers.ofString("""
                 {
-                  "email": "ada@example.com"
+                  "email": "ada@example.com",
+                  "current_password": "correct horse battery staple"
                 }
                 """))
         .build();
@@ -1657,7 +1658,8 @@ HttpResponse<String> response = HttpClient.newHttpClient()
 
 ```go title="Go"
 body := strings.NewReader(`{
-	"email": "ada@example.com"
+	"email": "ada@example.com",
+	"current_password": "correct horse battery staple"
 }`)
 req, err := http.NewRequest(http.MethodPost, issuer+"/api/v1/account/email", body)
 if err != nil {
@@ -1678,6 +1680,7 @@ response = requests.post(
     f"{ISSUER}/api/v1/account/email",
     json={
         "email": "ada@example.com",
+        "current_password": "correct horse battery staple",
     },
     headers={"Authorization": f"Bearer {ACCESS_TOKEN}"},
 )
@@ -1689,6 +1692,7 @@ response.raise_for_status()
 | Field | Type | Description |
 | --- | --- | --- |
 | `email` <small>required</small> | string | An email address, at most 255 characters. |
+| `current_password` <small>required</small> | string | `current_password` proves the person at the session owns the account; a wrong one counts towards the lockout, as at sign-in. At most 128 characters. |
 
 #### Response
 

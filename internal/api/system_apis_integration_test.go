@@ -255,6 +255,15 @@ func TestLiveAccountAPIWithAUserToken(t *testing.T) {
 		t.Errorf("PATCH /me with account.write = %d %v", status, body)
 	}
 
+	// Even with account.write and the password, a token may not move the
+	// account to another address: that and a password reset are the account.
+	f.super.must(http.StatusOK, http.MethodPatch, "/login-flows/"+defaultFlow(t, f.super), map[string]any{"allow_email_change": true}, nil)
+	if status, body := f.bearer(http.MethodPost, account+"/email", writer, map[string]any{
+		"email": "someone.else@example.com", "current_password": adaPassword,
+	}); status != http.StatusForbidden || body["code"] != "email_change_not_offered" {
+		t.Errorf("POST /email with an account.write token = %d %v, want 403 email_change_not_offered", status, body)
+	}
+
 	// A token for another API is not an account API token.
 	b := f.s.browser()
 	verifier, challenge := pkce(t)

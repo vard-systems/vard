@@ -246,7 +246,7 @@ export const account = {
 	/** Starts moving the account to another sign-in address. The link goes to
 	    the address typed, and nothing changes until it is opened — so this
 	    answers the same whether or not somebody else already has it. */
-	changeEmail: (body: { email: string }) =>
+	changeEmail: (body: { email: string; current_password: string }) =>
 		request<{ status: string }>('/account/email', { method: 'POST', body }),
 
 	sessions: (fetch?: Fetch) => request<{ sessions: Session[] }>('/account/sessions', { fetch }),

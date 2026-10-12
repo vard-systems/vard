@@ -291,8 +291,9 @@ func (h *Handler) ResendCode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": challenge})
 }
 
-// ChangeEmail starts moving the signed-in user to another address. It answers
-// the same whether or not the address is taken.
+// ChangeEmail starts moving the signed-in user to another address, given their
+// current password. It answers the same whether or not the address is taken,
+// and only to a browser session: an access token is refused.
 func (h *Handler) ChangeEmail(c *gin.Context) {
 	var req emailRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -304,7 +305,7 @@ func (h *Handler) ChangeEmail(c *gin.Context) {
 		return
 	}
 
-	if err := h.provider.RequestEmailChange(c.Request.Context(), signedInSession(c), req.Email, client(c)); err != nil {
+	if err := h.provider.RequestEmailChange(c.Request.Context(), signedInSession(c), req.Email, req.CurrentPassword, client(c)); err != nil {
 		h.fail(c, err, "starting an address change failed")
 		return
 	}

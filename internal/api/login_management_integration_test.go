@@ -65,10 +65,24 @@ func TestLiveLoginSwitchesDecideWhatIsAllowed(t *testing.T) {
 		t.Fatalf("signing in = %d %+v", status, out)
 	}
 
+	// A session alone cannot move the account: a new address plus a password
+	// reset would hand it to whoever holds the cookie.
+	for _, attempt := range []struct {
+		name string
+		body map[string]string
+	}{
+		{"no password", map[string]string{"email": "ada.new@example.com"}},
+		{"a wrong password", map[string]string{"email": "ada.new@example.com", "current_password": "not-adas-password"}},
+	} {
+		if status := remembered.account(http.MethodPost, "/email", attempt.body, nil); status != http.StatusBadRequest {
+			t.Errorf("asking to change the address with %s = %d, want 400", attempt.name, status)
+		}
+	}
+
 	// Moving to another address: the link goes to the new one, and nothing
 	// changes until it is used.
 	if status := remembered.account(http.MethodPost, "/email", map[string]string{
-		"email": "ada.new@example.com",
+		"email": "ada.new@example.com", "current_password": "ada-password-1",
 	}, nil); status != http.StatusAccepted {
 		t.Fatalf("asking to change the address = %d, want 202", status)
 	}
@@ -107,7 +121,7 @@ func TestLiveLoginSwitchesDecideWhatIsAllowed(t *testing.T) {
 
 	var refused problemBody
 	if status := remembered.account(http.MethodPost, "/email", map[string]string{
-		"email": "ada.third@example.com",
+		"email": "ada.third@example.com", "current_password": "ada-password-1",
 	}, &refused); status != http.StatusForbidden || refused.Code != "email_change_not_offered" {
 		t.Errorf("changing the address where the flow forbids it = %d %+v", status, refused)
 	}
