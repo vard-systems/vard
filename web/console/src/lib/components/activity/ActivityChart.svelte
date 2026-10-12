@@ -5,8 +5,6 @@
 
 	type Props = {
 		daily: Overview['daily'];
-		/** Where a day leads — its entries in the logs — making each day a
-		    thing to click. Already resolved. */
 		href?: (day: string) => string;
 	};
 
@@ -27,8 +25,6 @@
 	const plotWidth = $derived(Math.max(0, width - pad.left - pad.right));
 	const plotHeight = height - pad.top - pad.bottom;
 
-	/** The top of the scale, rounded up so the three lines land on whole
-	    numbers, and with room above the busiest day as PocketBase leaves. */
 	const ceiling = $derived.by(() => {
 		const most = Math.max(0, ...daily.map((day) => day.events));
 		if (most <= 4) return 4;
@@ -43,8 +39,6 @@
 	const step = $derived(daily.length > 0 ? plotWidth / daily.length : 0);
 	const y = (value: number) => pad.top + plotHeight - (value / ceiling) * plotHeight;
 
-	/** A stepped line, like PocketBase's logs chart: each day holds its value
-	    across its own width, so a day reads as a span of time. */
 	function steppedPath(values: number[]): string {
 		if (values.length === 0 || step === 0) return '';
 
@@ -70,7 +64,6 @@
 
 	const ticks = $derived([0, ceiling / 2, ceiling]);
 
-	/** Which days get a date under them: as many as fit, always the last. */
 	const labelled = $derived.by(() => {
 		const room = Math.max(1, Math.floor(plotWidth / 64));
 		const every = Math.max(1, Math.ceil(daily.length / room));
@@ -222,8 +215,6 @@
 		overflow: visible;
 	}
 
-	/* PocketBase's logs chart: a grey area with a slightly darker line, on
-	   grid lines barely darker than the page. */
 	.grid {
 		stroke: var(--color-secondary);
 		stroke-width: 1;

@@ -3,20 +3,13 @@
 
 	type Props = {
 		children: Snippet;
-		/** How many fields to a row where there is room for them. */
 		columns?: 2 | 3;
-		/** `compact` for a form in a dialog; `comfortable` puts more air
-		    between the columns of a page of settings. */
 		spacing?: 'compact' | 'comfortable';
 	};
 
 	let { children, columns = 2, spacing = 'compact' }: Props = $props();
 </script>
 
-<!--
-	Equal-width fields side by side; give a wrapper class="full" to span the row. It drops to one
-	column based on its own width (a container query).
--->
 <div class="frame">
 	<div class="field-grid {spacing}" style:--columns={columns}>
 		{@render children()}

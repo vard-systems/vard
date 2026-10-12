@@ -14,13 +14,8 @@
 		required?: boolean;
 		disabled?: boolean;
 		readOnly?: boolean;
-		/** Puts a copy button inside the field, for values that are copied
-		    more than typed: ids, client ids, URLs. */
 		copyable?: boolean;
-		/** A short unit after the value, such as "minutes". */
 		suffix?: string;
-		/** A toolbar's filter: a control's height, the label beside the
-		    value. See Field. */
 		compact?: boolean;
 	};
 
@@ -72,8 +67,6 @@
 </Field>
 
 <style>
-	/* The value keeps the whole width; what sits after it — a unit, a copy
-	   button — is laid over its right end, level with the value. */
 	.adorned {
 		position: relative;
 	}
@@ -86,8 +79,6 @@
 		padding-right: 5.5rem;
 	}
 
-	/* Both sit at the right end, above the input they are laid over: the
-	   copy button centred on the box, the unit on the value's own line. */
 	.action {
 		position: absolute;
 		top: 50%;

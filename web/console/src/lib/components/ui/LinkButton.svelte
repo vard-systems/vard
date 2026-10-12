@@ -22,10 +22,6 @@
 	}: Props = $props();
 </script>
 
-<!--
-	A button-styled anchor. When disabled it drops its href and sets aria-disabled. The caller
-	resolves the href.
--->
 <!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
 	href={disabled ? undefined : href}

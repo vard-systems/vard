@@ -3,9 +3,7 @@
 	import IconButton from './IconButton.svelte';
 
 	type Props = {
-		/** What is copied. */
 		value: string;
-		/** What it is, for the button's name: "Copy client id". */
 		label?: string;
 	};
 
@@ -23,8 +21,6 @@
 	}
 </script>
 
-<!-- The icon turns into a tick for a moment, which is all the confirmation a
-     copy needs. -->
 <IconButton
 	icon={copied ? RiCheckLine : RiFileCopyLine}
 	label={copied ? 'Copied' : `Copy ${label}`}

@@ -10,17 +10,11 @@
 
 	type Props = {
 		code: string;
-		/** The language's names, which an exported file carries so whoever
-		    translates it knows what it is. */
 		name: string;
 		native: string;
 		app: LocaleApp;
 		readOnly?: boolean;
-		/** The text as it is being edited, by key: null until the saved text
-		    has arrived. The dialog saves it. */
 		draft: Record<string, string> | null;
-		/** Told whether the draft differs from what is saved, each time that
-		    changes, so the dialog knows what it has to save. */
 		onDirty: (dirty: boolean) => void;
 	};
 
@@ -36,8 +30,6 @@
 
 	const saved = createQuery(() => translationOptions(code, app));
 
-	// The draft starts as what is saved, once that has arrived, and is the
-	// editor's from then on: a refetch behind it must not wipe what is typed.
 	$effect(() => {
 		if (draft === null && saved.data) draft = { ...saved.data.messages };
 	});
@@ -58,9 +50,6 @@
 	const total = $derived(saved.data?.keys.length ?? 0);
 	const done = $derived(saved.data?.keys.filter(translated).length ?? 0);
 
-	/** The keys left once the search and the filter have had their say. The
-	    search reads the key, the English and the translation, so somebody can
-	    find a sentence by any of the three. */
 	const visible = $derived.by(() => {
 		if (!saved.data) return [];
 
@@ -83,10 +72,6 @@
 
 	let fileInput = $state<HTMLInputElement>();
 
-	/** A translation file, merged over what is there: every key it has text
-	    for replaces this language's, and the rest are left alone — so a file
-	    covering half the app finishes half of it rather than emptying the
-	    other half. */
 	async function importFile(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
@@ -112,10 +97,6 @@
 		);
 	}
 
-	/** Every key, translated or not, so the file is also the template for
-	    whoever translates the rest: an empty value is one still to do. It is
-	    nested by namespace, the shape of a merged group under i18n/, so it can
-	    be split into groups before it is dropped in there. */
 	function exportFile() {
 		if (!saved.data) return;
 
@@ -287,8 +268,6 @@
 		list-style: none;
 	}
 
-	/* The English on the left, the translation beside it: the way a translator
-	   reads, one sentence against the other. */
 	li {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
@@ -336,8 +315,6 @@
 		font-size: var(--text-base);
 		line-height: 1.45;
 		resize: vertical;
-		/* Grows with what is typed, where the browser can; elsewhere the
-		   handle in the corner does. */
 		field-sizing: content;
 		transition:
 			border-color var(--speed-fast),
@@ -355,7 +332,6 @@
 		opacity: 0.7;
 	}
 
-	/* A key with nothing written is the one somebody is looking for. */
 	li.missing textarea {
 		border-style: dashed;
 	}

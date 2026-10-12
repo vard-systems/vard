@@ -6,24 +6,16 @@
 	import Note from './Note.svelte';
 
 	type Props = {
-		/** What the button does, as a heading: "Remove this language". */
 		title: string;
-		/** What is lost by doing it. */
 		description: string;
-		/** Asks before anything is done (a ConfirmDialog). */
 		onclick?: () => void;
-		/** The button's word. */
 		label?: string;
-		/** In place of the button, for a zone that asks its question inline. */
 		children?: Snippet;
 	};
 
 	let { title, description, onclick, label = 'Remove', children }: Props = $props();
 </script>
 
-<!-- The one thing on a form that cannot be taken back, kept apart from the
-     button that saves: at the foot of the form, ruled in the danger colour,
-     saying what it costs beside the button that does it. -->
 <section class="danger-zone">
 	<div class="text">
 		<strong>{title}</strong>

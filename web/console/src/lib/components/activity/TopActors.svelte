@@ -5,7 +5,6 @@
 
 	type Props = {
 		actors: Overview['top_actors'];
-		/** Where one person's entries are listed, making each row a link. */
 		href?: (actor: string) => string;
 	};
 
@@ -13,8 +12,6 @@
 
 	const most = $derived(Math.max(1, ...actors.map((actor) => actor.events)));
 
-	/** Two letters for the thumb, from the address before the @, read as
-	    words where dots, dashes or underscores part it. */
 	function actorInitials(actor: string): string {
 		return initials((actor.split('@')[0] ?? actor).replace(/[._-]+/g, ' '));
 	}

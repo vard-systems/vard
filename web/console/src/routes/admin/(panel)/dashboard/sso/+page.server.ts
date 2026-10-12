@@ -3,10 +3,6 @@ import { canAnywhere } from '$lib/permissions';
 import { apiGet, requirePermission } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * SSO connections, plus the roles groups can map to when the administrator may read roles;
- * otherwise mappings show role ids.
- */
 export const load: PageServerLoad = async ({ fetch, parent }) => {
 	const { admin } = await parent();
 	requirePermission(admin, 'sso.read');

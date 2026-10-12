@@ -32,14 +32,10 @@
 	let accountOpen = $state(false);
 	let confirmingSignOut = $state(false);
 
-	/** The name the account goes by — the server's first and last name —
-	    or the address when neither was given. */
 	const name = $derived(admin.full_name.trim() || admin.email);
 
 	const monogram = $derived(initials(name));
 
-	/** What the administrator may do, in words: the standing first, since it
-	    outranks any role, then the roles the API lists. */
 	const role = $derived(
 		[
 			...(admin.is_super_admin ? ['Super administrator'] : []),
@@ -64,10 +60,6 @@
 	}
 </script>
 
-<!-- Who is signed in, as the avatar at the end of the header. The menu under
-     it is laid out as the help menu is — a heading over rows with an icon, a
-     label and a line under it — and holds what is worth reaching from
-     anywhere: who the account is, what it may do, its settings, and leaving. -->
 <DropdownMenu label="Account: {name}" shape="labelled">
 	{#snippet trigger()}
 		<Thumb src={admin.avatar_url} text={monogram} size="xs" shape="circle" tone="accent" />
@@ -122,8 +114,6 @@
 />
 
 <style>
-	/* A long name is cut rather than pushing the bar about; the menu's
-	   address says who it is in full. */
 	.name {
 		min-width: 0;
 		overflow: hidden;
@@ -142,8 +132,6 @@
 		transform: rotate(180deg);
 	}
 
-	/* Where the bar has no room for a name, the button is the avatar alone
-	   (DropdownMenu makes it a circle to match). */
 	@media (max-width: 64rem) {
 		.name,
 		.chevron {

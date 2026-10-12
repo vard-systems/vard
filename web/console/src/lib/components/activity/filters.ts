@@ -1,8 +1,6 @@
 import type { LogFilter } from '$lib/api';
 import { actionsIn, categoryLabels, refusedActions, type Category } from './actions';
 
-/** What the logs page can be narrowed to by kind: a category of the action
-    catalog, or the sign-ins that were turned away. */
 export type Kind = Category | 'refused';
 
 export const kindLabels: Record<Kind, string> = {
@@ -10,8 +8,6 @@ export const kindLabels: Record<Kind, string> = {
 	refused: 'Refused sign-ins'
 };
 
-/** The logs page's filters as its address holds them, and the filter the
-    server is asked with. */
 export type LogView = {
 	q: string;
 	kind: Kind | '';
@@ -23,8 +19,6 @@ export type LogView = {
 
 const isKind = (value: string): value is Kind => value in kindLabels;
 
-/** Reads the address. Anything it does not recognise is left out rather than
-    refused: an old link still opens the log. */
 export function filterFrom(params: URLSearchParams): LogView {
 	const q = params.get('q')?.trim() ?? '';
 	const raw = params.get('kind') ?? '';
@@ -52,8 +46,6 @@ export function filterFrom(params: URLSearchParams): LogView {
 	};
 }
 
-/** The address of the logs page narrowed to these filters, for a link from
-    elsewhere — the dashboard's chart, its sign-ins, its busiest people. */
 export function logsHref(base: string, view: Partial<Omit<LogView, 'filter'>>): string {
 	const params = new URLSearchParams();
 	for (const [key, value] of Object.entries(view)) {

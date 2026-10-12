@@ -5,7 +5,6 @@
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		/** `danger`, the default, is an error; the others are notices. */
 		tone?: Exclude<ColorPalette, 'neutral'>;
 		children: Snippet;
 	};
@@ -49,8 +48,6 @@
 		color: var(--color-danger);
 	}
 
-	/* The notices keep the text colour and let the tint and the icon say what
-	   kind they are: a paragraph in orange is hard to read. */
 	.warning {
 		background: var(--surface-warning);
 		color: var(--color-text);

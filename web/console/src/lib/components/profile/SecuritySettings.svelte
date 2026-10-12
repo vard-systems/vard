@@ -20,9 +20,6 @@
 	import { keys, mfaStatusOptions, profileSessionsOptions } from '$lib/query';
 	import { formatRelative } from '$lib/utils/format';
 
-	/* The account's second factor, and everywhere it is signed in. Mounted
-	   the first time its tab is opened, so it is read then and not before. */
-
 	const queryClient = useQueryClient();
 
 	const status = createQuery(() => mfaStatusOptions());
@@ -37,33 +34,22 @@
 	    a closure of its own, so narrowing `mfa` above it does not reach in. */
 	const codesLeft = $derived(mfa?.recovery_codes_left ?? 0);
 
-	/** What the tab is doing: reading the account, or one of the two things
-	    that take over the whole of it while they are under way. A second
-	    factor is set up in steps, and each step needs the room. */
 	type Mode = 'reading' | 'enrolling' | 'replacing' | 'codes';
 
 	let mode = $state<Mode>('reading');
 
-	/** Turning a factor off, and asking for new recovery codes, both take a
-	    code from the authenticator: the field is shown in place of the row
-	    that asked for it rather than in a dialog over a dialog. */
 	let asking = $state<'disable' | 'codes' | null>(null);
 	let code = $state('');
 	let busy = $state(false);
 	let newCodes = $state<string[]>([]);
 
-	/** What could not be read. An action's failure is a toast instead. */
 	const error = $derived(
 		status.error || ownSessions.error
 			? messageOf(status.error ?? ownSessions.error, 'Could not read your account')
 			: ''
 	);
 
-	/* ---- Sessions ------------------------------------------------------ */
-
-	/** The one session being ended, so only its button spins. */
 	let ending = $state<string | null>(null);
-	/** Asked before signing out everywhere else, in place, not in a dialog. */
 	let confirmingOthers = $state(false);
 	let endingOthers = $state(false);
 
@@ -228,9 +214,6 @@
 				</List>
 
 				{#if asking}
-					<!-- Both of these change how this account is protected, so
-			     both ask the authenticator to prove it is the reader
-			     holding the phone and not the browser. -->
 					<div class="asking">
 						<Input
 							label={asking === 'disable'
@@ -287,8 +270,6 @@
 				<SessionList {sessions} onEnd={endSession} {ending} />
 
 				{#if otherSessions.length > 0}
-					<!-- Everywhere else at once: what to do after a shared computer
-					     or a lost laptop. It is asked about first. -->
 					<div class="asking">
 						<div class="buttons">
 							<Button
@@ -334,8 +315,6 @@
 		padding: var(--space-4);
 	}
 
-	/* The panel is flush for its list rows, so text in it brings its own
-	   padding back. */
 	.prose {
 		display: flex;
 		flex-direction: column;
@@ -351,8 +330,6 @@
 		line-height: 1.55;
 	}
 
-	/* The code asked for before a change to two-factor: inside the panel it
-	   belongs to, ruled off from the rows above it. */
 	.asking {
 		display: flex;
 		flex-direction: column;

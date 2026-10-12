@@ -38,9 +38,6 @@
 	const roles = createQuery(() => adminRolesOptions(data.search, data.roles));
 	const catalog = createQuery(() => adminPermissionsOptions(data.catalog));
 
-	/** How many of them are on screen. The endpoint answers with every one,
-	    so "Show more" reveals the next page of what is already here; a new
-	    search starts again from one page. */
 	let shown = $derived(firstPage(data.search));
 	const rows = $derived(roles.data.slice(0, shown));
 
@@ -51,14 +48,11 @@
 
 	let selected = $state<string[]>([]);
 
-	/** The ticked rows on screen that can be deleted: super_admin is built in,
-	    so ticking it offers nothing. */
 	const deletable = $derived(
 		new Set(rows.filter((role) => !role.is_builtin).map((role) => role.id))
 	);
 	const chosen = $derived(selected.filter((id) => deletable.has(id)));
 
-	/** How many administrators lose a role if the chosen ones go. */
 	const holders = $derived(
 		roles.data
 			.filter((role) => chosen.includes(role.id))

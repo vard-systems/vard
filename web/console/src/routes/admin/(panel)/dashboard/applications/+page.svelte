@@ -39,8 +39,6 @@
 	);
 	const total = $derived(applications.data?.pages.at(-1)?.total ?? 0);
 
-	/** Registering and removing applications takes applications.write for the
-	    whole panel; changing one takes it for that application. */
 	const canRegister = $derived(can(data.admin, 'applications.write'));
 
 	let search = $derived(data.search);
@@ -102,8 +100,6 @@
 		confirmingDelete = false;
 	}
 
-	/** Removing an application takes its roles, and everyone's hold on them,
-	    with it, so roles and users are refilled too. */
 	const removeSelected = createMutation(() => ({
 		mutationFn: async (ids: string[]) => {
 			for (const id of ids) {

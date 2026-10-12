@@ -1,14 +1,9 @@
-/**
- * Formats values for display. Dates are shown in the reader's locale and time zone; anything
- * unparseable is returned unchanged rather than as "Invalid Date".
- */
 export function formatDateTime(value: string): string {
 	const date = new Date(value);
 
 	return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
-/** The day alone, for a value whose time of day means nothing. */
 export function formatDate(value: string): string {
 	const date = new Date(value);
 
@@ -19,8 +14,6 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-/** How long ago something happened, the way a feed says it: "just now",
-    "5 min ago", "3 h ago", "yesterday", "4 days ago", then the date. */
 export function formatRelative(value: string, now: Date = new Date()): string {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return value;
@@ -38,8 +31,6 @@ export function formatRelative(value: string, now: Date = new Date()): string {
 	return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-/** The heading a day's entries sit under: "Today", "Yesterday", or the
-    weekday and date. */
 export function formatDayHeading(value: string, now: Date = new Date()): string {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return value;
@@ -51,7 +42,6 @@ export function formatDayHeading(value: string, now: Date = new Date()): string 
 	return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-/** The time of day alone, for an entry already under its day's heading. */
 export function formatTime(value: string): string {
 	const date = new Date(value);
 
@@ -60,7 +50,6 @@ export function formatTime(value: string): string {
 		: date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-/** A short date for a chart axis, from a YYYY-MM-DD day. */
 export function formatShortDay(day: string): string {
 	const [year, month, date] = day.split('-').map(Number);
 	const parsed = new Date(year, month - 1, date);
@@ -70,8 +59,6 @@ export function formatShortDay(day: string): string {
 		: parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-/** A browser and system out of a user agent — "Chrome on macOS" — for a
-    list of sessions nobody wants to read raw user agents in. */
 export function describeUserAgent(agent: string): string {
 	if (!agent) return 'Unknown device';
 
@@ -101,7 +88,6 @@ function sameDay(a: Date, b: Date): boolean {
 	return calendarDaysBetween(a, b) === 0;
 }
 
-/** Whole calendar days from `from` to `to`, in the reader's time zone. */
 function calendarDaysBetween(from: Date, to: Date): number {
 	const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
 	const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
@@ -109,8 +95,6 @@ function calendarDaysBetween(from: Date, to: Date): number {
 	return Math.round((end.getTime() - start.getTime()) / DAY);
 }
 
-/** Two letters standing in for a picture: the first letters of a name in
-    several words, or the start of a name in one. */
 export function initials(name: string): string {
 	const words = name.split(/\s+/).filter(Boolean);
 	const letters = words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? '').slice(0, 2);
@@ -118,8 +102,6 @@ export function initials(name: string): string {
 	return letters.toUpperCase();
 }
 
-/** A number of things, the noun agreeing with it: "1 role", "3 roles". Every
-    noun the panel counts takes an s, so there is no table of plurals. */
 export function countOf(n: number, noun: string): string {
 	return `${n.toLocaleString('en')} ${noun}${n === 1 ? '' : 's'}`;
 }

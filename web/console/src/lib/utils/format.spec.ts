@@ -12,8 +12,6 @@ describe('formatDateTime', () => {
 	it('reads a timestamp the way the panel shows it', () => {
 		const shown = formatDateTime('2026-09-13T14:38:09.654650+06:00');
 
-		// The exact wording is the reader's locale; what matters is that the
-		// day and the year are in it and nothing threw.
 		expect(shown).toContain('2026');
 		expect(shown.length).toBeGreaterThan(0);
 	});

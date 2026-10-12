@@ -6,8 +6,6 @@ const tabs = ['overview', 'settings', 'scopes', 'applications', 'logs'] as const
 
 export type ApiTab = (typeof tabs)[number];
 
-/** One API, on tabs. The tab lives in the URL, so a link opens the same one;
-    what each tab lists beyond the API itself is fetched when it is opened. */
 export const load: PageServerLoad = async ({ fetch, params, parent, url }) => {
 	requireAnywhere((await parent()).admin, 'apis.read');
 

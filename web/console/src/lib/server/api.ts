@@ -4,10 +4,6 @@ import { resolve } from '$app/paths';
 import type { Admin, AdminPermissionName } from '$lib/api';
 import { can, canAnywhere } from '$lib/permissions';
 
-/**
- * Calls the API as the administrator making this request, using the load's fetch, which
- * handleFetch points at the internal admin API with the reader's cookie.
- */
 async function call(path: string, fetch: typeof globalThis.fetch) {
 	try {
 		return await fetch(`/api/v1${path}`);
@@ -16,10 +12,6 @@ async function call(path: string, fetch: typeof globalThis.fetch) {
 	}
 }
 
-/**
- * Reads from the API, sending anyone without a usable session to sign in.
- * Every page behind the panel needs that same treatment, so it lives here.
- */
 export async function apiGet<T>(path: string, fetch: typeof globalThis.fetch): Promise<T> {
 	const response = await call(path, fetch);
 
@@ -38,10 +30,6 @@ export async function apiGet<T>(path: string, fetch: typeof globalThis.fetch): P
 	return response.json() as Promise<T>;
 }
 
-/**
- * Whether the panel still needs its first administrator; the sign-in page shows the setup form
- * instead.
- */
 export async function setupRequired(fetch: typeof globalThis.fetch): Promise<boolean> {
 	const response = await call('/admin/setup', fetch);
 
@@ -52,10 +40,6 @@ export async function setupRequired(fetch: typeof globalThis.fetch): Promise<boo
 	return required;
 }
 
-/**
- * Stops a page load the administrator's roles do not allow, before calling the API. Pass
- * 'super_admin' for super-admin pages.
- */
 export function requirePermission(
 	admin: Admin,
 	permission: AdminPermissionName | 'super_admin'
@@ -67,10 +51,6 @@ export function requirePermission(
 	}
 }
 
-/**
- * Stops a page load unless the administrator holds the permission panel-wide or for at least
- * one application.
- */
 export function requireAnywhere(admin: Admin, permission: AdminPermissionName): void {
 	if (!canAnywhere(admin, permission)) {
 		error(403, 'Your roles do not allow you to see this page.');

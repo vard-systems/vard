@@ -15,24 +15,14 @@
 
 	type Props = {
 		open?: boolean;
-		/** The question, as a question: "Delete 3 users?". */
 		title: string;
-		/** What saying yes does, and what cannot be undone. */
 		description?: string;
-		/** `danger` for what cannot be taken back, `warning` for what can
-		    but hurts, `info` or `neutral` for a plain question. It colours the
-		    icon and the button that says yes. */
 		tone?: Tone;
-		/** Drawn in the badge; each tone has one of its own. */
 		icon?: ComponentType;
-		/** What the button that says yes is called: the action, never "OK". */
 		confirmLabel: string;
 		cancelLabel?: string;
-		/** True while what was confirmed is under way: the yes button spins,
-		    and the dialog cannot be dismissed until it is done. */
 		busy?: boolean;
 		onConfirm: () => void;
-		/** What does not fit in a sentence: the records it touches, say. */
 		children?: Snippet;
 	};
 
@@ -61,10 +51,6 @@
 	let actions = $state<HTMLElement | null>(null);
 </script>
 
-<!--
-	A confirmation before something hard to undo. It is an alert dialog (announced on open),
-	stacked above full-window dialogs, and styled like the popovers.
--->
 <Dialog.Root
 	{open}
 	role="alertdialog"
@@ -107,9 +93,6 @@
 </Dialog.Root>
 
 <style>
-	/* The card itself — centred, bordered, how it arrives — is every
-	dialog's, in styles/ark.css. A question is narrower, padded, and sits
-	above the dialog it is usually asked from. */
 	:global(.confirm-backdrop[data-scope='dialog'][data-part='backdrop']) {
 		z-index: 60;
 	}
@@ -130,8 +113,6 @@
 		gap: var(--space-3);
 	}
 
-	/* The tone, said once: a circle in the palette the yes button is in,
-	   the way a menu's danger row is tinted. */
 	.badge {
 		display: inline-flex;
 		flex: none;
@@ -175,9 +156,6 @@
 		margin-top: var(--space-4);
 	}
 
-	/* On a phone the card uses more of the narrow window, and the two
-	   answers take the width between them, so neither is a small target at
-	   the edge of the screen. */
 	@media (max-width: 34rem) {
 		:global(.confirm-positioner[data-scope='dialog'][data-part='positioner']) {
 			padding: var(--space-2);

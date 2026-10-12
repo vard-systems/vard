@@ -6,15 +6,9 @@
 
 	type Props = {
 		providers: SocialProvider[];
-		/** What this server knows about each kind, for the mark and the host
-		    each one signs people in at. */
 		kinds: SocialSpec[];
-		/** Called with the provider whose row was chosen. */
 		onOpen: (provider: SocialProvider) => void;
-		/** Shown in place of the rows when there are none. */
 		empty: string;
-		/** The ids of the ticked rows, and how to say that they changed. Left
-		    out, the rows cannot be ticked. */
 		selected?: string[];
 		onSelect?: (ids: string[]) => void;
 	};
@@ -66,7 +60,6 @@
 		<td>
 			<span class="status">
 				{#if missingFrom(provider, kindOf(provider))}
-					<!-- Registered but not usable yet: the button would fail. -->
 					<Tag tone="warning" strong>{missingFrom(provider, kindOf(provider))}</Tag>
 				{:else if provider.is_enabled}
 					<Badge tone="success">offered</Badge>
@@ -92,8 +85,6 @@
 		min-width: 0;
 	}
 
-	/* The provider's own mark, in a square the size of the two lines beside
-	   it, so every row starts at the same place whatever the logo is. */
 	.mark {
 		display: grid;
 		place-items: center;

@@ -3,24 +3,16 @@
 	import { highlighted } from './highlight.svelte';
 
 	type Props = {
-		/** The JSON, as it is to be read and copied. */
 		code: string;
-		/** A name over the code — "ID token", "Example access token". Without
-		    one the copy button sits in the block's corner. */
 		title?: string;
-		/** What is copied, for the button's name. */
 		copy?: string;
 	};
 
 	let { code, title, copy = title ?? 'code' }: Props = $props();
 
-	/** Until the colours arrive — on the server, and while the highlighter
-	    loads — the block is the same text uncoloured, in the same box. */
 	const highlight = highlighted(() => code);
 </script>
 
-<!-- A block of code in the code face, coloured by the theme's syntax
-     tokens (see ./highlight.svelte.ts), with a copy button. -->
 <div class="code-block" class:titled={title}>
 	{#if title}
 		<div class="head">
@@ -80,7 +72,6 @@
 		line-height: 1.6;
 	}
 
-	/* The copy button floats over the first line; the text keeps clear of it. */
 	.code-block:not(.titled) .body :global(pre.shiki) {
 		padding-right: calc(var(--control-height) + var(--space-2));
 	}

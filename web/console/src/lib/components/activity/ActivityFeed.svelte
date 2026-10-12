@@ -6,13 +6,11 @@
 
 	type Props = {
 		events: ActivityEvent[];
-		/** What to say when there is nothing to list. */
 		empty?: string;
 	};
 
 	let { events, empty = 'Nothing has happened yet.' }: Props = $props();
 
-	/** The entries under the day they happened, newest day first. */
 	const days = $derived.by(() => {
 		const groups: { heading: string; events: ActivityEvent[] }[] = [];
 
@@ -74,7 +72,6 @@
 		text-align: center;
 	}
 
-	/* The day a run of entries happened on, as a thin band across the list. */
 	.day {
 		padding: 5px var(--space-4);
 		border-bottom: 1px solid var(--color-secondary-alt);
@@ -93,8 +90,6 @@
 		list-style: none;
 	}
 
-	/* PocketBase's .list-item, laid out like a row of its logs table: the
-	   level, then the message with its details under it. */
 	li {
 		display: flex;
 		align-items: flex-start;

@@ -1,13 +1,9 @@
 <script lang="ts" module>
 	import type { Edge } from '@xyflow/svelte';
 
-	/** A connection between two steps, with a button that adds one between
-	    them. `index` is where in the flow's steps the new one goes. */
 	export type InsertEdgeData = {
 		index: number;
-		/** Given when steps may be added here. */
 		onInsert?: (index: number) => void;
-		/** Whether this gap is the one waiting for a step from the palette. */
 		waiting: boolean;
 		label: string;
 	};

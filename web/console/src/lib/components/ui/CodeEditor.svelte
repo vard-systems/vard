@@ -5,9 +5,7 @@
 
 	type Props = {
 		label: string;
-		/** The JSON being edited. */
 		value: string;
-		/** How many lines tall it is; longer code scrolls inside it. */
 		rows?: number;
 		error?: string;
 		readOnly?: boolean;
@@ -22,7 +20,6 @@
 
 	let mirror: HTMLElement | undefined;
 
-	/** The copy has no scrollbars of its own: it follows the text area's. */
 	function follow(event: Event) {
 		const area = event.currentTarget as HTMLTextAreaElement;
 		if (!mirror) return;
@@ -31,10 +28,6 @@
 	}
 </script>
 
-<!--
-	A code field: a transparent textarea over a highlighted copy, sharing font, size and padding
-	with no wrapping, so editing is native and the colours line up.
--->
 <Field {label} {error} {readOnly} filled>
 	<div class="code-editor" style:--rows={rows}>
 		<div class="mirror" bind:this={mirror} aria-hidden="true">
@@ -78,7 +71,6 @@
 		pointer-events: none;
 	}
 
-	/* The text area and the copy under it, in lockstep. */
 	.mirror :global(pre.shiki),
 	:global(.field-box) .code-editor :global([data-part='textarea']) {
 		margin: 0;

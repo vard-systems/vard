@@ -11,7 +11,6 @@
 
 	type Props = {
 		connections: SSOConnection[];
-		/** Called with the connection whose row was chosen. */
 		onOpen: (connection: SSOConnection) => void;
 		empty: string;
 	};

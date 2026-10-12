@@ -9,30 +9,17 @@
 
 	type Props = {
 		label: string;
-		/** The chosen value. An empty string means nothing is chosen yet, so a
-		    select that may be left empty is typed `'' | …` by its caller. */
 		value: Value;
-		/** What can be chosen. A plain string is its own label. */
 		options: readonly (Value | SelectOption<Value>)[];
-		/** Shown in place of a value while nothing is chosen. */
 		placeholder?: string;
-		/** Drawn before the label, to say what kind of value this is. */
 		icon?: ComponentType;
-		/** A line under the control, for what someone needs to know. */
 		hint?: string;
-		/** A line under the control, for what went wrong. It replaces the hint
-		    and marks the field as invalid. */
 		error?: string;
 		required?: boolean;
 		disabled?: boolean;
-		/** Shown, and read out, but not open to being changed. */
 		readOnly?: boolean;
-		/** Offers a button that puts the field back to nothing chosen. */
 		clearable?: boolean;
-		/** A toolbar's filter: a control's height, the label beside the
-		    value. See Field. */
 		compact?: boolean;
-		/** Submitted with a surrounding form, through a hidden native select. */
 		name?: string;
 		id?: string;
 		onChange?: (value: Value) => void;
@@ -62,9 +49,6 @@
 		)
 	);
 
-	/** What Ark walks with the keyboard and matches against typing. Its
-	    itemToString is what typeahead searches, so it has to be the text that
-	    is actually on screen. */
 	const collection = $derived(
 		createListCollection({
 			items,
@@ -74,25 +58,15 @@
 		})
 	);
 
-	/** The chosen option, for the icon in the closed control: Ark's ValueText
-	    renders the label and nothing else. */
 	const chosen = $derived(items.find((item) => item.value === value));
 
-	/** Once one option carries an icon, every row keeps the space for one,
-	    so the labels in the panel line up rather than stepping in and out. */
 	const gutter = $derived(items.some((item) => item.icon));
 
 	const canClear = $derived(clearable && value !== '' && !disabled && !readOnly);
 
-	/** Whether the list is open: the box shows focus and the label rises
-	    while it is, the same as a field being typed in. */
 	let open = $state(false);
 </script>
 
-<!--
-	A select with the same outlined box and floating label as Input. Ark provides the keyboard,
-	type-ahead and a hidden native select; styles are in styles/fields.css and styles/ark.css.
--->
 <ArkSelect.Root
 	class="field-root"
 	data-disabled={disabled || undefined}
@@ -138,9 +112,6 @@
 		</ArkSelect.Control>
 	</div>
 
-	<!-- The panel is portalled so it is never clipped by a dialog that
-	     scrolls or by a table cell that hides its overflow; it is placed
-	     against the control by Ark. -->
 	<Portal>
 		<ArkSelect.Positioner>
 			<ArkSelect.Content>

@@ -13,7 +13,6 @@
 
 	type Props = {
 		api: API;
-		/** Opens another tab of the page. */
 		onTab: (tab: string) => void;
 	};
 
@@ -52,8 +51,6 @@
 		}
 	]);
 
-	/** What an access token for this API looks like once decoded, for the
-	    team building it. */
 	const example = $derived(
 		JSON.stringify(
 			{

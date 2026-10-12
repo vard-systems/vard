@@ -18,13 +18,6 @@
 
 	let { admin }: Props = $props();
 
-	/* The forms start from the account as it stands. This component is
-	   mounted each time the account dialog opens and taken down when it
-	   closes, so there is nothing to reset: an opening is a fresh copy.
-	   Saving refreshes `admin`, which leaves what was typed alone. */
-
-	/* ---- Profile: name and address ------------------------------------ */
-
 	// svelte-ignore state_referenced_locally
 	let firstName = $state(admin.first_name);
 	// svelte-ignore state_referenced_locally
@@ -46,8 +39,6 @@
 			emailChanged
 	);
 
-	/** The picture as it would look, while the address looks like one;
-	    Thumb falls back to the initials if it does not load. */
 	const preview = $derived(/^https?:\/\/\S+$/.test(avatarUrl.trim()) ? avatarUrl.trim() : '');
 	const monogram = $derived(initials(`${firstName} ${lastName}`.trim() || email));
 
@@ -65,9 +56,6 @@
 			});
 			emailPassword = '';
 			notify.success('Your profile is saved');
-			// The name is in the header and the address in the menu: both
-			// come from the layout's read of the administrator, and only that
-			// is read again — not the page open behind the dialog.
 			await invalidate(ADMIN_DEPENDENCY);
 		} catch (err) {
 			notify.error(err, 'Could not save your profile');
@@ -75,8 +63,6 @@
 			savingProfile = false;
 		}
 	}
-
-	/* ---- Password ------------------------------------------------------ */
 
 	let currentPassword = $state('');
 	let newPassword = $state('');
@@ -124,8 +110,6 @@
 				hint="You sign in with it, and anything about this account is sent to it."
 				required
 			/>
-			<!-- The picture beside the field it comes from, so an address that
-			     does not load is seen before it is saved. -->
 			<div class="avatar">
 				<Thumb src={preview} text={monogram} size="md" shape="circle" tone="accent" />
 				<Input

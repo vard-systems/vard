@@ -14,33 +14,22 @@
 	 */
 	const narrow = new MediaQuery('max-width: 55rem');
 
-	/** Folded to icons: only the column does that. A panel has the width for
-	    names, so it always shows them. */
 	const folded = $derived(shell.collapsed && !narrow.current);
 
 	const admin = $derived(page.data.admin as Admin | undefined);
 	const groups = $derived(visibleGroups(admin));
 
-	// The page being read, by its route id rather than its path: that is the
-	// shape the section list is written in, so a row is marked without either
-	// side having to resolve anything.
 	const isCurrent = (route: Section) => isCurrentSection(route, page.route.id);
 
-	// Choosing a page is finishing with the panel, so it closes itself rather
-	// than staying over what it was asked to show.
 	$effect(() => {
 		void page.url.pathname;
 		shell.setMenu(false);
 	});
 
-	// A panel is also finished with when the window grows enough to hold a
-	// column: left open, it would sit over a page that already has one.
 	$effect(() => {
 		if (!narrow.current) shell.setMenu(false);
 	});
 
-	// While the panel is open the page under it stays still: a swipe on the
-	// list scrolls the list, not the table it is covering.
 	$effect(() => {
 		if (!narrow.current || !shell.menuOpen) return;
 
@@ -67,8 +56,6 @@
 	});
 </script>
 
-<!-- Only ever over the page, and only while it is open: at column widths
-     there is nothing to dim. -->
 {#if narrow.current && shell.menuOpen}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -91,7 +78,6 @@
 
 <style>
 	aside {
-		/* Its colours are the nav-* tokens in theme.ts. */
 		position: fixed;
 		top: var(--header-height);
 		bottom: 0;
@@ -105,10 +91,6 @@
 		overflow: hidden;
 	}
 
-	/* Groups a little apart, rows close together: the space says which rows
-	   belong with which heading, with no rules or boxes needed. The list
-	   scrolls on a window too short for it, with a thin bar that shows only
-	   while the pointer is over the column. */
 	nav {
 		display: flex;
 		flex: 1;
@@ -126,18 +108,11 @@
 		scrollbar-color: var(--scrollbar-thumb) transparent;
 	}
 
-	/* Folded, the rows are icons and the column is narrow: the same inset
-	   on both sides keeps them centred under the header's mark, and the
-	   groups are held apart by their rules rather than by space. */
 	.collapsed nav {
 		gap: 0;
 		padding-inline: 8px;
 	}
 
-	/*
-	 * On narrow screens the sidebar is a slide-in panel over a dimmed page. It is a media query,
-	 * not only a class, so the server-rendered page is already right.
-	 */
 	@media (max-width: 55rem) {
 		aside {
 			width: min(17rem, 82vw);
@@ -154,7 +129,6 @@
 			visibility: visible;
 		}
 
-		/* A panel has room for names, so it never draws itself as a rail. */
 		.collapsed nav {
 			gap: var(--space-2);
 			padding-inline: var(--space-2);

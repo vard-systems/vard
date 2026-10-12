@@ -4,12 +4,8 @@
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		/** `indeterminate` is for a box that stands for a part-ticked set,
-		    such as the one in a table header. */
 		checked: boolean | 'indeterminate';
 		onChange: (checked: boolean) => void;
-		/** The text beside the box. Without one, give `title` instead so the
-		    box still says what it does. */
 		label?: string;
 		title?: string;
 		disabled?: boolean;

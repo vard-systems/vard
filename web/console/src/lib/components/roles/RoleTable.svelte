@@ -12,16 +12,9 @@
 
 	type Props = {
 		roles: Role[];
-		/** Adds a column naming each role's application, for a list that mixes
-		    applications. */
 		showApplication?: boolean;
-		/** The applications the administrator can see, to name the scope of a
-		    role included from another scope. */
 		applications: Application[];
-		/** Called with the role whose row was chosen. */
 		onOpen: (role: Role) => void;
-		/** The ids of the ticked rows, and how to say that they changed. Left
-		    out, the rows cannot be ticked. */
 		selected?: string[];
 		onSelect?: (ids: string[]) => void;
 	};
@@ -35,9 +28,6 @@
 		onSelect
 	}: Props = $props();
 
-	/** An included role's name, prefixed with its scope when that is not the
-	    scope of the role it is included in: a global role can include
-	    application roles, and an application role global ones. */
 	function label(included: UserRoleRef, from: Role): string {
 		if (included.application_id === from.application_id) return included.name;
 		if (included.application_id === null) return `Global / ${included.name}`;
@@ -60,10 +50,8 @@
 		return applications.find((app) => app.id === role.application_id)?.name ?? '?';
 	}
 
-	/** How many role names a cell shows before it says "and N more". */
 	const SHOWN = 3;
 
-	/** The users page, filtered to the holders of one role. */
 	function holders(role: Role): string {
 		return `${resolve('/admin/(panel)/dashboard/users')}?role=${role.id}`;
 	}
@@ -103,8 +91,6 @@
 			{/if}
 		</td>
 
-		<!-- Every role holding this one also gives, inheritance followed all the
-		     way down: what a user actually gets. -->
 		<td>
 			<span class="badges">
 				{#each role.inherited_roles.slice(0, SHOWN) as inherited (inherited.id)}

@@ -2,18 +2,11 @@
 	import type { Snippet } from 'svelte';
 
 	type Props = {
-		/** Something at the start of the row: usually a Thumb. */
 		lead?: Snippet;
-		/** The row's title. Left out, the children are the whole content. */
 		title?: string;
-		/** A line under the title. */
 		description?: string;
-		/** Things at the end of the row: tags, buttons. */
 		end?: Snippet;
-		/** Whatever else the row holds, under the title and description. */
 		children?: Snippet;
-		/** Makes the whole row a link: to the list of what it counts, say.
-		    Already resolved; the row only follows it. */
 		href?: string;
 	};
 
@@ -33,8 +26,6 @@
 {/snippet}
 
 {#if href}
-	<!-- A row that leads somewhere is one link, not a row with a link in it:
-	     the whole of it takes the click, and the wash says so. -->
 	<li class="linked">
 		<!-- The caller resolved the address. -->
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
@@ -45,8 +36,6 @@
 {/if}
 
 <style>
-	/* PocketBase's .list-item: at least 54px tall, ruled off above by a shadow
-	   rather than a border, so the rule never doubles a box's own. */
 	.item {
 		display: flex;
 		align-items: center;

@@ -33,8 +33,6 @@
 
 	const stored = $derived(settings.mail);
 
-	/** The stored record as the form holds it: without what the form cannot
-	    change, and with the port as text, since that is what a field binds. */
 	function formOf({ has_password, port, ...rest }: MailResponse['mail']) {
 		void has_password;
 		return { ...rest, port: String(port) };
@@ -48,7 +46,6 @@
 	/** The password is never read back, so the field starts empty whatever is
 	    stored: typing one replaces it, and leaving it alone keeps it. */
 	let password = $state('');
-	/** Asking for the stored password to go, for a server that takes none. */
 	let removePassword = $state(false);
 
 	let saving = $state(false);
@@ -59,10 +56,6 @@
 		form = formOf(stored);
 	}
 
-	/**
-	 * The form as the API takes it, with host and address lower-cased. Its keys mirror the stored
-	 * record so `dirty` can compare the two generically.
-	 */
 	const input = $derived({
 		is_enabled: form.is_enabled,
 		host: form.host.trim().toLowerCase(),
@@ -73,8 +66,6 @@
 		from_name: form.from_name.trim()
 	});
 
-	/** The password as the API takes it: left out unless one was typed, or
-	    an empty string to clear the one that is stored. */
 	const passwordInput = $derived(
 		password !== '' ? password : removePassword && stored.has_password ? '' : undefined
 	);
@@ -84,9 +75,6 @@
 			(Object.keys(input) as (keyof typeof input)[]).some((key) => input[key] !== stored[key])
 	);
 
-	/** What has to be filled in before a message could go anywhere. Sending
-	    switched off asks for nothing but a port: a half-filled form is work in
-	    progress, which is what the server says too. */
 	const complete = $derived(
 		Number.isInteger(input.port) &&
 			input.port >= 1 &&
@@ -125,7 +113,6 @@
 				'Settings saved',
 				'The next password reset, confirmation and one-time code goes through this server.'
 			);
-			// The log gains an entry for the change.
 			await queryClient.invalidateQueries({ queryKey: keys.admin.overview });
 		},
 		onError: (err: unknown) => {
@@ -306,12 +293,10 @@
 </form>
 
 <style>
-	/* FormSection spaces the sections itself; the bar needs a gap above it. */
 	form > :global(.save-bar) {
 		margin-top: var(--space-5);
 	}
 
-	/* The address and the button on one line, centred on each other. */
 	.try {
 		display: flex;
 		align-items: center;

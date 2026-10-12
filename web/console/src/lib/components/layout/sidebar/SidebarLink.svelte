@@ -9,14 +9,12 @@
 		label: string;
 		icon: ComponentType;
 		current: boolean;
-		/** Folded to its icon: the name moves into a tooltip. */
 		collapsed: boolean;
 	};
 
 	let { route, label, icon, current, collapsed }: Props = $props();
 </script>
 
-<!-- Unfolded, the tooltip would only repeat the name, so it is off. -->
 <Tooltip {label} placement="right" disabled={!collapsed}>
 	{#snippet children(trigger)}
 		<a
@@ -34,9 +32,6 @@
 </Tooltip>
 
 <style>
-	/* The icon keeps its place whether the column is wide or folded — the
-	   same inset from the row's left, under the header's mark — so folding
-	   never moves it; the words after it just run out of room. */
 	.row {
 		position: relative;
 		display: flex;
@@ -56,8 +51,6 @@
 			color var(--speed-fast);
 	}
 
-	/* The icons are a step quieter than the names, so the column reads as
-	   words with marks beside them rather than a wall of glyphs. */
 	.icon {
 		display: inline-flex;
 		flex: none;
@@ -90,9 +83,6 @@
 		outline-offset: -2px;
 	}
 
-	/* The page being read: filled solid in the brand colour, which no hover
-	   comes near, so it needs no other mark. These come after the hover's
-	   rules at the same weight, so the pointer never swaps the fill. */
 	.row.current {
 		background: var(--nav-current);
 		color: var(--nav-current-text);
@@ -103,9 +93,6 @@
 		color: var(--nav-current-text);
 	}
 
-	/* Folded: the name fades out, and the row closes to a circle as wide as
-	   it is tall, centred in the rail under the header's mark. Left at the
-	   rail's width the pill would be a squashed oval, 40 by 34. */
 	.row.collapsed {
 		gap: 0;
 		width: var(--nav-item-height);

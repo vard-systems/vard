@@ -13,15 +13,10 @@
 
 	type Props = {
 		sessions: UserSessionRecord[];
-		/** What the table says with no rows: nobody signed in, or nobody
-		    matching the search. */
 		empty: string;
-		/** Given when the administrator may end sessions. */
 		onEnd?: (session: UserSessionRecord) => void;
 		onSignOutUser?: (session: UserSessionRecord) => void;
-		/** Narrows the list to one user's sessions. */
 		onUser: (session: UserSessionRecord) => void;
-		/** The session being ended, whose button shows it. */
 		ending?: string;
 	};
 

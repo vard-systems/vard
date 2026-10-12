@@ -1,8 +1,3 @@
-/**
- * A failed request as the server described it: `code` names the problem, `params` fills its
- * sentence and `message` is the server's English. `status` is 0 with code `network` when the
- * server was unreachable, and `unknown` for an answer that was not the server's.
- */
 export class ApiError extends Error {
 	constructor(
 		readonly status: number,
@@ -14,7 +9,6 @@ export class ApiError extends Error {
 		this.name = 'ApiError';
 	}
 
-	/** The session is missing or has expired. */
 	get isUnauthorized(): boolean {
 		return this.status === 401;
 	}
@@ -46,7 +40,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 		throw new ApiError(0, 'Could not reach the server. Is the admin API running?', 'network');
 	}
 
-	// A 204 has no body to read.
 	const payload = response.status === 204 ? {} : await response.json().catch(() => ({}));
 
 	if (!response.ok) {

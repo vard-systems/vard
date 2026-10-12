@@ -2,8 +2,6 @@
 	import type { ComponentType } from 'svelte';
 	import type { Node } from '@xyflow/svelte';
 
-	/** The two ends of the flow: where a sign-in starts, and the session it
-	    ends in. */
 	export type EndNodeData = {
 		kind: 'start' | 'end';
 		label: string;

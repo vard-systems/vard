@@ -13,8 +13,6 @@
 
 	let { admin, open = $bindable(false) }: Props = $props();
 
-	/** The account itself — who you are and how you sign in — and its
-	    settings — the second factor and where you are signed in. */
 	const tabs = [
 		{ value: 'account', label: 'Account', icon: RiUserLine },
 		{ value: 'settings', label: 'Settings', icon: RiSettings3Line }
@@ -22,7 +20,6 @@
 
 	const name = $derived(admin.full_name.trim() || admin.email);
 
-	/** What the administrator may do, in a word: the standing first. */
 	const standing = $derived(
 		admin.is_super_admin
 			? 'Super administrator'
@@ -30,10 +27,6 @@
 	);
 </script>
 
-<!--
-	The administrator's own account in a full-window dialog. Its body is rebuilt on every
-	opening, so it always starts on the Account tab with fresh forms.
--->
 <FullscreenDialog bind:open title="Your account">
 	<div class="summary">
 		<Thumb src={admin.avatar_url} text={initials(name)} size="md" shape="circle" tone="accent" />

@@ -30,7 +30,6 @@
 
 	let search = $state('');
 
-	/** The application being saved, so only its row shows the wait. */
 	let saving = $state<string | null>(null);
 
 	const shown = $derived.by(() => {
@@ -40,7 +39,6 @@
 			? all.filter((app) => app.name.toLowerCase().includes(term) || app.client_id.includes(term))
 			: all;
 
-		// Authorised first: they are what this tab is usually opened to check.
 		return [...matching].sort((a, b) => Number(b.authorized) - Number(a.authorized));
 	});
 

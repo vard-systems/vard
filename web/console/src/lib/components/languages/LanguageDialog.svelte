@@ -20,11 +20,8 @@
 
 	type Props = {
 		open: boolean;
-		/** The language being changed. */
 		language?: Language | null;
-		/** Whether the administrator may change it, or only read it. */
 		canWrite: boolean;
-		/** The tab it opens on: its settings, or one app's text. */
 		tab?: 'settings' | LocaleApp;
 	};
 
@@ -44,19 +41,14 @@
 	let isDefault = $state(false);
 	let position = $state('');
 
-	/** Each app's text as it is being edited, and whether it differs from
-	    what is saved. An app whose tab was never opened has neither. */
 	let drafts = $state<Record<string, Record<string, string> | null>>({});
 	let dirty = $state<Record<string, boolean>>({});
 
 	let saving = $state(false);
 	let confirmingDelete = $state(false);
 
-	/** The apps this language has text for, which the server decides. There
-	    is one today: the sign-in pages. */
 	const apps = $derived(language?.apps ?? []);
 
-	// The form is filled in each time the panel opens.
 	$effect(() => {
 		if (!open || !language) return;
 
@@ -71,9 +63,6 @@
 		dirty = {};
 	});
 
-	/** The base language is always offered, and so is the default: one is what
-	    every missing translation falls back to, the other what somebody sees
-	    before choosing. */
 	const locked = $derived(language?.base === true || isDefault);
 
 	const settingsChanged = $derived(
@@ -105,7 +94,6 @@
 		}))
 	]);
 
-	/** Saves the settings, then each app's text, as separate requests behind one button. */
 	const save = createMutation(() => ({
 		mutationFn: async () => {
 			const code = language!.code;
@@ -170,7 +158,6 @@
 		save.mutate();
 	}
 
-	/** Making a language the default is also offering it. */
 	function defaultChanged(on: boolean) {
 		if (on) enabled = true;
 	}

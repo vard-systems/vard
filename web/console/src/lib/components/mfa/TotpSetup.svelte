@@ -6,11 +6,8 @@
 	import RecoveryCodes from './RecoveryCodes.svelte';
 
 	type Props = {
-		/** Replacing an authenticator that is on: it takes a code from it first. */
 		replacing?: boolean;
-		/** What the last button says: "Continue to the panel", "Done". */
 		doneLabel?: string;
-		/** Called once the recovery codes are saved. */
 		onDone: () => void;
 		onCancel?: () => void;
 	};
@@ -33,7 +30,6 @@
 		return err instanceof ApiError ? err.message : 'Something went wrong';
 	}
 
-	/** Groups the secret in fours, the way it is easiest to type into an app. */
 	const grouped = $derived(enrolment?.secret.match(/.{1,4}/g)?.join(' ') ?? '');
 
 	async function begin(proof?: string) {

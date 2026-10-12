@@ -4,11 +4,8 @@ import { usersApi, type UserField, type UserPage } from '$lib/api';
 import { keys } from './keys';
 import { LIST_PAGE_SIZE, nextOffset } from './paging';
 
-/** What the list is asked for: the search box, the verified filter and the
-    role filter, all of which live in the URL. */
 export type UserListParams = { search: string; verified: string; role: string };
 
-/** Users matching a search as pages; `first` is the server-rendered page for this key only. */
 export function usersOptions(params: UserListParams, first: UserPage) {
 	return infiniteQueryOptions({
 		queryKey: keys.users.list(params),
@@ -20,8 +17,6 @@ export function usersOptions(params: UserListParams, first: UserPage) {
 	});
 }
 
-/** The fields every user record has. They change rarely, and everything on
-    the page needs them, so they are one query the whole page shares. */
 export function userFieldsOptions(initial: UserField[]) {
 	return queryOptions({
 		queryKey: keys.users.fields,
@@ -30,7 +25,6 @@ export function userFieldsOptions(initial: UserField[]) {
 	});
 }
 
-/** Every role one user holds, with where each comes from. */
 export function roleMappingsOptions(userId: string) {
 	return queryOptions({
 		queryKey: keys.users.mappings(userId),
@@ -38,10 +32,8 @@ export function roleMappingsOptions(userId: string) {
 	});
 }
 
-/** How many users a picker offers for a typed name. */
 export const USER_SEARCH_LIMIT = 6;
 
-/** The first few users matching a typed name, for pickers. */
 export function userSearchOptions(term: string) {
 	return queryOptions({
 		queryKey: keys.users.search(term),

@@ -43,11 +43,8 @@
 
 	type Props = {
 		open: boolean;
-		/** The connection being changed, or null to add one. */
 		connection?: SSOConnection | null;
 		roles: Role[];
-		/** Whether the administrator may read roles at all — without it,
-		    `roles` is empty for a reason other than there being none. */
 		canReadRoles: boolean;
 		canWrite: boolean;
 	};
@@ -62,9 +59,6 @@
 
 	const queryClient = useQueryClient();
 
-	/** The connection as it stands on the server: the one opened, or the one
-	    just made — which the dialog stays open on, since what comes next is
-	    giving its provider the addresses on the Service provider tab. */
 	let current = $state<SSOConnection | null>(null);
 
 	let tab = $state('connection');
@@ -110,7 +104,6 @@
 		testError = '';
 	});
 
-	/** The form, from a connection — or as a new one starts. */
 	function fill(from: SSOConnection | null) {
 		protocol = from?.protocol ?? 'oidc';
 		name = from?.name ?? '';
@@ -126,8 +119,6 @@
 		signRequests = from?.sign_requests ?? false;
 		domains = [...(from?.domains ?? [])];
 		enforceDomains = from?.enforce_domains ?? false;
-		// A new connection starts with its button, which is what lets it be
-		// made before its domains are known.
 		showOnLogin = from?.show_on_login ?? true;
 		matching = from?.matching ?? 'link';
 		createUsers = from?.create_users ?? true;
@@ -143,13 +134,8 @@
 	const editing = $derived(current !== null);
 	const readOnly = $derived(!canWrite);
 
-	/** SSO is required of the addresses at a connection's domains, so without
-	    any there is nobody to require it of. */
 	const enforced = $derived(domains.length > 0 && enforceDomains);
 
-	/** What still stands between the form and saving, and the tab it is on —
-	    said beside the button, which takes you there, rather than leaving the
-	    button greyed out for no reason anybody can see. */
 	const missing = $derived.by((): { text: string; tab: string } | null => {
 		if (name.trim() === '') return { text: 'Name the connection to create it.', tab: 'connection' };
 		if (protocol === 'oidc' && (issuer.trim() === '' || clientId.trim() === ''))
@@ -197,8 +183,6 @@
 			if (clientSecret.trim()) body.client_secret = clientSecret.trim();
 		} else {
 			body.metadata_url = metadataUrl.trim();
-			// Metadata from an address is fetched by the server; pasted
-			// metadata is sent as it is.
 			if (!metadataUrl.trim()) body.metadata = metadata.trim();
 			body.name_id_format = nameIdFormat;
 			body.sign_requests = signRequests;
@@ -316,8 +300,6 @@
 		{ value: 'deny', label: 'Refuse: it signs in the way it was made' }
 	]);
 
-	/** A provider certificate that runs out within a month is worth saying:
-	    it is the usual way a working connection stops working. */
 	const expiring = $derived.by(() => {
 		const expires = current?.identity_provider?.certificate_expires;
 		if (!expires) return null;
@@ -336,8 +318,6 @@
 	}
 </script>
 
-<!-- Testing reads the fields of the protocol's section, so it sits in that
-     section's header, and what it found is the last thing in the section. -->
 {#snippet testButton()}
 	<Button variant="subtle" size="sm" onclick={test} loading={testing} disabled={testing}>
 		<Icon icon={RiFlaskLine} />
@@ -364,8 +344,6 @@
 	{/if}
 {/snippet}
 
-<!-- What still stands between the form and saving, said beside the button
-     and taking you to the tab it is on. -->
 {#snippet status()}
 	{#if missing}
 		<button type="button" class="missing" onclick={() => (tab = missing.tab)}>

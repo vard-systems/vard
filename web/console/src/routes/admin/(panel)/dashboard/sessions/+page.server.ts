@@ -3,10 +3,6 @@ import { SESSIONS_PAGE_SIZE } from '$lib/query';
 import { apiGet, requirePermission } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * Live sessions, newest first. Search and the user filter live in the URL; the user's address
- * is loaded only to label the filter.
- */
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	requirePermission((await parent()).admin, 'users.read');
 

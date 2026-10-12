@@ -23,18 +23,12 @@
 		type FlowDraft
 	} from '../steps';
 
-	/**
-	 * Settings for whatever is selected on the canvas; each option sits on the node it governs.
-	 */
 	type Props = {
 		draft: FlowDraft;
 		kinds: LoginStepSpec[];
 		selected: string;
 		editable: boolean;
-		/** A flow not saved yet, whose identifier can still be chosen. */
 		creating: boolean;
-		/** Whether the flow is the default in the database, which only making
-		    another one the default can change. */
 		savedDefault: boolean;
 		applications: number;
 		onRemove: (step: LoginStep) => void;
@@ -57,7 +51,6 @@
 		editable && step !== undefined && step !== draft.steps[0] && !spec?.fixed
 	);
 
-	/** A session length in the unit it reads best in, and back. */
 	let unit = $state<'hours' | 'days'>(
 		draft.session_lifetime_hours % 24 === 0 && draft.session_lifetime_hours >= 24 ? 'days' : 'hours'
 	);

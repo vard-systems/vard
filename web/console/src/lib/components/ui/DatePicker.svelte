@@ -14,11 +14,7 @@
 
 	type Props = {
 		label: string;
-		/** The day, as an ISO date — "2026-03-12" — or an empty string for none:
-		    the same value a native date input has, so a form that had one takes
-		    this without changing what it sends. */
 		value: string;
-		/** The first and last days that can be chosen, as ISO dates. */
 		min?: string;
 		max?: string;
 		icon?: ComponentType;
@@ -27,10 +23,7 @@
 		required?: boolean;
 		disabled?: boolean;
 		readOnly?: boolean;
-		/** Offers a button that empties the field. */
 		clearable?: boolean;
-		/** A toolbar's filter: a control's height, the label beside the
-		    value. See Field. */
 		compact?: boolean;
 		name?: string;
 		id?: string;
@@ -58,15 +51,9 @@
 	const selected = $derived(toDate(value));
 	const canClear = $derived(clearable && value !== '' && !disabled && !readOnly);
 
-	/** Whether the calendar is open: the box shows focus and the label rises
-	    while it is, as for a select. */
 	let open = $state(false);
 </script>
 
-<!--
-	A date field: typed or picked from a calendar that opens on the chosen month. Ark provides
-	keyboard handling and parsing; styles are in styles/fields.css and styles/ark.css.
--->
 <ArkDatePicker.Root
 	class="field-root"
 	data-invalid={error !== undefined || undefined}
@@ -120,8 +107,6 @@
 		</ArkDatePicker.Control>
 	</div>
 
-	<!-- Portalled, as a select's list is, so a dialog that scrolls or a toolbar
-	     that hides its overflow never cuts the calendar off. -->
 	<Portal>
 		<ArkDatePicker.Positioner>
 			<ArkDatePicker.Content>
@@ -214,10 +199,6 @@
 	{/if}
 </ArkDatePicker.Root>
 
-<!-- The row over every view: back, what is on show — which steps out to the
-     next view up when pressed — and forward. Each view renders it inside its
-     own View, so the buttons move by that view's step: a month, a year, a
-     decade. -->
 {#snippet header()}
 	<ArkDatePicker.ViewControl>
 		<ArkDatePicker.PrevTrigger aria-label="Previous">

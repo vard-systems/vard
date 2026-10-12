@@ -11,9 +11,6 @@
 
 	let panel: HTMLElement;
 
-	/** The secret appears at the top of the panel, often far above where the
-	    button that made it was pressed, so it is brought into view: a secret
-	    nobody sees is a secret nobody copies. */
 	$effect(() => {
 		void secret;
 		panel.scrollIntoView({ behavior: 'smooth', block: 'start' });

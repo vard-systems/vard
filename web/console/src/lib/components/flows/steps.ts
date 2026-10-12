@@ -13,9 +13,6 @@ import type { ComponentType } from 'svelte';
 import type { LoginStep, LoginStepSpec } from '$lib/api';
 import { BRAND } from '$lib/brand';
 
-/** The mark beside each step, wherever one is listed. The step catalog itself
-    is the server's — what a step is called and whether it is run yet comes
-    from there — and this is the one thing about a step the panel decides. */
 const marks: Record<LoginStep, ComponentType> = {
 	identifier: RiAtLine,
 	password: RiKey2Line,
@@ -30,13 +27,10 @@ export function markFor(step: LoginStep): ComponentType {
 	return marks[step] ?? RiCheckboxCircleLine;
 }
 
-/** What a step is called: the server's catalog (model.LoginStepSpecs), and
-    its own name for a step this panel is older than. */
 export function labelFor(step: LoginStep, kinds: LoginStepSpec[]): string {
 	return kinds.find((kind) => kind.step === step)?.label ?? step;
 }
 
-/** What a step does, from the same catalog. */
 export function describe(step: LoginStep, kinds: LoginStepSpec[]): string {
 	return kinds.find((kind) => kind.step === step)?.description ?? '';
 }
@@ -45,7 +39,6 @@ export function specFor(step: LoginStep, kinds: LoginStepSpec[]): LoginStepSpec 
 	return kinds.find((kind) => kind.step === step);
 }
 
-/** What the editor changes: a flow without what the server keeps about it. */
 export type FlowDraft = {
 	name: string;
 	slug: string;
@@ -82,18 +75,12 @@ export function draftOf(flow: FlowDraft): FlowDraft {
 	};
 }
 
-/** The steps that prove who somebody is and that the sign-in pages run today.
-    The server refuses a flow with neither (model.proofSteps), and the editor
-    says so before anybody presses Save. */
 export const PROOF_STEPS: LoginStep[] = ['password', 'social'];
 
-/** The longest a session may last: ninety days, as the server holds it. */
 export const MAX_SESSION_HOURS = 24 * 90;
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-/** What would stop a draft saving — the same rules the server holds, said as
-    the flow is drawn. */
 export function problemsOf(draft: FlowDraft): string[] {
 	const problems: string[] = [];
 
@@ -114,7 +101,6 @@ export function problemsOf(draft: FlowDraft): string[] {
 	return problems;
 }
 
-/** A name turned into an identifier: "Staff sign-in" is staff-sign-in. */
 export function slugFrom(name: string): string {
 	return name
 		.toLowerCase()
@@ -124,7 +110,6 @@ export function slugFrom(name: string): string {
 		.slice(0, 64);
 }
 
-/** A slug nobody has yet: the one asked for, or it with -2, -3… after it. */
 export function freeSlug(wanted: string, taken: string[]): string {
 	const base = wanted || 'flow';
 	if (!taken.includes(base)) return base;
@@ -137,8 +122,6 @@ export function freeSlug(wanted: string, taken: string[]): string {
 
 export type FlowTemplate = {
 	id: string;
-	/** What the template is called on the "new flow" page, and what it is
-	    for — which becomes the new flow's own description. */
 	name: string;
 	hint: string;
 	icon: ComponentType;
@@ -159,9 +142,6 @@ const base: Omit<FlowDraft, 'name' | 'slug' | 'steps'> = {
 	session_lifetime_hours: 24 * 14
 };
 
-/** Where a new flow starts: the shapes most installations want, written out
-    so an administrator changes one rather than building from nothing. The
-    names and descriptions are message keys, said in the panel's language. */
 export const TEMPLATES: FlowTemplate[] = [
 	{
 		id: 'password',
@@ -207,14 +187,8 @@ export const TEMPLATES: FlowTemplate[] = [
 	}
 ];
 
-/** What an exported flow says it is, written once so the type and the file
-    agree. The project's name is part of it, which is why it comes from the
-    brand rather than being spelled here. */
 const FLOW_SCHEMA = `${BRAND.slug}.login-flow/1`;
 
-/** What Export writes and Import reads: a flow without anything that belongs
-    to one installation — its id, its applications, whether it is the
-    default here. */
 export type FlowFile = Omit<FlowDraft, 'is_default'> & { $schema: typeof FLOW_SCHEMA };
 
 export function toFile(draft: FlowDraft): FlowFile {
@@ -266,10 +240,6 @@ export function fromFile(text: string, kinds: LoginStepSpec[]): FlowDraft {
 		description: typeof file.description === 'string' ? file.description : '',
 		is_enabled: file.is_enabled !== false,
 		steps: file.steps as LoginStep[],
-		// A switch the file does not mention keeps the default: the ones that
-		// are on unless said otherwise read `!== false`, and the ones that are
-		// off unless said otherwise read `=== true`. That way a flow exported
-		// before a switch existed imports as a flow made today would.
 		allow_sign_in: file.allow_sign_in !== false,
 		allow_registration: file.allow_registration !== false,
 		allow_password_reset: file.allow_password_reset !== false,
@@ -282,7 +252,6 @@ export function fromFile(text: string, kinds: LoginStepSpec[]): FlowDraft {
 	};
 }
 
-/** Hands the browser a file to save. */
 export function download(name: string, content: string) {
 	const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
 	const link = Object.assign(document.createElement('a'), { href: url, download: name });

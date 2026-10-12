@@ -1,33 +1,18 @@
-/**
- * Toasts report the outcome of an action. One toaster serves the panel; <Toaster /> in the root
- * layout draws it.
- *
- *     notify.success('Settings saved');
- *     notify.error(err, 'Could not save the settings');
- *
- * State of the page itself ("could not load the log") stays an <Alert>.
- */
 import { createToaster } from '@ark-ui/svelte/toast';
 import { messageOf } from '$lib/api';
 
 export const toaster = createToaster({
 	placement: 'bottom',
-	// Clear of the window's bottom edge by more than Ark's 1rem, so a toast
-	// reads as floating over the page rather than resting on its edge.
 	offsets: '32px',
 	gap: 10,
 	max: 4,
 	duration: 5000,
-	// Paused while the tab is hidden, so a toast is not gone before anyone
-	// has had the chance to read it.
 	pauseOnPageIdle: true
 });
 
-/** An error stays longer: it may need reading twice, and acting on. */
 const ERROR_DURATION = 8000;
 
 export const notify = {
-	/** Something worked. `description` says what follows from it. */
 	success(title: string, description?: string) {
 		toaster.success({ title, description });
 	},
@@ -38,7 +23,6 @@ export const notify = {
 		toaster.error({ title: messageOf(err, fallback), duration: ERROR_DURATION });
 	},
 
-	/** A failure the panel found itself, before asking the server. */
 	problem(message: string) {
 		toaster.error({ title: message, duration: ERROR_DURATION });
 	}

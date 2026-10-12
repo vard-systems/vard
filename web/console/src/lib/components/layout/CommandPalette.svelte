@@ -1,8 +1,4 @@
 <script lang="ts">
-	/**
-	 * Every page in one searchable list, built from the same `sections` catalog as the sidebar.
-	 * Matching is fuzzy (letters in order), so "adro" finds "Admin roles".
-	 */
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
@@ -27,20 +23,16 @@
 		group: string;
 		icon: ComponentType;
 		href: string;
-		/** Off this site: it opens in a tab of its own and the row says so. */
 		external?: boolean;
 	};
 
 	let open = $state(false);
 	let query = $state('');
 	let active = $state(0);
-	/** The rows, for scrolling the active one back into view. */
 	let list = $state<HTMLElement | null>(null);
 
 	const admin = $derived(page.data.admin as Admin | undefined);
 
-	/** Every page this administrator may open, then the two that are not
-	    pages of this installation at all. */
 	const commands = $derived<Command[]>([
 		...visibleGroups(admin).flatMap((group) =>
 			group.items.map((item) => ({
@@ -71,10 +63,6 @@
 
 	const matches = $derived(commands.filter((command) => fuzzy(command, query)));
 
-	/** The matches under their group headings, in the order the groups first
-	    appear, so filtering never reshuffles the list. Keep each match's
-	    original index while grouping; the active descendant and keyboard
-	    selection use that index, and it avoids searching the list again. */
 	const grouped = $derived(
 		matches.reduce<{ name: string; items: { command: Command; index: number }[] }[]>(
 			(groups, command, index) => {
@@ -89,11 +77,8 @@
 		)
 	);
 
-	/** The option the input's active descendant points at. */
 	const activeId = $derived(matches[active] ? `command-palette-option-${active}` : undefined);
 
-	/** Whether the query's letters appear in the name, in order. The group's
-	    name counts too, so "settings" brings up everything filed under it. */
 	function fuzzy(command: Command, text: string): boolean {
 		const needle = text.trim().toLowerCase();
 		if (!needle) return true;
@@ -130,9 +115,6 @@
 		);
 	}
 
-	/** "/" opens the search from anywhere on the page, the way GitHub's and
-	    most documentation sites' does. ⌘K (Ctrl+K) still works for anybody
-	    whose fingers expect it; only "/" is advertised, being the shorter. */
 	function onKeydown(event: KeyboardEvent) {
 		const slash =
 			event.key === '/' &&
@@ -150,8 +132,6 @@
 		else if (!open) show();
 	}
 
-	/** Arrows move the highlight, Enter follows it. The input keeps the
-	    focus throughout, so typing and choosing are the same gesture. */
 	function onInputKeydown(event: KeyboardEvent) {
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 			event.preventDefault();
@@ -160,8 +140,6 @@
 			const count = matches.length;
 			if (count === 0) return;
 
-			// Wrapping means Up from the top reaches the last row, which is
-			// quicker than holding Down through the whole list.
 			active = (active + step + count) % count;
 			scrollIntoView();
 
@@ -175,7 +153,6 @@
 	}
 
 	function scrollIntoView() {
-		// After the highlight has been drawn, not before.
 		requestAnimationFrame(() => {
 			list?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' });
 		});
@@ -200,8 +177,6 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<!-- One quiet icon among the header's tools. The tooltip names the key,
-     which is the faster way in and the one worth learning. -->
 <IconButton icon={RiSearchLine} label="Search (press /)" size="sm" onclick={show} />
 
 <Dialog.Root bind:open lazyMount unmountOnExit>
@@ -283,10 +258,6 @@
 </Dialog.Root>
 
 <style>
-	/* The card itself — bordered, how it arrives — is every dialog's, in
-	styles/ark.css. The palette is anchored below the top of the window
-	rather than centred: the list grows downwards, so a centred palette would
-	move while being typed in. */
 	:global(.palette-positioner[data-scope='dialog'][data-part='positioner']) {
 		align-items: flex-start;
 		padding-top: 12vh;
@@ -314,8 +285,6 @@
 		color: var(--color-text-hint);
 	}
 
-	/* The field is the whole strip, so the input itself is just the text in
-	   it: no box of its own inside another box. */
 	.field input {
 		flex: 1;
 		min-width: 0;
@@ -363,9 +332,6 @@
 		cursor: pointer;
 	}
 
-	/* One row is highlighted at a time and the keyboard owns which: the mouse
-	   moves the highlight rather than drawing a second one of its own, so
-	   there is never a question which row Enter will follow. */
 	.row[data-active='true'] {
 		background: var(--color-secondary);
 	}
@@ -406,7 +372,6 @@
 		gap: var(--space-1);
 	}
 
-	/* The key hints are for a keyboard, which a narrow screen rarely has. */
 	@media (max-width: 55rem) {
 		footer {
 			display: none;

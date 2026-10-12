@@ -5,9 +5,7 @@
 	type Props = {
 		title: string;
 		icon?: ComponentType;
-		/** What sits at the right of the header: labels, or a link to more. */
 		meta?: Snippet;
-		/** Drops the content's padding, for a list whose rows run edge to edge. */
 		flush?: boolean;
 		children: Snippet;
 	};
@@ -15,14 +13,6 @@
 	let { title, icon, meta, flush = false, children }: Props = $props();
 </script>
 
-<!--
-	A titled block of a page: a tinted header strip over the content, in one bordered box.
-
-	    <Panel title="Sessions" icon={RiComputerLine} flush>
-	      {#snippet meta()}<Tag>2 active</Tag>{/snippet}
-	      <List>…</List>
-	    </Panel>
--->
 <section class="panel">
 	<header>
 		{#if icon}<span class="icon"><Icon {icon} size="1.15rem" /></span>{/if}

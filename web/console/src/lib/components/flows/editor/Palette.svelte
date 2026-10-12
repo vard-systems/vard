@@ -4,15 +4,10 @@
 	import { Icon, Note } from '$lib/components/ui';
 	import { describe, labelFor, markFor } from '../steps';
 
-	/**
-	 * The steps a flow can contain, dragged onto the canvas or clicked into the waiting gap (or
-	 * the end). Steps not yet implemented can be placed as a plan and are marked.
-	 */
 	type Props = {
 		kinds: LoginStepSpec[];
 		steps: LoginStep[];
 		editable: boolean;
-		/** Set while a "+" on the canvas waits for a step. */
 		waiting: boolean;
 		onAdd: (step: LoginStep) => void;
 	};

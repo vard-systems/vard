@@ -4,11 +4,8 @@ import { adminsApi, type AdminPage, type AdminPermission, type AdminRole } from 
 import { keys } from './keys';
 import { LIST_PAGE_SIZE, nextOffset } from './paging';
 
-/** What the list of administrators is asked for, all of it from the URL. */
 export type AdminListParams = { search: string; status: string; role: string };
 
-/** The administrators matching a search, as pages, seeded with the first
-    one the server rendered. */
 export function adminsOptions(params: AdminListParams, first: AdminPage) {
 	return infiniteQueryOptions({
 		queryKey: keys.admins.list(params),
@@ -20,8 +17,6 @@ export function adminsOptions(params: AdminListParams, first: AdminPage) {
 	});
 }
 
-/** The admin roles matching a search. An empty search is every role, which
-    is what the administrator panel offers to hold. */
 export function adminRolesOptions(search: string, initial: AdminRole[]) {
 	return queryOptions({
 		queryKey: keys.admins.roles(search),
@@ -30,8 +25,6 @@ export function adminRolesOptions(search: string, initial: AdminRole[]) {
 	});
 }
 
-/** The admin permission catalog. It is defined in the server's code, so it
-    only changes with a new release. */
 export function adminPermissionsOptions(initial: AdminPermission[]) {
 	return queryOptions({
 		queryKey: keys.admins.permissions,

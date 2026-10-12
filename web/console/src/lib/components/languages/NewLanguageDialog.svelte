@@ -19,11 +19,8 @@
 
 	type Props = {
 		open: boolean;
-		/** The languages there are, to copy one and to refuse a code twice. */
 		languages: Language[];
-		/** The shipped languages this installation does not have. */
 		shipped: ShippedLanguage[];
-		/** Called with the language once it exists, so the page can open it. */
 		onCreated: (language: Language) => void;
 	};
 
@@ -34,15 +31,11 @@
 	let code = $state('');
 	let name = $state('');
 	let native = $state('');
-	/** What the new language's text starts as: a language's code, or
-	    NOTHING. Not an empty string, which a Select reads as unchosen. */
 	const NOTHING = '-';
 
 	let copyFrom = $state(NOTHING);
 	let enabled = $state(false);
 
-	/** Whether the names were typed rather than filled in from the code: a
-	    name somebody wrote is never replaced behind their back. */
 	let namesTyped = $state(false);
 
 	let saving = $state(false);
@@ -75,7 +68,6 @@
 		trimmed !== '' && codeError === undefined && name.trim() !== '' && native.trim() !== ''
 	);
 
-	// Typing a code fills in its names, the way the browser spells them.
 	$effect(() => {
 		const current = trimmed;
 		untrack(() => fillNames(current));
@@ -89,8 +81,6 @@
 		name = match?.name ?? names?.name ?? '';
 		native = match?.native_name ?? names?.native ?? '';
 
-		// A code the server ships a translation of starts from it, unless
-		// somebody has already said otherwise.
 		if (match && copyFrom === NOTHING) copyFrom = match.code;
 		if (!match && shipped.some((one) => one.code === copyFrom)) copyFrom = NOTHING;
 	}

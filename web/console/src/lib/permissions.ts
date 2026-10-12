@@ -5,8 +5,6 @@ import type { Admin, AdminPermissionName } from '$lib/api';
  * request itself; hiding a control is only convenience.
  */
 
-/** Whether the administrator holds the permission for the whole panel, or,
-    given an application, for that application. */
 export function can(
 	admin: Admin | null | undefined,
 	permission: AdminPermissionName,
@@ -20,9 +18,6 @@ export function can(
 	);
 }
 
-/** Whether the administrator holds the permission for the whole panel or for
-    at least one application: enough to open a page that is then narrowed to
-    the applications they can reach. */
 export function canAnywhere(
 	admin: Admin | null | undefined,
 	permission: AdminPermissionName

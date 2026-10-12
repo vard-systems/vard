@@ -3,10 +3,6 @@ import { LIST_PAGE_SIZE } from '$lib/query';
 import { apiGet, requireAnywhere } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * The applications this administrator can see; a role for one application is enough. Search and
- * type filter live in the URL.
- */
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	requireAnywhere((await parent()).admin, 'applications.read');
 

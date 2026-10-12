@@ -9,9 +9,7 @@
 	import NewLanguageDialog from './NewLanguageDialog.svelte';
 
 	type Props = {
-		/** What the server rendered, to seed the query with. */
 		initial: LanguageList;
-		/** Whether the administrator may add, change or remove a language. */
 		canWrite: boolean;
 	};
 
@@ -21,8 +19,6 @@
 
 	let search = $state('');
 
-	/** There are as many languages as somebody has added — a handful — so the
-	    search narrows them here rather than asking the server again. */
 	const visible = $derived.by(() => {
 		const term = search.trim().toLowerCase();
 		if (term === '') return list.data.languages;
@@ -34,9 +30,6 @@
 		);
 	});
 
-	/** How many of them are on screen. The endpoint answers with every one,
-	    so "Show more" reveals the next page of what is already here; a new
-	    search starts again from one page. */
 	let shown = $derived(firstPage(search));
 	const rows = $derived(visible.slice(0, shown));
 
@@ -51,8 +44,6 @@
 		dialogOpen = true;
 	}
 
-	/** A language that was just added opens on its text, which is the next
-	    thing anybody adding one does — unless it arrived complete. */
 	function created(language: Language) {
 		const unfinished = language.apps.find((app) => (language.missing[app] ?? 0) > 0);
 		open(language, unfinished ?? 'settings');

@@ -4,10 +4,6 @@ import { can } from '$lib/permissions';
 import { apiGet } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/** The installation's settings: the organisation it belongs to, and the
-    languages its sign-in pages are shown in. Each is its own permission, so
-    an administrator sees the tabs their roles allow and the page is only
-    refused to one who may see neither. */
 export const load: PageServerLoad = async ({ fetch, parent }) => {
 	const { admin } = await parent();
 

@@ -8,22 +8,14 @@
 		label: string;
 		value: number;
 		icon: ComponentType;
-		/** What gives the number its context, on one line beside it. A metric
-		    is read in a row, so the note never wraps: four cards of one height
-		    with their numbers on one line is the whole point. */
 		note?: string;
-		/** The palette the note is in, for the one that is the exception —
-		    a note that says an administrator is locked out, say. */
 		tone?: ColorPalette;
-		/** Where the number leads, when the administrator may go there. */
 		href?: string;
 	};
 
 	let { label, value, icon, note, tone = 'neutral', href }: Props = $props();
 </script>
 
-<!-- A metric rather than a card: the number is the point, so the label and
-     the note are one line each beside it and the whole thing is two rows. -->
 <svelte:element this={href ? 'a' : 'div'} class="stat" class:link={href} {href} data-tone={tone}>
 	<span class="head">
 		<Icon {icon} size="0.9375rem" />
@@ -63,9 +55,6 @@
 		background: var(--color-surface-alt);
 	}
 
-	/* The label and the icon share a line so the number below is the first
-	   thing the card is about; the arrow goes to the far end of it, which is
-	   where a link's other end is expected. */
 	.head {
 		display: flex;
 		align-items: center;
@@ -91,9 +80,6 @@
 		color: var(--color-text);
 	}
 
-	/* Baseline-aligned, so the numbers of a row sit on one line however many
-	   digits each has, and the note takes what is left rather than pushing
-	   the number about. */
 	.figure {
 		display: flex;
 		align-items: baseline;

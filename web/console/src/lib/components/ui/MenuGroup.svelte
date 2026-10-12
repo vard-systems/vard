@@ -3,7 +3,6 @@
 	import { Menu } from '@ark-ui/svelte/menu';
 
 	type Props = {
-		/** A small heading over the rows, such as "Resources". */
 		label?: string;
 		children: Snippet;
 	};

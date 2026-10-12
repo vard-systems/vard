@@ -8,7 +8,6 @@
 
 	type Props = {
 		applicationId: string;
-		/** Whether the administrator may change what the application may do. */
 		editable: boolean;
 	};
 
@@ -18,11 +17,8 @@
 
 	const access = createQuery(() => applicationAccessOptions(applicationId));
 
-	/** The API being saved, so only its card shows the wait. */
 	let saving = $state<string | null>(null);
 
-	/** Changes are saved as they are made, the way the role mapping is: the
-	    answer is the whole list, so the cache is set straight from it. */
 	const change = createMutation(() => ({
 		mutationFn: ({ api, scopes }: { api: APIAccess; scopes: string[] | null }) =>
 			scopes === null

@@ -71,10 +71,6 @@ import type {
 	UserRecord
 } from './types';
 
-/** Setting the panel up: the two calls that work without a session, because
-    before the first administrator exists there is nobody to be. */
-/** The query string the logs are read by, for a page, the next page, and
-    the export alike: one place spells the filters, so they cannot drift. */
 export function logQuery(filter: LogFilter, extra: Record<string, string> = {}): string {
 	const params = new URLSearchParams();
 
@@ -89,13 +85,10 @@ export function logQuery(filter: LogFilter, extra: Record<string, string> = {}):
 	return text ? `?${text}` : '';
 }
 
-/** What has been happening: the dashboard, and the log it summarises. */
 export const activityApi = {
 	overview: (days: OverviewDays, fetcher?: Fetch) =>
 		api.get<Overview>(`/admin/overview?days=${days}`, fetcher),
 
-	/** One page of the log, newest first; `before` is the previous page's
-	    `next`. */
 	logs: (filter: LogFilter, before = '', limit = 50, fetcher?: Fetch) =>
 		api.get<LogPage>(
 			`/admin/logs${logQuery(filter, { limit: String(limit), ...(before ? { before } : {}) })}`,
@@ -113,33 +106,23 @@ export const setupApi = {
 	create: (input: SetupInput) => api.post<{ admin: { id: string } }>('/admin/setup', input)
 };
 
-/** Signing in and out, from the browser. What the panel *reads* — the
-    administrator, the overview, the log — is fetched by the server loads
-    instead (lib/server/api.ts), so it is not here. */
 export const adminApi = {
-	/** A right password signs in, or says which step is still to go. */
 	login: (username: string, password: string) =>
 		api.post<LoginResult>('/admin/auth/login', { username, password }),
 
-	/** How far this browser's session has got. */
 	session: (fetcher?: Fetch) =>
 		api.get<{ state: SessionState; mfa_required: boolean }>('/admin/auth/session', fetcher),
 
-	/** Finishes a sign-in waiting for a code, or a recovery code. */
 	verifyMfa: (code: string) => api.post<{ admin: Admin }>('/admin/auth/mfa', { code }),
 
 	logout: () => api.post<{ status: string }>('/admin/auth/logout'),
 
 	profileSessions: () => api.get<{ sessions: AdminSession[] }>('/admin/sessions'),
 
-	/** Signs the caller out of one of their other browsers. */
 	endSession: (id: string) => api.delete<void>(`/admin/sessions/${encodeURIComponent(id)}`),
 
-	/** Signs the caller out everywhere but this browser. */
 	endOtherSessions: () => api.delete<{ ended: number }>('/admin/sessions'),
 
-	/** Changes the caller's own name and address. A new address takes their
-	    current password, since it is what they sign in with. */
 	updateProfile: (body: {
 		first_name: string;
 		last_name: string;
@@ -148,16 +131,11 @@ export const adminApi = {
 		current_password?: string;
 	}) => api.patch<{ admin: Admin }>('/admin/me', body),
 
-	/** Changes the caller's own password. Every other session they have
-	    open ends; this one stays. */
 	changePassword: (current_password: string, new_password: string) =>
 		api.post<{ status: string }>('/admin/me/password', { current_password, new_password })
 };
 
-/** The users an organisation manages, and the shape of their records. */
 export const usersApi = {
-	/** A page of users. The search and the filter are the same ones the URL
-	    carries, so a link and a query key describe the same list. */
 	list: (
 		params: { search?: string; verified?: string; role?: string; offset?: number; limit?: number },
 		fetcher?: Fetch
@@ -178,15 +156,12 @@ export const usersApi = {
 
 	create: (input: UserInput) => api.post<{ user: UserRecord }>('/admin/users', input),
 
-	/** Every role a user holds: given directly or inherited. */
 	roleMappings: (id: string, fetcher?: Fetch) =>
 		api.get<{ roles: RoleMapping[] }>(`/admin/users/${id}/role-mappings`, fetcher),
 
-	/** Gives a user roles, global and application roles alike. */
 	assignRoles: (id: string, roles: string[]) =>
 		api.post<{ roles: RoleMapping[] }>(`/admin/users/${id}/role-mappings`, { roles }),
 
-	/** Takes away a role the user was given directly. */
 	unassignRole: (id: string, role: string) =>
 		api.delete<{ roles: RoleMapping[] }>(`/admin/users/${id}/role-mappings/${role}`),
 
@@ -202,13 +177,10 @@ export const usersApi = {
 
 	removeField: (id: string) => api.delete<void>(`/admin/user-fields/${id}`),
 
-	/** Takes away a provider the user signs in with. Their account stays. */
 	disconnect: (id: string, identity: string) =>
 		api.delete<void>(`/admin/users/${id}/social-accounts/${identity}`)
 };
 
-/** The organisation this installation belongs to: one record of settings,
-    read and written back. */
 export const organizationApi = {
 	get: (fetcher?: Fetch) => api.get<{ organization: Organization }>('/admin/organization', fetcher),
 
@@ -216,38 +188,26 @@ export const organizationApi = {
 		api.patch<{ organization: Organization }>('/admin/organization', input)
 };
 
-/** How this installation sends email, and the words of every message it
-    sends. A super admin's: the settings carry the mail server's password, and
-    the words are what lands in a user's inbox. */
 export const mailApi = {
 	get: (fetcher?: Fetch) => api.get<MailResponse>('/admin/mail', fetcher),
 
 	update: (input: MailSettingsInput) => api.patch<MailResponse>('/admin/mail', input),
 
-	/** Sends one message with what the form holds, to find out whether the
-	    settings work before anybody's sign-in depends on them. A password
-	    left out is the stored one. */
 	test: (input: MailTestInput) =>
 		api.post<{ sent: boolean; to: string }>('/admin/mail/test', input),
 
 	content: (fetcher?: Fetch) => api.get<MailContent>('/admin/mail/content', fetcher),
 
-	/** Writes one language's words for the emails. Only the keys of the
-	    messages, merged into the rest of that language's text — a value left
-	    empty clears the override and the shipped text comes back. */
 	saveContent: (code: string, messages: Record<string, string>) =>
 		api.put<{ language: MailLanguageContent }>(`/admin/mail/content/${code}`, { messages })
 };
 
-/** The one-time codes the server emails as people sign in. */
 export const otpApi = {
 	get: (fetcher?: Fetch) => api.get<OTPResponse>('/admin/otp', fetcher),
 
 	update: (input: OTPSettingsInput) => api.patch<OTPResponse>('/admin/otp', input)
 };
 
-/** The accounts elsewhere users may sign in with. The kinds come with the
-    list so the form can offer them, and fill in what it already knows. */
 export const socialApi = {
 	list: (fetcher?: Fetch) =>
 		api.get<{ providers: SocialProvider[]; kinds: SocialSpec[] }>(
@@ -263,13 +223,10 @@ export const socialApi = {
 
 	remove: (id: string) => api.delete<void>(`/admin/social-providers/${id}`),
 
-	/** The secret itself, for checking it against the provider's console.
-	    Reading it is recorded in the activity log. */
 	secret: (id: string) =>
 		api.get<{ secret: string; kind: string }>(`/admin/social-providers/${id}/secret`)
 };
 
-/** The login flows applications sign their users in with. */
 export const flowsApi = {
 	list: (fetcher?: Fetch) =>
 		api.get<{ flows: LoginFlow[]; step_kinds: LoginStepSpec[] }>('/admin/login-flows', fetcher),
@@ -282,10 +239,7 @@ export const flowsApi = {
 	remove: (id: string) => api.delete<void>(`/admin/login-flows/${id}`)
 };
 
-/** Everyone signed in: listing their sessions, and ending them. */
 export const sessionsApi = {
-	/** A page of active sessions, newest first; `after` continues from the
-	    last one of the page before. */
 	list: (
 		params: { search?: string; user?: string; after?: string; limit?: number } = {},
 		fetcher?: Fetch
@@ -302,15 +256,12 @@ export const sessionsApi = {
 		);
 	},
 
-	/** Signs one browser out. */
 	end: (id: string) => api.delete<void>(`/admin/user-sessions/${id}`),
 
-	/** Ends every session a user has and revokes their applications' tokens. */
 	signOutUser: (userId: string) =>
 		api.delete<{ sessions: number; tokens: number }>(`/admin/users/${userId}/sessions`)
 };
 
-/** The languages, and their text for each app. */
 export const languagesApi = {
 	list: (fetcher?: Fetch) => api.get<LanguageList>('/admin/languages', fetcher),
 
@@ -327,8 +278,6 @@ export const languagesApi = {
 			fetcher
 		),
 
-	/** Replaces the language's whole text for one app. Keys the app does not
-	    look up are dropped, and counted in `ignored`. */
 	saveTranslation: (code: string, app: LocaleApp, messages: Record<string, string>) =>
 		api.put<{ language: Language; ignored: number }>(
 			`/admin/languages/${encodeURIComponent(code)}/translations/${app}`,
@@ -336,7 +285,6 @@ export const languagesApi = {
 		)
 };
 
-/** The organisations' own identity providers. */
 export const ssoApi = {
 	list: (fetcher?: Fetch) =>
 		api.get<{ connections: SSOConnection[] }>('/admin/sso-connections', fetcher),
@@ -349,8 +297,6 @@ export const ssoApi = {
 
 	remove: (id: string) => api.delete<void>(`/admin/sso-connections/${id}`),
 
-	/** Tries a provider before it is relied on: an issuer's discovery, or a
-	    SAML provider's metadata from its address or as pasted. */
 	test: (input: {
 		protocol: string;
 		issuer?: string;
@@ -359,15 +305,11 @@ export const ssoApi = {
 		metadata?: string;
 	}) => api.post<SSOTestResult>('/admin/sso-connections/test', input),
 
-	/** Reads a SAML provider's metadata again from its address. */
 	refreshMetadata: (id: string) =>
 		api.post<{ connection: SSOConnection }>(`/admin/sso-connections/${id}/refresh-metadata`)
 };
 
-/** The roles users hold. */
 export const rolesApi = {
-	/** A page of roles. `limit` is raised by whatever needs every role at
-	    once, such as the pickers in the user and role panels. */
 	list: (
 		params: {
 			scope?: 'global' | 'application';
@@ -400,18 +342,15 @@ export const rolesApi = {
 	remove: (id: string) => api.delete<void>(`/admin/user-roles/${id}`)
 };
 
-/** The signed-in administrator's own second factor. */
 export const mfaApi = {
 	status: (fetcher?: Fetch) => api.get<{ mfa: MfaStatus }>('/admin/mfa', fetcher),
 
-	/** Starts setting up an authenticator. Replacing one takes a code from it. */
 	begin: (currentCode?: string) =>
 		api.post<{ enrolment: MfaEnrolment }>(
 			'/admin/mfa/totp',
 			currentCode ? { code: currentCode } : undefined
 		),
 
-	/** Finishes it with a code from the new authenticator; answers the recovery codes. */
 	confirm: (code: string) =>
 		api.post<{ recovery_codes: string[] }>('/admin/mfa/totp/confirm', { code }),
 
@@ -421,8 +360,6 @@ export const mfaApi = {
 		api.post<{ recovery_codes: string[] }>('/admin/mfa/recovery-codes', { code })
 };
 
-/** The panel's administrators, and the roles that say what they may do. Every
-    call here is a super admin's alone. */
 export const adminsApi = {
 	list: (
 		params: { search?: string; status?: string; role?: string; offset?: number; limit?: number },
@@ -445,8 +382,6 @@ export const adminsApi = {
 
 	remove: (id: string) => api.delete<void>(`/admin/admins/${id}`),
 
-	/** Removes another administrator's second factor and signs them out. */
-	/** How administrators are made to sign in, for the whole panel. */
 	security: (fetcher?: Fetch) => api.get<AdminSecurity>('/admin/security', fetcher),
 
 	updateSecurity: (input: { require_mfa: boolean }) =>
@@ -471,7 +406,6 @@ export const adminsApi = {
 		api.get<{ permissions: AdminPermission[] }>('/admin/admin-permissions', fetcher)
 };
 
-/** The apps and services that sign their users in here. */
 export const applicationsApi = {
 	list: (
 		params: { search?: string; type?: string; enabled?: string; offset?: number; limit?: number },
@@ -494,28 +428,23 @@ export const applicationsApi = {
 	update: (id: string, input: ApplicationInput) =>
 		api.patch<ApplicationWithSecret>(`/admin/applications/${id}`, input),
 
-	/** Every API, with what the application may do with each. */
 	apiAccess: (id: string, fetcher?: Fetch) =>
 		api.get<{ apis: APIAccess[] }>(`/admin/applications/${id}/apis`, fetcher),
 
-	/** Authorises the application for an API, with the scopes it may ask for. */
 	authorizeAPI: (id: string, apiId: string, scopes: string[]) =>
 		api.put<{ apis: APIAccess[] }>(`/admin/applications/${id}/apis/${apiId}`, { scopes }),
 
 	revokeAPI: (id: string, apiId: string) =>
 		api.delete<{ apis: APIAccess[] }>(`/admin/applications/${id}/apis/${apiId}`),
 
-	/** What a token request would amount to, without issuing anything. */
 	previewToken: (id: string, input: TokenPreviewInput) =>
 		api.post<{ preview: TokenPreview }>(`/admin/applications/${id}/token-preview`, input),
 
-	/** Replaces the client secret. The old one stops working at once. */
 	rotateSecret: (id: string) => api.post<ApplicationWithSecret>(`/admin/applications/${id}/secret`),
 
 	remove: (id: string) => api.delete<void>(`/admin/applications/${id}`)
 };
 
-/** The resource servers tokens are issued for. */
 export const apisApi = {
 	list: (search = '', fetcher?: Fetch) =>
 		api.get<{ apis: API[]; total: number }>(
@@ -525,8 +454,6 @@ export const apisApi = {
 
 	get: (id: string, fetcher?: Fetch) => api.get<{ api: API }>(`/admin/apis/${id}`, fetcher),
 
-	/** The applications the administrator can see, with what each may do
-	    with the API. */
 	applications: (id: string, fetcher?: Fetch) =>
 		api.get<{ applications: APIApplication[] }>(`/admin/apis/${id}/applications`, fetcher),
 
@@ -540,8 +467,6 @@ export const apisApi = {
 	remove: (id: string) => api.delete<void>(`/admin/apis/${id}`)
 };
 
-/** Redis, for a super admin: what its two databases hold, a key at a time,
-    and the ways to clear some or all of it. */
 export const cacheApi = {
 	overview: (fetcher?: Fetch) => api.get<CacheOverview>('/admin/cache', fetcher),
 
@@ -569,7 +494,6 @@ export const cacheApi = {
 	flush: (database: CacheDatabaseName) => api.delete<void>(`/admin/cache/${database}`)
 };
 
-/** The query string of a key listing, with the filters that are set. */
 function cacheQuery(query: CacheKeyQuery): string {
 	const params = new URLSearchParams();
 	for (const [name, value] of Object.entries(query)) {

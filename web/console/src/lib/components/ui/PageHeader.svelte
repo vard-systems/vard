@@ -1,23 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	/** A step of the trail: its name, and where it leads when it is a page of
-	    its own — "APIs" above one API — so the trail is the way back. */
 	type Crumb = string | { label: string; href: string };
 
 	type Props = {
-		/** Where the page sits, outermost first; the last is the page itself. */
 		crumbs: Crumb[];
-		/** A sentence under the title saying what the page is for. */
 		description?: string;
-		/** How many records the page lists, shown beside the title. */
 		count?: number;
-		/** Tags beside the title that describe the record itself — "default",
-		    "unsaved", an algorithm — rather than anything that can be done. */
 		meta?: Snippet;
-		/** Small controls — refresh, settings — grouped before the actions. */
 		secondary?: Snippet;
-		/** The page's main actions, at the far end of the title row. */
 		actions?: Snippet;
 	};
 
@@ -28,10 +19,6 @@
 	const trail = $derived(crumbs.slice(0, -1));
 </script>
 
-<!-- Every page's heading, in the order people read one: where they are, what
-     this is, what it is for. The trail is small and above, the title is the
-     page's h1, and everything that can be done sits on the title's row at the
-     far end — the icon buttons first, then the one action that matters. -->
 <header class="page-header">
 	{#if trail.length > 0}
 		<nav class="trail" aria-label="Breadcrumb">
@@ -101,8 +88,6 @@
 		color: var(--color-text);
 	}
 
-	/* The title and the tools share a row, centred on each other, and the
-	   tools wrap under the title rather than squeezing it. */
 	.title-row {
 		display: flex;
 		flex-wrap: wrap;
@@ -157,15 +142,11 @@
 		gap: var(--space-2);
 	}
 
-	/* A quiet rule between the icon buttons and the actions, so the two kinds
-	   read as two groups. */
 	.secondary + .actions {
 		padding-left: var(--space-2);
 		border-left: 1px solid var(--color-border);
 	}
 
-	/* The count a page used to put among its buttons — "42 total" — still
-	   reads quietly if a page puts one there. */
 	.secondary :global(.total) {
 		color: var(--color-text-hint);
 		font-size: var(--text-sm);
@@ -180,10 +161,6 @@
 		line-height: 1.55;
 	}
 
-	/* A phone: what the page is comes first — the title, then what it is
-	   for — and what can be done follows on a row of its own, the icon
-	   buttons at its start and the main action at its end, rather than
-	   wedged between the title and its description. */
 	@media (max-width: 34rem) {
 		h1 {
 			font-size: var(--text-xl);

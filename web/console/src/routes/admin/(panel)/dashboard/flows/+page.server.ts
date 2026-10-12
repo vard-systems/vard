@@ -2,10 +2,6 @@ import type { LoginFlow, LoginStepSpec } from '$lib/api';
 import { apiGet, requirePermission } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 
-/**
- * Login flows and the step catalog. There are few flows, so all are loaded and filtered on the
- * page; the search lives in the URL.
- */
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	requirePermission((await parent()).admin, 'login_flows.read');
 

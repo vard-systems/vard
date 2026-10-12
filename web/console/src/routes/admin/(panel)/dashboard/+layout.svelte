@@ -14,18 +14,12 @@
 </div>
 
 <style>
-	/* The column is as wide as the panel layout says, the same value the
-	   header's logo block uses, so the two line up while it folds. */
 	.dashboard {
 		display: grid;
 		grid-template-columns: var(--sidebar-width) 1fr;
 		align-items: start;
 	}
 
-	/*
-	 * The frame every page sits in: inset by the gutter and centred on wide screens. Pages add no
-	 * padding of their own, and the frame spaces their stack of heading, toolbar and table.
-	 */
 	.content {
 		grid-column: 2;
 		box-sizing: border-box;

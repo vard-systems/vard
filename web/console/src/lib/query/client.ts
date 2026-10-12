@@ -12,8 +12,6 @@ export function createQueryClient(): QueryClient {
 			queries: {
 				staleTime: 30_000,
 				refetchOnWindowFocus: browser,
-				// One retry covers a dropped connection; more would just delay
-				// telling someone that the server is not answering.
 				retry: browser ? 1 : false
 			}
 		}

@@ -9,15 +9,9 @@
 		open?: boolean;
 		title: string;
 		description?: string;
-		/** `sm` for a question, `md` for a short form, `lg` for a page of
-		    settings. */
 		size?: 'sm' | 'md' | 'lg';
-		/** Whether the reader may dismiss it — false while something it
-		    started is still under way. */
 		closable?: boolean;
-		/** The body. A question needs none: its title and description say it. */
 		children?: Snippet;
-		/** The buttons, against the bottom right. */
 		footer?: Snippet;
 	};
 
@@ -37,10 +31,6 @@
 	let heading = $state<HTMLElement | null>(null);
 </script>
 
-<!-- The other kind of dialog from a FullscreenDialog: a card in the middle
-     of the window, for something that is not a record — a question to
-     answer, a short choice. It is built when it opens and taken down when it
-     has left, as a full-window one is, so it always opens fresh. -->
 <Dialog.Root
 	{open}
 	onOpenChange={(details) => {
@@ -80,8 +70,6 @@
 </Dialog.Root>
 
 <style>
-	/* The card itself — centred, bordered, how it arrives — is every
-	dialog's, in styles/ark.css. A modal says only how wide it is. */
 	:global(.modal-content[data-scope='dialog'][data-part='content']) {
 		--dialog-width: 40rem;
 	}
@@ -90,16 +78,12 @@
 		--dialog-width: 26rem;
 	}
 
-	/* A page of settings keeps one height whatever tab is open, so the card
-	   does not jump as its contents change; the body scrolls inside it. */
 	:global(.modal-content[data-scope='dialog'][data-part='content'][data-size='lg']) {
 		--dialog-width: 48rem;
 
 		height: min(42rem, calc(100dvh - 2 * var(--space-4)));
 	}
 
-	/* Without a body the header is the whole card above the buttons, so it
-	   keeps its padding at the bottom too. */
 	header:last-child,
 	header:has(+ footer) {
 		padding-bottom: var(--space-4);
@@ -128,8 +112,6 @@
 		overflow-wrap: anywhere;
 	}
 
-	/* The body scrolls on its own, so the title and the buttons stay put
-	   around a long form. */
 	.body {
 		flex: 1;
 		min-height: 0;
@@ -147,8 +129,6 @@
 		background: var(--color-surface-alt);
 	}
 
-	/* On a phone the card takes nearly the whole width, and a large one the
-	   whole height, so a page of settings is not a letterbox. */
 	@media (max-width: 34rem) {
 		:global(.modal-content[data-scope='dialog'][data-part='content'][data-size='lg']) {
 			height: calc(100dvh - 2 * var(--space-2));

@@ -3,7 +3,6 @@
 	import { Button, Icon, Input } from '$lib/components/ui';
 
 	type Props = {
-		/** The domains, lower case, each once. */
 		domains: string[];
 		readOnly?: boolean;
 	};
@@ -12,7 +11,6 @@
 
 	let typed = $state('');
 
-	/** "@Acme.com." is acme.com: what people paste is often an address's end. */
 	function normalize(domain: string): string {
 		return domain.trim().toLowerCase().replace(/^@/, '').replace(/\.$/, '');
 	}

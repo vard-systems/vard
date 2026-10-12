@@ -3,14 +3,9 @@
 	import type { ColorPalette } from './control';
 
 	type Props = {
-		/** The palette, the same five every control takes. */
 		tone?: ColorPalette;
-		/** A coloured dot before the text, the way PocketBase marks a log's
-		    level, instead of colouring the whole label. */
 		dot?: boolean;
-		/** Smaller, for a label inside a row of text. */
 		small?: boolean;
-		/** Bold, for a label that names what a row is. */
 		strong?: boolean;
 		title?: string;
 		children: Snippet;
@@ -26,7 +21,6 @@
 	}: Props = $props();
 </script>
 
-<!-- PocketBase's .label: a small filled box with a 5px radius. -->
 <span class="label {tone}" class:dot class:small class:strong {title}>
 	{@render children()}
 </span>
@@ -61,8 +55,6 @@
 		font-weight: bold;
 	}
 
-	/* Without a dot the colour is the fill; with one, the fill stays neutral
-	   and the dot says it. */
 	.label:not(.dot).success {
 		background: var(--surface-success);
 	}

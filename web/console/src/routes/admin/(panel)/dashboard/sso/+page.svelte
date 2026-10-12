@@ -28,8 +28,6 @@
 
 	let search = $state('');
 
-	/** There are as many connections as organisations — a handful — so the
-	    search narrows them here, by name, identifier or domain. */
 	const visible = $derived.by(() => {
 		const term = search.trim().toLowerCase();
 		if (term === '') return list.data.connections;
@@ -41,9 +39,6 @@
 		);
 	});
 
-	/** How many of them are on screen. The endpoint answers with every one,
-	    so "Show more" reveals the next page of what is already here; a new
-	    search starts again from one page. */
 	let shown = $derived(firstPage(search));
 	const rows = $derived(visible.slice(0, shown));
 

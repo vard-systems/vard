@@ -4,14 +4,9 @@
 
 	type Props = {
 		title: string;
-		/** A line under the title: what the section is for. */
 		description?: string;
-		/** A mark beside the title, for a page of settings whose sections are
-		    subjects of their own — the organisation's identity, its support. */
 		icon?: ComponentType;
-		/** Tags under the description: where the values show, or their state. */
 		meta?: Snippet;
-		/** Controls on the right of the title, such as an "Add" button. */
 		action?: Snippet;
 		children: Snippet;
 	};
@@ -19,10 +14,6 @@
 	let { title, description, icon, meta, action, children }: Props = $props();
 </script>
 
-<!--
-	One titled group of a form, laid out by its own width: title beside a card of fields where
-	there is room, title above fields where there is not.
--->
 <section class="form-section">
 	<div class="layout">
 		<header>
@@ -62,9 +53,6 @@
 		margin-top: var(--space-5);
 	}
 
-	/* The rule is on the layout rather than the section, since a section is
-	   its own container and can only restyle what is inside it: ruled off
-	   while stacked, and not once the fields are in a card of their own. */
 	:global(.form-section) + .form-section > .layout {
 		padding-top: var(--space-5);
 		border-top: 1px solid var(--color-border);
@@ -77,7 +65,6 @@
 	}
 
 	header {
-		/* Thumb's `sm` size, for what lines up beside it. */
 		--icon-width: 34px;
 
 		display: flex;
@@ -93,7 +80,6 @@
 		min-width: 0;
 	}
 
-	/* The title sits on the icon's middle line. */
 	.icon {
 		display: flex;
 		flex: none;
@@ -142,9 +128,6 @@
 		min-width: 0;
 	}
 
-	/* A switch brings a row's padding with it, for the rule between two of
-	   them. At the edges of the section that padding is only a gap, so it
-	   goes — directly inside, or inside the one group that holds them. */
 	.content > :global(.switch-field:first-child),
 	.content > :global(:first-child:not(.switch-field) > .switch-field:first-child) {
 		padding-top: 0;
@@ -159,7 +142,6 @@
 		.layout {
 			display: grid;
 			grid-template-columns: 14rem minmax(0, 1fr);
-			/* The card is as tall as its fields, not as its title's column. */
 			align-items: start;
 			gap: var(--space-5);
 		}
@@ -169,16 +151,12 @@
 			border-top: none;
 		}
 
-		/* Beside the card, the title reads down and its action sits under
-		   the description rather than across from it. */
 		header {
 			flex-direction: column;
 			justify-content: flex-start;
 			padding-top: var(--space-2);
 		}
 
-		/* Under an icon's title, the action lines up with the words, not
-		   with the icon. */
 		.heading:has(.icon) + .action {
 			padding-left: calc(var(--icon-width) + var(--space-3));
 		}
@@ -191,8 +169,6 @@
 		}
 	}
 
-	/* On a settings page there is room to spare, and a title with an icon
-	   beside it needs more of it than a title alone. */
 	@container (min-width: 60rem) {
 		.layout {
 			grid-template-columns: 17rem minmax(0, 1fr);

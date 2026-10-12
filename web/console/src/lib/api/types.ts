@@ -1,7 +1,6 @@
-/** The shapes the API returns. They mirror the Go responses in
-    internal/server/admin.go; change them together. */
+/** The shapes the API returns. They mirror the response.go files under
+    internal/api/; change them together. */
 
-/** The signed-in administrator. */
 export type Admin = {
 	id: string;
 	username: string;
@@ -9,42 +8,31 @@ export type Admin = {
 	full_name: string;
 	first_name: string;
 	last_name: string;
-	/** A full address of their picture, or empty for their initials. */
 	avatar_url: string;
 	status: string;
-	/** The names of the roles held for the whole panel. */
 	roles: string[];
 	last_login_at?: string;
 	/** What the whole-panel roles allow. The panel shows and hides its
 	    controls by these; the server checks them regardless. */
 	permissions: AdminPermissionName[];
-	/** What roles held for one application add there, by application id. */
 	scoped_permissions: Record<string, AdminPermissionName[]>;
-	/** Whether they may manage administrators and admin roles. */
 	is_super_admin: boolean;
-	/** Whether they sign in with a second factor. */
 	mfa_enabled: boolean;
 };
 
-/** How far the session this browser carries has got. `mfa` is waiting for a
-    code; `enroll` has to set up an authenticator before anything else. */
 export type SessionState = 'none' | 'signed_in' | 'mfa' | 'enroll';
 
-/** What signing in with a password led to: signed in, or a step to go. */
 export type LoginResult =
 	{ admin: Admin; next?: undefined } | { next: 'mfa' | 'enroll'; admin?: undefined };
 
-/** The signed-in administrator's own second factor. */
 export type MfaStatus = {
 	enabled: boolean;
-	/** Whether every administrator must have one: it cannot be turned off. */
 	required: boolean;
 	confirmed_at: string | null;
 	last_used_at: string | null;
 	recovery_codes_left: number;
 };
 
-/** An authenticator being set up: the secret, and the otpauth URI for the QR code. */
 export type MfaEnrolment = { secret: string; uri: string };
 
 /** The names in the admin permission catalog. They mirror the constants in
@@ -71,27 +59,21 @@ export type AdminPermissionName =
 	| 'user_roles.write'
 	| 'role_assignments.write';
 
-/** One entry of the admin permission catalog. */
 export type AdminPermission = {
 	name: AdminPermissionName;
 	group: string;
 	description: string;
-	/** Whether a role held for one application grants this there. */
 	scopable: boolean;
 };
 
-/** The status of an administrator's account. Only an active one may sign in. */
 export type AdminStatus = 'active' | 'suspended' | 'disabled' | 'invited';
 
-/** One role an administrator holds: for the whole panel when `application`
-    is null, or for that one application. */
 export type AdminAssignment = {
 	id: string;
 	role: Reference;
 	application: Reference | null;
 };
 
-/** An administrator, as a super admin manages them. */
 export type AdminRecord = {
 	id: string;
 	username: string;
@@ -104,7 +86,6 @@ export type AdminRecord = {
 	permissions: AdminPermissionName[];
 	scoped_permissions: Record<string, AdminPermissionName[]>;
 	is_super_admin: boolean;
-	/** Whether they sign in with a second factor. */
 	mfa_enabled: boolean;
 	last_login_at: string | null;
 	last_login_ip: string;
@@ -112,24 +93,18 @@ export type AdminRecord = {
 	updated_at: string;
 };
 
-/** What the panel sends for one assignment. */
 export type AdminAssignmentInput = {
 	role_id: string;
-	/** Null for the whole panel. */
 	application_id: string | null;
 };
 
-/** What the panel sends when creating or updating an administrator. The
-    address is the account, so there is no username. */
 export type AdminInput = {
 	email: string;
 	first_name: string;
 	last_name: string;
 	status: Exclude<AdminStatus, 'invited'>;
-	/** Required when creating. Left out on an update, the password is kept. */
 	password?: string;
 	confirm_password?: string;
-	/** Every role the administrator holds, replacing what they had. */
 	assignments: AdminAssignmentInput[];
 };
 
@@ -140,13 +115,11 @@ export type AdminPage = {
 	offset: number;
 };
 
-/** A role administrators hold. */
 export type AdminRole = {
 	id: string;
 	name: string;
 	description: string;
 	permissions: AdminPermissionName[];
-	/** super_admin: grants everything, and cannot be changed or removed. */
 	is_builtin: boolean;
 	admin_count: number;
 	created_at: string;
@@ -159,8 +132,6 @@ export type AdminRoleInput = {
 	permissions: AdminPermissionName[];
 };
 
-/** The kinds of OAuth client: a server-rendered web app, a single-page app, a
-    native app on a device, or a service with no user. */
 export type ApplicationType = 'web' | 'spa' | 'native' | 'm2m';
 
 export type AuthMethod = 'client_secret_basic' | 'client_secret_post' | 'none';
@@ -169,8 +140,6 @@ export type GrantType = 'authorization_code' | 'refresh_token' | 'client_credent
 
 export type Scope = 'openid' | 'profile' | 'email' | 'offline_access' | 'roles';
 
-/** An app or service that signs its users in here with OAuth 2.0 and OpenID
-    Connect. The names follow RFC 7591's client metadata. */
 export type Application = {
 	id: string;
 	name: string;
@@ -178,14 +147,11 @@ export type Application = {
 	type: ApplicationType;
 	logo_url: string;
 	website_url: string;
-	/** The privacy policy and terms of service its sign-in pages link to. */
 	privacy_url: string;
 	terms_url: string;
 	client_id: string;
 	client_id_issued_at: number;
-	/** Whether a secret exists. The secret itself is only ever shown once. */
 	has_secret: boolean;
-	/** The last four characters of the secret, to tell which one is in use. */
 	secret_hint: string;
 	secret_created_at: string | null;
 	token_auth_method: AuthMethod;
@@ -198,22 +164,16 @@ export type Application = {
 	access_token_lifetime: number;
 	id_token_lifetime: number;
 	refresh_token_lifetime: number;
-	/** Put the user's roles in this application into its tokens. */
 	assert_roles: boolean;
-	/** Only let users holding one of its roles sign in to it. */
 	require_role_assignment: boolean;
 	is_enabled: boolean;
-	/** Offer "Create an account" on its sign-in page. */
 	allow_registration: boolean;
-	/** The login flow it signs people in with, null for the default one. */
 	login_flow_id: string | null;
 	role_count: number;
 	created_at: string;
 	updated_at: string;
 };
 
-/** What the panel sends when registering or changing an application. `type`
-    is only read when registering. */
 export type ApplicationInput = Pick<
 	Application,
 	| 'name'
@@ -237,12 +197,9 @@ export type ApplicationInput = Pick<
 	| 'is_enabled'
 	| 'allow_registration'
 > & {
-	/** The flow to sign people in with: an id, or "" for the default one. */
 	login_flow_id?: string;
 };
 
-/** An application, with the client secret that was just made for it. The
-    secret is only ever in this one answer. */
 export type ApplicationWithSecret = {
 	application: Application;
 	client_secret?: string;
@@ -255,8 +212,6 @@ export type ApplicationPage = {
 	offset: number;
 };
 
-/** What the first administrator is made from. There is no username: the
-    address is the account. */
 export type SetupInput = {
 	email: string;
 	password: string;
@@ -264,8 +219,6 @@ export type SetupInput = {
 	last_name: string;
 };
 
-/** What a log entry happened to. `name` is missing when the record is gone,
-    or when the administrator's roles do not let them see what it is called. */
 export type ActivityTarget = {
 	type: string;
 	id: string;
@@ -278,7 +231,6 @@ export type ActivityEvent = {
 	actor: string;
 	ip: string;
 	target: ActivityTarget | null;
-	/** What else is worth a line: why a sign-in was refused, which API. */
 	detail?: string;
 	created_at: string;
 };
@@ -287,14 +239,11 @@ export type LogEntry = ActivityEvent & {
 	user_agent: string;
 };
 
-/** One page of the log, and where the next begins — empty on the last. */
 export type LogPage = {
 	logs: LogEntry[];
 	next: string;
 };
 
-/** What the logs can be narrowed by. Dates are YYYY-MM-DD; `to` includes
-    its whole day. */
 export type LogFilter = {
 	q?: string;
 	actions?: string[];
@@ -303,11 +252,8 @@ export type LogFilter = {
 	to?: string;
 };
 
-/** The ranges the dashboard can be looked at over, in days. */
 export type OverviewDays = 7 | 14 | 30 | 90;
 
-/** The dashboard. Counts are totals now; `new_users`, the sign-ins, the
-    chart and the busiest administrators cover the last `days` days. */
 export type Overview = {
 	days: OverviewDays;
 	counts: {
@@ -329,7 +275,6 @@ export type Overview = {
 		failed: number;
 		blocked: number;
 	};
-	/** One entry a day, oldest first, today last. */
 	daily: { day: string; events: number; failures: number }[];
 	top_actors: { actor: string; events: number }[];
 	activity: ActivityEvent[];
@@ -342,16 +287,11 @@ export type AdminSession = {
 	created_at: string;
 	expires_at: string;
 	active: boolean;
-	/** The session this browser is using. It is signed out, not ended. */
 	current: boolean;
 };
 
-/** The kinds of value a user field can hold. */
 export type FieldType = 'text' | 'number' | 'bool' | 'email' | 'date';
 
-/** The rules a field can put on its values. `min` and `max` bound a number's
-    value or the length of text; `starts_with` is a prefix text must begin
-    with. A rule that is not set is null. */
 export type FieldRules = {
 	is_required: boolean;
 	is_unique: boolean;
@@ -360,13 +300,7 @@ export type FieldRules = {
 	starts_with: string;
 };
 
-/**
- * One field of a user record: built-in (a column, unchangeable) or additional (added in the
- * panel, stored in `data`). Built-ins come first.
- */
 export type UserField = FieldRules & {
-	/** The row this field is. A built-in field is a column rather than a row,
-	    so it has none. */
 	id?: string;
 	name: string;
 	label: string;
@@ -375,29 +309,22 @@ export type UserField = FieldRules & {
 	is_builtin: boolean;
 };
 
-/** What the panel sends when adding a field. A field's name and type are
-    fixed once records hold values under them, so an update sends the rules
-    only. */
 export type FieldInput = FieldRules & {
 	name: string;
 	label: string;
 	type: FieldType;
 };
 
-/** The built-in fields of a user record: the columns every installation has. */
 export type UserBuiltins = {
 	email: string;
 	is_email_verified: boolean;
 	first_name: string;
 	last_name: string;
 	is_active: boolean;
-	/** The password is one an administrator set, to be replaced by the user. */
 	is_password_temporary: boolean;
 };
 
-/** One provider a user signs in with, as their record shows it. */
 export type SocialAccount = {
-	/** The connection's own id, which disconnecting it names. */
 	id: string;
 	provider: string;
 	slug: string;
@@ -407,29 +334,18 @@ export type SocialAccount = {
 	last_login_at: string | null;
 };
 
-/** A user. The built-in fields are its own properties; everything an
-    organisation added lives in `data`, keyed by field name. */
 export type UserRecord = UserBuiltins & {
 	id: string;
-	/** Whether a password is set. The password itself never leaves the server. */
 	has_password: boolean;
-	/** The roles given to this user directly: global roles, and roles of
-	    every application the administrator can see. What they add up to is
-	    the role mapping, `usersApi.roleMappings`. */
 	roles: UserRoleRef[];
-	/** The providers this user signs in with, if any. */
 	social_accounts: SocialAccount[];
 	data: Record<string, unknown> | null;
 	created_at: string;
 	updated_at: string;
 };
 
-/** What the panel sends when creating or updating a user. */
 export type UserInput = UserBuiltins & {
-	/** Required when creating a user. Left out on an update, the user keeps
-	    the password they have. */
 	password?: string;
-	/** The password typed again; the server checks the two match. */
 	confirm_password?: string;
 	data: Record<string, unknown>;
 };
@@ -441,69 +357,45 @@ export type UserPage = {
 	offset: number;
 };
 
-/** Another row, named: enough to show it and to send it back. */
 export type Reference = {
 	id: string;
 	name: string;
 };
 
-/** A role, and its scope: the application it belongs to, or null for a
-    global role. */
 export type UserRoleRef = Reference & {
 	application_id: string | null;
 };
 
-/** One role a user holds, as the role mapping lists it. */
 export type RoleMapping = {
 	id: string;
 	name: string;
 	description: string;
-	/** The application the role belongs to, or null for a global role. */
 	application: { id: string; name: string; client_id: string } | null;
-	/** Whether the role includes other roles. */
 	composite: boolean;
-	/** Whether the role was given to the user directly. */
 	assigned: boolean;
-	/** The directly given roles it also comes through. A role with `via`
-	    and not `assigned` is inherited. */
 	via: Reference[];
 };
 
-/** A role users hold. What it lets them do is up to each application that
-    signs its users in here. */
 export type Role = {
 	id: string;
-	/** The application the role belongs to, or null for a global role. Its
-	    name is unique within that scope. */
 	application_id: string | null;
 	name: string;
 	description: string;
-	/** Given to every new user, so they can sign in to the application. */
 	is_default: boolean;
-	/** The roles this one includes directly. */
 	inherits: UserRoleRef[];
-	/** Every role it includes with inheritance followed, sorted. */
 	inherited_roles: UserRoleRef[];
-	/** The API scopes the role grants directly. */
 	api_scopes: APIScopeRef[];
-	/** How many users hold the role directly. */
 	user_count: number;
 	created_at: string;
 	updated_at: string;
 };
 
-/** What the panel sends when creating or updating a role. `inherits` holds
-    ids and replaces what the role had. */
 export type RoleInput = {
-	/** The application, or null for a global role. Read when creating only:
-	    a role keeps its scope. */
 	application_id: string | null;
 	name: string;
 	description: string;
 	is_default: boolean;
 	inherits: string[];
-	/** Ids of the API scopes the role grants. Left out, the role keeps its
-	    grants. */
 	api_scopes?: string[];
 };
 
@@ -514,47 +406,34 @@ export type RolePage = {
 	offset: number;
 };
 
-/** A resource server: a service applications ask for access tokens to call.
-    Its identifier is a token's audience. */
 export type API = {
 	id: string;
 	name: string;
 	identifier: string;
 	description: string;
-	/** Grant a user only the scopes their roles grant. */
 	enforce_roles: boolean;
 	scopes: APIScope[];
 	signing_algorithm: SigningAlgorithm;
-	/** Seconds; 0 leaves it to each application. */
 	token_lifetime: number;
-	/** Whether applications may get refresh tokens for it. */
 	allow_offline_access: boolean;
 	application_count: number;
-	/** How many roles grant at least one of its scopes. */
 	role_count: number;
-	/** The iss an API validating its tokens expects. */
 	issuer: string;
-	/** Where the keys its tokens are signed with are published. */
 	jwks_uri: string;
-	/** "admin" or "account" for an API this server is itself: its identifier
-	    and scopes are the server's, and it cannot be deleted. */
 	system: '' | 'admin' | 'account';
 	created_at: string;
 	updated_at: string;
 };
 
-/** Asymmetric only: an API checks tokens with public keys. */
 export type SigningAlgorithm = 'RS256' | 'PS256' | 'ES256';
 
 export type APIScope = {
 	id: string;
 	name: string;
 	description: string;
-	/** Added to every token for the API, when allowed and granted. */
 	is_default: boolean;
 };
 
-/** One application, and what it may do with an API. */
 export type APIApplication = {
 	id: string;
 	name: string;
@@ -562,11 +441,9 @@ export type APIApplication = {
 	client_id: string;
 	is_enabled: boolean;
 	authorized: boolean;
-	/** Ids of the API's scopes the application may ask for. */
 	allowed: string[];
 };
 
-/** One thing that happened to or involving an API. */
 export type APILogEntry = {
 	id: string;
 	action: string;
@@ -576,16 +453,12 @@ export type APILogEntry = {
 	created_at: string;
 };
 
-/** An API scope, and the API it belongs to. */
 export type APIScopeRef = {
 	id: string;
 	name: string;
 	api_id: string;
 };
 
-/** What the panel sends for an API. A scope sent with its id is kept, with
-    everything granting it; one without is new; one left out is removed. The
-    identifier is only read when registering. */
 export type APIInput = {
 	name: string;
 	identifier: string;
@@ -597,7 +470,6 @@ export type APIInput = {
 	scopes: { id?: string; name: string; description: string; is_default: boolean }[];
 };
 
-/** What one application may do with one API. */
 export type APIAccess = {
 	id: string;
 	name: string;
@@ -607,9 +479,7 @@ export type APIAccess = {
 	scopes: (APIScope & { allowed: boolean })[];
 };
 
-/** A token request to evaluate. */
 export type TokenPreviewInput = {
-	/** Null for a token the application asks for as itself. */
 	user_id: string | null;
 	audience: string;
 	scope: string;
@@ -620,11 +490,9 @@ export type ScopeDecision = {
 	kind: 'openid' | 'api';
 	granted: boolean;
 	reason: string;
-	/** Not asked for, but added as one of the API's default scopes. */
 	is_default?: boolean;
 };
 
-/** What a token request amounts to. */
 export type TokenPreview = {
 	issued: boolean;
 	reason?: string;
@@ -634,10 +502,6 @@ export type TokenPreview = {
 	id_token?: Record<string, unknown>;
 };
 
-/**
- * The organisation's single settings record. Its terms and privacy links are published in
- * discovery, and the sign-in pages fall back to it for applications that set none.
- */
 export type Organization = {
 	name: string;
 	slug: string;
@@ -646,31 +510,20 @@ export type Organization = {
 	support_phone: string;
 	terms_url: string;
 	privacy_url: string;
-	/** An IANA zone, "Asia/Bishkek": what the sign-in pages say dates in. */
 	timezone: string;
 	created_at: string;
 };
 
-/** What every page's header shows of the organisation, sent with the session
-    to every administrator: the name and logo the sign-in pages publish. */
 export type OrganizationBrand = Pick<Organization, 'name' | 'logo_url'>;
 
-/** The settings the panel may change: the record without its own bookkeeping. */
 export type OrganizationSettings = Omit<Organization, 'created_at'>;
 
-/** What the panel sends for it. Every field is optional because the endpoint
-    is a PATCH: what is left out keeps the value it has. */
 export type OrganizationInput = Partial<OrganizationSettings>;
 
-/** Which provider a social login record is for. A kind whose provider this
-    server knows carries its own endpoints; the two custom ones ask for them. */
 export type SocialKind = 'google' | 'apple' | 'facebook' | 'yandex' | 'vk' | 'oidc' | 'oauth2';
 
-/** How the client secret is presented at a provider's token endpoint. */
 export type SocialTokenAuth = 'basic' | 'post';
 
-/** What this server knows about a kind of provider, which is what the form
-    fills in and what it asks for. */
 export type SocialSpec = {
 	kind: SocialKind;
 	label: string;
@@ -678,17 +531,12 @@ export type SocialSpec = {
 	token_url: string;
 	userinfo_url: string;
 	scopes: string[];
-	/** Whether the endpoints come from the record rather than from the kind. */
 	custom: boolean;
-	/** Whether the secret is a key this server signs with, as Apple's is. */
 	signed_secret: boolean;
 	token_auth: SocialTokenAuth;
-	/** Where an administrator registers this server with the provider. */
 	docs: string;
 };
 
-/** A configured provider. The secrets are never sent back: what is stored is
-    only ever reported as stored. */
 export type SocialProvider = {
 	id: string;
 	kind: SocialKind;
@@ -701,7 +549,6 @@ export type SocialProvider = {
 	has_private_key: boolean;
 	scopes: string[];
 	token_auth: SocialTokenAuth | '';
-	/** What that comes to once the kind's default is applied. */
 	token_auth_used: SocialTokenAuth;
 	authorize_url: string;
 	token_url: string;
@@ -710,14 +557,11 @@ export type SocialProvider = {
 	link_verified_emails: boolean;
 	allow_registration: boolean;
 	position: number;
-	/** What to register with the provider as the redirect URI. */
 	callback_url: string;
-	/** How many users sign in with it. */
 	identities: number;
 	created_at: string;
 };
 
-/** A PATCH: settings left out stay as they are. Kind and slug are read only on creation. */
 export type SocialProviderInput = {
 	kind?: SocialKind;
 	slug?: string;
@@ -737,8 +581,6 @@ export type SocialProviderInput = {
 	allow_registration?: boolean;
 };
 
-/** How administrators are made to sign in, and what that means for the ones
-    there are. */
 export type AdminSecurity = {
 	require_mfa: boolean;
 	administrators: number;
@@ -750,53 +592,36 @@ export type AdminSecurity = {
 export type LoginStep =
 	'identifier' | 'password' | 'social' | 'email_code' | 'totp' | 'terms' | 'consent';
 
-/** What the server knows about a step: what it is called, and whether the
-    sign-in pages run it yet. */
 export type LoginStepSpec = {
 	step: LoginStep;
 	label: string;
 	description: string;
-	/** Fixed steps cannot be removed or moved. */
 	fixed: boolean;
-	/** False for a step a flow may name but the server does not run yet. */
 	implemented: boolean;
 };
 
-/** A login flow: what somebody is taken through when they sign in. */
 export type LoginFlow = {
 	id: string;
 	name: string;
 	slug: string;
 	description: string;
-	/** The flow every application that names none falls back to. */
 	is_default: boolean;
 	is_enabled: boolean;
 	steps: LoginStep[];
-	/** Whether anybody may sign in through this flow at all. Off, every way
-	    in is refused — including registering, which ends in a session. */
 	allow_sign_in: boolean;
 	allow_registration: boolean;
 	allow_password_reset: boolean;
-	/** Offers "stay signed in" beside the password. */
 	allow_remember_me: boolean;
-	/** Sends a new account a link to confirm its address, without holding it
-	    back; `require_verified_email` is what holds one back. */
 	verify_email_on_register: boolean;
 	require_verified_email: boolean;
-	/** Lets a user change the address they sign in with, from their own
-	    account page, confirming the new one by link first. */
 	allow_email_change: boolean;
 	session_lifetime_hours: number;
-	/** How many applications name this flow. */
 	applications: number;
-	/** The steps it names that the sign-in pages do not run yet. */
 	planned: LoginStep[];
 	created_at: string;
 	updated_at: string;
 };
 
-/** What the panel sends for one. Everything is optional because the endpoint
-    is a PATCH: a request that mentions one setting changes one setting. */
 export type LoginFlowInput = {
 	name?: string;
 	slug?: string;
@@ -814,7 +639,6 @@ export type LoginFlowInput = {
 	session_lifetime_hours?: number;
 };
 
-/** A session still signing a user in, as the Sessions page lists it. */
 export type UserSessionRecord = {
 	id: string;
 	user: { id: string; email: string; name: string };
@@ -832,57 +656,35 @@ export type UserSessionPage = {
 	next?: string;
 };
 
-/** Which app a translation is for. There is one: the sign-in pages. The
-    panel is written in English, in its own markup, and is not translated. */
 export type LocaleApp = 'id';
 
-/** One language this installation has: its settings, and how much of each app
-    it translates. */
 export type Language = {
 	code: string;
-	/** The language in English, and in itself. */
 	name: string;
 	native_name: string;
-	/** The apps this language is translated for, which the server decides. */
 	apps: LocaleApp[];
-	/** How much of each of those apps is translated, as a percentage of the
-	    base language's keys, and how many keys each is short. An app the
-	    language is not for has no entry. */
 	coverage: Partial<Record<LocaleApp, number>>;
 	missing: Partial<Record<LocaleApp, number>>;
-	/** Whether the sign-in pages offer it, and whether it is the one somebody
-	    gets before they have chosen. */
 	is_enabled: boolean;
 	is_default: boolean;
-	/** Where it comes in the picker, lowest first. */
 	position: number;
-	/** True for the language every other is a translation of: it cannot be
-	    turned off or removed. */
 	base: boolean;
-	/** True when the server ships a translation of it, so a key a release
-	    adds reaches it on the next start. */
 	shipped: boolean;
 	updated_at: string;
 };
 
-/** A language the server ships with that this installation does not have,
-    which the panel offers to bring back. */
 export type ShippedLanguage = {
 	code: string;
 	name: string;
 	native_name: string;
 };
 
-/** Everything the Languages page lists. */
 export type LanguageList = {
 	languages: Language[];
 	apps: LocaleApp[];
 	shipped: ShippedLanguage[];
 };
 
-/** What the panel sends to change one. Everything is optional because the
-    endpoint is a PATCH: a request that mentions one setting changes one
-    setting. */
 export type LanguageInput = {
 	name?: string;
 	native_name?: string;
@@ -891,9 +693,6 @@ export type LanguageInput = {
 	position?: number;
 };
 
-/** What the panel sends to add one. `copy_from` names a language — here, or
-    one the server ships — whose text the new one starts as; without it the
-    new language starts with nothing translated. */
 export type NewLanguageInput = {
 	code: string;
 	name: string;
@@ -903,8 +702,6 @@ export type NewLanguageInput = {
 	copy_from?: string;
 };
 
-/** One language's text for one app, as the editor needs it: every key there
-    is, the base language's text for each, and what this language has. */
 export type Translation = {
 	app: LocaleApp;
 	keys: string[];
@@ -912,23 +709,16 @@ export type Translation = {
 	messages: Record<string, string>;
 };
 
-/** Which protocol an SSO connection speaks. */
 export type SSOProtocol = 'oidc' | 'saml';
 
-/** One group at the identity provider, given one role here. */
 export type SSORoleMapping = { group: string; role_id: string };
 
-/** An organisation's own identity provider, as the panel shows it: what is
-    stored, never its secrets; how many people sign in through it; what to give
-    the provider; and, for SAML, what the provider's metadata says. */
 export type SSOConnection = {
 	id: string;
 	slug: string;
 	name: string;
 	protocol: SSOProtocol;
 	is_enabled: boolean;
-	/** The email domains it signs people in for — and, enforced, the only way
-	    in for them. */
 	domains: string[];
 	enforce_domains: boolean;
 	show_on_login: boolean;
@@ -943,8 +733,6 @@ export type SSOConnection = {
 	name_id_format: 'email' | 'persistent' | 'unspecified';
 	sign_requests: boolean;
 
-	/** What to do with an address that already has an account: link it, or
-	    refuse. */
 	matching: 'link' | 'deny';
 	create_users: boolean;
 	sync_profile: boolean;
@@ -955,7 +743,6 @@ export type SSOConnection = {
 	role_mappings: SSORoleMapping[];
 	sync_roles: boolean;
 
-	/** How many people have signed in through it. */
 	users: number;
 	service_provider: {
 		callback_url?: string;
@@ -969,7 +756,6 @@ export type SSOConnection = {
 	updated_at: string;
 };
 
-/** What a SAML provider's metadata says about it. */
 export type SSOIdentityProvider = {
 	entity_id: string;
 	sso_url: string;
@@ -977,9 +763,6 @@ export type SSOIdentityProvider = {
 	certificate_expires?: string;
 };
 
-/** What the panel sends to make or change a connection. Everything is
-    optional because an update is a PATCH; the client secret is sent only to
-    replace it. */
 export type SSOConnectionInput = Partial<
 	Omit<
 		SSOConnection,
@@ -993,7 +776,6 @@ export type SSOConnectionInput = Partial<
 	>
 > & { client_secret?: string };
 
-/** What trying a provider found. */
 export type SSOTestResult = {
 	issuer?: string;
 	authorization_endpoint?: string;
@@ -1008,12 +790,7 @@ export type SSOTestResult = {
     constants in internal/model/mail.go; change them together. */
 export type MailEncryption = 'starttls' | 'tls' | 'none';
 
-/**
- * How this installation sends email. The password is never returned; `has_password` says
- * whether one is stored.
- */
 export type MailSettings = {
-	/** Off, every message is written to the server's log instead of sent. */
 	is_enabled: boolean;
 	host: string;
 	port: number;
@@ -1024,34 +801,22 @@ export type MailSettings = {
 	has_password: boolean;
 };
 
-/** What the Mail page reads: the settings, and the encryptions the server
-    offers — so the picker is built from the server's catalog rather than from
-    a list of the panel's own. */
 export type MailResponse = {
 	mail: MailSettings;
 	encryptions: MailEncryption[];
 };
 
-/**
- * A PATCH: settings left out stay as they are. Omitting `password` keeps the stored one, a new
- * value replaces it, and "" means no credentials.
- */
 export type MailSettingsInput = Partial<Omit<MailSettings, 'has_password'>> & {
 	password?: string;
 };
 
-/** A test message: where to send it, and the settings to send it with, so a
-    server can be tried before it is saved. */
 export type MailTestInput = MailSettingsInput & { to: string };
 
-/** One placeholder an email's text may use. */
 export type MailParam = {
 	name: string;
 	description: string;
 };
 
-/** One email the server sends: what it is called, when it goes out, and the
-    two keys its subject and body are written under. */
 export type MailMessageSpec = {
 	kind: string;
 	label: string;
@@ -1061,29 +826,20 @@ export type MailMessageSpec = {
 	params: MailParam[];
 };
 
-/** One language's words for the emails: what it says, where it says anything,
-    and the shipped English underneath — which is what an email goes out in
-    where a language has nothing. */
 export type MailLanguageContent = {
 	code: string;
 	name: string;
 	native_name: string;
-	/** Whether the sign-in pages are offered in this language. */
 	offered: boolean;
 	messages: Record<string, string>;
 	base: Record<string, string>;
 };
 
-/** What the Mail page's content tab reads: the catalog once, and the text per
-    language. */
 export type MailContent = {
 	messages: MailMessageSpec[];
 	languages: MailLanguageContent[];
 };
 
-/** How the one-time codes the server emails behave. There is one record of
-    it. Which sign-ins ask for a code is the login flow's emailed code step,
-    not this. */
 export type OTPSettings = {
 	code_length: number;
 	lifetime_minutes: number;
@@ -1091,8 +847,6 @@ export type OTPSettings = {
 	resend_seconds: number;
 };
 
-/** The bounds the server holds these to, so the panel's fields and the model
-    cannot disagree about what will be refused. */
 export type OTPLimits = {
 	min_length: number;
 	max_length: number;
@@ -1101,8 +855,6 @@ export type OTPLimits = {
 	max_resend_seconds: number;
 };
 
-/** One login flow that asks for an emailed code, so the page can say who
-    these settings are for. */
 export type OTPFlow = {
 	id: string;
 	name: string;
@@ -1111,91 +863,64 @@ export type OTPFlow = {
 	is_default: boolean;
 };
 
-/** What the One-time codes page reads. */
 export type OTPResponse = {
 	otp: OTPSettings;
 	limits: OTPLimits;
 	flows: OTPFlow[];
 };
 
-/** What the panel sends for them: a PATCH, so what is left out stands. */
 export type OTPSettingsInput = Partial<OTPSettings>;
 
-/** The two Redis databases: `cache` holds what every page reads and anybody
-    may see; `sessions` holds who is signed in and what they may do, and the
-    rate limit's counts. */
 export type CacheDatabaseName = 'cache' | 'sessions';
 
-/** What a key is, from its name. */
 export type CacheKind = 'entry' | 'stale' | 'generation' | 'session' | 'ratelimit' | 'other';
 
-/** A group of cached values, forgotten as one. */
 export type CacheGroup = {
 	name: string;
-	/** Which generation is current: clearing the group moves it on. */
 	generation: number;
-	/** Values of the current generation. */
 	entries: number;
-	/** Values of older generations, left to expire. */
 	stale: number;
-	/** Whether this server still reads the group. */
 	known: boolean;
 };
 
-/** One Redis database, summed up. */
 export type CacheDatabase = {
 	name: CacheDatabaseName;
 	number: number;
 	available: boolean;
-	/** Every key this server keeps there. */
 	keys: number;
 	kinds: Partial<Record<CacheKind, number>>;
 	groups: CacheGroup[];
-	/** Sessions, by kind: `admin` and `user`. */
 	sessions: Record<string, number>;
-	/** Whether its cached values may be edited by hand. */
 	editable: boolean;
-	/** Memory the Redis server uses, which both databases share. */
 	memory_bytes: number;
 	version: string;
 };
 
-/** What the Cache page reads first. */
 export type CacheOverview = {
-	/** False when the server runs without Redis. */
 	configured: boolean;
 	databases: CacheDatabase[];
 };
 
-/** One key, described. */
 export type CacheKey = {
-	/** The key without the server's prefix. */
 	name: string;
 	kind: CacheKind;
-	/** The group, the kind of session, or the rate limit's scope. */
 	group: string;
-	/** The entry, the token's hash, or the address. */
 	entry: string;
-	/** How long it has left; -1 for a key that does not expire. */
 	ttl_seconds: number;
 	size_bytes: number;
 	editable: boolean;
 };
 
-/** A key with what it holds. */
 export type CacheKeyValue = CacheKey & {
-	/** Redis's type for it: `string` for JSON, `hash` for a rate limit. */
 	type: string;
 	value: unknown;
 };
 
-/** A page of keys; an empty cursor after the last. */
 export type CacheKeyPage = {
 	keys: CacheKey[];
 	cursor: string;
 };
 
-/** Narrows a listing of keys. */
 export type CacheKeyQuery = {
 	kind?: CacheKind | '';
 	group?: string;
@@ -1204,8 +929,6 @@ export type CacheKeyQuery = {
 	limit?: number;
 };
 
-/** A cached value written by hand: any JSON but null, and how long it should
-    live — left out, the time it had left. */
 export type CacheKeyInput = {
 	value: unknown;
 	ttl_seconds?: number;

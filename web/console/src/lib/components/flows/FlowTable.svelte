@@ -6,11 +6,8 @@
 
 	type Props = {
 		flows: LoginFlow[];
-		/** The steps a flow can be made of, for naming the ones it has. */
 		kinds: LoginStepSpec[];
-		/** Called with the flow whose row was chosen. */
 		onOpen: (flow: LoginFlow) => void;
-		/** Shown in place of the rows when there are none. */
 		empty: string;
 	};
 
@@ -95,8 +92,6 @@
 		font-size: var(--text-sm);
 	}
 
-	/* The steps in the order they happen, wrapping rather than scrolling: a
-	   flow of seven steps is still one glance. */
 	.steps {
 		display: flex;
 		flex-wrap: wrap;
@@ -117,7 +112,6 @@
 		white-space: nowrap;
 	}
 
-	/* A step the server does not run yet is drawn as the plan it is. */
 	.step.planned {
 		border-style: dashed;
 		background: transparent;

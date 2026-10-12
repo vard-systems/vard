@@ -5,17 +5,13 @@
 
 	type Props = {
 		languages: Language[];
-		/** The apps a language is counted against, named by the server. */
 		apps: LocaleApp[];
-		/** Called with the language whose row was chosen. */
 		onOpen: (language: Language) => void;
 		empty: string;
 	};
 
 	let { languages, apps, onOpen, empty }: Props = $props();
 
-	/** The DataTable identifies rows by `id`; a language's code is what
-	    identifies it. */
 	type Row = Language & { id: string };
 
 	const rows = $derived<Row[]>(languages.map((language) => ({ ...language, id: language.code })));
@@ -32,9 +28,6 @@
 		{ key: 'status', label: 'Status', icon: RiToggleLine, min: '11rem' }
 	]);
 
-	/** What each app is called in the coverage bars. There is one today —
-	    the sign-in pages — and the server says which, so a second one would
-	    arrive here without this component changing. */
 	function appName(app: LocaleApp): string {
 		return app === 'id' ? 'Sign-in pages' : app;
 	}
@@ -102,9 +95,6 @@
 		font-size: var(--text-sm);
 	}
 
-	/* One bar per app, side by side: a language may be finished for the
-	   sign-in pages and half-done for the panel, and that is the thing
-	   somebody deciding whether to offer it needs to see. */
 	.bars {
 		display: flex;
 		align-items: center;
@@ -138,7 +128,6 @@
 		background: var(--color-success);
 	}
 
-	/* As wide as a bar and its number, so the columns stay in line. */
 	.bar.none {
 		justify-content: center;
 		width: calc(4.5rem + 2.75rem);

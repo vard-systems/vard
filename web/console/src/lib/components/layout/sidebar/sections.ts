@@ -21,28 +21,18 @@ import {
 import type { Admin } from '$lib/api';
 import { can, canAnywhere } from '$lib/permissions';
 
-/** A page the sidebar can lead to: one of the dashboard's, with no parameters
-    to fill in. It is narrowed to the dashboard on purpose — every other route
-    in the app would otherwise join the union, and past 25 members TypeScript
-    can no longer match it against resolve()'s. */
 export type Section = Extract<
 	Exclude<RouteId, `${string}[${string}`>,
 	`/admin/(panel)/dashboard${string}`
 >;
 
-/** A row that leads somewhere. */
 export type SidebarItem = {
 	route: Section;
-	/** What the sidebar calls it. */
 	label: string;
 	icon: ComponentType;
-	/** Whether the administrator may open it. Left out, anyone may. */
 	allowed?: (admin: Admin) => boolean;
 };
 
-/** A named group of pages. Its heading folds it away, and which are folded
-    is remembered; an administrator who cannot see any of its pages never
-    sees the group either. */
 export type SidebarGroup = {
 	/** A name the cookie can hold, so which groups are folded survives a
 	    reload. It is not the label: renaming a group should not unfold it. */
@@ -51,10 +41,6 @@ export type SidebarGroup = {
 	items: SidebarItem[];
 };
 
-/**
- * The sidebar in order: activity, then each subject the panel manages, then settings. Pages are
- * grouped by subject rather than by kind.
- */
 const groups: SidebarGroup[] = [
 	{
 		id: 'overview',
@@ -202,9 +188,6 @@ export function isCurrentSection(route: Section, id: string | null | undefined):
 		: id === route || Boolean(id?.startsWith(`${route}/`));
 }
 
-/** What an administrator sees: the pages their roles allow, and a group only
-    where it still has one. The page checks the permission again on the
-    server; this only decides what is shown. */
 export function visibleGroups(admin: Admin | undefined): SidebarGroup[] {
 	return groups
 		.map((group) => ({

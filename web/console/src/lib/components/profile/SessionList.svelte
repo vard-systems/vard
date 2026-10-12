@@ -6,20 +6,14 @@
 
 	type Props = {
 		sessions: AdminSession[];
-		/** How many to list, open ones first. Left out, every one. */
 		limit?: number;
-		/** A box of its own, rather than the body of a flush Panel. */
 		bordered?: boolean;
-		/** Given where the sessions can be ended: each other open one gets a
-		    button that calls it. The one in use is signed out, not ended. */
 		onEnd?: (session: AdminSession) => void;
-		/** The session being ended, whose button shows it is under way. */
 		ending?: string | null;
 	};
 
 	let { sessions, limit, bordered = false, onEnd, ending = null }: Props = $props();
 
-	/** This browser first, then the other open ones, then the most recent. */
 	const shown = $derived(
 		[...sessions]
 			.sort(

@@ -36,9 +36,6 @@
 
 	let search = $derived(data.search);
 
-	/** The user about to be signed out everywhere, waiting on a yes. */
-	/** The user a sign-out everywhere is asked about. It outlives the question
-	    closing, so the dialog keeps its name while it leaves. */
 	let confirming = $state<UserSessionRecord['user'] | null>(null);
 	let asking = $state(false);
 

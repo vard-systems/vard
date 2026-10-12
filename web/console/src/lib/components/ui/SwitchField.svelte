@@ -4,7 +4,6 @@
 
 	type Props = {
 		label: string;
-		/** What turning it on does. */
 		description?: string;
 		checked: boolean;
 		disabled?: boolean;
@@ -24,9 +23,6 @@
 	}: Props = $props();
 </script>
 
-<!-- A setting that is on or off: what it is and what it does on the left, the
-     switch on the right. Only the switch turns it; the row around it is for
-     reading. Descriptions line up under their labels however long they run. -->
 <Switch.Root
 	class="switch-field"
 	{id}

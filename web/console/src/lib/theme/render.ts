@@ -1,15 +1,9 @@
-/**
- * Renders a theme into the two stylesheets. Pure, so the writer script and the check share it;
- * Prettier formats the output (scripts/theme.ts).
- */
 import type { Theme, Tokens } from './types';
 
 const HEADER = (source: string) =>
 	`/* Generated from lib/theme/theme.ts by \`bun run theme\` — do not edit.
    ${source} */\n\n`;
 
-/** The dark palette applies by choice — the theme toggle writes the
-    attribute — and, where nothing was chosen, by the system's setting. */
 const DARK_CHOSEN = ":root[data-theme='dark']";
 const DARK_SYSTEM = ":root:not([data-theme='light'])";
 
@@ -24,7 +18,6 @@ function block(selector: string, body: string): string {
 	return `${selector} {\n${body}\n}`;
 }
 
-/** Every scale's tokens under their full names. */
 function scaleTokens(theme: Theme): Tokens {
 	return Object.fromEntries(
 		theme.scales.flatMap(({ prefix, tokens }) =>
