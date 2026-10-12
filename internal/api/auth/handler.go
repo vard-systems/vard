@@ -56,7 +56,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, admin, state, err := h.auth.Login(c.Request.Context(), req.Username, req.Password, requestOf(c))
+	token, admin, state, err := h.auth.Login(c.Request.Context(), req.Username, req.Password, session.RequestOf(c))
 	switch {
 	case errors.Is(err, authsvc.ErrInvalidCredentials):
 		// One message for every kind of failure: which usernames exist is not
@@ -104,7 +104,7 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 
 	token, _ := c.Cookie(session.Cookie)
 
-	admin, err := h.auth.VerifySignIn(c.Request.Context(), token, req.Code, requestOf(c))
+	admin, err := h.auth.VerifySignIn(c.Request.Context(), token, req.Code, session.RequestOf(c))
 	switch {
 	case errors.Is(err, authsvc.ErrNoSession):
 		respond.Error(c, http.StatusUnauthorized, "your sign-in has expired; enter your password again")
@@ -124,7 +124,7 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 func (h *Handler) Logout(c *gin.Context) {
 	token, _ := c.Cookie(session.Cookie)
 
-	if err := h.auth.Logout(c.Request.Context(), token, requestOf(c)); err != nil {
+	if err := h.auth.Logout(c.Request.Context(), token, session.RequestOf(c)); err != nil {
 		h.log.Error("logout failed", "error", err)
 	}
 
@@ -280,11 +280,4 @@ func (h *Handler) EndOtherSessions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ended": ended})
-}
-
-func requestOf(c *gin.Context) authsvc.Request {
-	return authsvc.Request{
-		IP:        c.ClientIP(),
-		UserAgent: c.Request.UserAgent(),
-	}
 }

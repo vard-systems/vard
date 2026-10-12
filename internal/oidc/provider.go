@@ -37,11 +37,6 @@ const (
 	PageLoggedOut = "/logged-out"
 )
 
-const (
-	maxFailedLogins = 5
-	lockoutDuration = 15 * time.Minute
-)
-
 type Service struct {
 	store      *store.Store
 	keys       *keySet
@@ -102,10 +97,6 @@ func (s *Service) SigningKeys() []KeyInfo {
 
 func (s *Service) RotateKeys(ctx context.Context, immediate, revoke bool) error {
 	return s.keys.Rotate(ctx, immediate, revoke)
-}
-
-func (s *Service) Issuer() string {
-	return s.issuer
 }
 
 // Discovery is the OpenID Connect Discovery 1.0 document.

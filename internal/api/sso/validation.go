@@ -121,7 +121,7 @@ func settle(connection *model.SSOConnection) error {
 		switch {
 		case connection.Issuer == "":
 			return required("issuer")
-		case err != nil || parsed.Host == "" || parsed.Scheme != "https" && !localhost(parsed):
+		case err != nil || parsed.Host == "" || parsed.Scheme != "https" && !model.IsLocalhost(parsed):
 			return issuerInvalid.Fault(nil)
 		case connection.ClientID == "":
 			return required("client_id")
@@ -150,11 +150,6 @@ func settle(connection *model.SSOConnection) error {
 	}
 
 	return nil
-}
-
-func localhost(u *url.URL) bool {
-	host := u.Hostname()
-	return u.Scheme == "http" && (host == "localhost" || host == "127.0.0.1" || host == "::1")
 }
 
 var (

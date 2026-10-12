@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,25 +19,6 @@ import (
 )
 
 const SessionLifetime = 12 * time.Hour
-
-// MaxFailedLogins wrong passwords in a row lock an account for LockoutDuration:
-// long enough to stop guessing, short enough that an attacker cannot keep an
-// administrator out.
-const (
-	MaxFailedLogins = 5
-	LockoutDuration = 15 * time.Minute
-)
-
-// dummyHash is compared for unknown usernames so they take as long as a wrong
-// password. It must be a real hash at full cost.
-var dummyHash = sync.OnceValue(func() []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte("not a password anyone has"), bcrypt.DefaultCost)
-	if err != nil {
-		panic(fmt.Sprintf("auth: make the dummy hash: %v", err))
-	}
-
-	return hash
-})
 
 // ErrInvalidCredentials covers an unknown user, a wrong password and a disabled
 // account alike, so usernames cannot be probed.
@@ -96,7 +76,7 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 	case errors.Is(err, store.ErrNotFound):
 		// Still hash something, so a missing username and a wrong password
 		// take the same time to answer.
-		_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+		model.CompareDummyPassword(password)
 		s.record(ctx, nil, username, "admin.login_failed", req, "unknown username")
 		return "", nil, StateNone, ErrInvalidCredentials
 	case err != nil:
@@ -106,12 +86,12 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 	// The attempt is reserved before comparing, so parallel guesses cannot pass
 	// a lock, and a locked account takes as long to refuse as a wrong password.
 	now := time.Now()
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, MaxFailedLogins, LockoutDuration)
+	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, model.MaxFailedLogins, model.LockoutDuration)
 	if err != nil {
 		return "", nil, StateNone, err
 	}
 	if !allowed {
-		_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+		model.CompareDummyPassword(password)
 		s.record(ctx, &admin.ID, admin.Username, "admin.login_blocked", req, "locked")
 
 		return "", nil, StateNone, ErrInvalidCredentials

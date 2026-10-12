@@ -101,6 +101,11 @@ func RequireAny(service *auth.Service, provider *oidc.Service, log *slog.Logger)
 	}
 }
 
+// RequestOf is where a call came from, as the session and the log record it.
+func RequestOf(c *gin.Context) auth.Request {
+	return auth.Request{IP: c.ClientIP(), UserAgent: c.Request.UserAgent()}
+}
+
 // Bearer is the access token in the request's Authorization header, or ""
 // when it carries none.
 func Bearer(c *gin.Context) string {

@@ -78,7 +78,7 @@ func (s *Service) ChangePassword(ctx context.Context, session *Session, current,
 func (s *Service) checkCurrentPassword(ctx context.Context, user *model.User, password string, client Client) error {
 	now := s.now()
 
-	allowed, err := s.store.ReserveUserLogin(ctx, user, now, maxFailedLogins, lockoutDuration)
+	allowed, err := s.store.ReserveUserLogin(ctx, user, now, model.MaxFailedLogins, model.LockoutDuration)
 	if err != nil {
 		return err
 	}

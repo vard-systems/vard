@@ -140,9 +140,9 @@ func (s *Store) ConsumeLoginCode(ctx context.Context, code *model.LoginCode, now
 	return true, nil
 }
 
-func (s *Store) ResendLoginCode(ctx context.Context, code *model.LoginCode, hash string, sentAt, expiresAt time.Time) error {
-	// expires_at is unchanged: a resend does not extend the sign-in.
-	_ = expiresAt
+func (s *Store) ResendLoginCode(ctx context.Context, code *model.LoginCode, hash string, sentAt time.Time) error {
+	// expires_at is left alone: a code asked for again and again would
+	// otherwise never expire.
 	err := translate(s.db.WithContext(ctx).Model(code).Updates(map[string]any{
 		"code_hash": hash,
 		"sent_at":   sentAt,

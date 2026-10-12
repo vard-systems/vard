@@ -479,7 +479,7 @@ func (s *Service) callProvider(request *http.Request, provider *model.SocialProv
 	if response.StatusCode != http.StatusOK {
 		s.log.Error("a social provider refused",
 			"provider", provider.Slug, "request", what,
-			"status", response.StatusCode, "body", truncate(string(body), 512))
+			"status", response.StatusCode, "body", model.Truncate(string(body), 512))
 		return nil, ErrSocialUpstream
 	}
 
@@ -578,8 +578,8 @@ func (s *Service) signInWithIdentity(
 	user = &model.User{
 		Email:           email,
 		IsEmailVerified: who.EmailVerified,
-		FirstName:       truncate(who.FirstName, 100),
-		LastName:        truncate(who.LastName, 100),
+		FirstName:       model.Truncate(who.FirstName, 100),
+		LastName:        model.Truncate(who.LastName, 100),
 		IsActive:        true,
 		Data:            map[string]any{},
 	}

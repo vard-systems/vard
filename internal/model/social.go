@@ -487,7 +487,7 @@ func socialEndpoint(field, value string, required, secure bool) error {
 		return fmt.Errorf("%s must be a full address starting with http:// or https://", field)
 	}
 
-	if secure && parsed.Scheme == "http" && !isLocalhost(parsed) {
+	if secure && parsed.Scheme == "http" && !IsLocalhost(parsed) {
 		return fmt.Errorf("%s must use https", field)
 	}
 
@@ -501,18 +501,4 @@ func socialKindNames() []string {
 	}
 
 	return names
-}
-
-func DefaultSocialProvider(kind SocialKind) SocialProvider {
-	spec, _ := SocialSpecFor(kind)
-
-	return SocialProvider{
-		Kind:               kind,
-		Slug:               string(kind),
-		Name:               spec.Label,
-		Scopes:             slices.Clone(spec.Scopes),
-		IsEnabled:          true,
-		LinkVerifiedEmails: true,
-		AllowRegistration:  true,
-	}
 }

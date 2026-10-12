@@ -1,7 +1,6 @@
 package languages
 
 import (
-	"net/http"
 	"strings"
 
 	"loginer/internal/api/respond"
@@ -62,7 +61,7 @@ func settle(language *model.Language) error {
 	}
 
 	if err := language.Validate(); err != nil {
-		return badRequest(err.Error())
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
@@ -85,8 +84,4 @@ func normalizeCode(code string) string {
 	}
 
 	return strings.Join(parts, "-")
-}
-
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }

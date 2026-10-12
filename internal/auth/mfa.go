@@ -264,7 +264,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 
 	// Reserved before comparing, so parallel guesses are bounded by the
 	// lockout.
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, MaxFailedLogins, LockoutDuration)
+	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, model.MaxFailedLogins, model.LockoutDuration)
 	if err != nil {
 		return "", err
 	}

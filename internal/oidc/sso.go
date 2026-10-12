@@ -264,7 +264,7 @@ func (s *Service) ssoFailed(ctx context.Context, connection *model.SSOConnection
 
 	reason := failure.err.Error()
 	if len(reason) > 500 {
-		reason = truncate(reason, 500) + "…"
+		reason = model.Truncate(reason, 500) + "…"
 	}
 
 	entry := model.AuditLog{
@@ -443,8 +443,8 @@ func (s *Service) ssoAccountFor(
 	user = &model.User{
 		Email:           email,
 		IsEmailVerified: true,
-		FirstName:       truncate(person.FirstName, 100),
-		LastName:        truncate(person.LastName, 100),
+		FirstName:       model.Truncate(person.FirstName, 100),
+		LastName:        model.Truncate(person.LastName, 100),
 		IsActive:        true,
 		Data:            map[string]any{},
 	}
@@ -468,7 +468,7 @@ func (s *Service) ssoAccountFor(
 
 func (s *Service) syncFromSSO(ctx context.Context, connection *model.SSOConnection, user *model.User, person *ssoPerson, client Client) error {
 	if connection.SyncProfile {
-		first, last := truncate(person.FirstName, 100), truncate(person.LastName, 100)
+		first, last := model.Truncate(person.FirstName, 100), model.Truncate(person.LastName, 100)
 		if (first != "" && first != user.FirstName) || (last != "" && last != user.LastName) {
 			if first != "" {
 				user.FirstName = first

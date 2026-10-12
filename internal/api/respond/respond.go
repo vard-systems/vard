@@ -44,6 +44,11 @@ func BadRequest(c *gin.Context, message string) {
 	Error(c, http.StatusBadRequest, message)
 }
 
+// Invalid is BadRequest as an error, for validation that returns one.
+func Invalid(message string) error {
+	return Fault{Status: http.StatusBadRequest, Message: message}
+}
+
 func NotFound(c *gin.Context, message string) {
 	Error(c, http.StatusNotFound, message)
 }

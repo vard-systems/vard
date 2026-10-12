@@ -2,7 +2,6 @@ package applications
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
@@ -20,11 +19,11 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 	}
 
 	if len(r.RedirectURIs) > maxURIs || len(r.PostLogoutRedirectURIs) > maxURIs {
-		return badRequest(fmt.Sprintf("an application may have at most %d redirect URIs of each kind", maxURIs))
+		return respond.Invalid(fmt.Sprintf("an application may have at most %d redirect URIs of each kind", maxURIs))
 	}
 
 	if creating && !model.ApplicationType(r.Type).Valid() {
-		return badRequest("type must be one of: web, spa, native, m2m")
+		return respond.Invalid("type must be one of: web, spa, native, m2m")
 	}
 
 	app.Name = r.Name
@@ -65,14 +64,10 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 	}
 
 	if err := app.Validate(); err != nil {
-		return badRequest(err.Error())
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
-}
-
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }
 
 func flowID(sent string) (*uuid.UUID, error) {
@@ -83,7 +78,7 @@ func flowID(sent string) (*uuid.UUID, error) {
 
 	id, err := uuid.Parse(trimmed)
 	if err != nil {
-		return nil, badRequest("login_flow_id must be the id of a login flow")
+		return nil, respond.Invalid("login_flow_id must be the id of a login flow")
 	}
 
 	return &id, nil

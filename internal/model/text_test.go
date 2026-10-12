@@ -1,4 +1,4 @@
-package oidc
+package model
 
 import (
 	"strings"
@@ -6,7 +6,7 @@ import (
 	"unicode/utf8"
 )
 
-// What goes through truncate is a name a provider sent and a User-Agent
+// What goes through Truncate is a name a provider sent and a User-Agent
 // header, and what comes out goes into a column. Postgres refuses a string
 // that is not UTF-8, so a cut through the middle of a letter — or a byte the
 // caller never should have sent — would fail the sign-in itself rather than
@@ -52,16 +52,16 @@ func TestTruncateLeavesTextADatabaseWillTake(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := truncate(tt.value, tt.max)
+			got := Truncate(tt.value, tt.max)
 
 			if got != tt.want {
-				t.Errorf("truncate(%q, %d) = %q, want %q", tt.value, tt.max, got, tt.want)
+				t.Errorf("Truncate(%q, %d) = %q, want %q", tt.value, tt.max, got, tt.want)
 			}
 			if !utf8.ValidString(got) {
-				t.Errorf("truncate(%q, %d) = %q, which is not valid UTF-8", tt.value, tt.max, got)
+				t.Errorf("Truncate(%q, %d) = %q, which is not valid UTF-8", tt.value, tt.max, got)
 			}
 			if len(got) > tt.max {
-				t.Errorf("truncate(%q, %d) = %q, which is %d bytes", tt.value, tt.max, got, len(got))
+				t.Errorf("Truncate(%q, %d) = %q, which is %d bytes", tt.value, tt.max, got, len(got))
 			}
 		})
 	}
@@ -71,12 +71,12 @@ func TestTruncateLeavesTextADatabaseWillTake(t *testing.T) {
 // letters are a hundred and twenty bytes, so the hundred-byte limit the
 // providers' names are held to lands inside a letter.
 func TestTruncateAName(t *testing.T) {
-	got := truncate(strings.Repeat("я", 60), 100)
+	got := Truncate(strings.Repeat("я", 60), 100)
 
 	if !utf8.ValidString(got) {
 		t.Fatalf("a cut name is not valid UTF-8: %q", got)
 	}
 	if want := strings.Repeat("я", 50); got != want {
-		t.Errorf("truncate = %q, want the whole letters that fit", got)
+		t.Errorf("Truncate = %q, want the whole letters that fit", got)
 	}
 }

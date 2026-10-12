@@ -162,10 +162,7 @@ func (s *Service) ResendLoginCode(ctx context.Context, handle string, client Cli
 		return nil, err
 	}
 
-	// The sign-in keeps its own life rather than gaining another: a code
-	// asked for again and again would otherwise never expire.
-	expires := now.Add(waiting.settings.Lifetime())
-	if err := s.store.ResendLoginCode(ctx, waiting.code, codeHash, now, expires); err != nil {
+	if err := s.store.ResendLoginCode(ctx, waiting.code, codeHash, now); err != nil {
 		return nil, err
 	}
 

@@ -1,6 +1,9 @@
 package model
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestSocialProviderValidate(t *testing.T) {
 	google := func() SocialProvider {
@@ -163,5 +166,20 @@ func TestSocialProviderCallbackURL(t *testing.T) {
 
 	if got := p.CallbackURL("https://id.example.com/"); got != "https://id.example.com/oauth2/social/google/callback" {
 		t.Errorf("CallbackURL() = %q", got)
+	}
+}
+
+// DefaultSocialProvider is a provider of a kind with the usual settings.
+func DefaultSocialProvider(kind SocialKind) SocialProvider {
+	spec, _ := SocialSpecFor(kind)
+
+	return SocialProvider{
+		Kind:               kind,
+		Slug:               string(kind),
+		Name:               spec.Label,
+		Scopes:             slices.Clone(spec.Scopes),
+		IsEnabled:          true,
+		LinkVerifiedEmails: true,
+		AllowRegistration:  true,
 	}
 }

@@ -42,7 +42,7 @@ func (h *Handler) Begin(c *gin.Context) {
 		return
 	}
 
-	enrolment, err := h.auth.BeginTOTP(c.Request.Context(), session.Admin(c), req.Code, requestOf(c))
+	enrolment, err := h.auth.BeginTOTP(c.Request.Context(), session.Admin(c), req.Code, session.RequestOf(c))
 	if err != nil {
 		h.fail(c, err, "starting an authenticator set-up failed")
 		return
@@ -62,7 +62,7 @@ func (h *Handler) Confirm(c *gin.Context) {
 
 	token, _ := c.Cookie(session.Cookie)
 
-	codes, err := h.auth.ConfirmTOTP(c.Request.Context(), session.Admin(c), token, req.Code, requestOf(c))
+	codes, err := h.auth.ConfirmTOTP(c.Request.Context(), session.Admin(c), token, req.Code, session.RequestOf(c))
 	if err != nil {
 		h.fail(c, err, "confirming an authenticator failed")
 		return
@@ -81,7 +81,7 @@ func (h *Handler) Disable(c *gin.Context) {
 
 	token, _ := c.Cookie(session.Cookie)
 
-	if err := h.auth.DisableTOTP(c.Request.Context(), session.Admin(c), token, req.Code, requestOf(c)); err != nil {
+	if err := h.auth.DisableTOTP(c.Request.Context(), session.Admin(c), token, req.Code, session.RequestOf(c)); err != nil {
 		h.fail(c, err, "turning two-factor sign-in off failed")
 		return
 	}
@@ -97,7 +97,7 @@ func (h *Handler) RecoveryCodes(c *gin.Context) {
 		return
 	}
 
-	codes, err := h.auth.RegenerateRecoveryCodes(c.Request.Context(), session.Admin(c), req.Code, requestOf(c))
+	codes, err := h.auth.RegenerateRecoveryCodes(c.Request.Context(), session.Admin(c), req.Code, session.RequestOf(c))
 	if err != nil {
 		h.fail(c, err, "regenerating recovery codes failed")
 		return
@@ -117,8 +117,4 @@ func (h *Handler) fail(c *gin.Context, err error, note string) {
 	default:
 		respond.Failure(c, h.log, err, note)
 	}
-}
-
-func requestOf(c *gin.Context) auth.Request {
-	return auth.Request{IP: c.ClientIP(), UserAgent: c.Request.UserAgent()}
 }

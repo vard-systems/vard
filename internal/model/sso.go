@@ -274,7 +274,7 @@ func (c SSOConnection) Validate() error {
 
 	switch c.Protocol {
 	case SSOProtocolOIDC:
-		if parsed, err := url.Parse(c.Issuer); err != nil || parsed.Scheme != "https" && !isLocalhost(parsed) || parsed.Host == "" {
+		if parsed, err := url.Parse(c.Issuer); err != nil || parsed.Scheme != "https" && !IsLocalhost(parsed) || parsed.Host == "" {
 			return fmt.Errorf("issuer must be an https URL")
 		}
 		if strings.TrimSpace(c.ClientID) == "" {
@@ -298,7 +298,7 @@ func (c SSOConnection) Validate() error {
 
 // isLocalhost lets a provider on this machine be plain http, which is how one
 // is tried out; anywhere else the identity it vouches for travels over TLS.
-func isLocalhost(u *url.URL) bool {
+func IsLocalhost(u *url.URL) bool {
 	host := u.Hostname()
 	return u.Scheme == "http" && (host == "localhost" || host == "127.0.0.1" || host == "::1")
 }

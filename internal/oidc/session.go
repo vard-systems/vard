@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -34,16 +32,6 @@ type SignInResult struct {
 	Request    string
 	Remember   bool
 }
-
-// dummyHash is compared against for an unknown address, so it takes as long to
-// refuse as a wrong password.
-var dummyHash = sync.OnceValue(func() []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte("not a password anyone has"), bcrypt.DefaultCost)
-	if err != nil {
-		panic(fmt.Sprintf("oidc: make the dummy hash: %v", err))
-	}
-	return hash
-})
 
 func (s *Session) InBrowser() bool {
 	return s.Record.ID != uuid.Nil
@@ -106,7 +94,7 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 	user, err := s.store.UserByEmail(ctx, email)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+		model.CompareDummyPassword(password)
 		s.record(ctx, nil, email, "user.login_failed", client, map[string]any{"reason": "unknown email"})
 		return nil, ErrInvalidCredentials
 	case err != nil:
@@ -115,19 +103,19 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 
 	// Reserve the attempt before comparing, so parallel guesses cannot pass the
 	// lock; a locked account still pays a dummy hash for equal timing.
-	allowed, err := s.store.ReserveUserLogin(ctx, user, now, maxFailedLogins, lockoutDuration)
+	allowed, err := s.store.ReserveUserLogin(ctx, user, now, model.MaxFailedLogins, model.LockoutDuration)
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
-		_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+		model.CompareDummyPassword(password)
 		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "locked"})
 		return nil, ErrInvalidCredentials
 	}
 
 	if user.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
 		if user.PasswordHash == "" {
-			_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
+			model.CompareDummyPassword(password)
 		}
 
 		s.record(ctx, user, user.Email, "user.login_failed", client, map[string]any{"reason": "wrong password"})
@@ -219,7 +207,7 @@ func (s *Service) startSession(
 		AuthenticatedAt: now,
 		ExpiresAt:       now.Add(time.Duration(flow.SessionLifetimeHours) * time.Hour),
 		IP:              client.IP,
-		UserAgent:       truncate(client.UserAgent, 255),
+		UserAgent:       model.Truncate(client.UserAgent, 255),
 	}
 	if err := s.store.CreateUserSession(ctx, &record); err != nil {
 		return nil, err
@@ -658,20 +646,4 @@ func (s *Service) RequestEmailChange(ctx context.Context, session *Session, emai
 	s.record(ctx, session.User, email, "user.email_change_requested", client, map[string]any{"sent": true})
 
 	return nil
-}
-
-// truncate cuts a value to `max` bytes on a rune boundary and drops invalid
-// UTF-8, which Postgres would refuse and fail the whole sign-in over (e.g. a
-// long Cyrillic name or User-Agent).
-func truncate(value string, max int) string {
-	value = strings.ToValidUTF8(value, "")
-	if len(value) <= max {
-		return value
-	}
-
-	for max > 0 && !utf8.RuneStart(value[max]) {
-		max--
-	}
-
-	return value[:max]
 }

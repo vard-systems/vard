@@ -1,7 +1,6 @@
 package social
 
 import (
-	"net/http"
 	"strings"
 
 	"loginer/internal/api/respond"
@@ -14,7 +13,7 @@ func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.S
 	if creating {
 		kind := model.SocialKind(strings.ToLower(strings.TrimSpace(r.Kind)))
 		if _, known := model.SocialSpecFor(kind); !known {
-			return badRequest("kind must be one of: " + strings.Join(kindNames(), ", "))
+			return respond.Invalid("kind must be one of: " + strings.Join(kindNames(), ", "))
 		}
 
 		provider.Kind = kind
@@ -52,7 +51,7 @@ func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.S
 	}
 
 	if err := provider.Validate(); err != nil {
-		return badRequest(err.Error())
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
@@ -105,8 +104,4 @@ func kindNames() []string {
 	}
 
 	return names
-}
-
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }

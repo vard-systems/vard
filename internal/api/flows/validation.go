@@ -1,7 +1,6 @@
 package flows
 
 import (
-	"net/http"
 	"strings"
 
 	"loginer/internal/api/respond"
@@ -41,7 +40,7 @@ func (r *flowRequest) applyTo(flow *model.LoginFlow, creating bool) error {
 	}
 
 	if err := flow.Validate(); err != nil {
-		return badRequest(err.Error())
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
@@ -84,8 +83,4 @@ func slugify(sent, name *string) string {
 	}
 
 	return strings.TrimSuffix(b.String(), "-")
-}
-
-func badRequest(message string) error {
-	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }
