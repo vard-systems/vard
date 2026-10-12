@@ -58,11 +58,14 @@ the first start and are managed in the panel afterwards.
 ## Deploying
 
 `deploy/` holds a production stack: Postgres, Redis, the API, both apps, and
-Caddy in front with automatic TLS. Only Caddy publishes ports.
+Caddy in front with automatic TLS. Only Caddy publishes ports. The production
+`deploy/Caddyfile` is not in the repository: the server provides its own, and
+`compose.yaml` mounts it from there. `deploy/Caddyfile.local` shows the routing
+it needs.
 
 ```sh
 cp deploy/.env.example deploy/.env   # URLs, secret key, database and Redis passwords, SMTP
-$EDITOR deploy/Caddyfile             # hostnames, email, staff networks
+# put the server's Caddyfile at deploy/Caddyfile
 make deploy-up
 ```
 

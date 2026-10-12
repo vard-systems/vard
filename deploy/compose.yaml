@@ -159,7 +159,14 @@ services:
       console: { condition: service_healthy }
     ports: ["80:80", "443:443", "443:443/udp"]
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # The server's own, not in the repository. Without create_host_path a
+      # missing one becomes an empty directory, which Caddy cannot read and
+      # which stays in the way of the real file.
+      - type: bind
+        source: ./Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind: { create_host_path: false }
       - caddy:/data
       - caddy-config:/config
     networks:

@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 
 // The docs are Markdown rendered while building: every page is prerendered,
 // and the Node server adapter-node builds only serves those files — the same
-// server, Dockerfile and web/serve.js as the other two apps.
+// server and Dockerfile as the other two apps.
 //
 // BASE_PATH publishes them under a path, such as /docs, rather than at the
 // root of a host. API_URL is a running server, whose discovery document the
@@ -21,7 +21,7 @@ if (BASE_PATH !== '' && !/^\/.*[^/]$/.test(BASE_PATH)) {
 const base = BASE_PATH as '' | `/${string}`;
 
 export default defineConfig({
-	// id 5173, console 5174, docs 5175 — in both modes of scripts/start.sh.
+	// id 5173, console 5174, docs 5175, as scripts/start.sh expects.
 	server: {
 		port: 5175,
 		strictPort: true,

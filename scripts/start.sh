@@ -1,21 +1,14 @@
 #!/usr/bin/env bash
 #
-# Run the whole stack: the Loginer API and the console, id and docs apps.
-#
-#   scripts/start.sh --dev     Vite dev servers, hot reload (default)
-#   scripts/start.sh --prod    production builds, served by Node
+# Run the whole stack: the Loginer API and the console, id and docs apps, as
+# Vite dev servers with hot reload. The production builds run with
+# `make deploy-local`, behind the same Caddy as in production.
 #
 # The API logs to this terminal; the apps log to .logs/<app>.log. Ctrl-C stops
-# everything. The URLs are the same in both modes, so .env fits both.
+# everything.
 
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-
-case "${1:---dev}" in
---dev | dev) mode=dev ;;
---prod | prod) mode=prod ;;
-*) die "usage: scripts/start.sh [--dev|--prod]" ;;
-esac
 
 need go "https://go.dev/dl"
 need node "https://nodejs.org"
@@ -25,11 +18,11 @@ load_env
 api_port="${LOGINER_ADDR:-:8080}" api_port="${api_port##*:}"
 admin_port="${LOGINER_ADMIN_ADDR:-:8081}" admin_port="${admin_port##*:}"
 
-# name  port  API it calls                   paths routed to that API
+# name  port  API it calls
 apps=(
-	"id      5173 http://localhost:$api_port   /api/v1/account,/oauth2,/.well-known"
-	"console 5174 http://localhost:$admin_port /api/v1/admin"
-	"docs    5175 http://localhost:$api_port   /.well-known"
+	"id      5173 http://localhost:$api_port"
+	"console 5174 http://localhost:$admin_port"
+	"docs    5175 http://localhost:$api_port"
 )
 
 logs="$root/.logs"
@@ -60,42 +53,18 @@ ready() {
 	done
 }
 
-echo "==> building ($mode)"
-if [[ $mode == prod ]]; then
-	builds=()
-	for app in "${apps[@]}"; do
-		read -r name _ <<<"$app"
-		(cd "web/$name" && exec bun run build) >"$logs/$name-build.log" 2>&1 &
-		builds+=("$name:$!")
-		pids+=($!)
-	done
-	version="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
-	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$version" -o bin/loginer ./cmd/loginer
-	for build in "${builds[@]}"; do
-		wait "${build#*:}" || { tail -n 30 "$logs/${build%%:*}-build.log"; die "web/${build%%:*} did not build"; }
-	done
-else
-	go build -o bin/loginer ./cmd/loginer
-fi
+echo "==> building"
+go build -o bin/loginer ./cmd/loginer
 
 for app in "${apps[@]}"; do
-	read -r name port api paths <<<"$app"
-	(
-		cd "web/$name"
-		if [[ $mode == prod ]]; then
-			PORT=$port ORIGIN=http://localhost:$port API_URL=$api API_PATHS=$paths exec node ../serve.js
-		else
-			API_URL=$api exec node_modules/.bin/vite dev
-		fi
-	) >"$logs/$name.log" 2>&1 &
+	read -r name port api <<<"$app"
+	(cd "web/$name" && API_URL=$api exec node_modules/.bin/vite dev) >"$logs/$name.log" 2>&1 &
 	pids+=($!)
 	ready "$name" "$port" $! &
 	pids+=($!)
 done
 
-echo "==> Loginer ($mode) — app logs in .logs/"
-# Gin's route listing is noise in production.
-[[ $mode == prod ]] && export GIN_MODE="${GIN_MODE:-release}"
+echo "==> Loginer — app logs in .logs/"
 bin/loginer &
 pids+=($!)
 wait $!

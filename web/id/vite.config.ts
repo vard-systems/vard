@@ -43,7 +43,7 @@ export default defineConfig({
 			},
 
 			// adapter-node builds a Node server, run behind the reverse proxy that
-			// routes the API paths (deploy/Caddyfile), or locally by web/serve.js.
+			// routes the API paths to the API (Caddy, in deploy/).
 			adapter: adapter()
 		})
 	],

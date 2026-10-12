@@ -10,12 +10,8 @@ COMPOSE := docker compose -f deploy/compose.yaml
 # explicit -f means compose picks up no override on its own, so it is named.
 COMPOSE_LOCAL := $(COMPOSE) -f deploy/compose.local.yaml
 
-# `make full-start prod` and `make full-start -- --prod` both select prod; make
-# itself rejects a bare `--prod` as one of its own options.
-MODE ?= $(if $(filter prod --prod,$(MAKECMDGOALS)),prod,dev)
-
 .DEFAULT_GOAL := help
-.PHONY: help setup full-start dev prod --dev --prod run build test bench test-integration check docs docs-check \
+.PHONY: help setup full-start dev run build test bench test-integration check docs docs-check \
 	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
 	web-check web-build deploy-build deploy-up deploy-down deploy-logs \
 	deploy-local deploy-local-down deploy-local-logs clean
@@ -30,17 +26,8 @@ setup: ## Prepare a fresh checkout: .env, database, dependencies
 
 ## Run
 
-full-start: ## Start the API and all web apps — make full-start dev|prod
-	@scripts/start.sh --$(MODE)
-
-ifneq (,$(filter full-start,$(MAKECMDGOALS)))
-dev prod --dev --prod: ; @:
-else
-dev: ## Same as make full-start dev
-	@scripts/start.sh --dev
-prod: ## Same as make full-start prod
-	@scripts/start.sh --prod
-endif
+dev full-start: ## Start the API and all web apps, with hot reload
+	@scripts/start.sh
 
 run: ## Start only the API
 	go run ./cmd/loginer
@@ -99,8 +86,12 @@ db-create db-reset db-psql: ## Create, reset or open the database in .env
 deploy-build: ## Build the production images
 	VERSION=$(VERSION) $(COMPOSE) build
 
-deploy-up: ## Start the production stack in the background
+deploy-up: deploy/Caddyfile ## Start the production stack in the background
 	VERSION=$(VERSION) $(COMPOSE) up -d --build
+
+# Not in the repository: the server provides its own (see the README).
+deploy/Caddyfile:
+	@echo "deploy/Caddyfile is missing: put this server's Caddyfile there first" >&2; exit 1
 
 deploy-down: ## Stop the production stack
 	$(COMPOSE) down
