@@ -1,4 +1,3 @@
-// Package organization reads and updates the single organisation record.
 package organization
 
 import (
@@ -12,7 +11,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -67,8 +65,6 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	// Which settings moved is worth keeping; what they moved to is in the
-	// record itself, and the log is read by more people than the panel is.
 	h.audit.RecordWith(c, "organization.updated", targetType, organization.Slug, map[string]any{
 		"fields": changed,
 	})

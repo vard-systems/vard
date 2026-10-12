@@ -8,9 +8,6 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo copies the request onto the settings using the model's bounds and
-// returns what changed for the activity log. Nothing is saved if any bound
-// fails.
 func (r *settingsRequest) applyTo(settings *model.OTPSettings) ([]string, error) {
 	updated := *settings
 	updated.CodeLength = validate.Number(r.CodeLength, settings.CodeLength)

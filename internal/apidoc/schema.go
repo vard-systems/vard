@@ -12,28 +12,19 @@ import (
 	"strings"
 )
 
-// Schema is the shape of a JSON value, which is what both the OpenAPI
-// document and the Markdown tables are written from.
 type Schema struct {
-	// Type is a JSON Schema type; empty means any value.
-	Type   string
-	Format string
-	// Name is the Go type's, for a named struct: the OpenAPI component it
-	// becomes, and a heading in the Markdown.
+	Type        string
+	Format      string
 	Name        string
 	Description string
 	Nullable    bool
 	Enum        []string
 	Properties  []Property
 	Items       *Schema
-	// Values is what a map holds.
-	Values *Schema
-	// Of is the named struct a nullable reference points at, whose fields
-	// are its fields.
-	Of *Schema
+	Values      *Schema
+	Of          *Schema
 }
 
-// resolved is the schema whose fields a reference has.
 func (s *Schema) resolved() *Schema {
 	if s != nil && s.Of != nil {
 		return s.Of
@@ -41,26 +32,18 @@ func (s *Schema) resolved() *Schema {
 	return s
 }
 
-// Property is one field of an object.
 type Property struct {
-	Name     string
-	Schema   *Schema
-	Required bool
-	// Rules are the field's validation, said the way a reader needs them:
-	// "at most 255 characters", "an email address".
+	Name        string
+	Schema      *Schema
+	Required    bool
 	Rules       []string
 	Description string
 }
 
-// schemas turns Go types into schemas, reading field comments from the
-// source it was given.
 type schemas struct {
-	loader *loader
-	// named maps component names to schemas, one per Go type.
-	named map[string]*Schema
-	seen  map[*types.TypeName]string
-	// structs holds schemas under construction, so self-referencing types point
-	// back instead of recursing.
+	loader  *loader
+	named   map[string]*Schema
+	seen    map[*types.TypeName]string
 	structs map[structKey]*Schema
 }
 
@@ -78,18 +61,14 @@ func newSchemas(l *loader) *schemas {
 	}
 }
 
-// forRequest is a body's schema: required is what validation requires.
 func (s *schemas) forRequest(t types.Type) *Schema {
 	return s.of(t, true, 0)
 }
 
-// forResponse is an answer's schema: required is what is never left out.
 func (s *schemas) forResponse(t types.Type) *Schema {
 	return s.of(t, false, 0)
 }
 
-// maxDepth stops an unnamed type nested past reason; named ones are stopped
-// by the structs cache.
 const maxDepth = 12
 
 func (s *schemas) of(t types.Type, request bool, depth int) *Schema {
@@ -152,16 +131,11 @@ func (s *schemas) of(t types.Type, request bool, depth int) *Schema {
 		return schema
 	}
 
-	// An interface: anything at all.
 	return &Schema{}
 }
 
-// fields are a struct's JSON fields, embedded structs flattened into it as
-// encoding/json does.
 func (s *schemas) fields(st *types.Struct, request bool, depth int) []Property {
 	var out []Property
-	// What each Go name is called on the wire, so a comment or a rule that
-	// names a field says the name a caller sends.
 	wire := map[string]string{}
 
 	for i := range st.NumFields() {
@@ -214,8 +188,6 @@ func (s *schemas) fields(st *types.Struct, request bool, depth int) []Property {
 	return out
 }
 
-// name is the component a named type becomes: its own name, capitalised, or
-// prefixed with its package when two packages use the same one.
 func (s *schemas) name(obj *types.TypeName) string {
 	if name, ok := s.seen[obj]; ok {
 		return name
@@ -233,7 +205,6 @@ func (s *schemas) name(obj *types.TypeName) string {
 	return name
 }
 
-// Components are the named schemas, sorted, for the OpenAPI document.
 func (s *schemas) Components() []*Schema {
 	out := make([]*Schema, 0, len(s.named))
 	for _, schema := range s.named {
@@ -258,7 +229,6 @@ func basic(b *types.Basic) *Schema {
 	return &Schema{}
 }
 
-// wellKnown is the types that marshal to something other than their fields.
 func wellKnown(t *types.Named) *Schema {
 	if t.Obj().Pkg() == nil {
 		return nil
@@ -284,8 +254,6 @@ func wellKnown(t *types.Named) *Schema {
 	return nil
 }
 
-// validation turns a validate tag into sentences and reports whether the field
-// is required.
 func validation(tag string, schema *Schema) (rules []string, required bool) {
 	if tag == "" {
 		return nil, false
@@ -337,7 +305,6 @@ func validation(tag string, schema *Schema) (rules []string, required bool) {
 	return rules, required
 }
 
-// wireNames replaces Go field names in text with their JSON names, as code.
 func wireNames(wire map[string]string) func(string) string {
 	names := make([]string, 0, len(wire))
 	for goName := range wire {
@@ -358,8 +325,6 @@ func wireNames(wire map[string]string) func(string) string {
 	}
 }
 
-// enum is the values of a named string type, when its package declares them
-// as constants — model.AuthMethod's, say.
 func (l *loader) enum(t *types.Named) []string {
 	pkg := t.Obj().Pkg()
 	if pkg == nil || l.packages[pkg.Path()] == nil {
@@ -380,7 +345,6 @@ func (l *loader) enum(t *types.Named) []string {
 	return values
 }
 
-// fieldDoc is the comment on a struct field, from the source.
 func (l *loader) fieldDoc(field *types.Var) string {
 	node := l.fields[field.Pos()]
 	if node == nil {
@@ -395,7 +359,6 @@ func (l *loader) fieldDoc(field *types.Var) string {
 	return ""
 }
 
-// typeDoc is the doc comment on a type.
 func (l *loader) typeDoc(obj *types.TypeName) string {
 	if doc := l.types[obj.Pos()]; doc != nil {
 		return sentence(doc.Text())
@@ -403,8 +366,6 @@ func (l *loader) typeDoc(obj *types.TypeName) string {
 	return ""
 }
 
-// indexDeclarations records where fields and types are declared, so comments
-// can be found by position.
 func (l *loader) indexDeclarations(file *ast.File) {
 	ast.Inspect(file, func(n ast.Node) bool {
 		switch n := n.(type) {
@@ -432,13 +393,9 @@ func (l *loader) indexDeclarations(file *ast.File) {
 	})
 }
 
-// sentence tidies a comment into prose: one paragraph per blank line, lines
-// inside a paragraph joined.
 func sentence(text string) string {
 	paragraphs := strings.Split(strings.TrimSpace(text), "\n\n")
 	for i, paragraph := range paragraphs {
-		// A paragraph indented in the comment is code or a list, and keeps
-		// its lines.
 		if strings.HasPrefix(paragraph, "\t") || strings.HasPrefix(paragraph, "  ") ||
 			strings.Contains(paragraph, "\n\t") || strings.Contains(paragraph, "\n  -") {
 			paragraphs[i] = paragraph
@@ -456,7 +413,6 @@ func exported(name string) string {
 	return strings.ToUpper(name[:1]) + name[1:]
 }
 
-// statusOf reads a constant status, such as http.StatusOK.
 func statusOf(info *types.Info, expr ast.Expr) int {
 	tv, ok := info.Types[expr]
 	if !ok || tv.Value == nil {
@@ -469,7 +425,6 @@ func statusOf(info *types.Info, expr ast.Expr) int {
 	return n
 }
 
-// stringOf reads a constant string, such as oidc.PathToken or a literal.
 func stringOf(info *types.Info, expr ast.Expr) (string, bool) {
 	tv, ok := info.Types[expr]
 	if !ok || tv.Value == nil || tv.Value.Kind() != constant.String {

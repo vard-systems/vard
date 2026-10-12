@@ -1,5 +1,3 @@
-// Package social manages the social sign-in providers. Signing in happens in
-// internal/oidc; stored secrets are never sent back to the panel.
 package social
 
 import (
@@ -17,14 +15,11 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store  *store.Store
 	sealer *jose.Sealer
 	audit  audit.Recorder
 	log    *slog.Logger
-	// issuer is what the callback addresses are built from, so the panel can
-	// show an administrator what to register with the provider.
 	issuer string
 }
 
@@ -72,8 +67,6 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	provider := &model.SocialProvider{
-		// What a new provider is like before anything is typed in: enabled,
-		// linking addresses the provider has checked, and taking new accounts.
 		IsEnabled:          true,
 		LinkVerifiedEmails: true,
 		AllowRegistration:  true,
@@ -154,13 +147,8 @@ func (h *Handler) Update(c *gin.Context) {
 	h.answer(c, http.StatusOK, provider)
 }
 
-// providerRepointed is the answer to changing where a provider with linked
-// identities signs people in from.
 var providerRepointed = respond.Define(http.StatusConflict, "social_provider_repointed", respond.Admin)
 
-// identityNamespace is what a provider's subjects are unique within: the
-// endpoints and client for a custom kind, the team for Apple, the app for
-// Facebook. Google, Yandex and VK keep subjects stable across clients.
 func identityNamespace(p *model.SocialProvider) string {
 	_, token, userInfo := p.Endpoints()
 
@@ -229,8 +217,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// find loads the provider named in the path, answering the request itself if
-// there is no such provider.
 func (h *Handler) find(c *gin.Context) (*model.SocialProvider, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -252,7 +238,6 @@ func (h *Handler) find(c *gin.Context) (*model.SocialProvider, bool) {
 	return provider, true
 }
 
-// answer writes one provider, with how many users hold an identity at it.
 func (h *Handler) answer(c *gin.Context, status int, provider *model.SocialProvider) {
 	counts, err := h.store.SocialIdentityCounts(c.Request.Context())
 	if err != nil {

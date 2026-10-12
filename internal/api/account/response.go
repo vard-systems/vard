@@ -23,23 +23,20 @@ var (
 // sentence.
 var provided = func() map[string]respond.Problem {
 	statuses := map[string]int{
-		oidc.ErrInvalidCredentials.Code:  http.StatusUnauthorized,
-		oidc.ErrRequestExpired.Code:      http.StatusGone,
-		oidc.ErrResetInvalid.Code:        http.StatusGone,
-		oidc.ErrRegistrationClosed.Code:  http.StatusForbidden,
-		oidc.ErrEmailTaken.Code:          http.StatusConflict,
-		oidc.ErrNotYours.Code:            http.StatusNotFound,
-		oidc.ErrSSORequired.Code:         http.StatusForbidden,
-		oidc.ErrSSOUnknown.Code:          http.StatusNotFound,
-		oidc.ErrPasswordNotOffered.Code:  http.StatusForbidden,
-		oidc.ErrEmailNotVerified.Code:    http.StatusForbidden,
-		oidc.ErrVerificationInvalid.Code: http.StatusGone,
-		// A sign-in that is over rather than a code that is wrong: the page
-		// starts again, so it is told the thing it held is gone.
-		oidc.ErrCodeExpired.Code:      http.StatusGone,
-		oidc.ErrCodeAttemptsUsed.Code: http.StatusGone,
-		oidc.ErrCodeTooSoon.Code:      http.StatusTooManyRequests,
-		// The door is shut rather than the request wrong.
+		oidc.ErrInvalidCredentials.Code:    http.StatusUnauthorized,
+		oidc.ErrRequestExpired.Code:        http.StatusGone,
+		oidc.ErrResetInvalid.Code:          http.StatusGone,
+		oidc.ErrRegistrationClosed.Code:    http.StatusForbidden,
+		oidc.ErrEmailTaken.Code:            http.StatusConflict,
+		oidc.ErrNotYours.Code:              http.StatusNotFound,
+		oidc.ErrSSORequired.Code:           http.StatusForbidden,
+		oidc.ErrSSOUnknown.Code:            http.StatusNotFound,
+		oidc.ErrPasswordNotOffered.Code:    http.StatusForbidden,
+		oidc.ErrEmailNotVerified.Code:      http.StatusForbidden,
+		oidc.ErrVerificationInvalid.Code:   http.StatusGone,
+		oidc.ErrCodeExpired.Code:           http.StatusGone,
+		oidc.ErrCodeAttemptsUsed.Code:      http.StatusGone,
+		oidc.ErrCodeTooSoon.Code:           http.StatusTooManyRequests,
 		oidc.ErrSignInClosed.Code:          http.StatusForbidden,
 		oidc.ErrEmailChangeNotOffered.Code: http.StatusForbidden,
 	}

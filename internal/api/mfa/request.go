@@ -15,7 +15,6 @@ type optionalCodeRequest struct {
 	Code string `json:"code" binding:"max=32"`
 }
 
-// bindOptional reads a body that may be empty.
 func bindOptional(c *gin.Context, into *optionalCodeRequest) error {
 	if c.Request.ContentLength == 0 {
 		return nil

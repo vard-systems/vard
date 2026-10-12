@@ -1,11 +1,3 @@
-// Package account serves the id app: signing in, registering and resetting a
-// password, then managing one's own account.
-//
-// The sign-in half is the JSON side of the authorization endpoint: the page
-// asks what to show for a sign-in handle, posts what the user typed, and is
-// told where to send the browser next. The account half sits behind
-// RequireSession and only reaches the account whose session the request
-// carries.
 package account
 
 import (
@@ -26,7 +18,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	provider *oidc.Service
 	log      *slog.Logger
@@ -217,7 +208,6 @@ func (h *Handler) Register(c *gin.Context) {
 	h.signedIn(c, req.Request, result)
 }
 
-// signedIn finishes a sign-in or registration: the cookie, and where to go.
 func (h *Handler) signedIn(c *gin.Context, request string, result *oidc.SignInResult) {
 	if result.ResetToken != "" {
 		c.JSON(http.StatusOK, signedInResponse{PasswordChangeRequired: true, ResetToken: result.ResetToken})
@@ -362,7 +352,6 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	// Every session the user had has ended, this browser's included.
 	session.ClearUser(c, h.secure)
 
 	c.JSON(http.StatusOK, gin.H{"status": "reset"})
@@ -402,11 +391,8 @@ func (h *Handler) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "signed out"})
 }
 
-// sessionKey is the Gin context key RequireSession stores the session under.
 const sessionKey = "user_session"
 
-// The account API's answers to an access token it will not take, and to one
-// without the scope a route needs.
 var (
 	accountTokenRefused = respond.Define(http.StatusUnauthorized, "account_token_refused", respond.Public)
 	accountScopeMissing = respond.Define(http.StatusForbidden, "account_scope_missing", respond.Public)
@@ -439,7 +425,6 @@ func (h *Handler) RequireSession(c *gin.Context) {
 	c.Next()
 }
 
-// requireToken is RequireSession for an access token.
 func (h *Handler) requireToken(c *gin.Context, token string) {
 	caller, err := h.provider.AccountCaller(c.Request.Context(), token)
 	if errors.Is(err, oidc.ErrTokenRefused) {
@@ -572,11 +557,7 @@ func (h *Handler) Disconnect(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// fail answers the provider's problems with the status and code each has,
-// and anything else as the server's own failure.
 func (h *Handler) fail(c *gin.Context, err error, note string) {
-	// An address that has to sign in through its provider is told which, so
-	// the page can send it there.
 	var sso *oidc.SSORequired
 	if errors.As(err, &sso) {
 		respond.Fail(c, provided[oidc.ErrSSORequired.Code], "slug", sso.Slug, "name", sso.Name)

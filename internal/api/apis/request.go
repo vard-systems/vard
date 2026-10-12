@@ -44,8 +44,6 @@ type scopeRequest struct {
 	IsDefault   bool      `json:"is_default"`
 }
 
-// clean tidies what can be tidied, so the rules see the values that would
-// actually be stored.
 func (r *apiRequest) clean() {
 	r.Name = strings.TrimSpace(r.Name)
 	r.Identifier = strings.TrimSpace(r.Identifier)

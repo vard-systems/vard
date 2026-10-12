@@ -13,31 +13,23 @@ import (
 	"loginer/internal/model"
 )
 
-// Every endpoint's examples: cURL, Java, Go and Python, each the bare request
-// with no framework or generated client.
-
-// sample is one request in one language.
 type sample struct {
 	title, language, code string
 }
 
-// request is what the three examples are written from.
 type request struct {
-	method string
-	// Variable names for the server address and bearer token in examples
-	// (goName gives Go's spelling).
+	method   string
 	base     string
 	segments []segment
 	query    [][2]string
 	form     [][2]string
 	body     any
-	session  string // the cookie's name, when a session is needed
+	session  string
 	basic    bool
 	bearer   bool
 	token    string
 }
 
-// segment is a piece of the path: literal text, or a path parameter.
 type segment struct {
 	text  string
 	param bool
@@ -73,8 +65,6 @@ func requestOf(server Server, op Operation) request {
 		}
 	}
 
-	// A route an access token can call is shown called with one: that is
-	// how software calls it, and the session cookie is the browser's.
 	r.token = "ACCESS_TOKEN"
 	switch {
 	case op.Access.Token != "":
@@ -102,7 +92,6 @@ func requestOf(server Server, op Operation) request {
 			if r.basic && (param.Name == "client_id" || param.Name == "client_secret") {
 				continue
 			}
-			// A bearer token goes in the header, not the form beside it.
 			if r.bearer && param.Name == "access_token" {
 				continue
 			}
@@ -114,11 +103,8 @@ func requestOf(server Server, op Operation) request {
 	return r
 }
 
-// codeExchange is the authorization code grant's parameters; the example shows
-// only these, and the guides show the other grants.
 var codeExchange = map[string]bool{"grant_type": true, "code": true, "redirect_uri": true, "code_verifier": true}
 
-// oneGrant narrows a token request's form to one grant's parameters.
 func oneGrant(form [][2]string) [][2]string {
 	isToken := false
 	for _, pair := range form {
@@ -137,8 +123,6 @@ func oneGrant(form [][2]string) [][2]string {
 	return out
 }
 
-// exampleValue is a value for a query or form parameter that looks like
-// what the parameter holds.
 func exampleValue(name string) string {
 	switch name {
 	case "grant_type":
@@ -173,8 +157,6 @@ func (r request) samples() []sample {
 	}
 }
 
-// ---- cURL: the parts a reader fills in are shell variables.
-
 func (r request) curl() string {
 	target := "$" + r.base
 	for _, s := range r.segments {
@@ -207,8 +189,6 @@ func (r request) curl() string {
 	switch {
 	case r.body != nil:
 		body, _ := json.Marshal(r.body)
-		// Single-quoted for the shell, so a quote inside is closed, escaped
-		// and reopened.
 		quoted := strings.ReplaceAll(string(body), "'", `'\''`)
 		lines = append(lines, `-H "Content-Type: application/json"`, "-d '"+quoted+"'")
 	case len(r.form) > 0:
@@ -219,8 +199,6 @@ func (r request) curl() string {
 
 	return strings.Join(lines, " \\\n  ")
 }
-
-// ---- Java: java.net.http, Java 15 or later for the text block.
 
 func (r request) java() string {
 	var b strings.Builder
@@ -259,7 +237,6 @@ func (r request) java() string {
 		publisher = "BodyPublishers.ofString(\"\"\"\n                " + string(indented) + "\n                \"\"\")"
 	case len(r.form) > 0:
 		b.WriteString("        .header(\"Content-Type\", \"application/x-www-form-urlencoded\")\n")
-		// One parameter a line, joined as the form is sent.
 		lines := make([]string, len(r.form))
 		for i, pair := range r.form {
 			prefix := "&"
@@ -289,8 +266,6 @@ func (r request) java() string {
 
 	return b.String()
 }
-
-// ---- Go: net/http, and nothing else.
 
 func (r request) golang() string {
 	var b strings.Builder
@@ -345,8 +320,6 @@ func (r request) golang() string {
 	b.WriteString("if err != nil {\n\treturn err\n}\n")
 	b.WriteString("defer res.Body.Close()")
 
-	// gofmt's alignment, which a snippet written by hand would not have. The
-	// snippet is a list of statements, which format takes as a partial file.
 	if formatted, err := format.Source([]byte(b.String())); err == nil {
 		return string(formatted)
 	}
@@ -356,8 +329,6 @@ func (r request) golang() string {
 func goMethod(method string) string {
 	return method[:1] + strings.ToLower(method[1:])
 }
-
-// ---- Python: requests.
 
 func (r request) python() string {
 	var b strings.Builder
@@ -416,8 +387,6 @@ func pythonPairs(pairs [][2]string) string {
 	return b.String()
 }
 
-// pythonLiteral writes an example value as Python: a dict, a list, True,
-// None. depth is how many levels of four spaces it starts at.
 func pythonLiteral(value any, depth int) string {
 	pad := strings.Repeat("    ", depth)
 	inner := pad + "    "
@@ -475,19 +444,15 @@ func pythonLiteral(value any, depth int) string {
 	}
 }
 
-// pythonString quotes a string for Python: JSON's escapes are Python's.
 func pythonString(s string) string {
 	quoted, _ := json.Marshal(s)
 	return string(quoted)
 }
 
-// quoteJava quotes a string for Java: Go's escapes are Java's for the
-// characters an example holds.
 func quoteJava(s string) string {
 	return fmt.Sprintf("%q", s)
 }
 
-// encode is pairs as a query string or form body, in the order given.
 func encode(pairs [][2]string) string {
 	parts := make([]string, len(pairs))
 	for i, pair := range pairs {
@@ -496,12 +461,10 @@ func encode(pairs [][2]string) string {
 	return strings.Join(parts, "&")
 }
 
-// goName is an UPPER_SNAKE variable as Go spells it: ADMIN_API is adminAPI.
 func goName(name string) string {
 	return camel(strings.ToLower(name), true)
 }
 
-// camel is a snake_case name as a variable: clientID in Go, clientId in Java.
 func camel(name string, goStyle bool) string {
 	parts := strings.Split(name, "_")
 	for i := 1; i < len(parts); i++ {

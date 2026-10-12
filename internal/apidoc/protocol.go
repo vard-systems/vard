@@ -8,8 +8,6 @@ import (
 	"loginer/internal/model"
 )
 
-// protocolParams documents the OAuth and OpenID Connect form parameters,
-// narrowed to what this server accepts.
 var protocolParams = map[string]string{
 	"client_id":             "The application's client ID.",
 	"client_secret":         "The application's secret, when it sends it in the form rather than with HTTP Basic. Never sent by a public client.",

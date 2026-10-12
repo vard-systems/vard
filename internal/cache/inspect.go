@@ -17,17 +17,15 @@ import (
 // back), and nothing in the session database is written by hand, since that
 // would sign somebody in. Removing a key is always safe.
 
-// Kinds of key, by what the name says it is.
 const (
-	KindEntry      = "entry"      // a cached value of a group's current generation
-	KindStale      = "stale"      // a cached value of an older generation, left to expire
-	KindGeneration = "generation" // the counter that says which generation is current
-	KindSession    = "session"    // a session, found by its token's hash
-	KindRateLimit  = "ratelimit"  // a rate limit's bucket for one address
-	KindOther      = "other"      // under the prefix, but nothing this server writes
+	KindEntry      = "entry"
+	KindStale      = "stale"
+	KindGeneration = "generation"
+	KindSession    = "session"
+	KindRateLimit  = "ratelimit"
+	KindOther      = "other"
 )
 
-// Errors the management calls answer with.
 var (
 	ErrNoRedis       = errors.New("redis is not configured")
 	ErrNoKey         = errors.New("no such key")
@@ -35,8 +33,6 @@ var (
 	ErrNotEditable   = errors.New("only a cached value in the cache database can be edited")
 )
 
-// Groups lists the groups each database holds, in the order the panel shows
-// them.
 var Groups = map[string][]string{
 	CacheDatabase:   {Languages, Organization, LoginFlows, SocialButtons, SSOButtons, OTPSettings},
 	SessionDatabase: {Admins, Clients, AdminSecurity, Grants},
@@ -44,31 +40,21 @@ var Groups = map[string][]string{
 
 // Key is one key, described.
 type Key struct {
-	// Name is the key without this server's prefix.
-	Name string
-	Kind string
-	// Group is the group, the kind of session, or the rate limit's scope;
-	// Entry is the entry, the token's hash, or the address.
-	Group string
-	Entry string
-	// TTL is how long the key has left, or -1 for a key that does not expire.
-	TTL time.Duration
-	// Size is what Redis says the key takes in memory, in bytes, or 0 when it
-	// would not say.
-	Size int64
-	// Editable says the value may be replaced by hand.
+	Name     string
+	Kind     string
+	Group    string
+	Entry    string
+	TTL      time.Duration
+	Size     int64
 	Editable bool
 }
 
-// Value is a key with what it holds: JSON for a cached value or a session,
-// the fields of a rate limit's bucket.
 type Value struct {
 	Key
 	Type  string
 	Value json.RawMessage
 }
 
-// GroupStats is one group of a database.
 type GroupStats struct {
 	Name       string
 	Generation int64
@@ -76,24 +62,18 @@ type GroupStats struct {
 	Stale      int64
 }
 
-// Stats is one database, summed up.
 type Stats struct {
 	Name      string
 	Number    int
 	Available bool
-	// Keys counts the keys under this server's prefix, by kind.
-	Keys     int64
-	Kinds    map[string]int64
-	Groups   []GroupStats
-	Sessions map[string]int64
-	// Memory and Version describe the Redis server, which both databases
-	// share.
-	Memory  int64
-	Version string
+	Keys      int64
+	Kinds     map[string]int64
+	Groups    []GroupStats
+	Sessions  map[string]int64
+	Memory    int64
+	Version   string
 }
 
-// Stats walks every key under the prefix. It is for the panel, not a request
-// path.
 func (c *Cache) Stats(ctx context.Context) (Stats, error) {
 	if c == nil {
 		return Stats{}, ErrNoRedis
@@ -142,7 +122,6 @@ func (c *Cache) Stats(ctx context.Context) (Stats, error) {
 		stats.Groups = append(stats.Groups, *groups[name])
 		delete(groups, name)
 	}
-	// A group this server no longer reads, still holding values from before.
 	for _, group := range groups {
 		stats.Groups = append(stats.Groups, *group)
 	}
@@ -152,20 +131,14 @@ func (c *Cache) Stats(ctx context.Context) (Stats, error) {
 	return stats, nil
 }
 
-// KeyQuery narrows a listing of keys.
 type KeyQuery struct {
-	// Kind and Group keep the keys of one kind, and of one group within it.
-	Kind  string
-	Group string
-	// Search keeps the keys whose name contains it.
+	Kind   string
+	Group  string
 	Search string
-	// Cursor is where the previous page stopped, 0 for the first page.
 	Cursor uint64
 	Limit  int
 }
 
-// Keys lists keys under the prefix a page at a time, with the cursor for the
-// next page (0 after the last). Redis walks in no particular order.
 func (c *Cache) Keys(ctx context.Context, q KeyQuery) ([]Key, uint64, error) {
 	if c == nil {
 		return nil, 0, ErrNoRedis
@@ -219,7 +192,6 @@ func (c *Cache) Keys(ctx context.Context, q KeyQuery) ([]Key, uint64, error) {
 	return keys, cursor, nil
 }
 
-// Read answers one key and what it holds.
 func (c *Cache) Read(ctx context.Context, name string) (Value, error) {
 	if c == nil {
 		return Value{}, ErrNoRedis
@@ -252,7 +224,6 @@ func (c *Cache) Read(ctx context.Context, name string) (Value, error) {
 			return Value{}, err
 		}
 		if !json.Valid(raw) {
-			// A counter or a value this server did not write as JSON.
 			raw, _ = json.Marshal(string(raw))
 		}
 		value.Value = raw
@@ -269,8 +240,6 @@ func (c *Cache) Read(ctx context.Context, name string) (Value, error) {
 	return value, nil
 }
 
-// Write replaces a cached value by hand. It must be JSON; one the store cannot
-// decode is a miss. A zero `ttl` keeps the remaining time.
 func (c *Cache) Write(ctx context.Context, name string, value json.RawMessage, ttl time.Duration) error {
 	if c == nil {
 		return ErrNoRedis
@@ -301,7 +270,6 @@ func (c *Cache) Write(ctx context.Context, name string, value json.RawMessage, t
 	return c.client.SetArgs(ctx, full, []byte(value), redis.SetArgs{KeepTTL: true}).Err()
 }
 
-// Delete removes one key, and reports whether it was there.
 func (c *Cache) Delete(ctx context.Context, name string) (bool, error) {
 	if c == nil {
 		return false, ErrNoRedis
@@ -316,8 +284,6 @@ func (c *Cache) Delete(ctx context.Context, name string) (bool, error) {
 	return removed > 0, err
 }
 
-// Clear forgets a group now, and says when it could not — unlike Forget,
-// which a write calls and which cannot fail.
 func (c *Cache) Clear(ctx context.Context, group string) error {
 	if c == nil {
 		return ErrNoRedis
@@ -326,8 +292,6 @@ func (c *Cache) Clear(ctx context.Context, group string) error {
 	return c.incr(ctx, []string{group})
 }
 
-// Flush removes every key under this server's prefix in this database, using
-// SCAN so a large Redis is not blocked.
 func (c *Cache) Flush(ctx context.Context) error {
 	if c == nil {
 		return nil
@@ -357,8 +321,6 @@ func (c *Cache) Flush(ctx context.Context) error {
 	return nil
 }
 
-// describe says what a key is from its name; groups missing from `generations`
-// are at generation zero.
 func (c *Cache) describe(name string, generations map[string]int64) Key {
 	key := Key{Name: name, Kind: KindOther, TTL: -1}
 
@@ -378,14 +340,12 @@ func (c *Cache) describe(name string, generations map[string]int64) Key {
 	case len(parts) >= 3 && parts[0] == "session":
 		key.Kind, key.Group, key.Entry = KindSession, parts[1], strings.Join(parts[2:], ":")
 	case len(parts) >= 3 && parts[0] == "ratelimit":
-		// An IPv6 address has colons of its own.
 		key.Kind, key.Group, key.Entry = KindRateLimit, parts[1], strings.Join(parts[2:], ":")
 	}
 
 	return key
 }
 
-// measure fills in each key's time to live and size, in one round trip.
 func (c *Cache) measure(ctx context.Context, keys []Key) error {
 	if len(keys) == 0 {
 		return nil
@@ -399,8 +359,6 @@ func (c *Cache) measure(ctx context.Context, keys []Key) error {
 		sizes[i] = pipe.MemoryUsage(ctx, c.prefix+key.Name)
 	}
 
-	// MEMORY USAGE may be unsupported or return nil for a vanished key; only a
-	// connection error fails the listing.
 	if _, err := pipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) && !isCommandError(err) {
 		return err
 	}
@@ -415,7 +373,6 @@ func (c *Cache) measure(ctx context.Context, keys []Key) error {
 	return nil
 }
 
-// generations reads the current generation of each group in one round trip.
 func (c *Cache) generations(ctx context.Context, groups []string) (map[string]int64, error) {
 	current := make(map[string]int64, len(groups))
 	if len(groups) == 0 {
@@ -441,8 +398,6 @@ func (c *Cache) generations(ctx context.Context, groups []string) (map[string]in
 	return current, nil
 }
 
-// server reads how much memory the Redis server uses and which version it is.
-// Either is left empty when the server will not say.
 func (c *Cache) server(ctx context.Context) (memory int64, version string) {
 	info, err := c.client.Info(ctx, "server", "memory").Result()
 	if err != nil {
@@ -466,7 +421,6 @@ func (c *Cache) server(ctx context.Context) (memory int64, version string) {
 	return memory, version
 }
 
-// keyPattern is the SCAN pattern for a kind of key, and a group within it.
 func keyPattern(kind, group string) string {
 	switch kind {
 	case KindEntry, KindStale:
@@ -488,7 +442,6 @@ func keyPattern(kind, group string) string {
 		return "ratelimit:*"
 	}
 
-	// A group with no kind: everything cached in it, and its generation.
 	if group != "" {
 		return "cache:" + escapeGlob(group) + ":*"
 	}
@@ -496,13 +449,10 @@ func keyPattern(kind, group string) string {
 	return "*"
 }
 
-// escapeGlob escapes what a SCAN pattern treats specially.
 func escapeGlob(text string) string {
 	return strings.NewReplacer(`\`, `\\`, `*`, `\*`, `?`, `\?`, `[`, `\[`, `]`, `\]`).Replace(text)
 }
 
-// isCommandError reports whether Redis refused a command, rather than the
-// connection failing.
 func isCommandError(err error) bool {
 	var redisErr redis.Error
 	return errors.As(err, &redisErr)

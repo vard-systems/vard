@@ -1,4 +1,3 @@
-// Package database opens the database connection.
 package database
 
 import (
@@ -15,8 +14,6 @@ import (
 	"loginer/internal/config"
 )
 
-// Open connects to Postgres and checks the connection works, so a bad
-// database stops the server at startup instead of on the first request.
 func Open(cfg config.DB) (*gorm.DB, error) {
 	if cfg.Driver != "postgres" {
 		return nil, fmt.Errorf("unsupported database driver %q", cfg.Driver)
@@ -61,7 +58,6 @@ func Open(cfg config.DB) (*gorm.DB, error) {
 	return db, nil
 }
 
-// Close shuts the connection pool down.
 func Close(db *gorm.DB) error {
 	sqlDB, err := db.DB()
 	if err != nil {

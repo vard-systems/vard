@@ -14,8 +14,6 @@ import (
 // because that is what it stands in for.
 var column = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)
 
-// Custom rules for this package's requests, registered beside what they
-// describe.
 func init() {
 	validate.Register("column", column.MatchString)
 
@@ -24,8 +22,6 @@ func init() {
 	})
 }
 
-// newField turns a create request into the field it describes, or says what
-// is wrong with it.
 func (r *fieldRequest) newField() (*model.UserField, error) {
 	r.Name = strings.ToLower(strings.TrimSpace(r.Name))
 	r.Type = strings.TrimSpace(r.Type)
@@ -50,8 +46,6 @@ func (r *fieldRequest) newField() (*model.UserField, error) {
 	return field, nil
 }
 
-// applyTo copies a request's rules onto a field and checks they make sense
-// together. Name and type never change.
 func (r *rulesRequest) applyTo(field *model.UserField) error {
 	r.Label = strings.TrimSpace(r.Label)
 	r.StartsWith = strings.TrimSpace(r.StartsWith)
@@ -72,8 +66,6 @@ func (r *rulesRequest) applyTo(field *model.UserField) error {
 	field.Max = r.Max
 	field.StartsWith = r.StartsWith
 
-	// What one rule means next to another is the model's to say: it owns what
-	// a field of each type can carry.
 	if err := field.Validate(); err != nil {
 		return respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
 	}

@@ -1,5 +1,3 @@
-// Package auth answers the endpoints that sign an administrator in and out,
-// and the ones that say who they are: the panel's whole idea of a session.
 package auth
 
 import (
@@ -19,7 +17,6 @@ import (
 	"loginer/internal/store"
 )
 
-// The problems these endpoints answer with that are their own.
 var (
 	wrongPassword    = respond.Define(http.StatusBadRequest, "admin_wrong_password", respond.Admin)
 	emailTaken       = respond.Define(http.StatusConflict, "admin_email_taken", respond.Admin)
@@ -30,17 +27,14 @@ var (
 	sessionNotFound  = respond.Define(http.StatusNotFound, "admin_session_not_found", respond.Admin)
 )
 
-// targetType is what an administrator is called in the activity log.
 const targetType = "admin_user"
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	auth  *authsvc.Service
 	store *store.Store
 	audit audit.Recorder
 	log   *slog.Logger
 
-	// secure sets the cookie's Secure flag: true once served over HTTPS.
 	secure bool
 }
 
@@ -288,7 +282,6 @@ func (h *Handler) EndOtherSessions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ended": ended})
 }
 
-// requestOf describes where the call came from, for the session and the log.
 func requestOf(c *gin.Context) authsvc.Request {
 	return authsvc.Request{
 		IP:        c.ClientIP(),

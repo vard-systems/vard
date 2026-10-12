@@ -11,11 +11,8 @@ import (
 	"loginer/internal/model"
 )
 
-// ErrWrongPassword is a wrong current password. Changing the address or
-// password requires it, so an unattended session cannot take the account.
 var ErrWrongPassword = errors.New("the current password is not right")
 
-// Profile is what an administrator may change about themselves.
 type Profile struct {
 	FirstName string
 	LastName  string
@@ -23,8 +20,6 @@ type Profile struct {
 	AvatarURL string
 }
 
-// UpdateProfile changes the administrator's name and address; a new address
-// needs the current password. A taken address is store.ErrDuplicate.
 func (s *Service) UpdateProfile(ctx context.Context, admin *model.Admin, profile Profile, currentPassword string) error {
 	if err := s.withPassword(ctx, admin); err != nil {
 		return err
@@ -45,8 +40,6 @@ func (s *Service) UpdateProfile(ctx context.Context, admin *model.Admin, profile
 	return s.store.SaveOwnAccount(ctx, admin)
 }
 
-// ChangePassword sets a new password given the current one and ends every other
-// session. A password bcrypt cannot hash is model.ErrPasswordTooLong.
 func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, session uuid.UUID, current, next string) error {
 	if err := s.withPassword(ctx, admin); err != nil {
 		return err
@@ -67,8 +60,6 @@ func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, sessio
 	return err
 }
 
-// withPassword loads the password hash, which cached administrators do not
-// carry.
 func (s *Service) withPassword(ctx context.Context, admin *model.Admin) error {
 	stored, err := s.store.AdminByID(ctx, admin.ID)
 	if err != nil {

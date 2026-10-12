@@ -1,6 +1,3 @@
-// Package sso manages enterprise SSO connections: what each is trusted for and
-// how people are provisioned, plus a way to test a provider. Signing in happens
-// in internal/oidc; stored secrets are never sent back.
 package sso
 
 import (
@@ -22,15 +19,13 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store    *store.Store
 	sealer   *jose.Sealer
 	provider *oidc.Service
 	audit    audit.Recorder
 	log      *slog.Logger
-	// issuer is what the addresses the provider is given are built from.
-	issuer string
+	issuer   string
 }
 
 // New returns a Handler.
@@ -143,8 +138,6 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	// Metadata is fetched again when its address changed and nothing was
-	// pasted in its place.
 	refetch := req.Metadata == nil && connection.MetadataURL != metadataURL
 	if !h.fetchMetadata(c, connection, refetch) || !h.check(c, connection) {
 		return
@@ -266,8 +259,6 @@ func (h *Handler) Test(c *gin.Context) {
 	c.JSON(http.StatusOK, testResponse{IdentityProvider: describeIdentityProvider(descriptor), Metadata: metadata})
 }
 
-// fetchMetadata reads a SAML connection's metadata from its address when
-// `fetch` says to, answering the request itself when it cannot be read.
 func (h *Handler) fetchMetadata(c *gin.Context, connection *model.SSOConnection, fetch bool) bool {
 	if connection.Protocol != model.SSOProtocolSAML || connection.MetadataURL == "" || !fetch {
 		return true
@@ -283,8 +274,6 @@ func (h *Handler) fetchMetadata(c *gin.Context, connection *model.SSOConnection,
 	return true
 }
 
-// check validates what needs the database: SAML metadata parses, domains are
-// not taken, and mapped roles exist.
 func (h *Handler) check(c *gin.Context, connection *model.SSOConnection) bool {
 	ctx := c.Request.Context()
 
@@ -346,8 +335,6 @@ func (h *Handler) giveKey(connection *model.SSOConnection) error {
 	return nil
 }
 
-// find loads the connection named in the path, answering the request itself
-// if there is no such connection.
 func (h *Handler) find(c *gin.Context) (*model.SSOConnection, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -368,7 +355,6 @@ func (h *Handler) find(c *gin.Context) (*model.SSOConnection, bool) {
 	return connection, true
 }
 
-// answer writes one connection as the panel shows it.
 func (h *Handler) answer(c *gin.Context, status int, connection *model.SSOConnection) {
 	counts, err := h.store.SSOIdentityCounts(c.Request.Context())
 	if err != nil {

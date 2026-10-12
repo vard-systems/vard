@@ -14,8 +14,6 @@ import (
 	"loginer/i18n"
 )
 
-// loader holds the type-checked internal packages and indexes of their
-// declarations and problems.
 type loader struct {
 	fset     *token.FileSet
 	packages map[string]*packages.Package
@@ -26,14 +24,11 @@ type loader struct {
 	problems map[*types.Var]Problem
 }
 
-// site is a function's declaration and the package it is in, whose
-// TypesInfo reads its body.
 type site struct {
 	decl *ast.FuncDecl
 	pkg  *packages.Package
 }
 
-// load type-checks every package under internal/ of the module at root.
 func load(root string) (*loader, error) {
 	cfg := &packages.Config{
 		Dir: root,
@@ -81,8 +76,6 @@ func load(root string) (*loader, error) {
 	return l, nil
 }
 
-// suffixed is the loaded package whose path ends in suffix — the module's own
-// path is left to go.mod, as it is everywhere else.
 func (l *loader) suffixed(suffix string) (*packages.Package, error) {
 	for path, pkg := range l.packages {
 		if strings.HasSuffix(path, suffix) {
@@ -92,8 +85,6 @@ func (l *loader) suffixed(suffix string) (*packages.Package, error) {
 	return nil, fmt.Errorf("apidoc: no package %s was loaded", suffix)
 }
 
-// indexProblems finds every `respond.Define(status, "code", apps)`; the English
-// is the base language's text for the key.
 func (l *loader) indexProblems(pkg *packages.Package, file *ast.File) {
 	for _, decl := range file.Decls {
 		gen, ok := decl.(*ast.GenDecl)
@@ -130,7 +121,6 @@ func (l *loader) indexProblems(pkg *packages.Package, file *ast.File) {
 	}
 }
 
-// Problems is every problem defined, by code.
 func (l *loader) Problems() []Problem {
 	out := make([]Problem, 0, len(l.problems))
 	for _, problem := range l.problems {
@@ -140,7 +130,6 @@ func (l *loader) Problems() []Problem {
 	return out
 }
 
-// appsOf reads respond.Public, respond.Admin or respond.Both.
 func appsOf(expr ast.Expr) []string {
 	name := ""
 	switch e := expr.(type) {
@@ -160,8 +149,6 @@ func appsOf(expr ast.Expr) []string {
 	}
 }
 
-// calleeName is package.Function for a call to a package-level function,
-// or "" for anything else.
 func calleeName(info *types.Info, call *ast.CallExpr) string {
 	var ident *ast.Ident
 	switch fun := call.Fun.(type) {

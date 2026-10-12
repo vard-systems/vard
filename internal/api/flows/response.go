@@ -91,7 +91,6 @@ func newFlowResponse(flow model.LoginFlow, applications int) flowResponse {
 	}
 }
 
-// plannedSteps are the steps a flow names that this server does not run yet.
 func plannedSteps(flow model.LoginFlow) []model.LoginStep {
 	planned := make([]model.LoginStep, 0)
 

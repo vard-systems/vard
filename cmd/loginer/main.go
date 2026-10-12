@@ -1,4 +1,3 @@
-// Command loginer runs the authentication server.
 package main
 
 import (
@@ -25,8 +24,6 @@ import (
 	"loginer/internal/store"
 )
 
-// version and commit are stamped at build time by `make build` and the
-// Dockerfile.
 var (
 	version = "dev"
 	commit  = "unknown"
@@ -47,8 +44,6 @@ func main() {
 	}
 }
 
-// run is the startup in order: configuration, database, migrations, then
-// serving. Each step returns an error instead of exiting.
 func run(log *slog.Logger) error {
 	log.Info(brand.Name+" starting", "version", version, "commit", commit)
 
@@ -84,7 +79,6 @@ func run(log *slog.Logger) error {
 	defer shared.Close()
 
 	if shared != nil {
-		// Drop cached authority values a crashed process may have left current.
 		if err := shared.BumpAuthorityGroups(context.Background()); err != nil {
 			log.Warn("could not bump the cache's authority groups at startup", "error", err)
 		}
@@ -95,18 +89,13 @@ func run(log *slog.Logger) error {
 		log.Info("redis is not configured; reading every page from the database")
 	}
 
-	// The store is the only thing that queries the database; the servers are
-	// handed that rather than the connection itself.
 	st := store.New(db).WithCache(shared)
 
-	// The sealer protects the SMTP password and signing keys at rest.
 	sealer, err := jose.NewSealer(cfg.SecretKey)
 	if err != nil {
 		return err
 	}
 
-	// Seed admin security, mail and OTP settings from configuration on a fresh
-	// installation; afterwards they belong to the panel.
 	if err := st.EnsureAdminSecurity(context.Background(), cfg.AdminMFARequired); err != nil {
 		return err
 	}
@@ -117,8 +106,6 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	// Import shipped languages: all on the first start, later only new keys.
-	// Administrator edits are never overwritten.
 	shipped, err := i18n.Shipped()
 	if err != nil {
 		return err
@@ -127,14 +114,10 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	// Sync the system APIs (the admin API's scopes follow the permission
-	// catalog) and create admin-cli.
 	if err := st.EnsureSystemAPIs(context.Background()); err != nil {
 		return err
 	}
 
-	// Email goes through whichever server the Mail page names when a message
-	// is sent, rather than whichever one the configuration named at startup.
 	mailer := mail.New(mail.FromStore(st, sealer), log)
 
 	// Load or create signing keys before serving, so a wrong LOGINER_SECRET_KEY
@@ -154,8 +137,6 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	// Signing keys rotate, and expired records are swept, while the server
-	// runs; stopping the server stops both.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go provider.MaintainKeys(ctx)
@@ -168,8 +149,6 @@ func run(log *slog.Logger) error {
 	})
 }
 
-// ensureMailSettings seeds mail settings from LOGINER_SMTP_*, sealing the
-// password.
 func ensureMailSettings(ctx context.Context, st *store.Store, sealer *jose.Sealer, cfg config.Mail) error {
 	settings, password := mail.Seed(cfg)
 
@@ -194,7 +173,6 @@ const (
 	idleTimeout       = 2 * time.Minute
 )
 
-// listener is one of the two servers, with the timeouts both are held to.
 func listener(addr string, handler http.Handler) *http.Server {
 	return &http.Server{
 		Addr:              addr,
@@ -206,12 +184,8 @@ func listener(addr string, handler http.Handler) *http.Server {
 	}
 }
 
-// shutdownGrace is how long requests under way get to finish when the process
-// is told to stop.
 const shutdownGrace = 15 * time.Second
 
-// serve runs the servers until one fails or the process is signalled, then
-// shuts down gracefully so in-flight sign-ins finish.
 func serve(ctx context.Context, log *slog.Logger, servers []*http.Server) error {
 	failed := make(chan error, len(servers))
 	for i, server := range servers {

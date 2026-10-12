@@ -1,11 +1,3 @@
-// Command migrate applies and rolls back database migrations.
-//
-// The migrations are Go functions, so they only exist in a binary that
-// imports them: the goose command-line tool cannot run them, this can.
-//
-//	go run ./cmd/migrate up       apply everything pending
-//	go run ./cmd/migrate down     roll the newest one back
-//	go run ./cmd/migrate status   show what has run
 package main
 
 import (

@@ -37,15 +37,11 @@ type roleRequest struct {
 	APIScopes *[]uuid.UUID `json:"api_scopes"`
 }
 
-// clean tidies what can be tidied, so the rules see the values that would
-// actually be stored.
 func (r *roleRequest) clean() {
 	r.Name = strings.ToLower(strings.TrimSpace(r.Name))
 	r.Description = strings.TrimSpace(r.Description)
 }
 
-// listQuery reads the search box, the filter and the page out of the query
-// string, holding each to something sensible.
 func listQuery(c *gin.Context) store.RoleQuery {
 	return store.RoleQuery{
 		Search:  c.Query("search"),

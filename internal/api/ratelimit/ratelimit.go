@@ -1,7 +1,3 @@
-// Package ratelimit limits how often one address may call the endpoints that
-// take a password or send email, complementing the per-account lockout. With
-// Redis every process shares one budget per address; without it each counts in
-// memory.
 package ratelimit
 
 import (
@@ -18,19 +14,13 @@ import (
 	"loginer/internal/cache"
 )
 
-// RateLimited is what an address over the limit is told, with how many
-// seconds until it may try again.
 var RateLimited = respond.Define(http.StatusTooManyRequests, "rate_limited", respond.Both)
 
-// Limiter is a per-address token bucket: `perMinute` requests a minute,
-// refilled continuously, with a full minute's burst.
 type Limiter struct {
 	perMinute int
-	rate      float64 // tokens per second
+	rate      float64
 	burst     float64
 
-	// shared is the Redis buckets are kept in; scope separates this limiter's
-	// buckets from others'.
 	shared *cache.Cache
 	scope  string
 
@@ -46,8 +36,6 @@ type bucket struct {
 	seen   time.Time
 }
 
-// New returns a limiter allowing `perMinute` requests a minute per address.
-// Zero or less allows everything.
 func New(perMinute int) *Limiter {
 	return &Limiter{
 		perMinute: perMinute,
@@ -58,17 +46,12 @@ func New(perMinute int) *Limiter {
 	}
 }
 
-// Shared keeps the buckets in Redis, under `scope`, so every server process
-// counts against the same budget. A nil cache leaves them in memory.
 func (l *Limiter) Shared(c *cache.Cache, scope string) *Limiter {
 	l.shared = c
 	l.scope = scope
 	return l
 }
 
-// Allow takes a token for `key`, reporting whether there was one and how long
-// until the next. It uses Redis, falling back to memory when Redis is absent or
-// down.
 func (l *Limiter) Allow(ctx context.Context, key string) (bool, time.Duration) {
 	if l.burst <= 0 {
 		return true, 0
@@ -84,7 +67,6 @@ func (l *Limiter) Allow(ctx context.Context, key string) (bool, time.Duration) {
 	return l.allowLocally(key)
 }
 
-// allowLocally is Allow against this process's own buckets.
 func (l *Limiter) allowLocally(key string) (bool, time.Duration) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -120,8 +102,6 @@ func bucketFor(address string) string {
 	return ip.Mask(net.CIDRMask(64, 128)).String() + "/64"
 }
 
-// sweep forgets addresses whose bucket has refilled, so the map does not grow
-// with every address that ever called. It runs at most once a minute.
 func (l *Limiter) sweep(now time.Time) {
 	if now.Sub(l.swept) < time.Minute {
 		return

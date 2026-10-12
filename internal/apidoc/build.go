@@ -5,7 +5,6 @@ import (
 	"sort"
 )
 
-// servers are the two route tables, in the order the reference lists them.
 var servers = []struct {
 	key, title, function string
 }{
@@ -13,8 +12,6 @@ var servers = []struct {
 	{"admin", "Admin API", "registerAdminRoutes"},
 }
 
-// sections title each handler package's page for developers calling the API. A
-// package missing here is titled after its name.
 var sections = map[string]struct{ title, summary string }{
 	"api":          {"Health", "Whether the server is up, for load balancers and uptime checks."},
 	"reference":    {"OpenAPI document", "The server's own OpenAPI document, for your tooling."},
@@ -43,15 +40,12 @@ var sections = map[string]struct{ title, summary string }{
 	"caching":      {"Cache", "What the Redis cache holds, and clearing it."},
 }
 
-// built is the reference and, for each server, the schemas its operations
-// named: one OpenAPI document's components.
 type built struct {
 	Reference
 	schemas map[string]*schemas
 	loader  *loader
 }
 
-// build reads the module at root into a reference.
 func build(root string) (*built, error) {
 	l, err := load(root)
 	if err != nil {
@@ -101,8 +95,6 @@ func build(root string) (*built, error) {
 	return out, nil
 }
 
-// guardProblems adds what the middleware in front of a route can refuse it
-// with, which the handler never mentions because it never runs.
 func (l *loader) guardProblems(op *Operation) {
 	var codes []string
 	if op.Access.Session != "" {

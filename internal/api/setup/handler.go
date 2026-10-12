@@ -16,7 +16,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	log   *slog.Logger
@@ -53,8 +52,6 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	admin := model.Admin{
-		// The address is the account: it is what this person signs in with,
-		// and one less thing to invent during setup.
 		Username:  req.Email,
 		Email:     req.Email,
 		FirstName: strings.TrimSpace(req.FirstName),

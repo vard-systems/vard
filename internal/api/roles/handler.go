@@ -1,6 +1,3 @@
-// Package roles manages the roles users hold, global or per application. What a
-// role allows is the applications' business. Every request is checked against
-// the role's scope.
 package roles
 
 import (
@@ -19,7 +16,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
@@ -31,7 +27,6 @@ func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }
 
-// The values of the scope query parameter.
 const (
 	globalScope      = "global"
 	applicationScope = "application"
@@ -192,9 +187,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// build checks a submitted role and returns the role to write, filling in
-// `into` when updating. Included roles must exist, be visible to the
-// administrator, be includable, and not create a cycle.
 func (h *Handler) build(c *gin.Context, req *roleRequest, into *model.UserRole) (*model.UserRole, error) {
 	ctx := c.Request.Context()
 
@@ -281,8 +273,6 @@ func (h *Handler) build(c *gin.Context, req *roleRequest, into *model.UserRole) 
 	return role, nil
 }
 
-// details is what a page of roles says beyond the rows: how many users hold
-// each, and what each includes once inheritance is followed.
 func (h *Handler) details(c *gin.Context, roles []model.UserRole) (roleDetails, error) {
 	ctx := c.Request.Context()
 
@@ -306,7 +296,6 @@ func (h *Handler) details(c *gin.Context, roles []model.UserRole) (roleDetails, 
 	}}, nil
 }
 
-// answer writes one role with its details.
 func (h *Handler) answer(c *gin.Context, status int, role *model.UserRole) {
 	details, err := h.details(c, []model.UserRole{*role})
 	if err != nil {
@@ -314,8 +303,6 @@ func (h *Handler) answer(c *gin.Context, status int, role *model.UserRole) {
 		return
 	}
 
-	// The graph was read after the write, so it has the role as stored; this
-	// is the same role, and saves relying on that.
 	details.graph[role.ID] = *role
 
 	c.JSON(status, gin.H{"role": newRoleResponse(*role, details)})
@@ -347,8 +334,6 @@ func (h *Handler) find(c *gin.Context, permission string) (*model.UserRole, bool
 	return role, true
 }
 
-// respondWrite turns a failed write into an answer, telling a duplicate name
-// apart from anything else because that one is the writer's to fix.
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
 		respond.Conflict(c, "a role with that name already exists in this scope")

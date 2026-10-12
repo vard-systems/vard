@@ -10,11 +10,8 @@ import (
 	"loginer/internal/model"
 )
 
-// minPasswordLength matches the first super admin's floor.
 const minPasswordLength = model.MinAdminPasswordLength
 
-// validate checks the form. `creating` says whether this makes a new
-// administrator, which is the one time a password has to be given.
 func (r *adminRequest) validate(creating bool) error {
 	r.clean()
 

@@ -6,8 +6,6 @@ import (
 	"loginer/internal/store"
 )
 
-// query turns the page's query string into what the store reads. The ids
-// are already checked to be uuids, so they parse.
 func (r listRequest) query(limit int) store.SessionQuery {
 	q := store.SessionQuery{Search: r.Search, Limit: limit}
 

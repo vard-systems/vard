@@ -11,7 +11,6 @@ import (
 	"loginer/internal/cache"
 )
 
-// The problems these endpoints answer with.
 var (
 	notConfigured    = respond.Define(http.StatusServiceUnavailable, "redis_not_configured", respond.Admin)
 	databaseNotFound = respond.Define(http.StatusNotFound, "cache_database_not_found", respond.Admin)
@@ -26,16 +25,13 @@ var (
 	invalidTTL       = respond.Define(http.StatusBadRequest, "cache_ttl_invalid", respond.Admin)
 )
 
-// maxTTL caps hand-written values at a day, so mistakes expire.
 const maxTTL = 24 * time.Hour
 
-// kinds are the kinds of key a listing may be narrowed to.
 var kinds = []string{
 	cache.KindEntry, cache.KindStale, cache.KindGeneration,
 	cache.KindSession, cache.KindRateLimit, cache.KindOther,
 }
 
-// checkKind accepts no kind, or one of the kinds.
 func checkKind(kind string) error {
 	if kind != "" && !slices.Contains(kinds, kind) {
 		return invalidKind.With()
@@ -43,8 +39,6 @@ func checkKind(kind string) error {
 	return nil
 }
 
-// checkName accepts a key name as a listing gave it: not empty, and short
-// enough to be one of this server's.
 func checkName(name string) error {
 	if name == "" || len(name) > 1024 {
 		return invalidKeyName.With()
@@ -52,7 +46,6 @@ func checkName(name string) error {
 	return nil
 }
 
-// check reads the new value and how long it should live.
 func (r writeRequest) check() (json.RawMessage, time.Duration, error) {
 	// null is JSON, but it decodes into an empty record without complaint, so
 	// the pages would show nothing where the value was.

@@ -9,9 +9,6 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo checks the request and copies it onto a flow. The slug is read only
-// when `creating`, since applications name flows by it; everything else changes
-// only where the request mentions it.
 func (r *flowRequest) applyTo(flow *model.LoginFlow, creating bool) error {
 	if creating {
 		flow.Slug = slugify(r.Slug, r.Name)
@@ -39,13 +36,10 @@ func (r *flowRequest) applyTo(flow *model.LoginFlow, creating bool) error {
 		flow.Steps = cleanSteps(*r.Steps)
 	}
 
-	// Making a flow the default also enables it; the model refuses a disabled
-	// default.
 	if flow.IsDefault {
 		flow.IsEnabled = true
 	}
 
-	// What a flow has to be is the model's to say.
 	if err := flow.Validate(); err != nil {
 		return badRequest(err.Error())
 	}
@@ -53,8 +47,6 @@ func (r *flowRequest) applyTo(flow *model.LoginFlow, creating bool) error {
 	return nil
 }
 
-// cleanSteps tidies a list of steps: trimmed, lower case, and with the blanks
-// a form sends dropped. What is left is the model's to judge.
 func cleanSteps(sent []model.LoginStep) model.StepList {
 	steps := make(model.StepList, 0, len(sent))
 
@@ -68,8 +60,6 @@ func cleanSteps(sent []model.LoginStep) model.StepList {
 	return steps
 }
 
-// slugify uses the sent slug or derives one from the name ("Staff sign-in" to
-// "staff-sign-in").
 func slugify(sent, name *string) string {
 	if sent != nil && strings.TrimSpace(*sent) != "" {
 		return strings.ToLower(strings.TrimSpace(*sent))
@@ -96,7 +86,6 @@ func slugify(sent, name *string) string {
 	return strings.TrimSuffix(b.String(), "-")
 }
 
-// badRequest is a 400 carrying what was wrong with the request.
 func badRequest(message string) error {
 	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }

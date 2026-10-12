@@ -59,8 +59,6 @@ type applicationRequest struct {
 	LoginFlowID *string `json:"login_flow_id"`
 }
 
-// clean tidies what can be tidied, so the rules see the values that would
-// actually be stored.
 func (r *applicationRequest) clean() {
 	r.Name = strings.TrimSpace(r.Name)
 	r.Description = strings.TrimSpace(r.Description)
@@ -96,8 +94,6 @@ type previewRequest struct {
 	Scope    string     `json:"scope"`
 }
 
-// listQuery reads the search box, the filters and the page out of the query
-// string, holding each to something sensible.
 func listQuery(c *gin.Context) store.ApplicationQuery {
 	q := store.ApplicationQuery{
 		Search:  c.Query("search"),

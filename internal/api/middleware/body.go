@@ -13,7 +13,6 @@ import (
 // filling memory.
 const MaxBodyBytes = 1 << 20
 
-// BodyTooLarge is what a caller sending more than that is told.
 var BodyTooLarge = respond.Define(http.StatusRequestEntityTooLarge, "body_too_large", respond.Both)
 
 // BodyLimit refuses a declared oversized body up front and cuts off an

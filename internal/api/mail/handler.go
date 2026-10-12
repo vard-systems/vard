@@ -1,6 +1,3 @@
-// Package mail serves the Mail page: the SMTP settings, a test send, and the
-// text of each email, which is stored as keys of the sign-in pages'
-// translations so it follows the reader's language.
 package mail
 
 import (
@@ -20,8 +17,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds the sealer because this is the only place the SMTP password is
-// sealed.
 type Handler struct {
 	store  *store.Store
 	sealer *jose.Sealer
@@ -137,8 +132,6 @@ func (h *Handler) Test(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"sent": true, "to": to})
 }
 
-// testBody is the test message, read only by the administrator who sent it, so
-// it is not translated.
 const testBody = "This is a test message from your " + brand.Name + " installation.\n\n" +
 	"If you are reading it, the mail settings on the Mail page work: " +
 	"password resets, address confirmations and one-time codes will reach people.\n"

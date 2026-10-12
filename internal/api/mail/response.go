@@ -9,15 +9,10 @@ import (
 
 // The problems these endpoints answer with.
 var (
-	// testNeedsRecipient is pressing "send a test" with nowhere to send it.
 	testNeedsRecipient = respond.Define(http.StatusBadRequest, "mail_test_needs_recipient", respond.Admin)
 
-	// testFailed is the mail server refusing or not answering. What it said
-	// is the `reason`, since finding that out is the whole point of a test.
 	testFailed = respond.Define(http.StatusBadGateway, "mail_test_failed", respond.Admin)
 
-	// contentKeyUnknown is a key that is not one of an email's, which the
-	// Mail page has no business writing.
 	contentKeyUnknown = respond.Define(http.StatusBadRequest, "mail_content_key_unknown", respond.Admin)
 )
 

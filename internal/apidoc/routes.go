@@ -10,8 +10,6 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// route is one line of the route table: a method, a path, what guards it,
-// and the function that answers it.
 type route struct {
 	method  string
 	path    string
@@ -19,14 +17,12 @@ type route struct {
 	handler *types.Func
 }
 
-// guard is what the middleware in front of a route adds up to.
 type guard struct {
 	access    Access
 	rateLimit string
 	csrf      bool
 }
 
-// with is the guard with one more middleware in front.
 func (g guard) with(other guard) guard {
 	out := g
 	out.access.Permissions = slices.Clone(g.access.Permissions)
@@ -44,7 +40,6 @@ func (g guard) with(other guard) guard {
 	return out
 }
 
-// methods are the Gin methods that mount a route.
 var methods = map[string]bool{"GET": true, "POST": true, "PUT": true, "PATCH": true, "DELETE": true}
 
 // table reads the route table in server.go. An unrecognised guard stops it, so
@@ -75,7 +70,6 @@ func (l *loader) routes(function string) ([]route, error) {
 
 			t := &table{pkg: pkg, groups: map[types.Object]guardedPrefix{}}
 
-			// The engine the table is handed is the root: no prefix, no guard.
 			engine := fn.Type.Params.List[0].Names[0]
 			t.groups[pkg.TypesInfo.Defs[engine]] = guardedPrefix{}
 
@@ -89,7 +83,6 @@ func (l *loader) routes(function string) ([]route, error) {
 	return nil, fmt.Errorf("apidoc: there is no %s in %s", function, pkg.PkgPath)
 }
 
-// block reads a block of the table, in order.
 func (t *table) block(statements []ast.Stmt) error {
 	for _, statement := range statements {
 		switch s := statement.(type) {
@@ -111,7 +104,6 @@ func (t *table) block(statements []ast.Stmt) error {
 	return nil
 }
 
-// group reads `name := parent.Group(path, middleware...)`.
 func (t *table) group(s *ast.AssignStmt) error {
 	if len(s.Lhs) != 1 || len(s.Rhs) != 1 {
 		return nil
@@ -153,7 +145,6 @@ func (t *table) group(s *ast.AssignStmt) error {
 	return nil
 }
 
-// route reads `group.METHOD(path, middleware..., handler)`.
 func (t *table) route(s *ast.ExprStmt) error {
 	call, ok := s.X.(*ast.CallExpr)
 	if !ok {
@@ -210,7 +201,6 @@ func (t *table) parent(expr ast.Expr) (guardedPrefix, bool) {
 	return g, ok
 }
 
-// guard reads one middleware by the route table's own names.
 func (t *table) guard(expr ast.Expr) (guard, error) {
 	info := t.pkg.TypesInfo
 	where := t.pkg.Fset.Position(expr.Pos())
@@ -261,7 +251,6 @@ func (t *table) guard(expr ast.Expr) (guard, error) {
 	return guard{}, fmt.Errorf("the middleware at %s is not one the reference knows; teach internal/apidoc/routes.go what it means", where)
 }
 
-// function is the function or method a handler expression names.
 func (t *table) function(expr ast.Expr) *types.Func {
 	switch e := expr.(type) {
 	case *ast.SelectorExpr:
@@ -278,7 +267,6 @@ func (t *table) function(expr ast.Expr) *types.Func {
 	return nil
 }
 
-// openAPIPath is a Gin path with its :parameters written {parameters}.
 func openAPIPath(path string) string {
 	segments := strings.Split(path, "/")
 	for i, segment := range segments {
@@ -289,7 +277,6 @@ func openAPIPath(path string) string {
 	return strings.Join(segments, "/")
 }
 
-// pathParams are the :parameters of a Gin path.
 func pathParams(path string) []Param {
 	var out []Param
 	for _, segment := range strings.Split(path, "/") {

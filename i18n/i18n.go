@@ -26,27 +26,18 @@ import (
 //go:embed id/*/*.json console/*/*.json
 var files embed.FS
 
-// App is one of the two apps a translation is for.
 type App string
 
 const (
-	// ID is the sign-in pages and a user's own account, web/id.
 	ID App = "id"
 
-	// Console is the admin panel. It is not translated; it is an app here only
-	// so the English of its problems has a home the tests can check.
 	Console App = "console"
 )
 
-// Apps are the apps a language is translated for, in the order the panel
-// lists them. The panel is not one of them: see the note on Console.
 var Apps = []App{ID}
 
-// catalogued are the apps there are shipped text for at all — the ones a
-// language is translated for, and the admin API's English beside them.
 var catalogued = []App{ID, Console}
 
-// ParseApp reads an app's name, as it appears in a path.
 func ParseApp(name string) (App, bool) {
 	for _, app := range Apps {
 		if string(app) == name {
@@ -57,45 +48,29 @@ func ParseApp(name string) (App, bool) {
 	return "", false
 }
 
-// AppsFor returns the apps a language is translated for: only the sign-in
-// pages.
 func AppsFor(string) []App {
 	return Apps
 }
 
-// ServesApp reports whether a language is translated for an app.
 func ServesApp(code string, app App) bool {
 	return slices.Contains(AppsFor(code), app)
 }
 
-// Base is the language every other translates; its keys are the keys there are.
 const Base = "en"
 
-// Messages is one language's text for one app, by key.
 type Messages = map[string]string
 
-// File is one language this server ships with, after its groups are merged.
 type File struct {
-	// Code is the language directory's name: an IETF language tag, "ky" or
-	// "pt-BR".
 	Code string
 
-	// Name and Native are the language's English and native names, from its
-	// metadata.
 	Name   string
 	Native string
 
-	// Messages is the text for each app, without the `$` keys that describe
-	// the language. An app the language has no groups for is left out.
 	Messages map[App]Messages
 }
 
-// metaPrefix marks the keys that are about the language rather than in the
-// interface: they are not counted, and never looked up.
 const metaPrefix = "$"
 
-// Shipped is every language there are groups for, the base language first and
-// the rest by name.
 func Shipped() ([]File, error) {
 	shipped, err := load()
 	if err != nil {
@@ -108,8 +83,6 @@ func Shipped() ([]File, error) {
 	return out, nil
 }
 
-// Keys are an app's keys from the base language, sorted (which groups each
-// namespace).
 func Keys(app App) []string {
 	shipped, err := load()
 	if err != nil {
@@ -119,8 +92,6 @@ func Keys(app App) []string {
 	return shipped.keys[app]
 }
 
-// Coverage is the percentage of an app's keys a language translates and how
-// many are missing; blank values do not count.
 func Coverage(app App, messages Messages) (percent, missing int) {
 	keys := Keys(app)
 	if len(keys) == 0 {
@@ -137,9 +108,6 @@ func Coverage(app App, messages Messages) (percent, missing int) {
 	return translated * 100 / len(keys), len(keys) - translated
 }
 
-// Resolve returns every key for one language, taken from the first of `layers`
-// that has it, else the shipped base language, so a page never shows a bare
-// key. Keys not in the base language are dropped.
 func Resolve(app App, layers ...Messages) Messages {
 	shipped, err := load()
 	if err != nil {
@@ -163,8 +131,6 @@ func Resolve(app App, layers ...Messages) Messages {
 	return out
 }
 
-// Text is the shipped base-language text for a key: the server's own English,
-// such as an error's sentence.
 func Text(app App, key string) (string, bool) {
 	shipped, err := load()
 	if err != nil {
@@ -176,8 +142,6 @@ func Text(app App, key string) (string, bool) {
 	return text, ok
 }
 
-// Fill replaces each `{name}` in a text with the parameter of that name, the
-// same way the apps do. A parameter nobody passed is left as it was written.
 func Fill(text string, params map[string]any) string {
 	if len(params) == 0 {
 		return text
@@ -193,11 +157,8 @@ func Fill(text string, params map[string]any) string {
 	})
 }
 
-// placeholder is a `{name}` in a text.
 var placeholder = regexp.MustCompile(`\{(\w+)\}`)
 
-// Known keeps only keys the app looks up, dropping empty values, and returns
-// how many it dropped.
 func Known(app App, messages Messages) (Messages, int) {
 	keys := make(map[string]bool, len(Keys(app)))
 	for _, key := range Keys(app) {
@@ -210,8 +171,6 @@ func Known(app App, messages Messages) (Messages, int) {
 	for key, value := range messages {
 		switch {
 		case strings.HasPrefix(key, metaPrefix):
-			// The names a catalog carries are the language's, not the app's;
-			// they are read separately and never counted as dropped.
 		case !keys[key]:
 			dropped++
 		case strings.TrimSpace(value) != "":
@@ -222,20 +181,15 @@ func Known(app App, messages Messages) (Messages, int) {
 	return out, dropped
 }
 
-// catalog is the merged shipped text, parsed once. They are embedded, so they
-// cannot change while the process runs.
 type catalog struct {
 	files []File
-	// keys are each app's keys, sorted, and base the base language's text.
-	keys map[App][]string
-	base map[App]Messages
+	keys  map[App][]string
+	base  map[App]Messages
 }
 
 var load = sync.OnceValues(func() (*catalog, error) {
 	byCode := map[string]*File{}
 
-	// Only translatable apps make languages; the admin API's English goes
-	// straight into the base text.
 	for _, app := range Apps {
 		messages, err := readApp(app)
 		if err != nil {
@@ -249,7 +203,6 @@ var load = sync.OnceValues(func() (*catalog, error) {
 				byCode[code] = language
 			}
 
-			// A language may name itself in any of its groups.
 			if language.Name == "" {
 				language.Name = file["$name"]
 			}
@@ -291,8 +244,6 @@ var load = sync.OnceValues(func() (*catalog, error) {
 	for _, app := range catalogued {
 		messages := base.Messages[app]
 
-		// The apps a language is translated for have their base text in the
-		// base language's catalog already; the rest is read on its own.
 		if messages == nil {
 			files, err := readApp(app)
 			if err != nil {
@@ -315,7 +266,6 @@ var load = sync.OnceValues(func() (*catalog, error) {
 	return shipped, nil
 })
 
-// readApp reads every language directory for one app and merges its groups.
 func readApp(app App) (map[string]Messages, error) {
 	entries, err := files.ReadDir(string(app))
 	if err != nil {
@@ -374,12 +324,6 @@ func readApp(app App) (map[string]Messages, error) {
 	return byCode, nil
 }
 
-// Flatten turns a nested translation group into dotted keys:
-//
-//	{"login": {"title": "Sign in"}}  ->  "login.title"
-//
-// Flat and mixed groups are accepted as long as no key repeats; non-text values
-// are refused.
 func Flatten(nested map[string]any) (Messages, error) {
 	out := Messages{}
 	if err := flattenInto(out, "", nested); err != nil {
@@ -414,8 +358,6 @@ func flattenInto(out Messages, prefix string, node map[string]any) error {
 	return nil
 }
 
-// withoutMeta is a language's messages: everything that is not about the
-// language itself.
 func withoutMeta(file Messages) Messages {
 	out := make(Messages, len(file))
 

@@ -11,8 +11,6 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo checks the request and copies it onto an API; the identifier is read
-// only when `creating`.
 func (r *apiRequest) applyTo(api *model.API, creating bool) error {
 	r.clean()
 

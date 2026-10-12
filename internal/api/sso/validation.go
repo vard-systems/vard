@@ -15,9 +15,6 @@ import (
 	"loginer/internal/oidc"
 )
 
-// applyTo checks the request and copies it onto a connection. Slug and protocol
-// are read only when `creating`; everything else changes only where the request
-// mentions it.
 func (r *connectionRequest) applyTo(connection *model.SSOConnection, sealer *jose.Sealer, creating bool) error {
 	if err := validate.Struct(r); err != nil {
 		return err
@@ -58,7 +55,6 @@ func (r *connectionRequest) applyTo(connection *model.SSOConnection, sealer *jos
 	connection.Issuer = strings.TrimRight(validate.Text(r.Issuer, connection.Issuer), "/")
 	connection.ClientID = validate.Text(r.ClientID, connection.ClientID)
 
-	// A secret that was sent replaces the stored one; none leaves it be.
 	if r.ClientSecret != nil && strings.TrimSpace(*r.ClientSecret) != "" {
 		sealed, err := sealer.SealBytes([]byte(strings.TrimSpace(*r.ClientSecret)))
 		if err != nil {
@@ -112,8 +108,6 @@ func (r *connectionRequest) applyTo(connection *model.SSOConnection, sealer *jos
 	return settle(connection)
 }
 
-// settle checks what every connection must have, with translatable problems;
-// the model's check runs last.
 func settle(connection *model.SSOConnection) error {
 	// Without domains no address leads to the connection, so it needs its
 	// button — and there is nobody to require it of.
@@ -158,8 +152,6 @@ func settle(connection *model.SSOConnection) error {
 	return nil
 }
 
-// localhost is an identity provider on this machine, which may be plain
-// http: that is how one is tried out.
 func localhost(u *url.URL) bool {
 	host := u.Hostname()
 	return u.Scheme == "http" && (host == "localhost" || host == "127.0.0.1" || host == "::1")
@@ -173,8 +165,6 @@ var (
 	invalidField  = func() respond.Problem { p, _ := respond.Lookup("validation.invalid"); return p }()
 )
 
-// slugFrom is the slug sent, or one made from the name: "Acme Corp" is
-// "acme-corp".
 func slugFrom(sent, name string) string {
 	slug := strings.ToLower(strings.TrimSpace(sent))
 	if slug == "" {
@@ -191,8 +181,6 @@ func slugFrom(sent, name string) string {
 func required(field string) respond.Fault { return requiredField.With("field", field) }
 func invalid(field string) respond.Fault  { return invalidField.With("field", field) }
 
-// unsupportedScopes are the scopes a connection would ask for that its
-// provider does not list. A provider that lists none says nothing either way.
 func unsupportedScopes(scopes, supported []string) []string {
 	if len(supported) == 0 {
 		return nil

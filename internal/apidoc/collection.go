@@ -9,13 +9,8 @@ import (
 	"loginer/internal/brand"
 )
 
-// A Postman Collection (v2.1), which Bruno also imports, for each server.
-// Requests authenticate the way software calls them, and the admin collection
-// starts with a request that stores admin-cli's token.
-
 const postmanSchema = "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 
-// collection writes one server's collection.
 func (b *built) collection(server Server) ([]byte, error) {
 	variables := []map[string]any{
 		variable("issuer", "http://localhost:5173", "The public server's address: the issuer."),
@@ -78,7 +73,6 @@ func variable(key, value, description string) map[string]any {
 	return map[string]any{"key": key, "value": value, "type": "string", "description": description}
 }
 
-// adminTokenRequest gets admin-cli's token and stores it for the others.
 func adminTokenRequest() map[string]any {
 	return map[string]any{
 		"name": "Get an admin-cli token",
@@ -105,7 +99,6 @@ func adminTokenRequest() map[string]any {
 	}
 }
 
-// collectionRequest is one operation as a request.
 func collectionRequest(server Server, op Operation) map[string]any {
 	host := "{{issuer}}"
 	if server.Key == "admin" {
@@ -148,13 +141,9 @@ func collectionRequest(server Server, op Operation) map[string]any {
 		request["header"] = headers
 	}
 
-	// Named by path: Postman and Bruno draw the method beside it, so the tree
-	// reads like the reference's contents. The summary is the description.
 	return map[string]any{"name": op.Path, "request": request}
 }
 
-// collectionURL is Postman's form of an address: the raw string, and its
-// parts, with :parameters as path variables and the query as optional keys.
 func collectionURL(host, path string, op *Operation) map[string]any {
 	url := map[string]any{"host": []string{host}, "path": strings.Split(strings.TrimPrefix(path, "/"), "/")}
 	raw := host + path
@@ -190,8 +179,6 @@ func collectionURL(host, path string, op *Operation) map[string]any {
 	return url
 }
 
-// collectionAuth authenticates a request the way software would: a token,
-// client credentials, or a session cookie header.
 func collectionAuth(op Operation) map[string]any {
 	bearer := func(token string) map[string]any {
 		return map[string]any{"type": "bearer", "bearer": []any{
@@ -218,7 +205,6 @@ func collectionAuth(op Operation) map[string]any {
 	return map[string]any{"type": "noauth"}
 }
 
-// sessionCookie is the cookie a route only a signed-in person reaches needs.
 func sessionCookie(op Operation) string {
 	switch {
 	case op.Access.Token != "":

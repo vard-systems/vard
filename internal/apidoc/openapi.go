@@ -10,9 +10,6 @@ import (
 	"loginer/internal/brand"
 )
 
-// openAPI writes one server's OpenAPI 3.1 document, without `servers` (the
-// serving server adds its own address). Sorted map keys keep the output
-// byte-for-byte stable.
 func (b *built) openAPI(server Server) ([]byte, error) {
 	s := b.schemas[server.Key]
 
@@ -165,8 +162,6 @@ func (b *built) openAPIOperation(op Operation, section Section, id string) map[s
 	bearer := false
 	var headers []Param
 	for _, h := range op.Headers {
-		// OpenAPI says an Authorization header is a security scheme, not a
-		// parameter.
 		if strings.EqualFold(h.Name, "Authorization") {
 			bearer = !op.BasicAuth
 			continue
@@ -207,7 +202,6 @@ func (b *built) openAPIOperation(op Operation, section Section, id string) map[s
 	case op.Access.Session != "":
 		out["security"] = []map[string]any{{"adminSession": []string{}}}
 	case op.BasicAuth:
-		// Basic, or the credentials in the form, or none for a public client.
 		out["security"] = []map[string]any{{"clientSecretBasic": []string{}}, {}}
 	case bearer:
 		out["security"] = []map[string]any{{"accessToken": []string{}}}
@@ -295,8 +289,6 @@ func openAPIResponses(op Operation, section Section) map[string]any {
 	return responses
 }
 
-// jsonSchema writes a schema as JSON Schema. A named struct is a reference
-// to its component everywhere but in the component itself.
 func jsonSchema(s *Schema, definition bool) map[string]any {
 	if s == nil {
 		return map[string]any{}

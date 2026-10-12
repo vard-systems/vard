@@ -35,14 +35,11 @@ import (
 	"loginer/internal/config"
 )
 
-// The two databases, by the name the panel and the log call them.
 const (
 	CacheDatabase   = "cache"
 	SessionDatabase = "sessions"
 )
 
-// Cache groups, each forgotten as a whole. The first live in the cache
-// database, the rest in the session database.
 const (
 	Languages     = "languages"
 	Organization  = "organization"
@@ -54,19 +51,14 @@ const (
 	Admins        = "admins"
 	Clients       = "clients"
 	AdminSecurity = "admin_security"
-	// Grants is what decides what a token carries: the role graph, and each
-	// application's access to each API.
-	Grants = "grants"
+	Grants        = "grants"
 )
 
-// Redis is the two databases. Either is nil when no Redis is configured,
-// and a nil *Redis has two nil databases.
 type Redis struct {
 	Cache    *Cache
 	Sessions *Cache
 }
 
-// CacheDB is the cache database, or nil.
 func (r *Redis) CacheDB() *Cache {
 	if r == nil {
 		return nil
@@ -74,7 +66,6 @@ func (r *Redis) CacheDB() *Cache {
 	return r.Cache
 }
 
-// SessionDB is the session database, or nil.
 func (r *Redis) SessionDB() *Cache {
 	if r == nil {
 		return nil
@@ -82,7 +73,6 @@ func (r *Redis) SessionDB() *Cache {
 	return r.Sessions
 }
 
-// Databases lists the databases that are there, cache first.
 func (r *Redis) Databases() []*Cache {
 	if r == nil || r.Cache == nil {
 		return nil
@@ -90,7 +80,6 @@ func (r *Redis) Databases() []*Cache {
 	return []*Cache{r.Cache, r.Sessions}
 }
 
-// Close shuts both connection pools down.
 func (r *Redis) Close() error {
 	if r == nil {
 		return nil
@@ -99,13 +88,8 @@ func (r *Redis) Close() error {
 	return errors.Join(r.Cache.Close(), r.Sessions.Close())
 }
 
-// settleRetryInterval is how often a process retries the invalidations it
-// could not deliver while Redis was away.
 const settleRetryInterval = 30 * time.Second
 
-// KeepSettling retries, until ctx ends, the invalidations a write could not
-// deliver while Redis was unreachable, so an idle process does not leave others
-// serving a stale value.
 func (r *Redis) KeepSettling(ctx context.Context) {
 	if r == nil {
 		return
@@ -139,7 +123,6 @@ func (r *Redis) BumpAuthorityGroups(ctx context.Context) error {
 	return r.Sessions.incr(ctx, Groups[SessionDatabase])
 }
 
-// Cache is one Redis database, and the prefix every key starts with.
 type Cache struct {
 	client *redis.Client
 	prefix string
@@ -147,8 +130,6 @@ type Cache struct {
 	number int
 	log    *slog.Logger
 
-	// warned logs an outage once, and again only after Redis has recovered in
-	// between.
 	mu        sync.Mutex
 	warned    bool
 	downUntil time.Time
@@ -160,9 +141,6 @@ type Cache struct {
 	pendingKeys map[string]bool
 }
 
-// Open connects to both Redis databases and pings them, so a wrong address
-// fails startup. With no Redis configured it returns nil: caches that never
-// hold anything.
 func Open(ctx context.Context, cfg config.Redis, log *slog.Logger) (*Redis, error) {
 	if !cfg.Enabled() {
 		return nil, nil
@@ -179,14 +157,11 @@ func Open(ctx context.Context, cfg config.Redis, log *slog.Logger) (*Redis, erro
 		return nil, err
 	}
 
-	// The cache logs outages once (failed), so go-redis's per-dial lines go to
-	// debug.
 	redis.SetLogger(quiet{log: log})
 
 	return &Redis{Cache: cacheDB, Sessions: sessionDB}, nil
 }
 
-// open connects to one database.
 func open(ctx context.Context, cfg config.Redis, name string, number int, log *slog.Logger) (*Cache, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr(),
@@ -214,8 +189,6 @@ func open(ctx context.Context, cfg config.Redis, name string, number int, log *s
 	return &Cache{client: client, prefix: cfg.Prefix, name: name, number: number, log: log.With("redis", name)}, nil
 }
 
-// Name is which of the two databases this is: CacheDatabase or
-// SessionDatabase.
 func (c *Cache) Name() string {
 	if c == nil {
 		return ""
@@ -223,7 +196,6 @@ func (c *Cache) Name() string {
 	return c.name
 }
 
-// Number is the Redis database number.
 func (c *Cache) Number() int {
 	if c == nil {
 		return 0
@@ -231,7 +203,6 @@ func (c *Cache) Number() int {
 	return c.number
 }
 
-// Close shuts the connection pool down.
 func (c *Cache) Close() error {
 	if c == nil {
 		return nil
@@ -240,7 +211,6 @@ func (c *Cache) Close() error {
 	return c.client.Close()
 }
 
-// key is a key under this server's prefix: its parts joined with colons.
 func (c *Cache) key(parts ...string) string {
 	return c.prefix + strings.Join(parts, ":")
 }

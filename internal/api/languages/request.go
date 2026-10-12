@@ -23,8 +23,6 @@ var (
 )
 
 func init() {
-	// The code is a language tag, as the model holds it to — said as a rule
-	// here so a wrong one is refused with a sentence the panel can translate.
 	validate.Register("languagetag", func(value string) bool {
 		return (model.Language{Code: value, Name: "-", NativeName: "-"}).Validate() == nil
 	})

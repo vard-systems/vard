@@ -37,8 +37,6 @@ redis.call('PEXPIRE', KEYS[1], math.ceil(burst / rate * 1000))
 return {allowed, wait}
 `)
 
-// Take spends a token from `bucket`, allowing `perMinute` a minute with the
-// whole minute available at once. An error means Redis did not answer.
 func (c *Cache) Take(ctx context.Context, bucket string, perMinute int) (bool, time.Duration, error) {
 	if !c.available() {
 		return false, 0, errUnavailable

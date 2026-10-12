@@ -1,5 +1,3 @@
-// Package activity answers the endpoints that report on what has been
-// happening: the dashboard's overview, and the log of what administrators did.
 package activity
 
 import (
@@ -19,27 +17,20 @@ import (
 	"loginer/internal/store"
 )
 
-// How much the endpoints return.
 const (
-	// dashboardEntries is how many of the latest entries the dashboard lists.
 	dashboardEntries = 12
-	// topActors is how many of the busiest administrators are named.
-	topActors = 5
-	// defaultDays is the dashboard's range when it asks for none.
-	defaultDays = 14
+	topActors        = 5
+	defaultDays      = 14
 
 	defaultLimit = 50
 	maxLimit     = 200
 
-	// Exports are capped; full history is a job for database tools.
 	exportLimit = 10000
 	exportPage  = 500
 )
 
-// ranges are the dashboard's allowed spans in days.
 var ranges = map[int]bool{7: true, 14: true, 30: true, 90: true}
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	log   *slog.Logger
@@ -145,7 +136,6 @@ func (h *Handler) Export(c *gin.Context) {
 	for written := 0; written < exportLimit; {
 		events, next, err := h.store.AuditQuery(c.Request.Context(), filter)
 		if err != nil {
-			// The header is sent; the file ends here, and the log says why.
 			h.log.Error("exporting logs failed", "error", err)
 			break
 		}
@@ -196,8 +186,6 @@ func csvSafe(row []string) []string {
 	return row
 }
 
-// describe turns entries into what the panel shows, naming targets the
-// administrator may see.
 func (h *Handler) describe(c *gin.Context, events []model.AuditLog) ([]eventResponse, error) {
 	ids := map[string][]string{}
 	for _, event := range events {
@@ -272,16 +260,12 @@ func maySeeName(c *gin.Context, targetType string, name store.TargetName) bool {
 	}
 }
 
-// detail is what an entry's metadata adds that is worth a line: why a sign-in
-// was refused, or which API an application gained or lost.
 func detail(c *gin.Context, event model.AuditLog) string {
 	text := func(key string) string {
 		value, _ := event.Metadata[key].(string)
 		return value
 	}
 
-	// A list comes back from the log as JSON did: whatever was stored, in
-	// whatever type it decoded to.
 	list := func(key string) string {
 		values, _ := event.Metadata[key].([]any)
 
@@ -303,18 +287,14 @@ func detail(c *gin.Context, event model.AuditLog) string {
 			return text("api")
 		}
 	case "organization.updated":
-		// Which settings moved, for whoever may see them at all.
 		if admin := session.Admin(c); admin != nil && admin.HasPermission(model.PermOrganizationRead) {
 			return list("fields")
 		}
 	case "sso_connection.sign_in_failed":
-		// What the provider said, which is how a connection being set up
-		// gets fixed — for whoever may read the connections.
 		if admin := session.Admin(c); admin != nil && admin.HasPermission(model.PermSSORead) {
 			return text("step") + ": " + text("reason")
 		}
 	case "language.translated":
-		// Which of the two apps the text was for.
 		if admin := session.Admin(c); admin != nil && admin.HasPermission(model.PermLanguagesRead) {
 			return text("app")
 		}

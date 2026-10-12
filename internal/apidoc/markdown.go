@@ -14,19 +14,13 @@ import (
 	"loginer/internal/model"
 )
 
-// Pages are Markdown in the docs app's dialect: `{#id}` fixes an anchor, and a
-// heading starting with an HTTP method is an endpoint.
-
-// page is a Markdown file under the docs app's content/reference.
 type page struct {
 	path        string
 	title       string
 	description string
 	order       int
-	// icon is a Remix Icon name the docs' sidebar draws beside the page;
-	// pages under a branch have none.
-	icon string
-	body strings.Builder
+	icon        string
+	body        strings.Builder
 }
 
 func (p *page) line(format string, args ...any) {
@@ -57,7 +51,6 @@ func quote(s string) string {
 	return string(b)
 }
 
-// markdown is every reference page.
 func (b *built) markdown() []*page {
 	var pages []*page
 
@@ -149,8 +142,6 @@ func (b *built) sectionPage(server Server, section Section, order int) *page {
 	return p
 }
 
-// operationMarkdown writes an endpoint in reading order: purpose, example,
-// parameters, responses.
 func (b *built) operationMarkdown(p *page, server Server, section Section, op Operation) {
 	p.line("## %s %s {#%s}", op.Method, op.Path, anchor(op))
 	p.line("")
@@ -227,8 +218,6 @@ func (b *built) operationMarkdown(p *page, server Server, section Section, op Op
 	}
 }
 
-// responseMarkdown says what comes back: the successful answer with an
-// example, a redirect, or no body; an OAuth endpoint's errors are one line.
 func (b *built) responseMarkdown(p *page, op Operation) {
 	if len(op.Responses) == 0 {
 		return
@@ -247,8 +236,6 @@ func (b *built) responseMarkdown(p *page, op Operation) {
 		}
 		p.line("")
 
-		// A map of anything — the claims userinfo answers with, say — has
-		// no shape to show; the guides say what is in it.
 		shaped := r.Schema != nil && (len(r.Schema.resolved().Properties) > 0 || r.Schema.Type == "array")
 		if shaped && r.Status != 0 && r.ContentType == "application/json" {
 			p.line("```json")
@@ -259,7 +246,6 @@ func (b *built) responseMarkdown(p *page, op Operation) {
 	}
 }
 
-// access says who may call an operation, in a few words.
 func access(op Operation) string {
 	a := op.Access
 	switch a.Session {
@@ -303,8 +289,6 @@ func access(op Operation) string {
 	return "None"
 }
 
-// accountScope is the account API scope a token needs for an operation:
-// account.read to read, account.write to change anything.
 func accountScope(op Operation) string {
 	if op.Method == http.MethodGet {
 		return model.ScopeAccountRead
@@ -312,8 +296,6 @@ func accountScope(op Operation) string {
 	return model.ScopeAccountWrite
 }
 
-// fieldTable lists an object's fields, and the fields of the objects inside
-// it, a level or two down.
 func fieldTable(p *page, schema *Schema) {
 	p.line("| Field | Type | Description |")
 	p.line("| --- | --- | --- |")
@@ -349,7 +331,6 @@ func fieldRows(p *page, schema *Schema, prefix string, depth int) {
 	}
 }
 
-// typeOf says a schema's type the way the tables do.
 func typeOf(s *Schema) string {
 	if s == nil {
 		return "any"
@@ -383,15 +364,11 @@ func typeOf(s *Schema) string {
 	return out
 }
 
-// exampleJSON is a value of the schema's shape, filled with values that
-// look like what the field holds.
 func exampleJSON(s *Schema) string {
 	out, _ := json.MarshalIndent(example(s, "", 0, false), "", "  ")
 	return string(out)
 }
 
-// maxExampleDepth is how deep an example object nests before inner objects are
-// shown empty.
 const maxExampleDepth = 4
 
 func example(s *Schema, name string, depth int, request bool) any {
@@ -489,8 +466,6 @@ func exampleString(s *Schema, name string) string {
 	return "string"
 }
 
-// orderedObject marshals its fields in the order the struct declares them,
-// which is the order a reader expects.
 type orderedObject []field
 
 type field struct {
@@ -581,8 +556,6 @@ func (b *built) errorsPage() *page {
 	return p
 }
 
-// oauthCodes are the oidc package's Err constants: the OAuth error codes
-// the provider answers with.
 func (b *built) oauthCodes() []string {
 	pkg, err := b.loader.suffixed("/internal/oidc")
 	if err != nil {
@@ -657,7 +630,6 @@ func (b *built) permissionsPage() *page {
 	return p
 }
 
-// cell makes text safe in a table cell: one line, no bare pipes.
 func cell(text string) string {
 	text = strings.Join(strings.Fields(text), " ")
 	return strings.ReplaceAll(text, "|", "\\|")

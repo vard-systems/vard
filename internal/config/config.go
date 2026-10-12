@@ -1,4 +1,3 @@
-// Package config reads the settings in .env.
 package config
 
 import (
@@ -14,28 +13,17 @@ import (
 	"loginer/internal/brand"
 )
 
-// Config is every setting the server has. The first administrator is made in
-// the panel, so no password is ever written in a file.
 type Config struct {
-	// Addr is the public listener: the provider and the account API, meant to
-	// face the internet behind a proxy.
 	Addr string
 
 	// AdminAddr is the admin API's own listener, so it is never on the public
 	// one. Keep it on an internal interface.
 	AdminAddr string
 
-	// Issuer is this server's public URL: the iss of every token and the base
-	// of the discovery document. In the recommended setup it is the id app's
-	// origin, which the proxy routes /oauth2 and /.well-known from.
 	Issuer string
 
-	// AccountURL is where the id app (sign-in and account pages) is served. It
-	// defaults to the issuer.
 	AccountURL string
 
-	// AdminURL is where the console is served. Only requests from its origin
-	// may change anything through the admin API.
 	AdminURL string
 
 	// CORSOrigins are extra origins allowed to call cookie-authenticated APIs
@@ -43,25 +31,15 @@ type Config struct {
 	// signed-in user.
 	CORSOrigins []string
 
-	// SecureUserCookies and SecureAdminCookies follow the scheme of AccountURL
-	// and AdminURL; LOGINER_SECURE_COOKIES overrides both.
 	SecureUserCookies  bool
 	SecureAdminCookies bool
 
-	// KeyRotation is how long a token signing key signs before the next one
-	// takes over. Zero never rotates on its own.
 	KeyRotation time.Duration
 
-	// AuditRetention is how long activity log entries are kept; zero keeps them
-	// forever.
 	AuditRetention time.Duration
 
-	// AdminMFARequired seeds whether administrators need a second factor on a
-	// fresh installation; afterwards the setting lives in the database.
 	AdminMFARequired bool
 
-	// RateLimit is attempts per minute per address at the password and email
-	// endpoints; zero disables it.
 	RateLimit int
 
 	// TrustedProxies are the proxies whose X-Forwarded-For is believed. Empty
@@ -80,8 +58,6 @@ type Config struct {
 	Redis Redis
 }
 
-// Origin is the scheme and host of a URL, which is what a browser sends in
-// the Origin header.
 func Origin(raw string) string {
 	parsed, err := url.Parse(raw)
 	if err != nil {
@@ -91,13 +67,8 @@ func Origin(raw string) string {
 	return parsed.Scheme + "://" + parsed.Host
 }
 
-// minSecretKeyLength is the shortest secret key accepted: 32 characters, which
-// `openssl rand -base64 32` comfortably exceeds.
 const minSecretKeyLength = 32
 
-// SecretKeyLooksWeak reports whether the key does not look like 32 random
-// bytes. It only warns: sealed secrets are as hard to recover from a database
-// dump as the key is to guess.
 func SecretKeyLooksWeak(key string) bool {
 	distinct := map[rune]struct{}{}
 	for _, r := range key {
@@ -107,7 +78,6 @@ func SecretKeyLooksWeak(key string) bool {
 	return len(key) < 43 || len(distinct) < 16
 }
 
-// Mail is how email is sent. With no host, messages are logged instead.
 type Mail struct {
 	Host     string
 	Port     int
@@ -116,7 +86,6 @@ type Mail struct {
 	From     string
 }
 
-// DB is the database connection and migration settings.
 type DB struct {
 	Driver     string
 	DSN        string
@@ -125,44 +94,31 @@ type DB struct {
 	Migrate    bool
 	MigrateDir string
 
-	// MaxConns caps connections per process; all processes together must stay
-	// under Postgres's own limit.
 	MaxConns int
 }
 
-// Redis is the cache and session databases on one server (see package cache).
-// With no host there is no Redis, and each process counts rate limits on its
-// own.
 type Redis struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	// CacheDB and SessionDB are the two database numbers, 0 to 15 on a
-	// default server. They have to differ.
+	Host      string
+	Port      int
+	Username  string
+	Password  string
 	CacheDB   int
 	SessionDB int
-	// Prefix starts every key this server writes, so one Redis can serve
-	// several installations without their keys meeting.
-	Prefix string
+	Prefix    string
 }
 
-// Enabled reports whether a Redis was configured at all.
 func (r Redis) Enabled() bool {
 	return r.Host != ""
 }
 
-// Addr is host:port, as the client dials it.
 func (r Redis) Addr() string {
 	return fmt.Sprintf("%s:%d", r.Host, r.Port)
 }
 
-// env spells a setting's variable with the project prefix from brand.
 func env(setting string) string {
 	return brand.EnvPrefix + setting
 }
 
-// read loads .env, then the environment, which wins. A missing .env is fine.
 func read() (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigFile(".env")
@@ -176,7 +132,6 @@ func read() (*viper.Viper, error) {
 	return v, nil
 }
 
-// Load reads every setting the server needs.
 func Load() (Config, error) {
 	v, err := read()
 	if err != nil {
@@ -193,8 +148,6 @@ func Load() (Config, error) {
 	v.SetDefault(env("ADMIN_MFA"), "optional")
 	v.SetDefault(env("KEY_ROTATION_DAYS"), 90)
 	v.SetDefault(env("AUDIT_RETENTION_DAYS"), 365)
-	// In development the id app serves the provider on its origin through
-	// Vite's proxy, as the reverse proxy does in production.
 	v.SetDefault(env("ISSUER"), "http://localhost:5173")
 	v.SetDefault(env("ADMIN_URL"), "http://localhost:5174")
 	v.SetDefault(env("SMTP_PORT"), 587)
@@ -331,7 +284,6 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-// splitList reads "a,b,c" into a slice.
 func splitList(s string) []string {
 	var out []string
 	for _, part := range strings.Split(s, ",") {

@@ -1,5 +1,3 @@
-// Package apis manages resource servers: the services tokens are issued for,
-// each with an audience and scopes.
 package apis
 
 import (
@@ -18,13 +16,11 @@ import (
 	"loginer/internal/store"
 )
 
-// Handler holds what these endpoints need.
 type Handler struct {
 	store *store.Store
 	audit audit.Recorder
 	log   *slog.Logger
 
-	// issuer is the provider's: the iss its tokens carry.
 	issuer string
 }
 
@@ -130,7 +126,6 @@ func (h *Handler) Update(c *gin.Context) {
 	h.answer(c, http.StatusOK, api.ID)
 }
 
-// systemAPI is the answer to deleting an API this server is itself.
 var systemAPI = respond.Define(http.StatusConflict, "system_api", respond.Admin)
 
 // Delete removes an API with its scopes, application authorisations and role
@@ -156,7 +151,6 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// answer writes an API as stored, read back so new scopes carry their ids.
 func (h *Handler) answer(c *gin.Context, status int, id uuid.UUID) {
 	api, err := h.store.API(c.Request.Context(), id)
 	if err != nil {
@@ -201,8 +195,6 @@ func (h *Handler) Logs(c *gin.Context) {
 	c.JSON(http.StatusOK, newLogResponse(events))
 }
 
-// details reads the counts and server address every API response carries. A
-// failed count fails a list but not a completed write.
 func (h *Handler) details(c *gin.Context) (apiDetails, error) {
 	ctx := c.Request.Context()
 
@@ -224,8 +216,6 @@ func (h *Handler) details(c *gin.Context) (apiDetails, error) {
 	}, nil
 }
 
-// withCount builds the response for one API with its counts. A count that
-// cannot be read is not worth failing the request for.
 func (h *Handler) withCount(c *gin.Context, api *model.API) apiResponse {
 	details, err := h.details(c)
 	if err != nil {
@@ -236,8 +226,6 @@ func (h *Handler) withCount(c *gin.Context, api *model.API) apiResponse {
 	return newAPIResponse(*api, details)
 }
 
-// find loads the API named in the path, answering the request itself if there
-// is no such API.
 func (h *Handler) find(c *gin.Context) (*model.API, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -259,8 +247,6 @@ func (h *Handler) find(c *gin.Context) (*model.API, bool) {
 	return api, true
 }
 
-// respondWrite turns a failed write into an answer, telling a taken identifier
-// apart from anything else because that one is the writer's to fix.
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
 		respond.Conflict(c, "an API with that identifier already exists")

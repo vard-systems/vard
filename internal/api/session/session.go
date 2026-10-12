@@ -1,5 +1,3 @@
-// Package session handles who is signed in over HTTP: the cookie, the guards on
-// admin routes, and how handlers ask who is calling.
 package session
 
 import (
@@ -22,8 +20,6 @@ import (
 // cannot read it.
 const Cookie = brand.AdminSessionCookie
 
-// The Gin context keys the signed-in administrator, and the session the
-// request came with, are stored under.
 const (
 	key        = "admin"
 	sessionKey = "session_id"
@@ -72,8 +68,6 @@ func Require(service *auth.Service) gin.HandlerFunc {
 	}
 }
 
-// tokenRefused is an access token the admin API will not take: see
-// oidc.AdminCaller for why one is refused.
 var tokenRefused = respond.Define(http.StatusUnauthorized, "token_refused", respond.Admin)
 
 // RequireAny accepts an administrator's session cookie or an admin API access
@@ -207,8 +201,6 @@ func Reach(c *gin.Context, permission string) []uuid.UUID {
 	return ids
 }
 
-// superAdminOnly is what an administrator who is not a super admin is told
-// by the routes that are a super admin's alone.
 var superAdminOnly = respond.Define(http.StatusForbidden, "super_admin_only", respond.Admin)
 
 // RequireSuperAdmin refuses the request unless the signed-in administrator is

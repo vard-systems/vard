@@ -8,12 +8,7 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo copies the request onto the organisation using the model's rules and
-// returns the changed settings for the activity log. Nothing is saved if any
-// rule fails.
 func (r *organizationRequest) applyTo(organization *model.Organization) ([]string, error) {
-	// A short name is compared rather than read, so it is stored lower case:
-	// the panel should not hold two spellings of one identifier.
 	updated := *organization
 	updated.Name = validate.Text(r.Name, organization.Name)
 	updated.Slug = validate.Lower(r.Slug, organization.Slug)

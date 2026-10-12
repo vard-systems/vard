@@ -12,9 +12,6 @@ import (
 	"loginer/internal/model"
 )
 
-// applyTo checks each field's shape and copies the request onto an application;
-// how fields relate is the model's to check. The type is taken from the request
-// only when `creating`.
 func (r *applicationRequest) applyTo(app *model.Application, creating bool) error {
 	r.clean()
 
@@ -50,9 +47,6 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 	app.IsEnabled = validate.Flag(r.IsEnabled, app.IsEnabled)
 	app.AllowRegistration = validate.Flag(r.AllowRegistration, app.AllowRegistration)
 
-	// The flow is set by id, cleared by "", and left alone when absent. A
-	// removed or disabled flow falls back to the default, so only a malformed
-	// id is refused.
 	if r.LoginFlowID != nil {
 		flow, err := flowID(*r.LoginFlowID)
 		if err != nil {
@@ -64,8 +58,6 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 
 	app.Normalise()
 
-	// A client moving from one secret method to the other keeps its secret;
-	// one that has no secret method any more loses it.
 	if !app.HasSecret() {
 		app.ClientSecretHash = ""
 		app.SecretHint = ""
@@ -83,8 +75,6 @@ func badRequest(message string) error {
 	return respond.Fault{Status: http.StatusBadRequest, Message: message}
 }
 
-// flowID reads the login flow an application was pointed at: nil for the
-// empty string, which is how an application is put back on the default.
 func flowID(sent string) (*uuid.UUID, error) {
 	trimmed := strings.TrimSpace(sent)
 	if trimmed == "" {
