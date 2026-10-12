@@ -4,9 +4,7 @@
 	type Props = Omit<HTMLInputAttributes, 'value'> & {
 		label: string;
 		value: string;
-		/** A line under the field, for what someone needs to know. */
 		hint?: string;
-		/** A line under the field, for what went wrong. Replaces the hint. */
 		error?: string;
 	};
 

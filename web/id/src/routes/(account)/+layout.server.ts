@@ -2,10 +2,6 @@ import { signIn, type LoginOptions } from '$lib/api';
 import { requireUser } from '$lib/server/session';
 import type { LayoutServerLoad } from './$types';
 
-/**
- * Account pages need a signed-in user; anyone else signs in first and returns. The default
- * flow's options (e.g. changing address) and the organisation's timezone come along.
- */
 export const load: LayoutServerLoad = async ({ cookies, fetch, url, setHeaders }) => {
 	setHeaders({ 'cache-control': 'private, no-store' });
 

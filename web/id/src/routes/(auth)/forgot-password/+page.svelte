@@ -10,8 +10,6 @@
 	const t = useTranslator();
 
 	const app = $derived(data.signInRequest?.application ?? null);
-	// An expired handle is not passed on: the emailed link would lead back to
-	// the same dead end.
 	const request = $derived(data.signInRequest ? data.request : null);
 
 	// svelte-ignore state_referenced_locally
@@ -30,7 +28,6 @@
 		submitting = true;
 
 		try {
-			// The email is written in the language this page is in.
 			await signIn.forgotPassword({
 				request: request ?? '',
 				email: email.trim(),
@@ -38,8 +35,6 @@
 			});
 			sentTo = email.trim();
 		} catch (err) {
-			// A domain that signs in through its organisation's provider makes
-			// its account and keeps its password there: go there instead.
 			const sso = requiredSSO(err);
 			if (sso) {
 				leaveTo(ssoHref(sso.slug, { request: data.request, email: email.trim() }));

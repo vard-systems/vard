@@ -9,8 +9,6 @@
 
 	let { name = '', logo = '', size = 56 }: Props = $props();
 
-	// A logo that fails to load falls back to the initial rather than leaving a
-	// broken image at the top of the page.
 	let failed = $state(false);
 
 	const initial = $derived(name.trim().charAt(0).toUpperCase());

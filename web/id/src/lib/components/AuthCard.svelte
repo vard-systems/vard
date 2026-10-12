@@ -6,17 +6,11 @@
 	import AppMark from './AppMark.svelte';
 
 	type Props = {
-		/** The application being signed in to. Without one the page speaks for
-		    the account itself: a reset link opened on its own, an error. */
 		application?: Application | null;
-		/** The organisation the server signs users in for, whose name stands
-		    in where there is no application and whose agreements are linked
-		    where the application publishes none. */
 		organization?: Organization | null;
 		title: string;
 		subtitle?: string;
 		children: Snippet;
-		/** A line under the card, such as "Don't have an account?". */
 		below?: Snippet;
 	};
 
@@ -54,8 +48,6 @@
 {#if legal.length > 0}
 	<nav class="legal" aria-label={t('legal.label')}>
 		{#each legal as link (link.key)}
-			<!-- The application's own pages, or the organisation's, on their
-			     own sites. -->
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 			<a href={link.href} target="_blank" rel="noopener noreferrer">{t(link.key)}</a>
 		{/each}
@@ -121,7 +113,6 @@
 		color: var(--color-text);
 	}
 
-	/* On a phone the card is the page: no frame, the form gets the width. */
 	@media (max-width: 30rem) {
 		.card {
 			padding: var(--space-2) 0 0;

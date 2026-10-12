@@ -2,8 +2,6 @@ import { error } from '@sveltejs/kit';
 import { ApiError, signIn } from '$lib/api';
 import type { PageServerLoad } from './$types';
 
-/** Whether the link still works, so the page can say so before someone types a
-    new password into a form that would only refuse it. */
 export const load: PageServerLoad = async ({ url, fetch }) => {
 	const token = url.searchParams.get('token') ?? '';
 	const temporary = url.searchParams.get('reason') === 'temporary';

@@ -1,14 +1,3 @@
-/**
- * Toasts for actions on the account pages, drawn by <Toaster /> in the root layout. Callers
- * pass already translated text.
- *
- *     notify.success(t('profile.saved'));
- *     notify.error(messageOf(err, t));
- *
- * Errors about the one form on a sign-in page stay beside that form. Written in-house to keep
- * the app dependent on Svelte alone.
- */
-
 export type ToastTone = 'success' | 'danger';
 
 export type Toast = {
@@ -18,15 +7,11 @@ export type Toast = {
 	description?: string;
 };
 
-/** How long a toast stays, in milliseconds. An error stays longer: it may
-    need reading twice, and acting on. */
 const DURATION: Record<ToastTone, number> = { success: 5000, danger: 8000 };
 
-/** No more than this many at once; the oldest goes first. */
 const MAX = 3;
 
 let next = 0;
-/** Each toast's timer. Bookkeeping, never rendered, so not reactive. */
 type Timer = { left: number; started: number; handle?: ReturnType<typeof setTimeout> };
 const timers: Record<number, Timer> = {};
 
@@ -54,8 +39,6 @@ export function dismiss(id: number) {
 	if (index >= 0) toasts.splice(index, 1);
 }
 
-/** Holds a toast while it is pointed at or focused: nobody loses a message
-    while reading it. */
 export function pause(id: number) {
 	const timer = timers[id];
 	if (!timer?.handle) return;

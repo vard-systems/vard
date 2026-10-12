@@ -5,10 +5,6 @@
 
 	const t = useTranslator();
 
-	/**
-	 * Toggles the theme and stores it in a cookie the server reads. CSS picks the icon from
-	 * data-theme, so hydration changes nothing.
-	 */
 	function toggle() {
 		const root = document.documentElement;
 		const current =

@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { ApiError } from '$lib/api/client';
 import { chooseLanguage, messageOf, translator } from './index';
 
-/** What these tests stand on: an installation offering en, de and ru. */
 const offered = ['en', 'de', 'ru'];
 
 describe('chooseLanguage', () => {
@@ -56,7 +55,6 @@ describe('translator', () => {
 	});
 
 	it('falls back to the base language this app was built with', () => {
-		// What happens when the server could not be asked for any text.
 		expect(t({})('action.sign_in')).toBe('Sign in');
 	});
 
@@ -88,7 +86,6 @@ describe('translator', () => {
 });
 
 describe('messageOf', () => {
-	/** Russian, as far as these tests need it. */
 	const t = translator(
 		() => ({
 			'error.invalid_credentials': 'Неверный адрес почты или пароль.',

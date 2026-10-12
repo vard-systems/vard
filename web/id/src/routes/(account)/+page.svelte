@@ -19,10 +19,6 @@
 	let lastName = $state(data.user.last_name);
 	let saving = $state(false);
 
-	/** Changing the address somebody signs in with, where the login flow
-	    allows it. It is not part of the form above: the name is saved, while
-	    the address is only asked for — a link goes to it, and the account
-	    moves when that link is opened. */
 	const mayChangeEmail = $derived(data.login?.allow_email_change ?? false);
 
 	let changingEmail = $state(false);
@@ -214,8 +210,6 @@
 </div>
 
 <style>
-	/* The buttons that go with the address: at the end of the row, apart from
-	   the form's own footer, because this is not saved with the name. */
 	.email-actions {
 		display: flex;
 		justify-content: flex-end;

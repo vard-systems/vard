@@ -1,12 +1,5 @@
 import type { Translate } from '$lib/i18n';
 
-// Dates and times are said in the page's language by the browser's own Intl,
-// which knows every language's words and grammar for them — the language is
-// the translator's and the zone the organisation's, so the server's first
-// render and the browser agree on both the words and the day.
-
-/** A date as a person reads it, on the organisation's calendar: "Sep 15,
-    2026", "15 сент. 2026 г.". */
 export function formatDate(
 	value: string | null | undefined,
 	t: Translate,
@@ -29,7 +22,6 @@ const units: [number, Intl.RelativeTimeFormatUnit][] = [
 	[60, 'minute']
 ];
 
-/** How long ago something was: "now", "5 minutes ago", "3 дня назад". */
 export function timeAgo(value: string, t: Translate, now = Date.now()): string {
 	const seconds = Math.max(0, Math.round((now - new Date(value).getTime()) / 1000));
 	const format = new Intl.RelativeTimeFormat(t.language, { numeric: 'auto' });
@@ -42,8 +34,6 @@ export function timeAgo(value: string, t: Translate, now = Date.now()): string {
 	return format.format(0, 'second');
 }
 
-/** A user agent as a person would name the device: "Chrome on macOS". The
-    browsers and systems are names, and read the same in every language. */
 export function describeDevice(userAgent: string, t: Translate): string {
 	const ua = userAgent || '';
 
@@ -69,7 +59,6 @@ export function describeDevice(userAgent: string, t: Translate): string {
 	return t('device.on', { browser: String(browser), system: String(system) });
 }
 
-/** The initials of a user for an avatar: "AL", or the email's first letter. */
 export function initials(user: { first_name: string; last_name: string; email: string }): string {
 	const letters = `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.trim();
 	return (letters || user.email.charAt(0)).toUpperCase();

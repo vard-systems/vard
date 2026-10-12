@@ -3,10 +3,6 @@ import { currentUser } from '$lib/server/session';
 import { safeNext } from '$lib/utils/next';
 import type { PageServerLoad } from './$types';
 
-/**
- * A signed-in user opening the sign-in page directly goes to their account. With a sign-in
- * under way the page shows anyway (the application may have sent prompt=login).
- */
 export const load: PageServerLoad = async ({ url, cookies, fetch }) => {
 	const next = safeNext(url.searchParams.get('next'));
 

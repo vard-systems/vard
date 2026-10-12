@@ -18,14 +18,9 @@
 		(page.url.searchParams.get('error_description') ?? '').slice(0, 200)
 	);
 
-	/** A failed sign-in elsewhere names its reason with the same code the API
-	    answers with, so it is said the same way, in the reader's language. */
 	const reason = $derived(page.url.searchParams.get('reason') ?? '');
 	const said = $derived(reason !== '' && t.has(`error.${reason}`));
 
-	/** Otherwise the code is the authorization endpoint's own, meant for
-	    developers: a sentence for the ones a person can do something about,
-	    and what the server said kept underneath for whoever has to debug it. */
 	const explanation = $derived.by(() => {
 		if (said) return t(`error.${reason}`);
 

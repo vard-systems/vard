@@ -1,15 +1,7 @@
 import type { Application, Organization } from '$lib/api';
 
-/** One agreement a page links to. The label is a message key rather than
-    text: which document it is does not change with the language, and the page
-    drawing it has the translator. A list of them is keyed by `key`, never
-    `href`: an organisation may publish its terms and its policy as one page. */
 export type LegalLink = { key: string; href: string };
 
-/**
- * Terms and privacy links: the application's own where it has them, the organisation's
- * otherwise, each independently. Unpublished links are not shown.
- */
 export function legalLinks(
 	application: Application | null | undefined,
 	organization: Organization | null | undefined
@@ -23,12 +15,8 @@ export function legalLinks(
 	].filter((link) => link !== null);
 }
 
-/** One way to reach the organisation for help: the address or the number
-    itself is the label, so it is not translated. */
 export type SupportLink = { label: string; href: string };
 
-/** How to reach the organisation for help, as the page foot lists it: an
-    address to write to and a number to ring, whichever of them is published. */
 export function supportLinks(organization: Organization | null | undefined): SupportLink[] {
 	return [
 		organization?.support_email
@@ -37,7 +25,6 @@ export function supportLinks(organization: Organization | null | undefined): Sup
 		organization?.support_phone
 			? {
 					label: organization.support_phone,
-					// A dialled number carries no spaces or brackets.
 					href: `tel:${organization.support_phone.replace(/[^+0-9]/g, '')}`
 				}
 			: null

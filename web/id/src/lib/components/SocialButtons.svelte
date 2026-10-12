@@ -3,14 +3,9 @@
 	import Icon, { type IconName } from './Icon.svelte';
 
 	type Props = {
-		/** The providers to offer, in the order the panel put them. */
 		providers: SocialProvider[];
-		/** The sign-in under way, so the provider can send the person back to
-		    the application that asked for it. */
 		request?: string | null;
-		/** Where to land when there is no application waiting. */
 		next?: string | null;
-		/** What the buttons sit under: "or continue with" on a sign-in page. */
 		label?: string;
 		disabled?: boolean;
 	};
@@ -23,7 +18,6 @@
 		disabled = false
 	}: Props = $props();
 
-	/** The mark each kind is known by, where this app has one. */
 	const marks: Record<string, IconName> = {
 		google: 'google',
 		apple: 'apple',
@@ -31,9 +25,6 @@
 		vk: 'vk'
 	};
 
-	/** Where the button goes: the server's own address, which sends the
-	    browser on to the provider. It is a link rather than a form because
-	    that is what it is — leaving this site for another. */
 	function href(slug: string): string {
 		const query = [
 			request ? `request=${encodeURIComponent(request)}` : '',
@@ -75,7 +66,6 @@
 		margin-top: var(--space-5);
 	}
 
-	/* A rule with the label sitting in it. */
 	.divider {
 		display: flex;
 		align-items: center;
@@ -92,7 +82,6 @@
 		content: '';
 	}
 
-	/* Two to a row, and one across the width when it is on its own. */
 	.buttons {
 		display: grid;
 		grid-template-columns: 1fr 1fr;

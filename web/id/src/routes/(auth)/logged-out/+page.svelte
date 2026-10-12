@@ -20,7 +20,6 @@
 
 	{#if app?.website_url}
 		<div class="action">
-			<!-- The application's own site. -->
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 			<a class="primary" href={app.website_url}>{t('logged_out.return', { app: app.name })}</a>
 		</div>

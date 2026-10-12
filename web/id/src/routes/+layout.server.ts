@@ -5,15 +5,6 @@ import { BASE, chooseLanguage, type Messages } from '$lib/i18n';
 import { safeNext } from '$lib/utils/next';
 import type { LayoutServerLoad } from './$types';
 
-/**
- * Resolves the page language, its text and the languages to switch to, on the server so the
- * first response is already translated. Text comes from the API, so languages edited in the
- * panel apply on the next page.
- *
- * Switching sets a cookie and invalidates LANGUAGE_DEPENDENCY; `?lang=` does the same without
- * JavaScript and then redirects away so shared links do not carry it. Failures fall back to the
- * built-in base language.
- */
 export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, request, url }) => {
 	depends(LANGUAGE_DEPENDENCY);
 
@@ -33,8 +24,6 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 	if (asked !== undefined) {
 		cookies.set(COOKIES.language, language, {
 			path: '/',
-			// The page reads it while rendering on the server, and the picker
-			// writes it from the browser; it is a preference, not a secret.
 			httpOnly: false,
 			sameSite: 'lax',
 			maxAge: 60 * 60 * 24 * 365
@@ -57,8 +46,6 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 				.catch(() => ({}))
 		: {};
 
-	// hooks.server.ts writes this into <html lang> once the page is rendered,
-	// so the first byte names the language the page is actually in.
 	locals.language = language;
 
 	return { language, languages: offered.languages, messages };

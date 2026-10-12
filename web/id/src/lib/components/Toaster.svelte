@@ -1,10 +1,3 @@
-<!--
-	@component
-	Draws the toasts of $lib/toast.svelte.ts as pills centred at the bottom, inverted against the
-	theme. The icon's shape tells success from failure. Mounted once, in the root layout.
-
-	The region is always present and polite; errors are alerts, read at once.
--->
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { useTranslator } from '$lib/i18n';
@@ -15,7 +8,6 @@
 
 	const icons: Record<ToastTone, IconName> = { success: 'success', danger: 'alert' };
 
-	// Arriving from below, unless the reader asked for less motion.
 	const motion =
 		typeof window !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 			? { y: 0, duration: 120 }
@@ -90,7 +82,6 @@
 		color: var(--toast-icon);
 	}
 
-	/* The title, and the detail running on after it. */
 	.message {
 		flex: 1;
 		min-width: 0;

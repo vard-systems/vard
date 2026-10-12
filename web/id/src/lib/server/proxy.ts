@@ -1,10 +1,6 @@
 import { env } from '$env/dynamic/private';
 import type { HandleFetch } from '@sveltejs/kit';
 
-/**
- * The API paths this app serves on its own origin. In the browser the dev
- * server's proxy, or the reverse proxy in production, routes them to the API.
- */
 const API_PATHS = ['/api/v1/account', '/oauth2', '/.well-known'];
 
 /**

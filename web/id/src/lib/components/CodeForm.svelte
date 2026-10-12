@@ -6,12 +6,8 @@
 	import TextField from './TextField.svelte';
 
 	type Props = {
-		/** The sign-in being waited on, as the server described it. */
 		challenge: CodeChallenge;
-		/** The code was right: this is what signing in answered. */
 		onsignedin: (result: SignedIn) => void;
-		/** The sign-in is over — expired, or guessed at too often — so the
-		    page goes back to asking who is signing in. */
 		onexpired: (message: string) => void;
 	};
 
@@ -19,9 +15,6 @@
 
 	const t = useTranslator();
 
-	/** What the page is waiting on now: the challenge it was given, replaced
-	    by the one a resend answers with. Seeded once — the sign-in this form
-	    is for does not change under it. */
 	// svelte-ignore state_referenced_locally
 	let waiting = $state(challenge);
 
@@ -31,8 +24,6 @@
 	let submitting = $state(false);
 	let resending = $state(false);
 
-	/** Seconds until another message may be asked for, counted down here so
-	    the button says when rather than refusing when pressed. */
 	// svelte-ignore state_referenced_locally
 	let countdown = $state(challenge.resend_after);
 
@@ -48,8 +39,6 @@
 
 	const canSubmit = $derived(code.trim() !== '' && !submitting);
 
-	/** The sign-in is over rather than the code being wrong: the page cannot
-	    go on, so it says so and hands back. */
 	function isOver(err: unknown): boolean {
 		return (
 			err instanceof ApiError && (err.code === 'code_expired' || err.code === 'code_attempts_used')
@@ -73,8 +62,6 @@
 			}
 
 			error = messageOf(err, t);
-			// The code that was typed is not the one that was sent, so the
-			// field is cleared for the next try rather than left to be edited.
 			code = '';
 			waiting = { ...waiting, attempts_left: Math.max(waiting.attempts_left - 1, 0) };
 			submitting = false;
@@ -142,8 +129,6 @@
 		gap: var(--space-4);
 	}
 
-	/* The way out of waiting, under the button that finishes it: a link
-	   rather than a second button, so there is one thing to press. */
 	.again {
 		text-align: center;
 	}

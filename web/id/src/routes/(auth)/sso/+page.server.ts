@@ -3,10 +3,6 @@ import { currentUser } from '$lib/server/session';
 import { safeNext } from '$lib/utils/next';
 import type { PageServerLoad } from './$types';
 
-/**
- * Like the sign-in page: a signed-in user with no application waiting goes to their account,
- * and `next` is kept.
- */
 export const load: PageServerLoad = async ({ url, cookies, fetch }) => {
 	const next = safeNext(url.searchParams.get('next'));
 

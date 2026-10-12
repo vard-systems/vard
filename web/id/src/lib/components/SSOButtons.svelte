@@ -5,12 +5,8 @@
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		/** The organisations' identity providers with a button here. */
 		connections: SSOConnection[];
-		/** The sign-in under way, so the provider can send the person back to
-		    the application that asked for it. */
 		request?: string | null;
-		/** Where to land when there is no application waiting. */
 		next?: string | null;
 		disabled?: boolean;
 	};

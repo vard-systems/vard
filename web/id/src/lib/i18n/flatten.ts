@@ -1,14 +1,7 @@
-/** One language's messages, by dotted key: "login.title". */
 export type Messages = Record<string, string>;
 
-/** A translation group as it is written: nested by namespace, text at the leaves. */
 export type Nested = { [key: string]: string | Nested };
 
-/**
- * Flattens a nested translation group into dotted keys (`{"login": {"title": …}}` to
- * "login.title"). Flat or mixed groups read the same; anything that is not text, or a repeated
- * key, gives null.
- */
 export function flatten(file: unknown): Messages | null {
 	if (!isObject(file)) return null;
 
@@ -34,8 +27,6 @@ export function flatten(file: unknown): Messages | null {
 	return walk(file, '') ? out : null;
 }
 
-/** Writes messages back the way the groups are: nested by namespace, keys in
- * the order given. Keys starting with `$` describe the group and stay on top. */
 export function nest(messages: Messages): Nested {
 	const out: Nested = {};
 

@@ -6,10 +6,7 @@
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		/** The languages this installation offers. Fewer than two and the
-		    picker is not drawn: there is nothing to pick. */
 		languages: PublicLanguage[];
-		/** The one being shown. */
 		current: string;
 	};
 
@@ -32,10 +29,6 @@
 		return `${url.pathname}${url.search}`;
 	}
 
-	/** With JavaScript the page is redrawn where it is instead — no reload, so
-	    whatever was typed into a form is still there in the new language. A
-	    click with a modifier is somebody opening a new tab, and is left to the
-	    link. */
 	async function choose(event: MouseEvent, code: string) {
 		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
 			return;
@@ -93,9 +86,6 @@
 			<span class="chevron"><Icon name="chevron" size="1rem" /></span>
 		</summary>
 
-		<!-- Each link is this same page in another language: the path is the
-		     one the router already resolved, with one parameter added, so there
-		     is nothing left for resolve() to do to it. -->
 		<!-- eslint-disable svelte/no-navigation-without-resolve -->
 		<ul class="menu" aria-label={t('shell.language')}>
 			{#each languages as language (language.code)}
@@ -161,8 +151,6 @@
 		outline-offset: 2px;
 	}
 
-	/* While the new text is on its way the control says so, rather than
-	   looking as if the click did nothing. */
 	summary[aria-busy='true'] {
 		opacity: 0.6;
 		cursor: progress;
@@ -244,7 +232,6 @@
 		font-size: var(--text-xs);
 	}
 
-	/* On a phone the globe says enough, and the room is the page's. */
 	@media (max-width: 30rem) {
 		.current {
 			display: none;

@@ -6,7 +6,6 @@
 		variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
 		size?: 'md' | 'sm';
 		loading?: boolean;
-		/** Stretch to the width of the container: the main action of a form. */
 		block?: boolean;
 		children: Snippet;
 	};
