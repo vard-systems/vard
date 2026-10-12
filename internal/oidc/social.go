@@ -25,16 +25,11 @@ import (
 	"loginer/internal/store"
 )
 
-// Social sign-in: this server is the client of Google, Yandex and the rest, and
-// turns their answer into the same session a password starts. The callback path
-// is registered with each provider, so it must never move.
 const (
 	PathSocialStart    = "/oauth2/social/:slug/start"
 	PathSocialCallback = "/oauth2/social/:slug/callback"
 )
 
-// socialTimeout is how long the provider has to answer each of the two
-// requests this server makes to it.
 const socialTimeout = 15 * time.Second
 
 // SocialButton is a provider as a sign-in page shows it.
@@ -44,7 +39,6 @@ type SocialButton struct {
 	Kind string `json:"kind"`
 }
 
-// SocialButtons is what the sign-in pages offer, in the order they are shown.
 func (s *Service) SocialButtons(ctx context.Context) ([]SocialButton, error) {
 	stored, err := s.store.SocialButtons(ctx)
 	if err != nil {
@@ -59,9 +53,6 @@ func (s *Service) SocialButtons(ctx context.Context) ([]SocialButton, error) {
 	return buttons, nil
 }
 
-// StartSocial returns where to send the browser and the state to keep in its
-// cookie (session.SignInStateCookie), so the callback can tell the answer came
-// back to the same browser.
 func (s *Service) StartSocial(ctx context.Context, slug, request, next string) (string, string, error) {
 	provider, err := s.socialProvider(ctx, slug)
 	if err != nil {
@@ -126,21 +117,13 @@ func (s *Service) StartSocial(ctx context.Context, slug, request, next string) (
 	return withQuery(authorize, values), state, nil
 }
 
-// SocialResult is a finished sign-in at a provider: the session it started,
-// and where the person was going when they left.
 type SocialResult struct {
-	SignIn *SignInResult
-	// Request is the sign-in under way to continue, if there was one.
-	Request string
-	// Next is where to send the browser when there is no application waiting.
-	Next string
-	// Provider is the name to say in a message, such as "Signed in with
-	// Google".
+	SignIn   *SignInResult
+	Request  string
+	Next     string
 	Provider string
 }
 
-// CompleteSocial turns the code a provider sent the browser back with into a
-// session. `binding` is what the browser kept from StartSocial.
 func (s *Service) CompleteSocial(ctx context.Context, slug, code, state, binding string, client Client) (*SocialResult, error) {
 	provider, err := s.socialProvider(ctx, slug)
 	if err != nil {
@@ -166,7 +149,6 @@ func (s *Service) CompleteSocial(ctx context.Context, slug, code, state, binding
 		return nil, err
 	}
 
-	// The state was made for a sign-in at this provider and no other.
 	if login.ProviderID != provider.ID {
 		return nil, ErrSocialExpired
 	}
@@ -194,7 +176,6 @@ func (s *Service) CompleteSocial(ctx context.Context, slug, code, state, binding
 	}, nil
 }
 
-// socialProvider is a provider by slug, if it is one users may sign in with.
 func (s *Service) socialProvider(ctx context.Context, slug string) (*model.SocialProvider, error) {
 	provider, err := s.store.SocialProviderBySlug(ctx, slug)
 	switch {
@@ -209,21 +190,17 @@ func (s *Service) socialProvider(ctx context.Context, slug string) (*model.Socia
 	return provider, nil
 }
 
-// challengeFor is the S256 code challenge of a verifier.
 func challengeFor(verifier string) string {
 	sum := sha256.Sum256([]byte(verifier))
 	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
 
-// socialToken is the provider's token response; unknown fields stay in Raw
-// because some providers (VK) put the address there.
 type socialToken struct {
 	AccessToken string
 	IDToken     string
 	Raw         map[string]any
 }
 
-// exchangeSocialCode trades the code for a token, as RFC 6749 section 4.1.3.
 func (s *Service) exchangeSocialCode(ctx context.Context, provider *model.SocialProvider, code, verifier string) (*socialToken, error) {
 	_, tokenURL, _ := provider.Endpoints()
 
@@ -286,8 +263,6 @@ func (s *Service) exchangeSocialCode(ctx context.Context, provider *model.Social
 	return token, nil
 }
 
-// socialClientSecret is what proves this server to the provider: the secret
-// they gave out, or — for Apple — a JWT signed with the key they registered.
 func (s *Service) socialClientSecret(provider *model.SocialProvider) (string, error) {
 	if !provider.Spec().SignedSecret {
 		secret, err := s.sealer.OpenBytes(provider.ClientSecret)
@@ -301,8 +276,6 @@ func (s *Service) socialClientSecret(provider *model.SocialProvider) (string, er
 	return s.appleClientSecret(provider)
 }
 
-// appleClientSecret is the JWT Apple takes in place of a client secret: five
-// minutes long, signed with the .p8 key registered to the team.
 func (s *Service) appleClientSecret(provider *model.SocialProvider) (string, error) {
 	pemBytes, err := s.sealer.OpenBytes(provider.PrivateKey)
 	if err != nil {
@@ -339,7 +312,6 @@ func (s *Service) appleClientSecret(provider *model.SocialProvider) (string, err
 	)
 }
 
-// socialIdentity is who the provider says signed in.
 type socialIdentity struct {
 	Subject       string
 	Email         string
@@ -348,14 +320,10 @@ type socialIdentity struct {
 	LastName      string
 }
 
-// socialIdentity reads the identity out of what the provider answered with:
-// the id_token that came back with the token, or the profile endpoint.
 func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProvider, token *socialToken) (*socialIdentity, error) {
 	spec := provider.Spec()
 	_, _, userInfoURL := provider.Endpoints()
 
-	// A provider with no profile endpoint says everything it is going to say
-	// in the id_token. So does one that has an endpoint we were not given.
 	var claims map[string]any
 	if spec.IdentityInIDToken || userInfoURL == "" {
 		payload, err := s.idTokenClaims(provider, token.IDToken)
@@ -378,8 +346,6 @@ func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProv
 		LastName:  claimString(claims, spec.Claims.LastName),
 	}
 
-	// Some providers send the address with the token (VK), or only ever hand
-	// out verified addresses without saying so.
 	if identity.Email == "" && spec.EmailInTokenResponse {
 		identity.Email = stringClaim(token.Raw, "email")
 	}
@@ -442,7 +408,6 @@ func (s *Service) idTokenClaims(provider *model.SocialProvider, idToken string) 
 	return claims, nil
 }
 
-// fetchSocialProfile reads the profile endpoint with the access token.
 func (s *Service) fetchSocialProfile(ctx context.Context, provider *model.SocialProvider, token *socialToken) (map[string]any, error) {
 	spec := provider.Spec()
 	_, _, userInfoURL := provider.Endpoints()
@@ -451,7 +416,6 @@ func (s *Service) fetchSocialProfile(ctx context.Context, provider *model.Social
 	for key, value := range spec.UserInfoParams {
 		values.Set(key, value)
 	}
-	// An API that reads the token from the query rather than a header.
 	if spec.UserInfoTokenParam != "" {
 		values.Set(spec.UserInfoTokenParam, token.AccessToken)
 	}
@@ -491,8 +455,6 @@ func decodeClaims(payload []byte, claims *map[string]any) error {
 	return decoder.Decode(claims)
 }
 
-// callProvider makes one request to a provider, logging details and returning a
-// single error.
 func (s *Service) callProvider(request *http.Request, provider *model.SocialProvider, what string) ([]byte, error) {
 	client := s.social
 	if client == nil {
@@ -524,8 +486,6 @@ func (s *Service) callProvider(request *http.Request, provider *model.SocialProv
 	return body, nil
 }
 
-// signInWithIdentity signs in the account holding this identity, the one with
-// the same address, or a new one.
 func (s *Service) signInWithIdentity(
 	ctx context.Context,
 	provider *model.SocialProvider,
@@ -547,7 +507,6 @@ func (s *Service) signInWithIdentity(
 		return nil, ErrSignInClosed
 	}
 
-	// Someone who has signed in with this provider before.
 	identity, err := s.store.SocialIdentity(ctx, provider.ID, who.Subject)
 	switch {
 	case err == nil:
@@ -580,7 +539,6 @@ func (s *Service) signInWithIdentity(
 		return nil, ErrSocialNoEmail
 	}
 
-	// SSO-only domains are not linked or registered through a provider either.
 	if err := s.socialSSORequired(ctx, email); err != nil {
 		return nil, err
 	}
@@ -610,8 +568,6 @@ func (s *Service) signInWithIdentity(
 		return nil, err
 	}
 
-	// Nobody yet: make an account, if this provider and this application make
-	// accounts at all.
 	if !provider.AllowRegistration || !flow.AllowRegistration {
 		return nil, ErrSocialRegistrationClosed
 	}
@@ -635,7 +591,6 @@ func (s *Service) signInWithIdentity(
 	user.Roles = roles
 
 	if err := s.store.CreateUser(ctx, user); errors.Is(err, store.ErrDuplicate) {
-		// Somebody made the account between the two queries above.
 		return nil, ErrSocialLinkRefused
 	} else if err != nil {
 		return nil, err
@@ -650,8 +605,6 @@ func (s *Service) signInWithIdentity(
 	return s.startSocialSession(ctx, user, provider, flow, request, client)
 }
 
-// socialSSORequired is ssoRequiredFor as a sign-in failure the error page can
-// explain.
 func (s *Service) socialSSORequired(ctx context.Context, email string) error {
 	err := s.ssoRequiredFor(ctx, email)
 
@@ -663,8 +616,6 @@ func (s *Service) socialSSORequired(ctx context.Context, email string) error {
 	return err
 }
 
-// socialRegistrationAllowed applies the application's registration rule to
-// provider sign-ups too.
 func (s *Service) socialRegistrationAllowed(ctx context.Context, request string) error {
 	if request == "" {
 		return nil
@@ -672,8 +623,6 @@ func (s *Service) socialRegistrationAllowed(ctx context.Context, request string)
 
 	req, err := s.pending(ctx, request)
 	if err != nil {
-		// The handle expired while they were away; the sign-in itself is
-		// still good, and they can be let in to their own account.
 		return nil
 	}
 
@@ -711,7 +660,6 @@ func (s *Service) startSocialSession(
 	request string,
 	client Client,
 ) (*SignInResult, error) {
-	// Provider sign-ins are remembered: there is no checkbox to tick.
 	result, err := s.startSession(ctx, user, flow, request, true, client, "user.login")
 	if err != nil {
 		return nil, err
@@ -723,8 +671,6 @@ func (s *Service) startSocialSession(
 	return result, nil
 }
 
-// claimString reads a string by path ("response.0.id"); numbers are read as
-// strings, since some providers use numeric ids.
 func claimString(claims map[string]any, path string) string {
 	switch value := claimAt(claims, path).(type) {
 	case string:
@@ -738,7 +684,6 @@ func claimString(claims map[string]any, path string) string {
 	}
 }
 
-// claimBool reads a flag that a provider may write as a bool or as a string.
 func claimBool(claims map[string]any, path string) bool {
 	switch value := claimAt(claims, path).(type) {
 	case bool:
@@ -750,7 +695,6 @@ func claimBool(claims map[string]any, path string) bool {
 	}
 }
 
-// claimAt walks a path into decoded JSON.
 func claimAt(claims map[string]any, path string) any {
 	if path == "" {
 		return nil
@@ -775,12 +719,10 @@ func claimAt(claims map[string]any, path string) any {
 	return current
 }
 
-// stringClaim is claimString for a value at the top of a payload.
 func stringClaim(claims map[string]any, name string) string {
 	return claimString(claims, name)
 }
 
-// numberClaim reads a JSON number, which may have been decoded either way.
 func numberClaim(value any) (float64, bool) {
 	switch number := value.(type) {
 	case float64:
@@ -793,8 +735,6 @@ func numberClaim(value any) (float64, bool) {
 	}
 }
 
-// audienceHas reports whether an id_token's aud names this client. It is one
-// string or a list of them (RFC 7519 section 4.1.3).
 func audienceHas(aud any, clientID string) bool {
 	switch value := aud.(type) {
 	case string:
@@ -810,7 +750,6 @@ func audienceHas(aud any, clientID string) bool {
 	return false
 }
 
-// splitName makes a first and last name out of the one name a provider gives.
 func splitName(full string) (first, last string) {
 	parts := strings.Fields(full)
 	switch len(parts) {
@@ -823,8 +762,6 @@ func splitName(full string) (first, last string) {
 	}
 }
 
-// SocialLanding is where to send the browser after a provider signs someone in:
-// the waiting application, or their account if the handle expired meanwhile.
 func (s *Service) SocialLanding(ctx context.Context, result *SocialResult) string {
 	if result.Request != "" {
 		location, err := s.Continue(ctx, result.Request, result.SignIn.Session)
@@ -839,8 +776,6 @@ func (s *Service) SocialLanding(ctx context.Context, result *SocialResult) strin
 	return s.accountLanding(result.Next)
 }
 
-// accountLanding is a path on the account app, checked like the app checks
-// `next` (no open redirect).
 func (s *Service) accountLanding(next string) string {
 	if safePath(next) {
 		return s.accountURL + next
@@ -867,8 +802,6 @@ func safePath(next string) bool {
 	return true
 }
 
-// SocialErrorPage is the sign-in app's error page, saying what went wrong in
-// words the person can act on.
 func (s *Service) SocialErrorPage(err error) string {
 	reason := ErrSocialUpstream
 
@@ -882,9 +815,6 @@ func (s *Service) SocialErrorPage(err error) string {
 		reason = known
 	}
 
-	// `reason` is what the page says, in the reader's language: its
-	// `error.<reason>`. The description is the same sentence in English, for
-	// whoever reads the address rather than the page.
 	description, ok := i18n.Text(i18n.ID, "error."+reason.Code)
 	if !ok {
 		description = reason.message
@@ -897,13 +827,8 @@ func (s *Service) SocialErrorPage(err error) string {
 	})
 }
 
-// SocialErrorCode is what the error page is told a failed social sign-in was,
-// so it can show the sentence rather than an OAuth code meant for developers.
 const SocialErrorCode = "social_sign_in_failed"
 
-// IsSocialFailure reports whether an error is one of the sign-in failures
-// that are the person's to act on, rather than the server's to fix. The HTTP
-// layer logs everything else.
 func IsSocialFailure(err error) bool {
 	for _, known := range []error{
 		ErrSocialUnknown,

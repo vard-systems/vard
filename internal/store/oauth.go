@@ -19,7 +19,6 @@ import (
 // ErrNotFound because a replay revokes what the first use issued.
 var ErrAlreadyUsed = errors.New("already used")
 
-// SigningKeys returns every stored signing key, newest first.
 func (s *Store) SigningKeys(ctx context.Context) ([]model.SigningKey, error) {
 	var keys []model.SigningKey
 	err := s.db.WithContext(ctx).Order("created_at DESC").Find(&keys).Error
@@ -27,13 +26,10 @@ func (s *Store) SigningKeys(ctx context.Context) ([]model.SigningKey, error) {
 	return keys, err
 }
 
-// CreateSigningKey stores a new signing key.
 func (s *Store) CreateSigningKey(ctx context.Context, key *model.SigningKey) error {
 	return translate(s.db.WithContext(ctx).Create(key).Error)
 }
 
-// ApplicationByClientID returns the application for a client id, through the
-// session cache.
 func (s *Store) ApplicationByClientID(ctx context.Context, clientID string) (*model.Application, error) {
 	kept, err := cached(ctx, s, cache.Clients, "client_id:"+clientID, func() (client, error) {
 		var app model.Application
@@ -60,16 +56,12 @@ type client struct {
 	SecretHash  string            `json:"secret_hash"`
 }
 
-// Audience is an API, whether the application may request it, and the scope
-// names it may ask for.
 type Audience struct {
 	API        *model.API
 	Authorized bool
 	Allowed    []string
 }
 
-// AudienceFor loads one API and the application's grants on it (ErrNotFound for
-// an unknown identifier), through the session cache.
 func (s *Store) AudienceFor(ctx context.Context, applicationID uuid.UUID, identifier string) (Audience, error) {
 	return cached(ctx, s, cache.Grants, "audience:"+applicationID.String()+":"+identifier, func() (Audience, error) {
 		return s.audienceFor(ctx, applicationID, identifier)
@@ -108,8 +100,6 @@ func (s *Store) audienceFor(ctx context.Context, applicationID uuid.UUID, identi
 	return out, nil
 }
 
-// EffectiveRoles returns every role the user holds, inheritance followed, each
-// with the API scopes it grants: what model.EvaluateToken is given.
 func (s *Store) EffectiveRoles(ctx context.Context, user *model.User) ([]model.UserRole, error) {
 	graph, err := s.RoleGraph(ctx)
 	if err != nil {
@@ -124,7 +114,6 @@ func (s *Store) EffectiveRoles(ctx context.Context, user *model.User) ([]model.U
 	return graph.Effective(held), nil
 }
 
-// UserByEmail finds a user by normalised address on the unique index.
 func (s *Store) UserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
 	err := s.db.WithContext(ctx).Preload("Roles", byName).First(&user, "email = ?", model.NormalizeEmail(email)).Error
@@ -146,9 +135,6 @@ func (s *Store) MarkUserSignedIn(ctx context.Context, user *model.User, at time.
 	}).Error
 }
 
-// ReserveUserLogin counts an attempt before the password is checked and reports
-// false when the account is locked. The `max`th reservation sets the lock in
-// the same statement, so parallel attempts cannot slip past it.
 func (s *Store) ReserveUserLogin(ctx context.Context, user *model.User, at time.Time, max int, lockFor time.Duration) (bool, error) {
 	var rows []struct {
 		LockedUntil *time.Time
@@ -171,8 +157,6 @@ func (s *Store) ReserveUserLogin(ctx context.Context, user *model.User, at time.
 	return len(rows) > 0, nil
 }
 
-// ClearUserFailedLogins gives back the attempts a right password took, for a
-// sign-in that is not finished yet — one held for an emailed code.
 func (s *Store) ClearUserFailedLogins(ctx context.Context, user *model.User, at time.Time) error {
 	return s.db.WithContext(ctx).Model(user).Omit(clause.Associations).Updates(map[string]any{
 		"failed_login_count": 0,
@@ -180,13 +164,10 @@ func (s *Store) ClearUserFailedLogins(ctx context.Context, user *model.User, at 
 	}).Error
 }
 
-// CreateAuthorizationRequest stores a sign-in under way.
 func (s *Store) CreateAuthorizationRequest(ctx context.Context, req *model.AuthorizationRequest) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(req).Error)
 }
 
-// AuthorizationRequestByHandle returns a sign-in under way, with its
-// application.
 func (s *Store) AuthorizationRequestByHandle(ctx context.Context, hash string) (*model.AuthorizationRequest, error) {
 	var req model.AuthorizationRequest
 	err := s.db.WithContext(ctx).Preload("Application").First(&req, "handle_hash = ?", hash).Error
@@ -215,7 +196,6 @@ func (s *Store) CompleteAuthorizationRequest(ctx context.Context, req *model.Aut
 	return nil
 }
 
-// CreateAuthorizationCode stores a code.
 func (s *Store) CreateAuthorizationCode(ctx context.Context, code *model.AuthorizationCode) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(code).Error)
 }
@@ -245,12 +225,10 @@ func (s *Store) ClaimAuthorizationCode(ctx context.Context, hash string, applica
 	return &used, ErrAlreadyUsed
 }
 
-// CreateRefreshToken stores a refresh token.
 func (s *Store) CreateRefreshToken(ctx context.Context, token *model.RefreshToken) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(token).Error)
 }
 
-// RefreshTokenByHash returns a refresh token.
 func (s *Store) RefreshTokenByHash(ctx context.Context, hash string) (*model.RefreshToken, error) {
 	var token model.RefreshToken
 	if err := s.db.WithContext(ctx).First(&token, "token_hash = ?", hash).Error; err != nil {
@@ -278,30 +256,24 @@ func (s *Store) RotateRefreshToken(ctx context.Context, old, next *model.Refresh
 	})
 }
 
-// RevokeRefreshFamily revokes every token descended from the same grant.
 func (s *Store) RevokeRefreshFamily(ctx context.Context, family uuid.UUID, at time.Time) error {
 	return s.db.WithContext(ctx).Model(&model.RefreshToken{}).
 		Where("family_id = ? AND revoked_at IS NULL", family).
 		Update("revoked_at", at).Error
 }
 
-// RevokeRefreshTokensForCode revokes what an authorization code was exchanged
-// for, when the code is presented a second time.
 func (s *Store) RevokeRefreshTokensForCode(ctx context.Context, code uuid.UUID, at time.Time) error {
 	return s.db.WithContext(ctx).Model(&model.RefreshToken{}).
 		Where("code_id = ? AND revoked_at IS NULL", code).
 		Update("revoked_at", at).Error
 }
 
-// RevokeRefreshTokensForUser revokes every refresh token a user has, in every
-// application: what a password reset does.
 func (s *Store) RevokeRefreshTokensForUser(ctx context.Context, user uuid.UUID, at time.Time) error {
 	return s.db.WithContext(ctx).Model(&model.RefreshToken{}).
 		Where("user_id = ? AND revoked_at IS NULL", user).
 		Update("revoked_at", at).Error
 }
 
-// CreateUserSession starts a user session.
 func (s *Store) CreateUserSession(ctx context.Context, session *model.UserSession) error {
 	if err := translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(session).Error); err != nil {
 		return err
@@ -312,8 +284,6 @@ func (s *Store) CreateUserSession(ctx context.Context, session *model.UserSessio
 	return nil
 }
 
-// UserSessionByHash returns the session a cookie belongs to. Every sign-in
-// page and account page asks, so it is read through the session database.
 func (s *Store) UserSessionByHash(ctx context.Context, hash string) (*model.UserSession, error) {
 	var kept userSession
 	if s.sessions.Session(ctx, cache.UserSession, hash, &kept) {
@@ -331,7 +301,6 @@ func (s *Store) UserSessionByHash(ctx context.Context, hash string) (*model.User
 	return &session, nil
 }
 
-// RevokeUserSession ends a session.
 func (s *Store) RevokeUserSession(ctx context.Context, id uuid.UUID, at time.Time) error {
 	ended, err := revokeUserSessionsIn(s.db.WithContext(ctx), at, "id = ?", id)
 	s.putUserSessions(ctx, ended...)
@@ -339,7 +308,6 @@ func (s *Store) RevokeUserSession(ctx context.Context, id uuid.UUID, at time.Tim
 	return err
 }
 
-// RevokeUserSessionsFor ends every session a user has, in every browser.
 func (s *Store) RevokeUserSessionsFor(ctx context.Context, user uuid.UUID, at time.Time) error {
 	ended, err := revokeUserSessionsIn(s.db.WithContext(ctx), at, "user_id = ?", user)
 	s.putUserSessions(ctx, ended...)
@@ -353,13 +321,10 @@ func (s *Store) RevokeUserSessionsFor(ctx context.Context, user uuid.UUID, at ti
 const pendingEmailChangesUsed = "UPDATE email_verifications SET used_at = @at " +
 	"WHERE user_id = @user AND used_at IS NULL AND new_email <> ''"
 
-// CreatePasswordReset stores a reset link that is about to be sent.
 func (s *Store) CreatePasswordReset(ctx context.Context, reset *model.PasswordReset) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(reset).Error)
 }
 
-// passwordResetsPerHour is the most reset links one account may be sent in an
-// hour, however many times forgot-password is asked for it.
 const passwordResetsPerHour = 5
 
 // CreatePasswordResetThrottled stores a reset link only if the account got none
@@ -396,7 +361,6 @@ func (s *Store) CreatePasswordResetThrottled(ctx context.Context, reset *model.P
 	return created, err
 }
 
-// PasswordResetByHash returns a reset link.
 func (s *Store) PasswordResetByHash(ctx context.Context, hash string) (*model.PasswordReset, error) {
 	var reset model.PasswordReset
 	if err := s.db.WithContext(ctx).First(&reset, "token_hash = ?", hash).Error; err != nil {
@@ -406,9 +370,6 @@ func (s *Store) PasswordResetByHash(ctx context.Context, hash string) (*model.Pa
 	return &reset, nil
 }
 
-// ResetPassword uses a reset link, saves the password and ends every session
-// and refresh token in one transaction; ErrAlreadyUsed if the link was used
-// first.
 func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, user *model.User, at time.Time) error {
 	var ended []model.UserSession
 
@@ -445,10 +406,7 @@ func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, u
 
 		statements := []string{
 			"UPDATE refresh_tokens SET revoked_at = @at WHERE user_id = @user AND revoked_at IS NULL",
-			// Any other link sent to the same address stops working too.
 			"UPDATE password_resets SET used_at = @at WHERE user_id = @user AND used_at IS NULL",
-			// And any pending change of address, which whoever held the account
-			// may have requested.
 			pendingEmailChangesUsed,
 		}
 		for _, statement := range statements {
@@ -468,8 +426,6 @@ func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, u
 	return nil
 }
 
-// ActiveUserSessions returns the sessions still signing a user in, newest
-// first.
 func (s *Store) ActiveUserSessions(ctx context.Context, user uuid.UUID, now time.Time) ([]model.UserSession, error) {
 	var sessions []model.UserSession
 	err := s.db.WithContext(ctx).
@@ -480,8 +436,6 @@ func (s *Store) ActiveUserSessions(ctx context.Context, user uuid.UUID, now time
 	return sessions, err
 }
 
-// ChangeUserPassword saves a user's new password and, in the same transaction,
-// ends every session but `keep` and revokes every refresh token they have.
 func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep uuid.UUID, at time.Time) error {
 	var ended []model.UserSession
 
@@ -500,8 +454,6 @@ func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep u
 
 		statements := []string{
 			"UPDATE refresh_tokens SET revoked_at = @at WHERE user_id = @user AND revoked_at IS NULL",
-			// A reset link in the inbox, and a move to another address asked
-			// for before the password changed, end with the other ways in.
 			"UPDATE password_resets SET used_at = @at WHERE user_id = @user AND used_at IS NULL",
 			pendingEmailChangesUsed,
 		}
@@ -522,8 +474,6 @@ func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep u
 	return nil
 }
 
-// Grant is what one application holds for a user: the scopes of its usable
-// refresh tokens and when it was first and last issued one.
 type Grant struct {
 	Application model.Application
 	Scopes      []string
@@ -531,8 +481,6 @@ type Grant struct {
 	LastIssued  time.Time
 }
 
-// UserGrants lists the applications holding a usable refresh token for the
-// user, most recently used first.
 func (s *Store) UserGrants(ctx context.Context, user uuid.UUID, now time.Time) ([]Grant, error) {
 	var tokens []model.RefreshToken
 	err := s.db.WithContext(ctx).
@@ -563,8 +511,6 @@ func (s *Store) UserGrants(ctx context.Context, user uuid.UUID, now time.Time) (
 		return []Grant{}, nil
 	}
 
-	// Every application at once, rather than one query each. One deleted
-	// since is simply missing, and so is its grant.
 	var apps []model.Application
 	if err := s.db.WithContext(ctx).Where("id IN ?", order).Find(&apps).Error; err != nil {
 		return nil, err
@@ -589,8 +535,6 @@ func (s *Store) UserGrants(ctx context.Context, user uuid.UUID, now time.Time) (
 	return out, nil
 }
 
-// RevokeUserGrant revokes every refresh token one application holds for a
-// user, and says how many there were.
 func (s *Store) RevokeUserGrant(ctx context.Context, user, application uuid.UUID, at time.Time) (int64, error) {
 	result := s.db.WithContext(ctx).Model(&model.RefreshToken{}).
 		Where("user_id = ? AND application_id = ? AND revoked_at IS NULL", user, application).
@@ -599,8 +543,6 @@ func (s *Store) RevokeUserGrant(ctx context.Context, user, application uuid.UUID
 	return result.RowsAffected, result.Error
 }
 
-// keyLock is the advisory lock that keeps two servers from rotating the
-// signing keys at the same moment.
 const keyLock = brand.SigningKeysLock
 
 // AddSigningKeyIfDue stores `key` unless its algorithm already has an unretired
@@ -629,16 +571,12 @@ func (s *Store) AddSigningKeyIfDue(ctx context.Context, key *model.SigningKey, d
 	return added, err
 }
 
-// RetireSigningKeys retires every unretired key of an algorithm made before
-// `before`: the ones a newer key has taken over from.
 func (s *Store) RetireSigningKeys(ctx context.Context, algorithm string, before, at time.Time) error {
 	return s.db.WithContext(ctx).Model(&model.SigningKey{}).
 		Where("algorithm = ? AND retired_at IS NULL AND created_at < ?", algorithm, before).
 		Update("retired_at", at).Error
 }
 
-// DeleteSigningKeys removes keys retired before `before`. Tokens they signed
-// have expired, so they need not be published any more.
 func (s *Store) DeleteSigningKeys(ctx context.Context, before time.Time) error {
 	return s.db.WithContext(ctx).
 		Where("retired_at IS NOT NULL AND retired_at < ?", before).
@@ -651,12 +589,10 @@ func (s *Store) DeleteSigningKeysExcept(ctx context.Context, keep []string) erro
 	return s.db.WithContext(ctx).Where("kid NOT IN ?", keep).Delete(&model.SigningKey{}).Error
 }
 
-// CreateEmailVerification stores a verification link that is about to be sent.
 func (s *Store) CreateEmailVerification(ctx context.Context, verification *model.EmailVerification) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(verification).Error)
 }
 
-// EmailVerificationByHash returns the link a token belongs to.
 func (s *Store) EmailVerificationByHash(ctx context.Context, hash string) (*model.EmailVerification, error) {
 	var verification model.EmailVerification
 	if err := s.db.WithContext(ctx).First(&verification, "token_hash = ?", hash).Error; err != nil {
@@ -666,10 +602,6 @@ func (s *Store) EmailVerificationByHash(ctx context.Context, hash string) (*mode
 	return &verification, nil
 }
 
-// VerifyEmail uses a link in one transaction: it marks every pending link used,
-// verifies the address, and applies a pending change of address. It returns
-// ErrAlreadyUsed for a used link and ErrDuplicate if the new address was taken
-// since.
 func (s *Store) VerifyEmail(ctx context.Context, verification *model.EmailVerification, at time.Time) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&model.EmailVerification{}).

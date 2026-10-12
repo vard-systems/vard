@@ -20,7 +20,6 @@ func publicLanguage(language model.Language) PublicLanguage {
 	return PublicLanguage{Code: language.Code, Name: language.Name, NativeName: language.NativeName}
 }
 
-// Languages returns the offered languages in order, and the default.
 func (s *Service) Languages(ctx context.Context) ([]PublicLanguage, string, error) {
 	offered, err := s.store.OfferedLanguages(ctx)
 	if err != nil {
@@ -40,8 +39,6 @@ func (s *Service) Languages(ctx context.Context) ([]PublicLanguage, string, erro
 	return languages, fallback.Code, nil
 }
 
-// textIn is the pages' text in a language, for emails. It falls back to the
-// default language, then shipped English.
 func (s *Service) textIn(ctx context.Context, code string) map[string]string {
 	language, err := s.store.Language(ctx, code)
 	if err != nil || !language.IsEnabled {
@@ -57,8 +54,6 @@ func (s *Service) textIn(ctx context.Context, code string) map[string]string {
 	return i18n.Resolve(i18n.ID)
 }
 
-// LanguageText is every key the sign-in pages use in one offered language, with
-// gaps filled from the base language.
 func (s *Service) LanguageText(ctx context.Context, code string) (PublicLanguage, map[string]string, error) {
 	language, err := s.store.Language(ctx, code)
 	if err != nil {

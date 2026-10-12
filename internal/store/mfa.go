@@ -13,8 +13,6 @@ import (
 	"loginer/internal/model"
 )
 
-// MFAFactors returns an administrator's factors of one method, confirmed and
-// not, newest first.
 func (s *Store) MFAFactors(ctx context.Context, admin uuid.UUID, method model.MFAMethod) ([]model.MFA, error) {
 	var factors []model.MFA
 	err := s.db.WithContext(ctx).
@@ -45,8 +43,6 @@ func (s *Store) StartMFA(ctx context.Context, factor *model.MFA) error {
 	return err
 }
 
-// ConfirmMFA confirms a factor with its recovery codes and removes other
-// factors of the same method.
 func (s *Store) ConfirmMFA(ctx context.Context, factor *model.MFA) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Unscoped().
@@ -103,13 +99,10 @@ func (s *Store) ConsumeRecoveryCode(ctx context.Context, factor uuid.UUID, hash 
 	return consumed, err
 }
 
-// SetRecoveryCodes replaces a factor's recovery codes.
 func (s *Store) SetRecoveryCodes(ctx context.Context, factor *model.MFA) error {
 	return s.db.WithContext(ctx).Model(factor).Select("RecoveryCodes").Updates(&model.MFA{RecoveryCodes: factor.RecoveryCodes}).Error
 }
 
-// RemoveMFA deletes all of an administrator's factors and ends their sessions,
-// except `keep` if set.
 func (s *Store) RemoveMFA(ctx context.Context, admin uuid.UUID, keep *uuid.UUID, at time.Time) error {
 	var ended []model.AdminSession
 
@@ -137,8 +130,6 @@ func (s *Store) RemoveMFA(ctx context.Context, admin uuid.UUID, keep *uuid.UUID,
 	return nil
 }
 
-// PassSessionMFA marks a session's second factor cleared, and gives it the
-// lifetime of a full session from now.
 func (s *Store) PassSessionMFA(ctx context.Context, session uuid.UUID, expires time.Time) error {
 	var passed []model.AdminSession
 	err := s.db.WithContext(ctx).Model(&passed).

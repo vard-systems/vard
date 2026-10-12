@@ -14,33 +14,19 @@ import (
 	"loginer/internal/store"
 )
 
-// A signed-in user's own account. Every method takes the request's session, so
-// users only reach their own account.
-
-// ErrWrongPassword is a current password that does not match, when changing
-// it or the address. It counts towards the lockout, as a wrong password at
-// sign-in does, and a locked account gets it whatever was typed.
 var ErrWrongPassword = problem("wrong_password", "the current password is wrong")
 
-// ErrNotYours is a session or application that does not belong to the signed-in
-// user, or does not exist: the two are one answer.
 var ErrNotYours = problem("not_yours", "not the user's")
 
-// ErrPasswordUnchanged is a new password that is the current one.
 var ErrPasswordUnchanged = problem("password_unchanged", "the new password is the current one")
 
-// ErrCurrentSession is ending the session the request itself carries, which
-// is signing out.
 var ErrCurrentSession = problem("current_session", "that is the session in use")
 
-// Profile is what a user may change about themselves. The email is the account,
-// so it is not among them.
 type Profile struct {
 	FirstName string
 	LastName  string
 }
 
-// UpdateProfile saves a user's name.
 func (s *Service) UpdateProfile(ctx context.Context, session *Session, p Profile, client Client) (*model.User, error) {
 	user := session.User
 	user.FirstName = strings.TrimSpace(p.FirstName)
@@ -57,8 +43,6 @@ func (s *Service) UpdateProfile(ctx context.Context, session *Session, p Profile
 	return user, nil
 }
 
-// ChangePassword checks the current password, ends every other session and
-// revokes all refresh tokens.
 func (s *Service) ChangePassword(ctx context.Context, session *Session, current, next string, client Client) error {
 	user := session.User
 	now := s.now()
@@ -122,7 +106,6 @@ type SessionInfo struct {
 	Current bool `json:"current"`
 }
 
-// Sessions lists the user's active sessions, newest first.
 func (s *Service) Sessions(ctx context.Context, session *Session) ([]SessionInfo, error) {
 	records, err := s.store.ActiveUserSessions(ctx, session.User.ID, s.now())
 	if err != nil {
@@ -144,8 +127,6 @@ func (s *Service) Sessions(ctx context.Context, session *Session) ([]SessionInfo
 	return out, nil
 }
 
-// EndSession signs one of the user's other browsers out. The current one is
-// ended by signing out, which also clears its cookie.
 func (s *Service) EndSession(ctx context.Context, session *Session, id uuid.UUID, client Client) error {
 	if id == session.Record.ID {
 		return ErrCurrentSession
@@ -181,8 +162,6 @@ type ConnectedApplication struct {
 	LastUsed   time.Time `json:"last_used_at"`
 }
 
-// ConnectedApplications lists the applications holding refresh tokens for the
-// user, most recently used first.
 func (s *Service) ConnectedApplications(ctx context.Context, session *Session) ([]ConnectedApplication, error) {
 	grants, err := s.store.UserGrants(ctx, session.User.ID, s.now())
 	if err != nil {
@@ -212,8 +191,6 @@ func (s *Service) ConnectedApplications(ctx context.Context, session *Session) (
 	return out, nil
 }
 
-// DisconnectApplication revokes every refresh token an application holds for
-// the user. Access tokens it already has keep working until they expire.
 func (s *Service) DisconnectApplication(ctx context.Context, session *Session, clientID string, client Client) error {
 	app, err := s.store.ApplicationByClientID(ctx, clientID)
 	if errors.Is(err, store.ErrNotFound) {

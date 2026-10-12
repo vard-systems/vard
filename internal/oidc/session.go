@@ -19,33 +19,20 @@ import (
 	"loginer/internal/store"
 )
 
-// MinPasswordLength is the shortest password a user may choose, the same as
-// an administrator may give them.
 const MinPasswordLength = 8
 
-// Session is a signed-in user in one browser.
 type Session struct {
 	Record model.UserSession
 	User   *model.User
 }
 
-// SignInResult is what signing in or registering produced.
 type SignInResult struct {
-	Session *Session
-	// Token is the session cookie's value. It is the only copy.
-	Token string
-	// ResetToken replaces the session when the user signed in with a temporary
-	// password and must choose a new one.
+	Session    *Session
+	Token      string
 	ResetToken string
-	// Code replaces the session when the flow requires the emailed code
-	// (SubmitLoginCode).
-	Code *CodeChallenge
-	// Request is the sign-in this belongs to, for callers that did not start
-	// it.
-	Request string
-	// Remember makes the cookie outlive the browser window; the session's own
-	// lifetime is the flow's.
-	Remember bool
+	Code       *CodeChallenge
+	Request    string
+	Remember   bool
 }
 
 // dummyHash is compared against for an unknown address, so it takes as long to
@@ -58,14 +45,10 @@ var dummyHash = sync.OnceValue(func() []byte {
 	return hash
 })
 
-// InBrowser reports whether the session is a browser's, signed in at the
-// sign-in pages, rather than a user an application's access token names.
 func (s *Session) InBrowser() bool {
 	return s.Record.ID != uuid.Nil
 }
 
-// SessionFor returns the session a cookie carries, or nil when it carries none
-// that still signs a user in.
 func (s *Service) SessionFor(ctx context.Context, token string) (*Session, error) {
 	if token == "" {
 		return nil, nil
@@ -101,8 +84,6 @@ func (s *Service) SessionFor(ctx context.Context, token string) (*Session, error
 	return &Session{Record: *record, User: user}, nil
 }
 
-// SignIn checks a user's address and password and starts a session, for the
-// sign-in under way that `request` names, if any.
 func (s *Service) SignIn(ctx context.Context, email, password, request string, remember bool, client Client) (*SignInResult, error) {
 	now := s.now()
 
@@ -144,7 +125,6 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return nil, ErrInvalidCredentials
 	}
 
-	// A user an administrator made without a password has none to match.
 	if user.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
 		if user.PasswordHash == "" {
 			_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
@@ -155,7 +135,6 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return nil, ErrInvalidCredentials
 	}
 
-	// Inactive is refused here; the lock is already handled by the reservation.
 	if !user.IsActive {
 		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "inactive"})
 
@@ -195,8 +174,6 @@ func (s *Service) finishSignIn(
 		return s.startSession(ctx, user, flow, request, remember, client, action)
 	}
 
-	// A flow that requires a verified address still requires it first: there
-	// is no point emailing a code to an address the flow will not take.
 	if flow.RequireVerifiedEmail && !user.IsEmailVerified {
 		return s.startSession(ctx, user, flow, request, remember, client, action)
 	}
@@ -204,8 +181,6 @@ func (s *Service) finishSignIn(
 	return s.sendLoginCode(ctx, user, request, remember, client)
 }
 
-// startSession signs a user in under the flow's rules (verified address,
-// session length). Every way in ends here.
 func (s *Service) startSession(
 	ctx context.Context,
 	user *model.User,
@@ -264,7 +239,6 @@ func (s *Service) startSession(
 	}, nil
 }
 
-// SignOut ends the session a cookie carries. Signing out twice is not an error.
 func (s *Service) SignOut(ctx context.Context, token string, client Client) error {
 	session, err := s.SessionFor(ctx, token)
 	if err != nil || session == nil {
@@ -280,26 +254,17 @@ func (s *Service) SignOut(ctx context.Context, token string, client Client) erro
 	return nil
 }
 
-// Registration is what someone creating an account types.
 type Registration struct {
-	// Request is the sign-in under way the account is made for. Registering
-	// is offered per application, so there is no registering without one.
-	Request   string
-	Email     string
-	Password  string
-	FirstName string
-	LastName  string
-	// AcceptedTerms says the person agreed to the application's terms and
-	// privacy policy. It is required when the application links either.
+	Request       string
+	Email         string
+	Password      string
+	FirstName     string
+	LastName      string
 	AcceptedTerms bool
-	// Remember is the "stay signed in" box, as on the sign-in page.
-	Remember bool
+	Remember      bool
 }
 
-// Register makes an account for a sign-in under way, and signs it in.
 func (s *Service) Register(ctx context.Context, r Registration, client Client) (*SignInResult, error) {
-	// Accounts at a domain its identity provider owns are made by signing in
-	// through it.
 	if err := s.ssoRequiredFor(ctx, r.Email); err != nil {
 		return nil, err
 	}
@@ -314,8 +279,6 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 		return nil, ErrRegistrationClosed
 	}
 
-	// The flow decides whether the installation takes new accounts at all, and
-	// a flow without a password step only creates them through its providers.
 	flow, err := s.store.EffectiveLoginFlow(ctx, app)
 	if err != nil {
 		return nil, err
@@ -368,9 +331,6 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 
 	s.record(ctx, user, user.Email, "user.registered", client, map[string]any{"application": app.Name})
 
-	// The verification email does not hold the account back
-	// (RequireVerifiedEmail does), so a send failure is logged and the link can
-	// be resent.
 	if flow.VerifyEmailOnRegister && !user.IsEmailVerified {
 		if err := s.sendVerification(ctx, user, r.Request, client); err != nil {
 			s.log.Error("sending a verification email failed", "error", err, "user", user.ID)
@@ -384,12 +344,10 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 // in, in the page's language. It answers the same either way and sends in the
 // background, so timing cannot reveal which addresses exist.
 func (s *Service) ForgotPassword(ctx context.Context, email, request, language string, client Client) error {
-	// A domain its identity provider owns keeps its passwords there.
 	if err := s.ssoRequiredFor(ctx, email); err != nil {
 		return err
 	}
 
-	// A flow without password reset sends nothing, with the same answer.
 	var app *model.Application
 	if pending, err := s.pending(ctx, request); err == nil {
 		app = pending.Application
@@ -429,7 +387,6 @@ func (s *Service) ForgotPassword(ctx context.Context, email, request, language s
 		return err
 	}
 	if !created {
-		// Throttled: no new link, same quiet success.
 		return nil
 	}
 
@@ -459,7 +416,6 @@ func (s *Service) ForgotPassword(ctx context.Context, email, request, language s
 	s.record(ctx, user, user.Email, "user.password_reset_requested", client, nil)
 
 	go func() {
-		// The request that asked may be long gone by the time this sends.
 		sendCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 		defer cancel()
 
@@ -486,8 +442,6 @@ func (s *Service) newReset(ctx context.Context, user *model.User) (string, error
 	return token, err
 }
 
-// CheckReset reports whether a reset link still works, so the page can say so
-// before someone types a new password into it.
 func (s *Service) CheckReset(ctx context.Context, token string) error {
 	_, err := s.reset(ctx, token)
 	return err
@@ -513,8 +467,6 @@ func (s *Service) reset(ctx context.Context, token string) (*model.PasswordReset
 	return reset, nil
 }
 
-// ResetPassword sets a new password from a reset link and ends every session
-// and refresh token.
 func (s *Service) ResetPassword(ctx context.Context, token, password string, client Client) error {
 	reset, err := s.reset(ctx, token)
 	if err != nil {
@@ -546,14 +498,10 @@ func (s *Service) ResetPassword(ctx context.Context, token, password string, cli
 	return nil
 }
 
-// sendVerification sends a verification link while the person waits, so a send
-// failure is reported.
 func (s *Service) sendVerification(ctx context.Context, user *model.User, request string, client Client) error {
 	return s.mailVerification(ctx, user, "", request, client)
 }
 
-// mailVerification sends one link: to the current address, or with `newEmail`
-// to that address as a pending change.
 func (s *Service) mailVerification(
 	ctx context.Context,
 	user *model.User,
@@ -584,8 +532,6 @@ func (s *Service) mailVerification(
 		request = ""
 	}
 
-	// The link goes where the address is being proved: the account's own, or
-	// the one somebody is moving to.
 	to := user.Email
 	if newEmail != "" {
 		to = newEmail
@@ -615,8 +561,6 @@ func (s *Service) mailVerification(
 	return nil
 }
 
-// VerifyEmail uses a verification link: the address is the user's, and every
-// other link sent to it stops working.
 func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) error {
 	if token == "" {
 		return ErrVerificationInvalid
@@ -649,7 +593,6 @@ func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) 
 	case errors.Is(err, store.ErrAlreadyUsed):
 		return ErrVerificationInvalid
 	case errors.Is(err, store.ErrDuplicate):
-		// Somebody took the address between the link being sent and used.
 		return ErrEmailTaken
 	case err != nil:
 		return err
@@ -726,7 +669,6 @@ func truncate(value string, max int) string {
 		return value
 	}
 
-	// Back up off a continuation byte to the start of the rune it belongs to.
 	for max > 0 && !utf8.RuneStart(value[max]) {
 		max--
 	}

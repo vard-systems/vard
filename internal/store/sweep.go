@@ -11,11 +11,6 @@ import (
 	"loginer/internal/model"
 )
 
-// Sweeping removes expired sessions, codes, tokens and old audit lines, so
-// tables track live data rather than growing with every sign-in.
-
-// sweepInterval is how often the sweep runs. Nothing it removes can be used
-// once it has expired, so how long it lingers is only a matter of space.
 const sweepInterval = time.Hour
 
 // sweepBatch keeps each DELETE small so its locks never hold sign-ins up for
@@ -37,8 +32,6 @@ var expiring = []any{
 	&model.SSOLogin{},
 }
 
-// Sweep removes records that expired before `now` and, unless `auditBefore` is
-// zero, older activity log entries. It returns the count removed.
 func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, error) {
 	var removed int64
 
@@ -61,14 +54,11 @@ func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, e
 	return removed, nil
 }
 
-// sessionKinds names the tables whose rows are also kept in the session
-// database, by the kind they are kept under there.
 var sessionKinds = map[string]string{
 	"user_sessions":  cache.UserSession,
 	"admin_sessions": cache.AdminSession,
 }
 
-// tableName is the table a model is stored in.
 func tableName(db *gorm.DB, model any) string {
 	statement := &gorm.Statement{DB: db}
 	if err := statement.Parse(model); err != nil {
@@ -77,8 +67,6 @@ func tableName(db *gorm.DB, model any) string {
 	return statement.Schema.Table
 }
 
-// deleteInBatches deletes matching rows sweepBatch at a time. For a session
-// table (`kind` set) it also drops them from the cache.
 func (s *Store) deleteInBatches(ctx context.Context, table any, kind, where string, arg any) (int64, error) {
 	var removed int64
 

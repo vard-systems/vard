@@ -13,19 +13,10 @@ import (
 	"loginer/internal/store"
 )
 
-// This server's admin and account APIs also accept its own access tokens: the
-// admin API from a service (client credentials), the account API from an
-// application acting for a user.
-
-// ErrTokenRefused is a token that may not call this API: foreign, expired,
-// wrong audience or kind, or from an application that lost access.
 var ErrTokenRefused = errors.New("oidc: the access token is not accepted by this API")
 
-// AdminCaller is software calling the admin API.
 type AdminCaller struct {
 	Application *model.Application
-	// Permissions are the token's scopes the application is still allowed, so
-	// revoking a scope applies on the next call.
 	Permissions []string
 }
 
@@ -60,18 +51,12 @@ func (s *Service) AdminCaller(ctx context.Context, token string) (*AdminCaller, 
 	return &AdminCaller{Application: app, Permissions: permissions}, nil
 }
 
-// AccountCaller is an application calling the account API for a user.
 type AccountCaller struct {
-	// Session is the user, with no browser session behind it: the account
-	// functions treat none of the user's sessions as the current one.
 	Session  *Session
 	ClientID string
-	// Scopes are the account API scopes the token carries.
-	Scopes []string
+	Scopes   []string
 }
 
-// AccountCaller checks a token for the account API: issued for a user who still
-// exists and may sign in.
 func (s *Service) AccountCaller(ctx context.Context, token string) (*AccountCaller, error) {
 	claims, app, err := s.caller(ctx, token, brand.AccountAPIIdentifier)
 	if err != nil {
@@ -116,8 +101,6 @@ func (s *Service) AccountCaller(ctx context.Context, token string) (*AccountCall
 	return &AccountCaller{Session: &Session{User: user}, ClientID: claims.ClientID, Scopes: scopes}, nil
 }
 
-// caller checks what both APIs need of a token: this server's, unexpired,
-// for this audience, and from an application that still exists and is on.
 func (s *Service) caller(ctx context.Context, token, audience string) (*accessClaims, *model.Application, error) {
 	claims, _, err := s.verifyAccessToken(ctx, token)
 	if err != nil || !slices.Contains(claims.Audience, audience) {

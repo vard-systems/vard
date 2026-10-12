@@ -13,16 +13,12 @@ import (
 	"loginer/internal/model"
 )
 
-// UserQuery is what a listing asks for: a search box, a filter, and a page.
 type UserQuery struct {
-	// Search matches the email or any value the record holds.
-	Search string
-	// Verified filters on the is_email_verified flag. Nil means both.
+	Search   string
 	Verified *bool
-	// Role keeps the users who hold this role directly. Nil means everyone.
-	Role   *uuid.UUID
-	Limit  int
-	Offset int
+	Role     *uuid.UUID
+	Limit    int
+	Offset   int
 }
 
 // userSearch is the record as one lower-cased text, searched by one box. It
@@ -63,7 +59,6 @@ func (s *Store) Users(ctx context.Context, q UserQuery) ([]model.User, int64, er
 	return users, total, err
 }
 
-// User returns one user by id.
 func (s *Store) User(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var user model.User
 	if err := s.db.WithContext(ctx).Preload("Roles", byName).First(&user, "id = ?", id).Error; err != nil {
@@ -73,14 +68,10 @@ func (s *Store) User(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	return &user, nil
 }
 
-// CreateUser writes a new user, along with the roles it holds. The roles
-// already exist, so only the joins are written.
 func (s *Store) CreateUser(ctx context.Context, user *model.User) error {
 	return translate(s.db.WithContext(ctx).Omit("Roles.*").Create(user).Error)
 }
 
-// SaveUser writes a user's columns and fields; roles are changed only through
-// AddUserRoles and RemoveUserRole.
 func (s *Store) SaveUser(ctx context.Context, user *model.User) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Save(user).Error)
 }
@@ -94,7 +85,6 @@ func (s *Store) SaveUserProfile(ctx context.Context, user *model.User) error {
 	}).Error)
 }
 
-// DeleteUser hard-deletes a user after releasing their roles.
 func (s *Store) DeleteUser(ctx context.Context, user *model.User) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec("DELETE FROM user_role_members WHERE user_id = ?", user.ID).Error; err != nil {
@@ -105,9 +95,6 @@ func (s *Store) DeleteUser(ctx context.Context, user *model.User) error {
 	})
 }
 
-// FieldValueTaken reports whether another user holds this value for a unique
-// additional field; `except` is the record being written (uuid.Nil when
-// creating). Values live in JSON, so this is a query, not an index.
 func (s *Store) FieldValueTaken(ctx context.Context, field string, value any, except uuid.UUID) (bool, error) {
 	text := fmt.Sprintf("%v", value)
 	if number, ok := value.(float64); ok {

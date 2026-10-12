@@ -17,11 +17,6 @@ import (
 	"loginer/internal/model"
 )
 
-// The OpenID Connect half of enterprise SSO: discovery and keys, the redirect,
-// and verifying the returned id_token.
-
-// oidcDiscovery is the part of a provider's discovery document this server
-// reads.
 type oidcDiscovery struct {
 	Issuer                string   `json:"issuer"`
 	AuthorizationEndpoint string   `json:"authorization_endpoint"`
@@ -32,8 +27,6 @@ type oidcDiscovery struct {
 	ScopesSupported       []string `json:"scopes_supported"`
 }
 
-// ssoCache keeps each provider's discovery document and keys for a while,
-// rather than asking for them on every sign-in.
 type ssoCache struct {
 	mu        sync.Mutex
 	discovery map[string]cached[*oidcDiscovery]
@@ -45,8 +38,6 @@ type cached[T any] struct {
 	fetched time.Time
 }
 
-// ssoCacheLifetime is how long discovery documents and key sets are cached; an
-// unknown kid triggers a fetch at once.
 const ssoCacheLifetime = time.Hour
 
 var ssoMemory = &ssoCache{
@@ -54,8 +45,6 @@ var ssoMemory = &ssoCache{
 	keys:      map[string]cached[map[string]jose.Key]{},
 }
 
-// Discover reads an issuer's discovery document, and checks it is the
-// issuer's own. The panel's test uses it; a sign-in reads it from the cache.
 func (s *Service) Discover(ctx context.Context, issuer string) (*oidcDiscovery, error) {
 	issuer = strings.TrimRight(issuer, "/")
 
@@ -142,8 +131,6 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 		"code_verifier": {login.Verifier},
 	}
 
-	// HTTP Basic, which every server has to accept (RFC 6749 section
-	// 2.3.1), unless the provider says it only takes the body.
 	basic := len(document.TokenAuthMethods) == 0 || slices.Contains(document.TokenAuthMethods, "client_secret_basic")
 	if !basic {
 		form.Set("client_id", connection.ClientID)
@@ -173,7 +160,6 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 		return nil, upstream("id_token", err)
 	}
 
-	// Some providers keep the address or the groups to the userinfo endpoint.
 	if claimFirst(claims, connection.Attribute("email")) == "" && document.UserInfoEndpoint != "" && token.AccessToken != "" {
 		if extra, err := s.oidcUserInfo(ctx, document.UserInfoEndpoint, token.AccessToken); err == nil &&
 			stringClaim(extra, "sub") == stringClaim(claims, "sub") {
@@ -202,7 +188,6 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 	}, nil
 }
 
-// idTokenLeeway is how far apart two clocks may be.
 const idTokenLeeway = time.Minute
 
 // verifyIDToken checks an id_token is the provider's, for this client, in
@@ -228,7 +213,6 @@ func (s *Service) verifyIDToken(
 			if key, ok := keys[kid]; ok {
 				return key, true
 			}
-			// A token that names no key, from a provider with one.
 			if kid == "" && len(keys) == 1 {
 				for _, key := range keys {
 					return key, true
@@ -240,7 +224,6 @@ func (s *Service) verifyIDToken(
 
 	var claims map[string]any
 	if _, err := jose.Verify(idToken, lookup(keys), &claims); err != nil {
-		// Perhaps the provider has rotated to a key we have not seen yet.
 		if keys, err = s.providerKeys(ctx, document.JWKSURI, true); err != nil {
 			return nil, err
 		}
@@ -275,7 +258,6 @@ func (s *Service) verifyIDToken(
 	return claims, nil
 }
 
-// providerKeys are the keys a provider signs with, by id.
 func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool) (map[string]jose.Key, error) {
 	ssoMemory.mu.Lock()
 	if hit, ok := ssoMemory.keys[jwksURI]; ok && !refresh && s.now().Sub(hit.fetched) < ssoCacheLifetime {
@@ -326,7 +308,6 @@ func (s *Service) oidcUserInfo(ctx context.Context, endpoint, accessToken string
 	return claims, s.doJSON(request, &claims)
 }
 
-// getJSON reads a JSON document from a provider.
 func (s *Service) getJSON(ctx context.Context, address string, into any) error {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
 	if err != nil {
@@ -337,8 +318,6 @@ func (s *Service) getJSON(ctx context.Context, address string, into any) error {
 	return s.doJSON(request, into)
 }
 
-// doJSON makes a request to a provider and decodes its JSON answer, within the
-// time a provider is given and no bigger than a provider's answer should be.
 func (s *Service) doJSON(request *http.Request, into any) error {
 	ctx, cancel := context.WithTimeout(request.Context(), socialTimeout)
 	defer cancel()
@@ -360,7 +339,6 @@ func (s *Service) doJSON(request *http.Request, into any) error {
 	return json.Unmarshal(body, into)
 }
 
-// claimFirst is the first of several claims that has a value.
 func claimFirst(claims map[string]any, names []string) string {
 	for _, name := range names {
 		if value := claimString(claims, name); value != "" {
@@ -371,8 +349,6 @@ func claimFirst(claims map[string]any, names []string) string {
 	return ""
 }
 
-// claimList is a claim that is a list of strings — or one string, which some
-// providers send for a single group.
 func claimList(claims map[string]any, names []string) []string {
 	for _, name := range names {
 		switch value := claimAt(claims, name).(type) {

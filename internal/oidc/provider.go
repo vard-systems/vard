@@ -18,8 +18,6 @@ import (
 	"loginer/internal/store"
 )
 
-// Provider paths relative to the issuer, named here because discovery and
-// redirects use them too.
 const (
 	PathDiscovery  = "/.well-known/openid-configuration"
 	PathJWKS       = "/.well-known/jwks.json"
@@ -31,8 +29,6 @@ const (
 	PathIntrospect = "/oauth2/introspect"
 )
 
-// The pages of the id app the provider sends browsers to, relative to its
-// URL.
 const (
 	PageLogin     = "/login"
 	PageReset     = "/reset-password"
@@ -41,13 +37,11 @@ const (
 	PageLoggedOut = "/logged-out"
 )
 
-// Lockout for users, the same as for administrators.
 const (
 	maxFailedLogins = 5
 	lockoutDuration = 15 * time.Minute
 )
 
-// Service is the provider.
 type Service struct {
 	store      *store.Store
 	keys       *keySet
@@ -56,19 +50,12 @@ type Service struct {
 	issuer     string
 	accountURL string
 
-	// sealer encrypts what is stored and cannot be hashed: the signing keys,
-	// and the secrets of the providers users sign in with.
 	sealer *jose.Sealer
-	// social is the client for the calls this server makes to those
-	// providers. It is a field so a test can answer them itself.
 	social *http.Client
 
-	// now is time.Now, and a test's clock when it needs one.
 	now func() time.Time
 }
 
-// New builds the provider, loading its signing keys and making any that are
-// missing.
 func New(ctx context.Context, cfg config.Config, st *store.Store, mailer mail.Sender, log *slog.Logger) (*Service, error) {
 	sealer, err := jose.NewSealer(cfg.SecretKey)
 	if err != nil {
@@ -93,7 +80,6 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, mailer mail.Se
 	}, nil
 }
 
-// MaintainKeys runs key maintenance until ctx ends.
 func (s *Service) MaintainKeys(ctx context.Context) {
 	ticker := time.NewTicker(keyMaintenanceInterval)
 	defer ticker.Stop()
@@ -110,17 +96,14 @@ func (s *Service) MaintainKeys(ctx context.Context) {
 	}
 }
 
-// SigningKeys describes every published key, newest first.
 func (s *Service) SigningKeys() []KeyInfo {
 	return s.keys.describe()
 }
 
-// RotateKeys makes new signing keys now; see keySet.Rotate.
 func (s *Service) RotateKeys(ctx context.Context, immediate, revoke bool) error {
 	return s.keys.Rotate(ctx, immediate, revoke)
 }
 
-// Issuer is the iss of every token.
 func (s *Service) Issuer() string {
 	return s.issuer
 }
@@ -215,26 +198,19 @@ type JWKS struct {
 	Keys []jose.JWK `json:"keys"`
 }
 
-// JWKS returns every public key tokens may be signed with.
 func (s *Service) JWKS(ctx context.Context) (JWKS, error) {
 	keys, err := s.keys.public(ctx)
 	return JWKS{Keys: keys}, err
 }
 
-// Client is where a browser request came from, for the session and the log.
 type Client struct {
 	IP        string
 	UserAgent string
-	// Language is the sign-in pages' language, for emails sent on the way;
-	// empty is the default.
-	Language string
+	Language  string
 }
 
-// LanguageCookie holds the language chosen on the sign-in pages; same origin,
-// so every provider request carries it.
 const LanguageCookie = brand.LanguageCookie
 
-// withQuery appends parameters to a URL that may already have a query.
 func withQuery(base string, values url.Values) string {
 	u, err := url.Parse(base)
 	if err != nil {
@@ -261,8 +237,6 @@ func (s *Service) errorPage(code, description string) string {
 	return withQuery(s.accountURL+PageError, url.Values{"error": {code}, "error_description": {description}})
 }
 
-// record writes a user's sign-in activity to the log. As for administrators,
-// failing to write it does not fail what it records.
 func (s *Service) record(ctx context.Context, user *model.User, email, action string, client Client, metadata map[string]any) {
 	entry := model.AuditLog{
 		ActorEmail: email,

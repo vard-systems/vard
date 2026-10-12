@@ -12,8 +12,6 @@ import (
 	"loginer/internal/model"
 )
 
-// SocialProviders returns the configured providers, in the order their
-// buttons are shown. `enabledOnly` is what the sign-in pages ask for.
 func (s *Store) SocialProviders(ctx context.Context, enabledOnly bool) ([]model.SocialProvider, error) {
 	query := s.db.WithContext(ctx).Order("position, created_at")
 	if enabledOnly {
@@ -26,7 +24,6 @@ func (s *Store) SocialProviders(ctx context.Context, enabledOnly bool) ([]model.
 	return providers, err
 }
 
-// SocialButton is an enabled provider as the sign-in pages draw its button.
 type SocialButton struct {
 	Slug string `json:"slug"`
 	Name string `json:"name"`
@@ -51,7 +48,6 @@ func (s *Store) SocialButtons(ctx context.Context) ([]SocialButton, error) {
 	})
 }
 
-// SocialProvider returns one provider by id.
 func (s *Store) SocialProvider(ctx context.Context, id uuid.UUID) (*model.SocialProvider, error) {
 	var provider model.SocialProvider
 	if err := s.db.WithContext(ctx).First(&provider, "id = ?", id).Error; err != nil {
@@ -61,7 +57,6 @@ func (s *Store) SocialProvider(ctx context.Context, id uuid.UUID) (*model.Social
 	return &provider, nil
 }
 
-// SocialProviderBySlug returns the provider a callback address names.
 func (s *Store) SocialProviderBySlug(ctx context.Context, slug string) (*model.SocialProvider, error) {
 	var provider model.SocialProvider
 	if err := s.db.WithContext(ctx).First(&provider, "slug = ?", slug).Error; err != nil {
@@ -71,7 +66,6 @@ func (s *Store) SocialProviderBySlug(ctx context.Context, slug string) (*model.S
 	return &provider, nil
 }
 
-// CreateSocialProvider adds a provider.
 func (s *Store) CreateSocialProvider(ctx context.Context, provider *model.SocialProvider) error {
 	if err := translate(s.db.WithContext(ctx).Create(provider).Error); err != nil {
 		return err
@@ -82,7 +76,6 @@ func (s *Store) CreateSocialProvider(ctx context.Context, provider *model.Social
 	return nil
 }
 
-// SaveSocialProvider writes a provider back.
 func (s *Store) SaveSocialProvider(ctx context.Context, provider *model.SocialProvider) error {
 	if err := translate(s.db.WithContext(ctx).Save(provider).Error); err != nil {
 		return err
@@ -93,8 +86,6 @@ func (s *Store) SaveSocialProvider(ctx context.Context, provider *model.SocialPr
 	return nil
 }
 
-// DeleteSocialProvider removes a provider and its identities; the accounts
-// stay.
 func (s *Store) DeleteSocialProvider(ctx context.Context, provider *model.SocialProvider) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Unscoped().Where("provider_id = ?", provider.ID).Delete(&model.SocialIdentity{}).Error
@@ -113,7 +104,6 @@ func (s *Store) DeleteSocialProvider(ctx context.Context, provider *model.Social
 	return nil
 }
 
-// NextSocialPosition is where a new provider's button goes: after the last.
 func (s *Store) NextSocialPosition(ctx context.Context) int {
 	var last model.SocialProvider
 	if err := s.db.WithContext(ctx).Order("position DESC").First(&last).Error; err != nil {
@@ -123,8 +113,6 @@ func (s *Store) NextSocialPosition(ctx context.Context) int {
 	return last.Position + 1
 }
 
-// SocialIdentityCounts is how many users hold an identity at each provider,
-// by provider id, for the panel's list.
 func (s *Store) SocialIdentityCounts(ctx context.Context) (map[uuid.UUID]int64, error) {
 	var rows []struct {
 		ProviderID uuid.UUID
@@ -148,7 +136,6 @@ func (s *Store) SocialIdentityCounts(ctx context.Context) (map[uuid.UUID]int64, 
 	return counts, nil
 }
 
-// SocialIdentity returns the identity a provider's subject belongs to.
 func (s *Store) SocialIdentity(ctx context.Context, providerID uuid.UUID, subject string) (*model.SocialIdentity, error) {
 	var identity model.SocialIdentity
 	err := s.db.WithContext(ctx).
@@ -160,7 +147,6 @@ func (s *Store) SocialIdentity(ctx context.Context, providerID uuid.UUID, subjec
 	return &identity, nil
 }
 
-// SocialIdentities returns every provider one user can sign in with.
 func (s *Store) SocialIdentities(ctx context.Context, userID uuid.UUID) ([]model.SocialIdentity, error) {
 	var identities []model.SocialIdentity
 	err := s.db.WithContext(ctx).
@@ -172,13 +158,10 @@ func (s *Store) SocialIdentities(ctx context.Context, userID uuid.UUID) ([]model
 	return identities, err
 }
 
-// CreateSocialIdentity connects an account at a provider to a user.
 func (s *Store) CreateSocialIdentity(ctx context.Context, identity *model.SocialIdentity) error {
 	return translate(s.db.WithContext(ctx).Create(identity).Error)
 }
 
-// MarkIdentityUsed notes that a user signed in with an identity, and keeps
-// the address the provider gave this time.
 func (s *Store) MarkIdentityUsed(ctx context.Context, identity *model.SocialIdentity, email string, at time.Time) error {
 	identity.LastLoginAt = &at
 	identity.Email = email
@@ -188,12 +171,10 @@ func (s *Store) MarkIdentityUsed(ctx context.Context, identity *model.SocialIden
 		Updates(map[string]any{"last_login_at": at, "email": email}).Error)
 }
 
-// DeleteSocialIdentity disconnects a provider from a user's account.
 func (s *Store) DeleteSocialIdentity(ctx context.Context, identity *model.SocialIdentity) error {
 	return s.db.WithContext(ctx).Unscoped().Delete(identity).Error
 }
 
-// CreateSocialLogin records a sign-in sent to a provider.
 func (s *Store) CreateSocialLogin(ctx context.Context, login *model.SocialLogin) error {
 	return translate(s.db.WithContext(ctx).Create(login).Error)
 }
@@ -218,8 +199,6 @@ func (s *Store) TakeSocialLogin(ctx context.Context, stateHash string, now time.
 	return &login, nil
 }
 
-// SocialAccountsFor is the providers each of these users signs in with, by
-// user id. It is one query for a whole page of users rather than one each.
 func (s *Store) SocialAccountsFor(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]model.SocialAccount, error) {
 	accounts := map[uuid.UUID][]model.SocialAccount{}
 	if len(userIDs) == 0 {
@@ -264,7 +243,6 @@ func (s *Store) SocialAccountsFor(ctx context.Context, userIDs []uuid.UUID) (map
 	return accounts, nil
 }
 
-// SocialIdentityByID returns one identity, for disconnecting it.
 func (s *Store) SocialIdentityByID(ctx context.Context, id uuid.UUID) (*model.SocialIdentity, error) {
 	var identity model.SocialIdentity
 	if err := s.db.WithContext(ctx).First(&identity, "id = ?", id).Error; err != nil {

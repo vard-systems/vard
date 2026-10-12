@@ -12,8 +12,6 @@ import (
 	"loginer/internal/store"
 )
 
-// LogoutParams are the parameters of an RP-initiated logout (OpenID Connect
-// RP-Initiated Logout 1.0).
 type LogoutParams struct {
 	IDTokenHint           string
 	ClientID              string
@@ -31,8 +29,6 @@ type LogoutParams struct {
 func (s *Service) Logout(ctx context.Context, p LogoutParams, sessionToken string, client Client) (location string, signedOut bool, err error) {
 	clientID := p.ClientID
 
-	// subject is who the application says it is ending the session for, from
-	// the hint, or "" when it sent none.
 	var subject string
 
 	if p.IDTokenHint != "" {
@@ -95,8 +91,6 @@ func (s *Service) Logout(ctx context.Context, p LogoutParams, sessionToken strin
 	return withQuery(s.accountURL+PageLoggedOut, values), signedOut, nil
 }
 
-// endSession signs this browser out unless a hint names someone else, and
-// reports whether the request concerned this browser at all.
 func (s *Service) endSession(ctx context.Context, sessionToken, subject string, client Client) (bool, error) {
 	if subject != "" {
 		session, err := s.SessionFor(ctx, sessionToken)
@@ -124,7 +118,6 @@ type PublicApplication struct {
 	AllowRegistration bool   `json:"allow_registration"`
 }
 
-// Public returns what an application's sign-in pages show about it.
 func Public(app *model.Application) PublicApplication {
 	return PublicApplication{
 		Name:              app.Name,
@@ -136,8 +129,6 @@ func Public(app *model.Application) PublicApplication {
 	}
 }
 
-// ApplicationByClientID returns what the signed-out page shows about an
-// application, found by its client id.
 func (s *Service) ApplicationByClientID(ctx context.Context, clientID string) (*PublicApplication, error) {
 	app, err := s.store.ApplicationByClientID(ctx, clientID)
 	if err != nil {

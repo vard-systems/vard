@@ -19,16 +19,12 @@ import (
 // OpenID Connect client must accept; access tokens follow their API's choice.
 const idTokenAlgorithm = jose.RS256
 
-// ClientAuth is how a client identified itself at an endpoint: its id, its
-// secret if it sent one, and which way it sent them.
 type ClientAuth struct {
 	ID     string
 	Secret string
 	Method model.AuthMethod
 }
 
-// authenticate finds the client and holds it to its registered method:
-// confidential clients prove their secret that way; public clients send none.
 func (s *Service) authenticate(ctx context.Context, auth ClientAuth) (*model.Application, error) {
 	if auth.ID == "" {
 		return nil, oauthError(ErrInvalidClient, "client authentication is required")
@@ -59,7 +55,6 @@ func (s *Service) authenticate(ctx context.Context, auth ClientAuth) (*model.App
 	return app, nil
 }
 
-// TokenParams are the parameters of a token request.
 type TokenParams struct {
 	Client       ClientAuth
 	GrantType    string
@@ -81,8 +76,6 @@ type TokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
-// Token handles a token request. An *Error is an OAuth error to answer with;
-// anything else went wrong on the server.
 func (s *Service) Token(ctx context.Context, p TokenParams) (*TokenResponse, error) {
 	app, err := s.authenticate(ctx, p.Client)
 	if err != nil {
@@ -131,18 +124,14 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		return nil, err
 	}
 
-	// The code is this application's: ClaimAuthorizationCode would not have
-	// claimed it otherwise.
 	switch {
 	case !now.Before(code.ExpiresAt):
 		return nil, oauthError(ErrInvalidGrant, "the authorization code has expired")
 	case p.RedirectURI != code.RedirectURI:
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri does not match the authorization request")
 	case !slices.Contains(app.RedirectURIs, code.RedirectURI):
-		// Removed from the application after the code was issued.
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri is no longer registered for this application")
 	case app.RequirePKCE && code.CodeChallenge == "":
-		// PKCE turned on after a code was issued without a challenge.
 		return nil, oauthError(ErrInvalidGrant, "this application now requires PKCE")
 	case code.CodeChallenge != "" && !model.VerifyPKCE(code.CodeChallenge, p.CodeVerifier):
 		return nil, oauthError(ErrInvalidGrant, "code_verifier does not match the code_challenge")
@@ -236,8 +225,6 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		return nil, err
 	}
 
-	// Roles, scopes and user state are evaluated again, so changes apply at the
-	// next refresh.
 	return s.issue(ctx, grant{
 		app:      app,
 		user:     user,
@@ -262,7 +249,6 @@ func (s *Service) clientCredentials(ctx context.Context, app *model.Application,
 	})
 }
 
-// grant is everything issue needs about one token request.
 type grant struct {
 	app      *model.Application
 	user     *model.User
@@ -272,13 +258,10 @@ type grant struct {
 	authTime time.Time
 	session  *uuid.UUID
 	codeID   *uuid.UUID
-	// replaces is the refresh token being rotated, when refreshing.
 	replaces *model.RefreshToken
-	// refusal is the error code for a request EvaluateToken refuses.
-	refusal string
+	refusal  string
 }
 
-// issue evaluates a grant and signs what it amounts to.
 func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 	evaluated, err := s.evaluate(ctx, g.app, g.user, g.scopes, g.audience)
 	if err != nil {
@@ -357,8 +340,6 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 	return response, nil
 }
 
-// newRefreshToken stores a refresh token for a grant: a new family after a
-// code exchange, the next one of the family when refreshing.
 func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (string, error) {
 	now := s.now()
 
@@ -401,8 +382,6 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 	return token, err
 }
 
-// accessClaims are the claims of an access token this server signed that the
-// endpoints accepting one read.
 type accessClaims struct {
 	Issuer   string      `json:"iss"`
 	Subject  string      `json:"sub"`
@@ -440,8 +419,6 @@ func (s *Service) verifyAccessToken(ctx context.Context, token string) (*accessC
 	return &claims, raw, nil
 }
 
-// UserInfo returns the claims about the user an access token was issued for,
-// as the application may see them now.
 func (s *Service) UserInfo(ctx context.Context, accessToken string) (map[string]any, error) {
 	if accessToken == "" {
 		return nil, oauthError(ErrInvalidToken, "an access token is required")
@@ -478,8 +455,6 @@ func (s *Service) UserInfo(ctx context.Context, accessToken string) (map[string]
 		return nil, err
 	}
 
-	// Claims as the ID token would carry them now, from the current record; no
-	// audience is needed.
 	evaluated, err := s.evaluate(ctx, app, user, scopes, "")
 	if err != nil {
 		return nil, err
@@ -565,7 +540,6 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 		return nil, err
 	}
 
-	// A refresh token is only ever described to the client that holds it.
 	if refresh.ApplicationID != app.ID || !refresh.Usable(s.now()) {
 		return inactive, nil
 	}

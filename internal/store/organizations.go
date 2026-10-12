@@ -8,8 +8,6 @@ import (
 	"loginer/internal/model"
 )
 
-// Organization returns the oldest (seeded) row, writing the default if none
-// exists, through the cache since every sign-in page asks.
 func (s *Store) Organization(ctx context.Context) (*model.Organization, error) {
 	var organization model.Organization
 	if s.cache.Get(ctx, cache.Organization, "settings", &organization) {

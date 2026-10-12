@@ -13,13 +13,10 @@ import (
 	"loginer/internal/model"
 )
 
-// scopesByName orders an API's scopes, so they always come out the same way.
 func scopesByName(db *gorm.DB) *gorm.DB {
 	return db.Order("name")
 }
 
-// APIs returns every API matching a search, sorted by name, with its scopes.
-// There are few enough of them that the panel shows all at once.
 func (s *Store) APIs(ctx context.Context, search string) ([]model.API, error) {
 	query := s.db.WithContext(ctx).Model(&model.API{}).Preload("Scopes", scopesByName)
 
@@ -34,7 +31,6 @@ func (s *Store) APIs(ctx context.Context, search string) ([]model.API, error) {
 	return apis, err
 }
 
-// API returns one API by id, with its scopes.
 func (s *Store) API(ctx context.Context, id uuid.UUID) (*model.API, error) {
 	var api model.API
 	if err := s.db.WithContext(ctx).Preload("Scopes", scopesByName).First(&api, "id = ?", id).Error; err != nil {
@@ -44,7 +40,6 @@ func (s *Store) API(ctx context.Context, id uuid.UUID) (*model.API, error) {
 	return &api, nil
 }
 
-// APIByIdentifier returns the API a token audience names, with its scopes.
 func (s *Store) APIByIdentifier(ctx context.Context, identifier string) (*model.API, error) {
 	var api model.API
 	err := s.db.WithContext(ctx).Preload("Scopes", scopesByName).First(&api, "identifier = ?", identifier).Error
@@ -55,13 +50,10 @@ func (s *Store) APIByIdentifier(ctx context.Context, identifier string) (*model.
 	return &api, nil
 }
 
-// APIApplicationCounts says how many applications may use each API, by id.
 func (s *Store) APIApplicationCounts(ctx context.Context) (map[uuid.UUID]int64, error) {
 	return s.countBy(ctx, "application_apis", "api_id", nil)
 }
 
-// APIRoleCounts says how many roles grant at least one scope of each API, by
-// id.
 func (s *Store) APIRoleCounts(ctx context.Context) (map[uuid.UUID]int64, error) {
 	var rows []struct {
 		ID    uuid.UUID
@@ -86,16 +78,12 @@ func (s *Store) APIRoleCounts(ctx context.Context) (map[uuid.UUID]int64, error) 
 	return counts, nil
 }
 
-// APIApplication is what one application may do with an API.
 type APIApplication struct {
 	Application model.Application
 	Authorized  bool
-	// Allowed are the ids of the API's scopes the application may ask for.
-	Allowed []uuid.UUID
+	Allowed     []uuid.UUID
 }
 
-// APIApplications lists applications with their access to an API, by name;
-// `only` narrows to visible applications (nil is all).
 func (s *Store) APIApplications(ctx context.Context, apiID uuid.UUID, only []uuid.UUID) ([]APIApplication, error) {
 	apps, _, err := s.Applications(ctx, ApplicationQuery{Only: only, Limit: 1000})
 	if err != nil {
@@ -130,8 +118,6 @@ func (s *Store) APIApplications(ctx context.Context, apiID uuid.UUID, only []uui
 	return out, nil
 }
 
-// APIAuditLog returns the newest entries involving an API: changes to the API
-// itself, and applications being authorised for it or losing access.
 func (s *Store) APIAuditLog(ctx context.Context, apiID uuid.UUID, limit int) ([]model.AuditLog, error) {
 	var events []model.AuditLog
 	err := s.db.WithContext(ctx).
@@ -147,8 +133,6 @@ func (s *Store) APIAuditLog(ctx context.Context, apiID uuid.UUID, limit int) ([]
 	return events, err
 }
 
-// APIScopesByID returns the API scopes with these ids. An id named twice is
-// one scope, and an id with no scope behind it is ErrNotFound.
 func (s *Store) APIScopesByID(ctx context.Context, ids []uuid.UUID) ([]model.APIScope, error) {
 	scopes := []model.APIScope{}
 	if err := s.byID(ctx, ids, &scopes, func() int { return len(scopes) }); err != nil {
@@ -158,13 +142,10 @@ func (s *Store) APIScopesByID(ctx context.Context, ids []uuid.UUID) ([]model.API
 	return scopes, nil
 }
 
-// CreateAPI writes a new API with its scopes, in one transaction.
 func (s *Store) CreateAPI(ctx context.Context, api *model.API) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Create(api).Error), cache.Grants)
 }
 
-// SaveAPI writes an API and makes its scopes the ones it carries. Kept scopes
-// keep their grants when renamed; dropped scopes are removed with them.
 func (s *Store) SaveAPI(ctx context.Context, api *model.API) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit(clause.Associations).Save(api).Error; err != nil {
@@ -228,8 +209,6 @@ func (s *Store) SaveAPI(ctx context.Context, api *model.API) error {
 	})), cache.Grants)
 }
 
-// DeleteAPI removes an API for good, with its scopes, every application's
-// authorisation for it, and every role's grant of its scopes.
 func (s *Store) DeleteAPI(ctx context.Context, api *model.API) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var scopeIDs []uuid.UUID
@@ -249,7 +228,6 @@ func (s *Store) DeleteAPI(ctx context.Context, api *model.API) error {
 	}), cache.Grants)
 }
 
-// removeScopes deletes API scopes and every allowance and grant of them.
 func removeScopes(tx *gorm.DB, ids []uuid.UUID) error {
 	if len(ids) == 0 {
 		return nil
@@ -270,17 +248,12 @@ func removeScopes(tx *gorm.DB, ids []uuid.UUID) error {
 	return nil
 }
 
-// APIAccess is what one application may do with one API: whether it may ask
-// for tokens for it at all, and which of its scopes.
 type APIAccess struct {
 	API        model.API
 	Authorized bool
-	// Allowed are the ids of the API's scopes the application may ask for.
-	Allowed []uuid.UUID
+	Allowed    []uuid.UUID
 }
 
-// ApplicationAPIAccess lists every API with what the application may do with
-// it, sorted by API name.
 func (s *Store) ApplicationAPIAccess(ctx context.Context, applicationID uuid.UUID) ([]APIAccess, error) {
 	apis, err := s.APIs(ctx, "")
 	if err != nil {
@@ -325,8 +298,6 @@ func (s *Store) ApplicationAPIAccess(ctx context.Context, applicationID uuid.UUI
 	return out, nil
 }
 
-// AuthorizeApplicationAPI lets an application ask for tokens for an API, and
-// makes `scopes` — which must be the API's — the scopes it may ask for.
 func (s *Store) AuthorizeApplicationAPI(ctx context.Context, applicationID, apiID uuid.UUID, scopes []uuid.UUID) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		grant := model.ApplicationAPI{ApplicationID: applicationID, APIID: apiID}
@@ -353,7 +324,6 @@ func (s *Store) AuthorizeApplicationAPI(ctx context.Context, applicationID, apiI
 	}), cache.Grants)
 }
 
-// RevokeApplicationAPI stops an application asking for tokens for an API.
 func (s *Store) RevokeApplicationAPI(ctx context.Context, applicationID, apiID uuid.UUID) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Exec(

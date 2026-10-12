@@ -11,7 +11,6 @@ import (
 	"loginer/internal/model"
 )
 
-// OTPSettings returns the single row, or the default when none exists.
 func (s *Store) OTPSettings(ctx context.Context) (*model.OTPSettings, error) {
 	settings, err := cached(ctx, s, cache.OTPSettings, "settings", func() (model.OTPSettings, error) {
 		var settings model.OTPSettings
@@ -33,8 +32,6 @@ func (s *Store) OTPSettings(ctx context.Context) (*model.OTPSettings, error) {
 	return &settings, nil
 }
 
-// EnsureOTPSettings writes the row a fresh installation starts with and
-// leaves one that already has it alone.
 func (s *Store) EnsureOTPSettings(ctx context.Context) error {
 	var count int64
 	if err := s.db.WithContext(ctx).Model(&model.OTPSettings{}).Count(&count).Error; err != nil {
@@ -49,13 +46,10 @@ func (s *Store) EnsureOTPSettings(ctx context.Context) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Create(&settings).Error), cache.OTPSettings)
 }
 
-// SaveOTPSettings writes the settings back.
 func (s *Store) SaveOTPSettings(ctx context.Context, settings *model.OTPSettings) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Save(settings).Error), cache.OTPSettings)
 }
 
-// CreateLoginCode stores a sign-in waiting for a code and drops the user's
-// previous one, so an already read code cannot be used.
 func (s *Store) CreateLoginCode(ctx context.Context, code *model.LoginCode) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// One sign-in at a time per user, so two started at once leave one
@@ -86,7 +80,6 @@ func (s *Store) CreateLoginCode(ctx context.Context, code *model.LoginCode) erro
 	})
 }
 
-// LoginCodeByHash finds a waiting sign-in by handle, with its user.
 func (s *Store) LoginCodeByHash(ctx context.Context, hash string) (*model.LoginCode, error) {
 	var code model.LoginCode
 
@@ -147,8 +140,6 @@ func (s *Store) ConsumeLoginCode(ctx context.Context, code *model.LoginCode, now
 	return true, nil
 }
 
-// ResendLoginCode replaces the code without restarting: the handle stays and
-// spent guesses stay spent.
 func (s *Store) ResendLoginCode(ctx context.Context, code *model.LoginCode, hash string, sentAt, expiresAt time.Time) error {
 	// expires_at is unchanged: a resend does not extend the sign-in.
 	_ = expiresAt

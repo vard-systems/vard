@@ -26,8 +26,6 @@ func (s *Store) MailSettings(ctx context.Context) (*model.MailSettings, error) {
 	return &settings, nil
 }
 
-// EnsureMailSettings seeds the row from configuration on a fresh installation
-// and leaves an existing one alone.
 func (s *Store) EnsureMailSettings(ctx context.Context, settings model.MailSettings) error {
 	var count int64
 	if err := s.db.WithContext(ctx).Model(&model.MailSettings{}).Count(&count).Error; err != nil {
@@ -40,7 +38,6 @@ func (s *Store) EnsureMailSettings(ctx context.Context, settings model.MailSetti
 	return translate(s.db.WithContext(ctx).Create(&settings).Error)
 }
 
-// SaveMailSettings writes the settings back.
 func (s *Store) SaveMailSettings(ctx context.Context, settings *model.MailSettings) error {
 	return translate(s.db.WithContext(ctx).Save(settings).Error)
 }

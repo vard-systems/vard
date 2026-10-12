@@ -10,23 +10,15 @@ import (
 	"loginer/internal/model"
 )
 
-// User sessions for the Sessions page are never counted or offset-paged: they
-// are read newest first by (created_at, id) and continued from the last shown,
-// so every page costs the same.
-
-// SessionQuery narrows the list of active sessions.
 type SessionQuery struct {
 	// Search is the start of an address — "ada" finds ada@example.com — so it
 	// can use the prefix index on users.email rather than read every user.
 	Search string
-	// UserID keeps one user's sessions.
 	UserID uuid.UUID
-	// After continues a list: the sessions started before this one.
-	After uuid.UUID
-	Limit int
+	After  uuid.UUID
+	Limit  int
 }
 
-// ActiveSession is a session still signing somebody in, with who they are.
 type ActiveSession struct {
 	model.UserSession
 	Email     string
@@ -34,7 +26,6 @@ type ActiveSession struct {
 	LastName  string
 }
 
-// ActiveSessions lists the sessions still signing somebody in, newest first.
 func (s *Store) ActiveSessions(ctx context.Context, q SessionQuery, now time.Time) ([]ActiveSession, error) {
 	query := s.db.WithContext(ctx).
 		Table("user_sessions").
@@ -64,7 +55,6 @@ func (s *Store) ActiveSessions(ctx context.Context, q SessionQuery, now time.Tim
 	return sessions, err
 }
 
-// UserSession returns one session by id, whatever its state.
 func (s *Store) UserSession(ctx context.Context, id uuid.UUID) (*model.UserSession, error) {
 	var session model.UserSession
 	if err := s.db.WithContext(ctx).First(&session, "id = ?", id).Error; err != nil {
@@ -74,8 +64,6 @@ func (s *Store) UserSession(ctx context.Context, id uuid.UUID) (*model.UserSessi
 	return &session, nil
 }
 
-// SignOutUser ends every session and revokes every refresh token of a user in
-// one transaction, so applications are signed out too.
 func (s *Store) SignOutUser(ctx context.Context, user uuid.UUID, at time.Time) (sessions, tokens int64, err error) {
 	var ended []model.UserSession
 
