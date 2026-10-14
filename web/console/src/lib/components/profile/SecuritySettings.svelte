@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiComputerLine, RiShieldKeyholeLine } from 'svelte-remixicon';
-	import { adminApi, messageOf, mfaApi, type AdminSession } from '$lib/api';
-	import RecoveryCodes from '$lib/components/mfa/RecoveryCodes.svelte';
-	import TotpSetup from '$lib/components/mfa/TotpSetup.svelte';
-	import SessionList from '$lib/components/profile/SessionList.svelte';
+	import { adminApi, messageOf, mfaApi, type AdminSession } from '#lib/api/index.js';
+	import RecoveryCodes from '#lib/components/mfa/RecoveryCodes.svelte';
+	import TotpSetup from '#lib/components/mfa/TotpSetup.svelte';
+	import SessionList from '#lib/components/profile/SessionList.svelte';
 	import {
 		Alert,
 		Button,
@@ -16,9 +16,9 @@
 		Thumb,
 		ConfirmDialog,
 		notify
-	} from '$lib/components/ui';
-	import { keys, mfaStatusOptions, profileSessionsOptions } from '$lib/query';
-	import { formatRelative } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import { keys, mfaStatusOptions, profileSessionsOptions } from '#lib/query/index.js';
+	import { formatRelative } from '#lib/utils/format.js';
 
 	const queryClient = useQueryClient();
 

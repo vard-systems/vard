@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { requiredSSO, signIn } from '$lib/api';
-	import { Alert, AuthCard, Button, TextField } from '$lib/components';
-	import { messageOf, useTranslator } from '$lib/i18n';
-	import { authHref, leaveTo, ssoHref } from '$lib/utils/links';
+	import { requiredSSO, signIn } from '#lib/api/index.js';
+	import { Alert, AuthCard, Button, TextField } from '#lib/components/index.js';
+	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { authHref, leaveTo, ssoHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

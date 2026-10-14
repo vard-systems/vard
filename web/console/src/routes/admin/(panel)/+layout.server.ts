@@ -1,8 +1,8 @@
-import type { Admin, OrganizationBrand } from '$lib/api';
-import { COOKIES } from '$lib/brand';
-import { ADMIN_DEPENDENCY } from '$lib/constants';
-import { apiGet } from '$lib/server/api';
-import { isSidebarState, parseClosedGroups, type SidebarState } from '$lib/state/sidebar';
+import type { Admin, OrganizationBrand } from '#lib/api/index.js';
+import { COOKIES } from '#lib/brand.js';
+import { ADMIN_DEPENDENCY } from '#lib/constants.js';
+import { apiGet } from '#lib/server/api.js';
+import { isSidebarState, parseClosedGroups, type SidebarState } from '#lib/state/sidebar.js';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ cookies, depends, fetch }) => {

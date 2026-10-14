@@ -8,8 +8,8 @@ import {
 } from 'svelte-remixicon';
 import type { ComponentType } from 'svelte';
 
-import type { SocialKind, SocialProvider, SocialSpec } from '$lib/api';
-import type { SelectOption } from '$lib/components/ui';
+import type { SocialKind, SocialProvider, SocialSpec } from '#lib/api/index.js';
+import type { SelectOption } from '#lib/components/ui/index.js';
 
 const marks: Record<SocialKind, ComponentType> = {
 	google: RiGoogleFill,

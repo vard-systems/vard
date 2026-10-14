@@ -13,7 +13,7 @@
 		type Application,
 		type TokenPreview,
 		type UserRecord
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Button,
 		CodeBlock,
@@ -23,9 +23,9 @@
 		Select,
 		type SelectOption,
 		notify
-	} from '$lib/components/ui';
-	import { can } from '$lib/permissions';
-	import { applicationAccessOptions, userSearchOptions } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { can } from '#lib/permissions.js';
+	import { applicationAccessOptions, userSearchOptions } from '#lib/query/index.js';
 
 	type Props = {
 		application: Application;

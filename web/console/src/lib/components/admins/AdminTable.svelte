@@ -7,9 +7,9 @@
 		RiTimeLine,
 		RiToggleLine
 	} from 'svelte-remixicon';
-	import type { AdminRecord, AdminStatus } from '$lib/api';
-	import { Badge, Code, type Column, DataTable, Tag } from '$lib/components/ui';
-	import { formatDateTime } from '$lib/utils/format';
+	import type { AdminRecord, AdminStatus } from '#lib/api/index.js';
+	import { Badge, Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
+	import { formatDateTime } from '#lib/utils/format.js';
 
 	type Props = {
 		admins: AdminRecord[];

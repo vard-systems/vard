@@ -1,6 +1,6 @@
 import { infiniteQueryOptions } from '@tanstack/svelte-query';
 
-import { sessionsApi, type UserSessionPage } from '$lib/api';
+import { sessionsApi, type UserSessionPage } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export const SESSIONS_PAGE_SIZE = 50;

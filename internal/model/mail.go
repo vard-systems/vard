@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"net/mail"
+	"slices"
 	"strings"
 
 	"loginer/internal/brand"
@@ -13,16 +14,16 @@ type MailSettings struct {
 
 	IsEnabled bool `gorm:"not null" json:"is_enabled"`
 
-	Host string `gorm:"size:255" json:"host"`
+	Host string `gorm:"size:255;not null;default:''" json:"host"`
 	Port int    `gorm:"not null" json:"port"`
 
 	Encryption MailEncryption `gorm:"type:varchar(16);not null" json:"encryption"`
 
-	Username string `gorm:"size:255" json:"username"`
+	Username string `gorm:"size:255;not null;default:''" json:"username"`
 	Password []byte `gorm:"type:bytea" json:"-"`
 
-	FromAddress string `gorm:"size:255" json:"from_address"`
-	FromName    string `gorm:"size:100" json:"from_name"`
+	FromAddress string `gorm:"size:255;not null;default:''" json:"from_address"`
+	FromName    string `gorm:"size:100;not null;default:''" json:"from_name"`
 }
 
 func (MailSettings) TableName() string {
@@ -42,13 +43,7 @@ const (
 var MailEncryptions = []MailEncryption{MailStartTLS, MailTLS, MailNone}
 
 func IsMailEncryption(value MailEncryption) bool {
-	for _, known := range MailEncryptions {
-		if known == value {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(MailEncryptions, value)
 }
 
 // DefaultMailSettings sends nothing: a configured host that does not answer
@@ -200,11 +195,5 @@ func IsMailTextKey(key string) bool {
 // IsMailMessageKey reports whether a key is one of them, so a write to the
 // Mail page cannot reach the rest of a language's text.
 func IsMailMessageKey(key string) bool {
-	for _, known := range MailMessageKeys() {
-		if known == key {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(MailMessageKeys(), key)
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RiMoonLine, RiSunLine } from 'svelte-remixicon';
-	import { theme } from '$lib/state/theme.svelte';
+	import { theme } from '#lib/state/theme.svelte.js';
 	import type { Size } from './control';
 	import Icon from './Icon.svelte';
 	import Tooltip from './Tooltip.svelte';

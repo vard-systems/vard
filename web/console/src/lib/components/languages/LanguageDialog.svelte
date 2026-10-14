@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { RiSettings3Line, RiTranslate2 } from 'svelte-remixicon';
-	import { languagesApi, type Language, type LocaleApp } from '$lib/api';
+	import { languagesApi, type Language, type LocaleApp } from '#lib/api/index.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -14,8 +14,8 @@
 		SwitchField,
 		Tabs,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import TranslationEditor from './TranslationEditor.svelte';
 
 	type Props = {

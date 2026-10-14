@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RiErrorWarningLine } from 'svelte-remixicon';
-	import { CopyButton, Icon } from '$lib/components/ui';
+	import { CopyButton, Icon } from '#lib/components/ui/index.js';
 
 	type Props = {
 		clientId: string;

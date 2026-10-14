@@ -361,10 +361,13 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`admin_password_required`](/reference/errors#admin_password_required) | A password is required. |
+| 400 | [`admin_password_too_short`](/reference/errors#admin_password_too_short) | The password must be at least {min} characters. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`admin_email_taken`](/reference/errors#admin_email_taken) | An administrator with this email already exists. |
 
 ## GET /api/v1/admin/admins/:id {#get-api-v1-admin-admins-id}
 
@@ -465,6 +468,7 @@ response.raise_for_status()
 | --- | --- | --- |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`admin_not_found`](/reference/errors#admin_not_found) | There is no such administrator. |
 
 ## PATCH /api/v1/admin/admins/:id {#patch-api-v1-admin-admins-id}
 
@@ -562,10 +566,14 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`admin_password_required`](/reference/errors#admin_password_required) | A password is required. |
+| 400 | [`admin_password_too_short`](/reference/errors#admin_password_too_short) | The password must be at least {min} characters. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`admin_not_found`](/reference/errors#admin_not_found) | There is no such administrator. |
+| 409 | [`admin_email_taken`](/reference/errors#admin_email_taken) | An administrator with this email already exists. |
 
 ## DELETE /api/v1/admin/admins/:id {#delete-api-v1-admin-admins-id}
 
@@ -632,6 +640,8 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`admin_not_found`](/reference/errors#admin_not_found) | There is no such administrator. |
+| 409 | [`admin_own_account`](/reference/errors#admin_own_account) | You cannot delete your own account. |
 
 ## DELETE /api/v1/admin/admins/:id/mfa {#delete-api-v1-admin-admins-id-mfa}
 
@@ -698,3 +708,5 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`admin_not_found`](/reference/errors#admin_not_found) | There is no such administrator. |
+| 409 | [`admin_own_mfa`](/reference/errors#admin_own_mfa) | You cannot reset your own two-factor sign-in here. Manage it from your profile. |

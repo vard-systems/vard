@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { RiArrowGoBackLine } from 'svelte-remixicon';
-	import { languagesApi, type Language, type ShippedLanguage } from '$lib/api';
+	import { languagesApi, type Language, type ShippedLanguage } from '#lib/api/index.js';
 	import {
 		Button,
 		FullscreenDialog,
@@ -13,8 +13,8 @@
 		Select,
 		SwitchField,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import { languageCode, namesOf } from './translations';
 
 	type Props = {

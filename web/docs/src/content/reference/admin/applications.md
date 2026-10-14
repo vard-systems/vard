@@ -240,6 +240,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## PATCH /api/v1/admin/applications/:id {#patch-api-v1-admin-applications-id}
 
@@ -392,12 +393,17 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`application_login_flow_unknown`](/reference/errors#application_login_flow_unknown) | There is no such login flow. |
+| 400 | [`application_too_many_uris`](/reference/errors#application_too_many_uris) | An application may have at most {max} redirect URIs of each kind. |
+| 400 | [`application_type_fixed`](/reference/errors#application_type_fixed) | An application's type cannot be changed: register a new application instead. |
+| 400 | [`application_type_invalid`](/reference/errors#application_type_invalid) | The type must be one of: web, spa, native, m2m. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
 | 403 | [`system_application_change`](/reference/errors#system_application_change) | Only a super admin can change an application that has access to the admin API, or rotate its secret. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## POST /api/v1/admin/applications/:id/secret {#post-api-v1-admin-applications-id-secret}
 
@@ -510,11 +516,13 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`application_no_secret`](/reference/errors#application_no_secret) | A public client has no secret to rotate. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
 | 403 | [`system_application_change`](/reference/errors#system_application_change) | Only a super admin can change an application that has access to the admin API, or rotate its secret. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## GET /api/v1/admin/applications/:id/apis {#get-api-v1-admin-applications-id-apis}
 
@@ -601,6 +609,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## PUT /api/v1/admin/applications/:id/apis/:api {#put-api-v1-admin-applications-id-apis-api}
 
@@ -711,12 +720,15 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`application_api_scope_foreign`](/reference/errors#application_api_scope_foreign) | One of the scopes is not a scope of {api}. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
 | 403 | [`system_api_access`](/reference/errors#system_api_access) | Only a super admin can give an application access to the server's own APIs, or take it away. |
+| 404 | [`api_not_found`](/reference/errors#api_not_found) | There is no such API. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## DELETE /api/v1/admin/applications/:id/apis/:api {#delete-api-v1-admin-applications-id-apis-api}
 
@@ -806,6 +818,8 @@ response.raise_for_status()
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
 | 403 | [`system_api_access`](/reference/errors#system_api_access) | Only a super admin can give an application access to the server's own APIs, or take it away. |
+| 404 | [`api_not_found`](/reference/errors#api_not_found) | There is no such API. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## POST /api/v1/admin/applications/:id/token-preview {#post-api-v1-admin-applications-id-token-preview}
 
@@ -917,10 +931,13 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`token_preview_audience_unknown`](/reference/errors#token_preview_audience_unknown) | No API has that identifier. |
+| 400 | [`token_preview_user_unknown`](/reference/errors#token_preview_user_unknown) | There is no such user to preview a token for. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## POST /api/v1/admin/applications {#post-api-v1-admin-applications}
 
@@ -1067,6 +1084,9 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`application_login_flow_unknown`](/reference/errors#application_login_flow_unknown) | There is no such login flow. |
+| 400 | [`application_too_many_uris`](/reference/errors#application_too_many_uris) | An application may have at most {max} redirect URIs of each kind. |
+| 400 | [`application_type_invalid`](/reference/errors#application_type_invalid) | The type must be one of: web, spa, native, m2m. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
@@ -1139,4 +1159,5 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 | 409 | [`system_application`](/reference/errors#system_application) | admin-cli is part of the server and cannot be deleted. Turn it off instead. |

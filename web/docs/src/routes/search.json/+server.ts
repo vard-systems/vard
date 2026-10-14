@@ -1,7 +1,6 @@
-import { json } from '@sveltejs/kit';
-import { pages } from '$lib/server/content';
-import { render } from '$lib/server/markdown';
-import type { SearchEntry } from '$lib/docs/types';
+import { pages } from '#lib/server/content.js';
+import { render } from '#lib/server/markdown.js';
+import type { SearchEntry } from '#lib/docs/types.js';
 
 // What the search box looks through: every page, and every heading on one —
 // which, on a reference page, is every endpoint. Written once while building,
@@ -27,5 +26,5 @@ export async function GET() {
 		}
 	}
 
-	return json(entries);
+	return Response.json(entries);
 }

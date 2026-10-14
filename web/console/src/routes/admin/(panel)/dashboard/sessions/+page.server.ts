@@ -1,6 +1,6 @@
-import type { UserSessionPage } from '$lib/api';
-import { SESSIONS_PAGE_SIZE } from '$lib/query';
-import { apiGet, requirePermission } from '$lib/server/api';
+import type { UserSessionPage } from '#lib/api/index.js';
+import { SESSIONS_PAGE_SIZE } from '#lib/query/index.js';
+import { apiGet, requirePermission } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {

@@ -13,9 +13,8 @@ import (
 
 // The problems these endpoints answer with that are their own.
 var (
-	applicationNotFound = respond.Define(http.StatusNotFound, "application_not_found", respond.Public)
-	passwordTooShort    = respond.Define(http.StatusBadRequest, "password_too_short", respond.Public)
-	noSSOConnection     = respond.Define(http.StatusNotFound, "no_sso_connection", respond.Public)
+	passwordTooShort = respond.Define(http.StatusBadRequest, "password_too_short", respond.Public)
+	noSSOConnection  = respond.Define(http.StatusNotFound, "no_sso_connection", respond.Public)
 )
 
 // provided maps every provider problem (oidc.Problems) to a public API problem

@@ -17,16 +17,16 @@
 		createQuery,
 		useQueryClient
 	} from '@tanstack/svelte-query';
-	import { rolesApi, type Role } from '$lib/api';
-	import { BRAND } from '$lib/brand';
+	import { rolesApi, type Role } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		applicationChoicesOptions,
 		keys,
 		roleChoicesOptions,
 		rolesOptions,
 		uniqueById
-	} from '$lib/query';
-	import { canEditRoles } from '$lib/components/roles/roles';
+	} from '#lib/query/index.js';
+	import { canEditRoles } from '#lib/components/roles/roles.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -39,10 +39,10 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import RoleDialog from '$lib/components/roles/RoleDialog.svelte';
-	import RoleTable from '$lib/components/roles/RoleTable.svelte';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import RoleDialog from '#lib/components/roles/RoleDialog.svelte';
+	import RoleTable from '#lib/components/roles/RoleTable.svelte';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -101,7 +101,7 @@
 		search?: string;
 		default?: string;
 	}) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -114,7 +114,7 @@
 		// resolve() has already applied any base path; the query is only ever
 		// appended to what it returned.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

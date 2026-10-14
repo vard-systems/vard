@@ -1,4 +1,4 @@
-import { COOKIES } from '$lib/brand';
+import { COOKIES } from '#lib/brand.js';
 
 export type SidebarState = 'wide' | 'mini';
 

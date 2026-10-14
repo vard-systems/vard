@@ -11,8 +11,8 @@
 		RiRefreshLine
 	} from 'svelte-remixicon';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { socialApi, type SocialProvider } from '$lib/api';
-	import { BRAND } from '$lib/brand';
+	import { socialApi, type SocialProvider } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -25,12 +25,12 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import SocialDialog from '$lib/components/social/SocialDialog.svelte';
-	import SocialTable from '$lib/components/social/SocialTable.svelte';
-	import { can } from '$lib/permissions';
-	import { firstPage, keys, LIST_PAGE_SIZE, socialProvidersOptions } from '$lib/query';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import SocialDialog from '#lib/components/social/SocialDialog.svelte';
+	import SocialTable from '#lib/components/social/SocialTable.svelte';
+	import { can } from '#lib/permissions.js';
+	import { firstPage, keys, LIST_PAGE_SIZE, socialProvidersOptions } from '#lib/query/index.js';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -80,7 +80,7 @@
 	);
 
 	async function apply(changes: { search?: string; status?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -93,7 +93,7 @@
 		// resolve() has already applied any base path; the query is only ever
 		// appended to what it returned.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

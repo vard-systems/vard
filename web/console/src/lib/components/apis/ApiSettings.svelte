@@ -4,7 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { RiLinksLine } from 'svelte-remixicon';
-	import { apisApi, type API, type SigningAlgorithm } from '$lib/api';
+	import { apisApi, type API, type SigningAlgorithm } from '#lib/api/index.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -17,8 +17,8 @@
 		SwitchField,
 		Textarea,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import { algorithms, apiInput, roleBasedAccess } from './scopes';
 
 	type Props = {

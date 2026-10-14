@@ -4,9 +4,9 @@ import type {
 	AdminRole,
 	AdminSecurity,
 	ApplicationPage
-} from '$lib/api';
-import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE } from '$lib/query';
-import { apiGet, requirePermission } from '$lib/server/api';
+} from '#lib/api/index.js';
+import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE } from '#lib/query/index.js';
+import { apiGet, requirePermission } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {

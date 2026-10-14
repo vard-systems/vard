@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { RiAddLine, RiBuilding2Line, RiRefreshLine } from 'svelte-remixicon';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { SSOConnection } from '$lib/api';
-	import { BRAND } from '$lib/brand';
+	import type { SSOConnection } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		Button,
 		Icon,
@@ -11,11 +11,11 @@
 		SearchInput,
 		ShowMore,
 		Toolbar
-	} from '$lib/components/ui';
-	import SSODialog from '$lib/components/sso/SSODialog.svelte';
-	import SSOTable from '$lib/components/sso/SSOTable.svelte';
-	import { can } from '$lib/permissions';
-	import { firstPage, keys, LIST_PAGE_SIZE, ssoOptions } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import SSODialog from '#lib/components/sso/SSODialog.svelte';
+	import SSOTable from '#lib/components/sso/SSOTable.svelte';
+	import { can } from '#lib/permissions.js';
+	import { firstPage, keys, LIST_PAGE_SIZE, ssoOptions } from '#lib/query/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

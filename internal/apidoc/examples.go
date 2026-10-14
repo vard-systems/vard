@@ -45,7 +45,7 @@ func requestOf(server Server, op Operation) request {
 	}
 
 	literal := ""
-	for _, part := range strings.Split(strings.TrimPrefix(op.Path, "/"), "/") {
+	for part := range strings.SplitSeq(strings.TrimPrefix(op.Path, "/"), "/") {
 		if name, ok := strings.CutPrefix(part, ":"); ok {
 			r.segments = append(r.segments, segment{text: literal + "/"}, segment{text: name, param: true})
 			literal = ""
@@ -158,23 +158,24 @@ func (r request) samples() []sample {
 }
 
 func (r request) curl() string {
-	target := "$" + r.base
+	var target strings.Builder
+	target.WriteString("$" + r.base)
 	for _, s := range r.segments {
 		if s.param {
-			target += "$" + strings.ToUpper(s.text)
+			target.WriteString("$" + strings.ToUpper(s.text))
 		} else {
-			target += s.text
+			target.WriteString(s.text)
 		}
 	}
 	if len(r.query) > 0 {
-		target += "?" + encode(r.query)
+		target.WriteString("?" + encode(r.query))
 	}
 
 	lines := []string{"curl"}
 	if r.method != http.MethodGet {
 		lines[0] += " -X " + r.method
 	}
-	lines[0] += ` "` + target + `"`
+	lines[0] += ` "` + target.String() + `"`
 
 	switch {
 	case r.session != "":
@@ -203,20 +204,21 @@ func (r request) curl() string {
 func (r request) java() string {
 	var b strings.Builder
 
-	uri := r.base
+	var uri strings.Builder
+	uri.WriteString(r.base)
 	for _, s := range r.segments {
 		if s.param {
-			uri += " + " + camel(s.text, false)
+			uri.WriteString(" + " + camel(s.text, false))
 		} else {
-			uri += " + " + quoteJava(s.text)
+			uri.WriteString(" + " + quoteJava(s.text))
 		}
 	}
 	if len(r.query) > 0 {
-		uri += " + " + quoteJava("?"+encode(r.query))
+		uri.WriteString(" + " + quoteJava("?"+encode(r.query)))
 	}
 
 	b.WriteString("HttpRequest request = HttpRequest.newBuilder()\n")
-	fmt.Fprintf(&b, "        .uri(URI.create(%s))\n", uri)
+	fmt.Fprintf(&b, "        .uri(URI.create(%s))\n", uri.String())
 
 	switch {
 	case r.session != "":
@@ -270,16 +272,17 @@ func (r request) java() string {
 func (r request) golang() string {
 	var b strings.Builder
 
-	target := goName(r.base)
+	var target strings.Builder
+	target.WriteString(goName(r.base))
 	for _, s := range r.segments {
 		if s.param {
-			target += "+" + camel(s.text, true)
+			target.WriteString("+" + camel(s.text, true))
 		} else {
-			target += "+" + fmt.Sprintf("%q", s.text)
+			target.WriteString("+" + fmt.Sprintf("%q", s.text))
 		}
 	}
 	if len(r.query) > 0 {
-		target += "+" + fmt.Sprintf("%q", "?"+encode(r.query))
+		target.WriteString("+" + fmt.Sprintf("%q", "?"+encode(r.query)))
 	}
 
 	body := "nil"
@@ -297,7 +300,7 @@ func (r request) golang() string {
 		body = "strings.NewReader(form.Encode())"
 	}
 
-	fmt.Fprintf(&b, "req, err := http.NewRequest(http.Method%s, %s, %s)\n", goMethod(r.method), target, body)
+	fmt.Fprintf(&b, "req, err := http.NewRequest(http.Method%s, %s, %s)\n", goMethod(r.method), target.String(), body)
 	b.WriteString("if err != nil {\n\treturn err\n}\n")
 
 	switch {
@@ -333,16 +336,17 @@ func goMethod(method string) string {
 func (r request) python() string {
 	var b strings.Builder
 
-	target := "{" + r.base + "}"
+	var target strings.Builder
+	target.WriteString("{" + r.base + "}")
 	for _, s := range r.segments {
 		if s.param {
-			target += "{" + s.text + "}"
+			target.WriteString("{" + s.text + "}")
 		} else {
-			target += s.text
+			target.WriteString(s.text)
 		}
 	}
 
-	args := []string{`f"` + target + `"`}
+	args := []string{`f"` + target.String() + `"`}
 	if len(r.query) > 0 {
 		args = append(args, "params="+pythonPairs(r.query))
 	}

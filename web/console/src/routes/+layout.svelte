@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { QueryClientProvider } from '@tanstack/svelte-query';
-	import NavigationProgress from '$lib/components/layout/NavigationProgress.svelte';
-	import { Toaster } from '$lib/components/ui';
-	import { createQueryClient } from '$lib/query';
-	import '$lib/styles/app.css';
+	import NavigationProgress from '#lib/components/layout/NavigationProgress.svelte';
+	import { Toaster } from '#lib/components/ui/index.js';
+	import { createQueryClient } from '#lib/query/index.js';
+	import '#lib/styles/app.css';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();

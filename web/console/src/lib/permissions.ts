@@ -1,4 +1,4 @@
-import type { Admin, AdminPermissionName } from '$lib/api';
+import type { Admin, AdminPermissionName } from '#lib/api/index.js';
 
 /**
  * What the signed-in administrator may do, for deciding what to show. The server checks every

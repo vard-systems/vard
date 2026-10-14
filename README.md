@@ -118,8 +118,8 @@ make bench              # Go micro-benchmarks
 make docs               # regenerate the API reference after changing handlers
 ```
 
-`AGENTS.md` is the contributor guide: where things live and how each kind of
-change is made. What was tested before this release, and what was fixed, is in
+[`CLAUDE.md`](CLAUDE.md) is the contributor guide: where things live, how each
+kind of change is made, and the security invariants every change keeps. What was tested before this release, and what was fixed, is in
 [`TESTING.md`](TESTING.md).
 
 ## Third-party assets

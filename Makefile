@@ -76,7 +76,7 @@ migrate-status: ## Show applied migrations
 
 migrate-new: ## Create a migration — make migrate-new name=add_x
 	@test -n "$(name)" || { echo "usage: make migrate-new name=add_x"; exit 1; }
-	go tool goose -dir migrations create $(name) go
+	go run ./cmd/migrate new $(name)
 
 db-create db-reset db-psql: ## Create, reset or open the database in .env
 	@scripts/db.sh $(@:db-%=%)

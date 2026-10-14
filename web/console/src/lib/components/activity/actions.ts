@@ -19,7 +19,7 @@ import {
 	RiTranslate2,
 	RiUserLine
 } from 'svelte-remixicon';
-import type { ActivityEvent } from '$lib/api';
+import type { ActivityEvent } from '#lib/api/index.js';
 
 /**
  * The activity log's actions ("<resource>.<event>", from audit.Record) as a sentence, icon and

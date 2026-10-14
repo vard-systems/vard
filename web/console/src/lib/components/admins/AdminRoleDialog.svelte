@@ -6,7 +6,7 @@
 		type AdminPermission,
 		type AdminPermissionName,
 		type AdminRole
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Alert,
 		Badge,
@@ -16,10 +16,10 @@
 		Input,
 		Textarea,
 		notify
-	} from '$lib/components/ui';
-	import Choice from '$lib/components/roles/Choice.svelte';
-	import { tidyName } from '$lib/components/roles/roles';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import Choice from '#lib/components/roles/Choice.svelte';
+	import { tidyName } from '#lib/components/roles/roles.js';
+	import { keys } from '#lib/query/index.js';
 	import { byGroup } from './permissions';
 
 	type Props = {

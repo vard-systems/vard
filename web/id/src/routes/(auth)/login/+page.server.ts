@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
-import { currentUser } from '$lib/server/session';
-import { safeNext } from '$lib/utils/next';
+import { currentUser } from '#lib/server/session.js';
+import { safeNext } from '#lib/utils/next.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, cookies, fetch }) => {

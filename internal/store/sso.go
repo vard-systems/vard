@@ -110,7 +110,7 @@ func (s *Store) CreateSSOConnection(ctx context.Context, connection *model.SSOCo
 func (s *Store) SaveSSOConnection(ctx context.Context, connection *model.SSOConnection, newProvider bool) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if newProvider {
-			err := tx.Unscoped().Where("connection_id = ?", connection.ID).Delete(&model.SSOIdentity{}).Error
+			err := tx.Where("connection_id = ?", connection.ID).Delete(&model.SSOIdentity{}).Error
 			if err != nil {
 				return translate(err)
 			}
@@ -123,12 +123,12 @@ func (s *Store) SaveSSOConnection(ctx context.Context, connection *model.SSOConn
 func (s *Store) DeleteSSOConnection(ctx context.Context, connection *model.SSOConnection) error {
 	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, child := range []any{&model.SSOIdentity{}, &model.SSOLogin{}} {
-			if err := tx.Unscoped().Where("connection_id = ?", connection.ID).Delete(child).Error; err != nil {
+			if err := tx.Where("connection_id = ?", connection.ID).Delete(child).Error; err != nil {
 				return translate(err)
 			}
 		}
 
-		return translate(tx.Unscoped().Delete(connection).Error)
+		return translate(tx.Delete(connection).Error)
 	}), cache.SSOButtons)
 }
 

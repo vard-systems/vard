@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { messageOf, useTranslator } from '$lib/i18n';
-	import { notify } from '$lib/toast.svelte';
-	import { invalidateAll } from '$app/navigation';
-	import { account } from '$lib/api';
-	import { Button, Icon, Panel, PasswordField } from '$lib/components';
-	import { describeDevice, formatDate, timeAgo } from '$lib/utils/format';
+	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { notify } from '#lib/toast.svelte.js';
+	import { refreshAll } from '$app/navigation';
+	import { account } from '#lib/api/index.js';
+	import { Button, Icon, Panel, PasswordField } from '#lib/components/index.js';
+	import { describeDevice, formatDate, timeAgo } from '#lib/utils/format.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -33,7 +33,7 @@
 			await account.changePassword({ current_password: current, new_password: next });
 			current = next = confirm = '';
 			notify.success(t('security.password_changed'));
-			await invalidateAll();
+			await refreshAll();
 		} catch (err) {
 			notify.error(messageOf(err, t));
 		} finally {
@@ -49,7 +49,7 @@
 		try {
 			await account.endSession(id);
 			notify.success(t('security.session_ended'));
-			await invalidateAll();
+			await refreshAll();
 		} catch (err) {
 			notify.error(messageOf(err, t));
 		} finally {

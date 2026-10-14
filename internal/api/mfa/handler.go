@@ -60,7 +60,7 @@ func (h *Handler) Confirm(c *gin.Context) {
 		return
 	}
 
-	token, _ := c.Cookie(session.Cookie)
+	token := session.Token(c)
 
 	codes, err := h.auth.ConfirmTOTP(c.Request.Context(), session.Admin(c), token, req.Code, session.RequestOf(c))
 	if err != nil {
@@ -79,7 +79,7 @@ func (h *Handler) Disable(c *gin.Context) {
 		return
 	}
 
-	token, _ := c.Cookie(session.Cookie)
+	token := session.Token(c)
 
 	if err := h.auth.DisableTOTP(c.Request.Context(), session.Admin(c), token, req.Code, session.RequestOf(c)); err != nil {
 		h.fail(c, err, "turning two-factor sign-in off failed")
@@ -109,11 +109,15 @@ func (h *Handler) RecoveryCodes(c *gin.Context) {
 func (h *Handler) fail(c *gin.Context, err error, note string) {
 	switch {
 	case errors.Is(err, auth.ErrInvalidCode):
-		respond.Error(c, http.StatusBadRequest, err.Error())
-	case errors.Is(err, auth.ErrNotEnrolling), errors.Is(err, auth.ErrMFADisabled):
-		respond.Error(c, http.StatusBadRequest, err.Error())
-	case errors.Is(err, auth.ErrMFAEnabled), errors.Is(err, auth.ErrMFARequired):
-		respond.Error(c, http.StatusConflict, err.Error())
+		respond.Fail(c, codeWrong)
+	case errors.Is(err, auth.ErrNotEnrolling):
+		respond.Fail(c, notEnrolling)
+	case errors.Is(err, auth.ErrMFADisabled):
+		respond.Fail(c, alreadyOff)
+	case errors.Is(err, auth.ErrMFAEnabled):
+		respond.Fail(c, alreadyOn)
+	case errors.Is(err, auth.ErrMFARequired):
+		respond.Fail(c, mustStayOn)
 	default:
 		respond.Failure(c, h.log, err, note)
 	}

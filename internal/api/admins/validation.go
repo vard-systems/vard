@@ -1,12 +1,18 @@
 package admins
 
 import (
-	"fmt"
+	"net/http"
 	"unicode/utf8"
 
 	"loginer/internal/api/respond"
 	"loginer/internal/api/validate"
 	"loginer/internal/model"
+)
+
+var (
+	ownMFA      = respond.Define(http.StatusConflict, "admin_own_mfa", respond.Admin)
+	ownAccount  = respond.Define(http.StatusConflict, "admin_own_account", respond.Admin)
+	adminAbsent = respond.Define(http.StatusNotFound, "admin_not_found", respond.Admin)
 )
 
 const minPasswordLength = model.MinAdminPasswordLength
@@ -20,9 +26,9 @@ func (r *adminRequest) validate(creating bool) error {
 
 	switch {
 	case r.Password == "" && creating:
-		return respond.Invalid("password is required")
+		return respond.AdminPasswordRequired.With()
 	case r.Password != "" && utf8.RuneCountInString(r.Password) < minPasswordLength:
-		return respond.Invalid(fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		return respond.AdminPasswordTooShort.With("min", minPasswordLength)
 	}
 
 	return nil

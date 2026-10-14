@@ -1,4 +1,4 @@
-import { signIn } from '$lib/api';
+import { signIn } from '#lib/api/index.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, fetch }) => {

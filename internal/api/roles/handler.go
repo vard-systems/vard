@@ -45,12 +45,12 @@ func (h *Handler) List(c *gin.Context) {
 	case c.Query("application") != "":
 		app, err := uuid.Parse(c.Query("application"))
 		if err != nil {
-			respond.BadRequest(c, "that is not an application id")
+			respond.Fail(c, respond.ApplicationNotFound)
 			return
 		}
 
 		if !session.Allowed(c, model.PermApplicationsRead, app) {
-			respond.NotFound(c, "no such application")
+			respond.Fail(c, respond.ApplicationNotFound)
 			return
 		}
 
@@ -64,7 +64,7 @@ func (h *Handler) List(c *gin.Context) {
 		query.Global = true
 		query.Applications = reach
 	default:
-		respond.BadRequest(c, `scope must be "global" or "application"`)
+		respond.Fail(c, scopeInvalid)
 		return
 	}
 
@@ -104,13 +104,13 @@ func (h *Handler) Create(c *gin.Context) {
 
 	if app := req.ApplicationID; app != nil {
 		if !session.Allowed(c, model.PermApplicationsRead, *app) {
-			respond.BadRequest(c, "application_id: no such application")
+			respond.Fail(c, applicationUnknown)
 			return
 		}
 
 		if _, err := h.store.Application(c.Request.Context(), *app); err != nil {
 			if errors.Is(err, store.ErrNotFound) {
-				respond.BadRequest(c, "application_id: no such application")
+				respond.Fail(c, applicationUnknown)
 				return
 			}
 
@@ -313,7 +313,7 @@ func (h *Handler) answer(c *gin.Context, status int, role *model.UserRole) {
 func (h *Handler) find(c *gin.Context, permission string) (*model.UserRole, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a role id")
+		respond.Fail(c, respond.UserRoleNotFound)
 		return nil, false
 	}
 
@@ -321,7 +321,7 @@ func (h *Handler) find(c *gin.Context, permission string) (*model.UserRole, bool
 
 	switch {
 	case errors.Is(err, store.ErrNotFound), err == nil && !session.SeesRole(c, *role):
-		respond.NotFound(c, "no such role")
+		respond.Fail(c, respond.UserRoleNotFound)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading role failed")
@@ -336,7 +336,7 @@ func (h *Handler) find(c *gin.Context, permission string) (*model.UserRole, bool
 
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
-		respond.Conflict(c, "a role with that name already exists in this scope")
+		respond.Fail(c, roleNameTaken)
 		return
 	}
 

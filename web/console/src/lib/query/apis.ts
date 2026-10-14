@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { apisApi, type API } from '$lib/api';
+import { apisApi, type API } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function apisOptions(search: string, initial: API[]) {

@@ -286,7 +286,7 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 		return nil, err
 	}
 	for _, field := range fields {
-		if _, err := field.Normalise(nil); err != nil {
+		if _, err := field.Normalize(nil); err != nil {
 			return nil, ErrDetailsRequired
 		}
 	}

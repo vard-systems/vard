@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -71,9 +72,7 @@ func newSocialFixture(t *testing.T, provider map[string]any) *socialFixture {
 		"userinfo_url":  s.root + "/oauth2/userinfo",
 		"scopes":        []string{"openid", "profile", "email"},
 	}
-	for key, value := range provider {
-		body[key] = value
-	}
+	maps.Copy(body, provider)
 
 	super.must(http.StatusCreated, http.MethodPost, "/social-providers", body, nil)
 
@@ -658,9 +657,7 @@ func (f *fakeProvider) register(t *testing.T, s *liveServer, super *client, extr
 		"userinfo_url":  f.server.URL + "/userinfo",
 		"token_auth":    "post",
 	}
-	for key, value := range extra {
-		body[key] = value
-	}
+	maps.Copy(body, extra)
 	if body["token_auth"] == "basic" {
 		f.basic = true
 	}

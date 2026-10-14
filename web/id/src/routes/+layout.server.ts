@@ -1,8 +1,8 @@
 import { redirect } from '@sveltejs/kit';
-import { signIn, type PublicLanguage } from '$lib/api';
-import { COOKIES, LANGUAGE_DEPENDENCY } from '$lib/brand';
-import { BASE, chooseLanguage, type Messages } from '$lib/i18n';
-import { safeNext } from '$lib/utils/next';
+import { signIn, type PublicLanguage } from '#lib/api/index.js';
+import { COOKIES, LANGUAGE_DEPENDENCY } from '#lib/brand.js';
+import { BASE, chooseLanguage, type Messages } from '#lib/i18n/index.js';
+import { safeNext } from '#lib/utils/next.js';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, request, url }) => {

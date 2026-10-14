@@ -103,7 +103,7 @@ func (s *Store) ensureAdminCLI(ctx context.Context, admin *model.API) error {
 		IDTokenLifetime:      model.DefaultIDTokenLifetime,
 		RefreshTokenLifetime: model.DefaultRefreshTokenLifetime,
 	}
-	app.Normalise()
+	app.Normalize()
 
 	// A secret nobody has seen: until an administrator rotates it and takes
 	// the new one, the application cannot authenticate at all.

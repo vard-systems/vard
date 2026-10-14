@@ -7,7 +7,7 @@ import {
 	RiText,
 	RiToggleLine
 } from 'svelte-remixicon';
-import type { FieldType } from '$lib/api';
+import type { FieldType } from '#lib/api/index.js';
 
 export const fieldIcons: Record<FieldType, ComponentType> = {
 	text: RiText,

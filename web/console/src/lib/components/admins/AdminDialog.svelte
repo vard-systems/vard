@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MIN_ADMIN_PASSWORD } from '$lib/constants';
+	import { MIN_ADMIN_PASSWORD } from '#lib/constants.js';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { RiAddLine, RiCloseLine, RiMailLine, RiShieldKeyholeLine } from 'svelte-remixicon';
 	import {
@@ -9,7 +9,7 @@
 		type AdminRecord,
 		type AdminRole,
 		type Application
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Badge,
 		Button,
@@ -23,8 +23,8 @@
 		Select,
 		type SelectOption,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import { grantedBy } from './permissions';
 
 	type Props = {

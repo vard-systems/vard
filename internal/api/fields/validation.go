@@ -10,6 +10,11 @@ import (
 	"loginer/internal/model"
 )
 
+var (
+	nameTaken   = respond.Define(http.StatusConflict, "user_field_name_taken", respond.Admin)
+	fieldAbsent = respond.Define(http.StatusNotFound, "user_field_not_found", respond.Admin)
+)
+
 // column is what a field may be called: the same shape as a column name,
 // because that is what it stands in for.
 var column = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)

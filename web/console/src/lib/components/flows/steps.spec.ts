@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LoginStepSpec } from '$lib/api';
+import type { LoginStepSpec } from '#lib/api/index.js';
 import {
 	TEMPLATES,
 	draftOf,

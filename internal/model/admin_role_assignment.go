@@ -9,7 +9,7 @@ import (
 
 type AdminRoleAssignment struct {
 	ID        uuid.UUID `gorm:"type:uuid;primarykey" json:"id"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `gorm:"not null" json:"created_at"`
 
 	AdminID uuid.UUID `gorm:"type:uuid;not null;index" json:"admin_id"`
 	Admin   *Admin    `gorm:"constraint:OnDelete:CASCADE" json:"-"`

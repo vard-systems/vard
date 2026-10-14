@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/svelte-query';
 
-import { applicationsApi, type Application, type ApplicationPage } from '$lib/api';
+import { applicationsApi, type Application, type ApplicationPage } from '#lib/api/index.js';
 import { keys } from './keys';
 import { LIST_PAGE_SIZE, nextOffset } from './paging';
 

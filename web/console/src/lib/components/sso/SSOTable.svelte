@@ -6,8 +6,8 @@
 		RiShieldKeyholeLine,
 		RiToggleLine
 	} from 'svelte-remixicon';
-	import type { SSOConnection } from '$lib/api';
-	import { Badge, Code, type Column, DataTable, Icon, Tag } from '$lib/components/ui';
+	import type { SSOConnection } from '#lib/api/index.js';
+	import { Badge, Code, type Column, DataTable, Icon, Tag } from '#lib/components/ui/index.js';
 
 	type Props = {
 		connections: SSOConnection[];

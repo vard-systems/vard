@@ -1,7 +1,13 @@
-import type { Application, ApplicationPage, RolePage, UserField, UserPage } from '$lib/api';
-import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE, ROLE_CHOICES_LIMIT } from '$lib/query';
-import { canAnywhere } from '$lib/permissions';
-import { apiGet, requirePermission } from '$lib/server/api';
+import type {
+	Application,
+	ApplicationPage,
+	RolePage,
+	UserField,
+	UserPage
+} from '#lib/api/index.js';
+import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE, ROLE_CHOICES_LIMIT } from '#lib/query/index.js';
+import { canAnywhere } from '#lib/permissions.js';
+import { apiGet, requirePermission } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {

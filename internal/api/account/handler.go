@@ -46,7 +46,7 @@ func (h *Handler) Request(c *gin.Context) {
 func (h *Handler) Application(c *gin.Context) {
 	app, err := h.provider.ApplicationByClientID(c.Request.Context(), c.Param("client_id"))
 	if errors.Is(err, store.ErrNotFound) {
-		respond.Fail(c, applicationNotFound)
+		respond.Fail(c, respond.ApplicationNotFound)
 		return
 	}
 	if err != nil {
@@ -558,14 +558,12 @@ func (h *Handler) Disconnect(c *gin.Context) {
 }
 
 func (h *Handler) fail(c *gin.Context, err error, note string) {
-	var sso *oidc.SSORequired
-	if errors.As(err, &sso) {
+	if sso, ok := errors.AsType[*oidc.SSORequired](err); ok {
 		respond.Fail(c, provided[oidc.ErrSSORequired.Code], "slug", sso.Slug, "name", sso.Name)
 		return
 	}
 
-	var refused *oidc.Problem
-	if errors.As(err, &refused) {
+	if refused, ok := errors.AsType[*oidc.Problem](err); ok {
 		if problem, ok := provided[refused.Code]; ok {
 			respond.Write(c, problem.Fault(nil))
 			return

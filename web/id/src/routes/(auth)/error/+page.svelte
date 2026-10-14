@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { useTranslator } from '$lib/i18n';
+	import { useTranslator } from '#lib/i18n/index.js';
 	import { page } from '$app/state';
-	import { Alert, AuthCard } from '$lib/components';
+	import { Alert, AuthCard } from '#lib/components/index.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

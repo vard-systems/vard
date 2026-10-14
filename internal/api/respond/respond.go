@@ -40,34 +40,18 @@ func Write(c *gin.Context, fault Fault) {
 	c.JSON(fault.Status, body)
 }
 
-func BadRequest(c *gin.Context, message string) {
-	Error(c, http.StatusBadRequest, message)
-}
-
-// Invalid is BadRequest as an error, for validation that returns one.
+// Invalid passes on the sentence a model's own validation refused a value
+// with, which names the field and the rule; everything else is a Problem.
 func Invalid(message string) error {
 	return Fault{Status: http.StatusBadRequest, Message: message}
 }
 
-func NotFound(c *gin.Context, message string) {
-	Error(c, http.StatusNotFound, message)
-}
-
 var Forbidden = NotAllowed.Fault(nil)
-
-func Conflict(c *gin.Context, message string) {
-	Error(c, http.StatusConflict, message)
-}
-
-func Error(c *gin.Context, status int, message string) {
-	c.JSON(status, gin.H{"error": message})
-}
 
 // Failure passes a Fault through and logs anything else with `note`, answering
 // with the internal problem, so database errors never reach a browser.
 func Failure(c *gin.Context, log *slog.Logger, err error, note string) {
-	var fault Fault
-	if errors.As(err, &fault) {
+	if fault, ok := errors.AsType[Fault](err); ok {
 		Write(c, fault)
 		return
 	}

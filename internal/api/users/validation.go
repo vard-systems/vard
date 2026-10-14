@@ -2,7 +2,6 @@ package users
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"unicode/utf8"
 
@@ -12,6 +11,16 @@ import (
 	"loginer/internal/api/validate"
 	"loginer/internal/model"
 	"loginer/internal/store"
+)
+
+var (
+	identityAbsent   = respond.Define(http.StatusNotFound, "user_social_account_not_found", respond.Admin)
+	noRoles          = respond.Define(http.StatusBadRequest, "user_roles_missing", respond.Admin)
+	roleUnknown      = respond.Define(http.StatusBadRequest, "user_role_unknown", respond.Admin)
+	roleNotHeld      = respond.Define(http.StatusNotFound, "user_role_not_held", respond.Admin)
+	emailTaken       = respond.Define(http.StatusConflict, "user_email_taken", respond.Admin)
+	passwordRequired = respond.Define(http.StatusBadRequest, "user_password_required", respond.Admin)
+	passwordTooShort = respond.Define(http.StatusBadRequest, "user_password_too_short", respond.Admin)
 )
 
 const minPasswordLength = 8
@@ -25,15 +34,15 @@ func (r *userRequest) validate(creating bool) error {
 
 	switch {
 	case r.Password == "" && creating:
-		return respond.Invalid("password is required")
+		return passwordRequired.With()
 	case r.Password != "" && utf8.RuneCountInString(r.Password) < minPasswordLength:
-		return respond.Invalid(fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		return passwordTooShort.With("min", minPasswordLength)
 	}
 
 	return nil
 }
 
-func normalise(
+func normalize(
 	ctx context.Context,
 	st *store.Store,
 	fields []model.UserField,
@@ -43,7 +52,7 @@ func normalise(
 	data := make(map[string]any, len(fields))
 
 	for _, field := range fields {
-		value, err := field.Normalise(values[field.Name])
+		value, err := field.Normalize(values[field.Name])
 		if err != nil {
 			return nil, respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
 		}

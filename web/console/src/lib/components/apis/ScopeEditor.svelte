@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RiAddLine, RiDeleteBinLine } from 'svelte-remixicon';
-	import { Button, Checkbox, Icon, IconButton } from '$lib/components/ui';
+	import { Button, Checkbox, Icon, IconButton } from '#lib/components/ui/index.js';
 	import { scopeProblem, scopeRow, type ScopeRow } from './scopes';
 
 	type Props = {

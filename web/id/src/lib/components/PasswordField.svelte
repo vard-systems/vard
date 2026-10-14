@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useTranslator } from '$lib/i18n';
+	import { useTranslator } from '#lib/i18n/index.js';
 	import Icon from './Icon.svelte';
 
 	type Props = {

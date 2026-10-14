@@ -20,8 +20,8 @@ type AdminSession struct {
 	// session, so a half-finished login cannot be used.
 	IsMFAPassed bool `gorm:"not null;default:false" json:"is_mfa_passed"`
 
-	UserAgent string `gorm:"size:255" json:"user_agent,omitempty"`
-	IP        string `gorm:"size:45" json:"ip,omitempty"`
+	UserAgent string `gorm:"size:255;not null;default:''" json:"user_agent,omitempty"`
+	IP        string `gorm:"size:45;not null;default:''" json:"ip,omitempty"`
 }
 
 func (AdminSession) TableName() string {

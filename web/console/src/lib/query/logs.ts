@@ -1,6 +1,6 @@
 import { infiniteQueryOptions } from '@tanstack/svelte-query';
 
-import { activityApi, type LogFilter, type LogPage } from '$lib/api';
+import { activityApi, type LogFilter, type LogPage } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export const LOGS_PAGE_SIZE = 50;

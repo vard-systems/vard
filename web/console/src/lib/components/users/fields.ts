@@ -1,4 +1,4 @@
-import type { UserField, UserRecord } from '$lib/api';
+import type { UserField, UserRecord } from '#lib/api/index.js';
 
 export function valueOf(user: UserRecord, field: UserField): unknown {
 	if (field.is_builtin) {

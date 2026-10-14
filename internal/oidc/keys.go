@@ -197,7 +197,7 @@ func (ks *keySet) reload(ctx context.Context) error {
 		}
 
 		key := storedKey{
-			Key:       jose.Key{ID: row.KID, Algorithm: row.Algorithm, Private: private},
+			ID: row.KID, Algorithm: row.Algorithm, Private: private,
 			CreatedAt: row.CreatedAt,
 			RetiredAt: row.RetiredAt,
 		}

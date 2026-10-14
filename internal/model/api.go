@@ -17,7 +17,7 @@ type API struct {
 
 	Name        string `gorm:"size:100;not null" json:"name"`
 	Identifier  string `gorm:"size:255;not null;uniqueIndex" json:"identifier"`
-	Description string `gorm:"size:255" json:"description"`
+	Description string `gorm:"size:255;not null;default:''" json:"description"`
 
 	EnforceRoles bool `gorm:"not null" json:"enforce_roles"`
 
@@ -88,7 +88,7 @@ type APIScope struct {
 
 	APIID       uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_api_scopes_api_name,priority:1" json:"api_id"`
 	Name        string    `gorm:"size:128;not null;uniqueIndex:idx_api_scopes_api_name,priority:2" json:"name"`
-	Description string    `gorm:"size:255" json:"description"`
+	Description string    `gorm:"size:255;not null;default:''" json:"description"`
 
 	// IsDefault adds the scope to every token for the API, subject to the same
 	// allowance and role rules.
@@ -119,7 +119,7 @@ type ApplicationAPI struct {
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 	APIID         uuid.UUID    `gorm:"type:uuid;primaryKey" json:"api_id"`
 	API           *API         `gorm:"constraint:OnDelete:CASCADE" json:"-"`
-	CreatedAt     time.Time    `json:"created_at"`
+	CreatedAt     time.Time    `gorm:"not null" json:"created_at"`
 }
 
 func (ApplicationAPI) TableName() string {

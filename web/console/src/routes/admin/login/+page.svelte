@@ -1,10 +1,18 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { RiShieldKeyholeLine } from 'svelte-remixicon';
-	import { adminApi, ApiError } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { Alert, Button, Card, Icon, Input, PasswordInput, ThemeToggle } from '$lib/components/ui';
+	import { adminApi, ApiError } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import {
+		Alert,
+		Button,
+		Card,
+		Icon,
+		Input,
+		PasswordInput,
+		ThemeToggle
+	} from '#lib/components/ui/index.js';
 
 	let { data } = $props();
 
@@ -37,8 +45,8 @@
 				return;
 			}
 
-			const target = result.next === 'enroll' ? '/admin/mfa-setup' : '/admin/dashboard';
-			await goto(resolve(target), { replaceState: true, invalidateAll: true });
+			const target = result.next === 'enroll' ? 'admin/mfa-setup' : 'admin/dashboard';
+			await goto(resolve(target), { replace: true, refreshAll: true });
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong';
 			password = '';
@@ -55,7 +63,7 @@
 
 		try {
 			await adminApi.verifyMfa(code.trim());
-			await goto(resolve('/admin/dashboard'), { replaceState: true, invalidateAll: true });
+			await goto(resolve('admin/dashboard'), { replace: true, refreshAll: true });
 		} catch (err) {
 			if (err instanceof ApiError && err.message.includes('expired')) step = 'password';
 			error = err instanceof ApiError ? err.message : 'Something went wrong';
@@ -66,7 +74,7 @@
 
 	async function startOver() {
 		await adminApi.logout().catch(() => {});
-		await invalidateAll();
+		await refreshAll();
 		step = 'password';
 		code = '';
 		error = '';

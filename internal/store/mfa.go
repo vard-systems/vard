@@ -27,7 +27,7 @@ func (s *Store) MFAFactors(ctx context.Context, admin uuid.UUID, method model.MF
 // of the same method: only the enrolment under way can be confirmed.
 func (s *Store) StartMFA(ctx context.Context, factor *model.MFA) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		err := tx.Unscoped().
+		err := tx.
 			Where("admin_id = ? AND method = ? AND confirmed_at IS NULL", factor.AdminID, factor.Method).
 			Delete(&model.MFA{}).Error
 		if err != nil {
@@ -45,7 +45,7 @@ func (s *Store) StartMFA(ctx context.Context, factor *model.MFA) error {
 
 func (s *Store) ConfirmMFA(ctx context.Context, factor *model.MFA) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		err := tx.Unscoped().
+		err := tx.
 			Where("admin_id = ? AND method = ? AND id <> ?", factor.AdminID, factor.Method, factor.ID).
 			Delete(&model.MFA{}).Error
 		if err != nil {
@@ -107,7 +107,7 @@ func (s *Store) RemoveMFA(ctx context.Context, admin uuid.UUID, keep *uuid.UUID,
 	var ended []model.AdminSession
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Unscoped().Where("admin_id = ?", admin).Delete(&model.MFA{}).Error; err != nil {
+		if err := tx.Where("admin_id = ?", admin).Delete(&model.MFA{}).Error; err != nil {
 			return err
 		}
 

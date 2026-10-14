@@ -5,11 +5,11 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { createInfiniteQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiDownload2Line, RiFilterOffLine, RiRefreshLine } from 'svelte-remixicon';
-	import { activityApi } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import ActivityTable from '$lib/components/activity/ActivityTable.svelte';
-	import { actionsIn } from '$lib/components/activity/actions';
-	import { kindLabels, type Kind } from '$lib/components/activity/filters';
+	import { activityApi } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import ActivityTable from '#lib/components/activity/ActivityTable.svelte';
+	import { actionsIn } from '#lib/components/activity/actions.js';
+	import { kindLabels, type Kind } from '#lib/components/activity/filters.js';
 	import {
 		Button,
 		DatePicker,
@@ -23,8 +23,8 @@
 		ShowMore,
 		Toolbar,
 		todayIso
-	} from '$lib/components/ui';
-	import { keys, logsOptions } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys, logsOptions } from '#lib/query/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -49,7 +49,7 @@
 	);
 
 	async function apply(changes: Partial<Record<'q' | 'kind' | 'actor' | 'from' | 'to', string>>) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -62,7 +62,7 @@
 		// resolve() has already applied any base path; the query is only ever
 		// appended to what it returned.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	function clear() {

@@ -9,7 +9,7 @@
 		RiServerLine,
 		RiUserLine
 	} from 'svelte-remixicon';
-	import { mailApi, type MailEncryption, type MailResponse } from '$lib/api';
+	import { mailApi, type MailEncryption, type MailResponse } from '#lib/api/index.js';
 	import {
 		Button,
 		FieldGrid,
@@ -20,8 +20,8 @@
 		SwitchField,
 		Tag,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 
 	type Props = {
 		settings: MailResponse;

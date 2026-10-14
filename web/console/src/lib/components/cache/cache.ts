@@ -1,5 +1,5 @@
-import type { CacheDatabaseName, CacheKind } from '$lib/api';
-import type { ColorPalette } from '$lib/components/ui';
+import type { CacheDatabaseName, CacheKind } from '#lib/api/index.js';
+import type { ColorPalette } from '#lib/components/ui/index.js';
 
 export const databases: Record<CacheDatabaseName, { label: string; description: string }> = {
 	cache: {

@@ -300,7 +300,7 @@ func TestShippedGroupsAreNested(t *testing.T) {
 				if strings.HasPrefix(key, metaPrefix) {
 					continue
 				}
-				for _, piece := range strings.Split(key, ".") {
+				for piece := range strings.SplitSeq(key, ".") {
 					if !part.MatchString(piece) {
 						t.Errorf("%s: %q is not lower case with underscores", name, key)
 						break

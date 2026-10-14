@@ -7,8 +7,8 @@
 		RiNodeTree,
 		RiShieldUserLine
 	} from 'svelte-remixicon';
-	import type { Application, Role, UserRoleRef } from '$lib/api';
-	import { Badge, DataTable, Icon, type Column } from '$lib/components/ui';
+	import type { Application, Role, UserRoleRef } from '#lib/api/index.js';
+	import { Badge, DataTable, Icon, type Column } from '#lib/components/ui/index.js';
 
 	type Props = {
 		roles: Role[];

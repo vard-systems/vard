@@ -1,4 +1,4 @@
-import type { Translate } from '$lib/i18n';
+import type { Translate } from '#lib/i18n/index.js';
 
 export function formatDate(
 	value: string | null | undefined,

@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/svelte-query';
 
-import { rolesApi, type Role, type RolePage } from '$lib/api';
+import { rolesApi, type Role, type RolePage } from '#lib/api/index.js';
 import { keys } from './keys';
 import { LIST_PAGE_SIZE, nextOffset } from './paging';
 

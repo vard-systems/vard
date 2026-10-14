@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { RiAddLine, RiCloseLine, RiGlobalLine, RiShieldUserLine } from 'svelte-remixicon';
-	import { rolesApi, type Admin, type API, type Application, type Role } from '$lib/api';
+	import { rolesApi, type Admin, type API, type Application, type Role } from '#lib/api/index.js';
 	import {
 		Badge,
 		Button,
@@ -17,8 +17,8 @@
 		Textarea,
 		type SelectOption,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import Choice from './Choice.svelte';
 	import RolePicker from './RolePicker.svelte';
 	import { canEditRoles, mayInherit, reachable, scopeName, tidyName, wouldCycle } from './roles';

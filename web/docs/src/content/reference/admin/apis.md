@@ -200,6 +200,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`api_not_found`](/reference/errors#api_not_found) | There is no such API. |
 
 ## GET /api/v1/admin/apis/:id/applications {#get-api-v1-admin-apis-id-applications}
 
@@ -266,6 +267,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`api_not_found`](/reference/errors#api_not_found) | There is no such API. |
 
 ## GET /api/v1/admin/apis/:id/logs {#get-api-v1-admin-apis-id-logs}
 
@@ -330,6 +332,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`api_not_found`](/reference/errors#api_not_found) | There is no such API. |
 
 ## POST /api/v1/admin/apis {#post-api-v1-admin-apis}
 
@@ -416,11 +419,14 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`api_scope_foreign`](/reference/errors#api_scope_foreign) | {scope} is not a scope of this API. |
+| 400 | [`api_too_many_scopes`](/reference/errors#api_too_many_scopes) | An API may have at most {max} scopes. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`api_identifier_taken`](/reference/errors#api_identifier_taken) | An API with this identifier already exists. |
 
 ## PATCH /api/v1/admin/apis/:id {#patch-api-v1-admin-apis-id}
 
@@ -515,11 +521,16 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`api_identifier_fixed`](/reference/errors#api_identifier_fixed) | An API's identifier cannot be changed: register a new API instead. |
+| 400 | [`api_scope_foreign`](/reference/errors#api_scope_foreign) | {scope} is not a scope of this API. |
+| 400 | [`api_too_many_scopes`](/reference/errors#api_too_many_scopes) | An API may have at most {max} scopes. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`api_not_found`](/reference/errors#api_not_found) | There is no such API. |
+| 409 | [`api_identifier_taken`](/reference/errors#api_identifier_taken) | An API with this identifier already exists. |
 
 ## DELETE /api/v1/admin/apis/:id {#delete-api-v1-admin-apis-id}
 
@@ -587,4 +598,5 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`api_not_found`](/reference/errors#api_not_found) | There is no such API. |
 | 409 | [`system_api`](/reference/errors#system_api) | This API is part of the server and cannot be deleted. |

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack, type Snippet } from 'svelte';
-	import AppHeader from '$lib/components/layout/AppHeader.svelte';
-	import { provideShell } from '$lib/state/shell.svelte';
+	import AppHeader from '#lib/components/layout/AppHeader.svelte';
+	import { provideShell } from '#lib/state/shell.svelte.js';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();

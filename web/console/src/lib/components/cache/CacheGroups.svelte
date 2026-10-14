@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RiDatabase2Line, RiEraserLine, RiFilter3Line } from 'svelte-remixicon';
-	import type { CacheGroup } from '$lib/api';
-	import { Button, Icon, List, ListItem, Panel, Tag, Thumb } from '$lib/components/ui';
+	import type { CacheGroup } from '#lib/api/index.js';
+	import { Button, Icon, List, ListItem, Panel, Tag, Thumb } from '#lib/components/ui/index.js';
 
 	type Props = {
 		groups: CacheGroup[];

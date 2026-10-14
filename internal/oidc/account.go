@@ -171,7 +171,7 @@ func (s *Service) ConnectedApplications(ctx context.Context, session *Session) (
 	out := make([]ConnectedApplication, 0, len(grants))
 	for _, grant := range grants {
 		scopes := []string{}
-		for _, scope := range strings.Fields(strings.Join(grant.Scopes, " ")) {
+		for scope := range strings.FieldsSeq(strings.Join(grant.Scopes, " ")) {
 			if !slices.Contains(scopes, scope) {
 				scopes = append(scopes, scope)
 			}

@@ -129,7 +129,7 @@ func (s *Store) DeleteLoginFlow(ctx context.Context, flow *model.LoginFlow) erro
 			return translate(err)
 		}
 
-		return translate(tx.Unscoped().Delete(flow).Error)
+		return translate(tx.Delete(flow).Error)
 	})
 	if err != nil {
 		return err

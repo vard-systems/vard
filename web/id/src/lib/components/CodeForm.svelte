@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { ApiError, signIn, type CodeChallenge, type SignedIn } from '$lib/api';
-	import { messageOf, useTranslator } from '$lib/i18n';
+	import { ApiError, signIn, type CodeChallenge, type SignedIn } from '#lib/api/index.js';
+	import { messageOf, useTranslator } from '#lib/i18n/index.js';
 	import Alert from './Alert.svelte';
 	import Button from './Button.svelte';
 	import TextField from './TextField.svelte';

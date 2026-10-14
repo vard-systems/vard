@@ -128,7 +128,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if req.Type != "" && model.ApplicationType(req.Type) != app.Type {
-		respond.BadRequest(c, "type cannot be changed: register a new application instead")
+		respond.Fail(c, typeFixed)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *Handler) RotateSecret(c *gin.Context) {
 
 	secret, err := app.IssueSecret(time.Now())
 	if errors.Is(err, model.ErrNoSecret) {
-		respond.BadRequest(c, "a public client has no secret to rotate")
+		respond.Fail(c, noSecret)
 		return
 	}
 	if err != nil {
@@ -284,7 +284,7 @@ func (h *Handler) AuthorizeAPI(c *gin.Context) {
 
 	for _, id := range req.Scopes {
 		if !slices.ContainsFunc(api.Scopes, func(scope model.APIScope) bool { return scope.ID == id }) {
-			respond.BadRequest(c, "scopes: one of them is not a scope of "+api.Identifier)
+			respond.Fail(c, foreignScope, "api", api.Identifier)
 			return
 		}
 	}
@@ -361,7 +361,7 @@ func (h *Handler) TokenPreview(c *gin.Context) {
 
 		user, err := h.store.User(ctx, *req.UserID)
 		if errors.Is(err, store.ErrNotFound) {
-			respond.BadRequest(c, "user_id: no such user")
+			respond.Fail(c, previewUserUnknown)
 			return
 		}
 		if err != nil {
@@ -382,7 +382,7 @@ func (h *Handler) TokenPreview(c *gin.Context) {
 	if identifier := strings.TrimSpace(req.Audience); identifier != "" {
 		audience, err := h.store.AudienceFor(ctx, app.ID, identifier)
 		if errors.Is(err, store.ErrNotFound) {
-			respond.BadRequest(c, "audience: no API has that identifier")
+			respond.Fail(c, previewAudienceUnknown)
 			return
 		}
 		if err != nil {
@@ -409,7 +409,7 @@ func apiMetadata(app *model.Application, api *model.API) map[string]any {
 func (h *Handler) findAPI(c *gin.Context) (*model.API, bool) {
 	id, err := uuid.Parse(c.Param("api"))
 	if err != nil {
-		respond.BadRequest(c, "that is not an API id")
+		respond.Fail(c, respond.APINotFound)
 		return nil, false
 	}
 
@@ -417,7 +417,7 @@ func (h *Handler) findAPI(c *gin.Context) (*model.API, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such API")
+		respond.Fail(c, respond.APINotFound)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading API failed")
@@ -441,12 +441,12 @@ func (h *Handler) withCount(c *gin.Context, app *model.Application) applicationR
 func (h *Handler) find(c *gin.Context, permission string) (*model.Application, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not an application id")
+		respond.Fail(c, respond.ApplicationNotFound)
 		return nil, false
 	}
 
 	if !session.Allowed(c, model.PermApplicationsRead, id) {
-		respond.NotFound(c, "no such application")
+		respond.Fail(c, respond.ApplicationNotFound)
 		return nil, false
 	}
 
@@ -459,7 +459,7 @@ func (h *Handler) find(c *gin.Context, permission string) (*model.Application, b
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such application")
+		respond.Fail(c, respond.ApplicationNotFound)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading application failed")

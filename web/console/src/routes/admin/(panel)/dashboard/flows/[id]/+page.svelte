@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { BRAND } from '$lib/brand';
-	import FlowEditor from '$lib/components/flows/editor/FlowEditor.svelte';
-	import { can } from '$lib/permissions';
+	import { BRAND } from '#lib/brand.js';
+	import FlowEditor from '#lib/components/flows/editor/FlowEditor.svelte';
+	import { can } from '#lib/permissions.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

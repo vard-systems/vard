@@ -33,7 +33,7 @@ func (s *Store) SaveUserField(ctx context.Context, field *model.UserField) error
 }
 
 func (s *Store) DeleteUserField(ctx context.Context, field *model.UserField) error {
-	return s.db.WithContext(ctx).Unscoped().Delete(field).Error
+	return s.db.WithContext(ctx).Delete(field).Error
 }
 
 func (s *Store) NextFieldPosition(ctx context.Context) int {

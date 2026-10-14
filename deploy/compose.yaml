@@ -47,6 +47,11 @@ x-web-env: &webenv
   # is why. Do not put anything in front of these that does not forward it.
   ADDRESS_HEADER: x-forwarded-for
   XFF_DEPTH: "1"
+  # And its public address from these, which Caddy sets from the request it
+  # was sent (overwriting any a caller sent itself). adapter-node has no
+  # ORIGIN any more; this keeps one image right for whatever domain it serves.
+  PROTOCOL_HEADER: x-forwarded-proto
+  HOST_HEADER: x-forwarded-host
 
 services:
   postgres:
@@ -133,7 +138,6 @@ services:
       args: { APP: web/id }
     environment:
       <<: *webenv
-      ORIGIN: ${PUBLIC_URL}
       API_URL: http://api:8080
     networks:
       internal: { ipv4_address: 172.30.0.3 }
@@ -146,7 +150,6 @@ services:
       args: { APP: web/console }
     environment:
       <<: *webenv
-      ORIGIN: ${ADMIN_URL}
       API_URL: http://api:8081
     networks:
       internal: { ipv4_address: 172.30.0.4 }

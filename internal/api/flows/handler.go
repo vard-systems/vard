@@ -80,7 +80,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	if err := h.store.CreateLoginFlow(c.Request.Context(), &flow); err != nil {
 		if errors.Is(err, store.ErrDuplicate) {
-			respond.Conflict(c, "a flow with that identifier already exists")
+			respond.Fail(c, slugTaken)
 			return
 		}
 
@@ -119,7 +119,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if wasDefault && !flow.IsDefault {
-		respond.BadRequest(c, "make another flow the default rather than unmarking this one")
+		respond.Fail(c, keepADefault)
 		return
 	}
 
@@ -146,7 +146,7 @@ func (h *Handler) Delete(c *gin.Context) {
 	err := h.store.DeleteLoginFlow(c.Request.Context(), flow)
 	switch {
 	case errors.Is(err, store.ErrDefaultLoginFlow):
-		respond.BadRequest(c, "make another flow the default before removing this one")
+		respond.Fail(c, defaultStays)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "deleting a login flow failed")
@@ -163,7 +163,7 @@ func (h *Handler) Delete(c *gin.Context) {
 func (h *Handler) find(c *gin.Context) (*model.LoginFlow, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a flow id")
+		respond.Fail(c, flowAbsent)
 		return nil, false
 	}
 
@@ -171,7 +171,7 @@ func (h *Handler) find(c *gin.Context) (*model.LoginFlow, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such flow")
+		respond.Fail(c, flowAbsent)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading a login flow failed")

@@ -28,7 +28,7 @@ func TestBeforeCreateSetsID(t *testing.T) {
 // id.
 func TestBeforeCreateKeepsExistingID(t *testing.T) {
 	want := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	admin := &Admin{Base: Base{ID: want}}
+	admin := &Admin{ID: want}
 
 	if err := admin.BeforeCreate(nil); err != nil {
 		t.Fatal(err)

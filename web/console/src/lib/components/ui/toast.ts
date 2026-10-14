@@ -1,5 +1,5 @@
 import { createToaster } from '@ark-ui/svelte/toast';
-import { messageOf } from '$lib/api';
+import { messageOf } from '#lib/api/index.js';
 
 export const toaster = createToaster({
 	placement: 'bottom',

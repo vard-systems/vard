@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"maps"
 	"strings"
 	"time"
 
@@ -126,11 +127,11 @@ func (s *Store) DeleteLanguage(ctx context.Context, language *model.Language) er
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Hard delete: a soft-deleted row would keep the unique code taken.
-		if err := tx.Unscoped().Where("language_id = ?", language.ID).Delete(&model.Translation{}).Error; err != nil {
+		if err := tx.Where("language_id = ?", language.ID).Delete(&model.Translation{}).Error; err != nil {
 			return translate(err)
 		}
 
-		return translate(tx.Unscoped().Delete(language).Error)
+		return translate(tx.Delete(language).Error)
 	})
 	if err != nil {
 		return err
@@ -253,9 +254,7 @@ func (s *Store) SaveTranslationKeys(ctx context.Context, language *model.Languag
 		}
 
 		merged := map[string]string{}
-		for key, text := range row.Messages {
-			merged[key] = text
-		}
+		maps.Copy(merged, row.Messages)
 		for key, text := range messages {
 			if text == "" {
 				delete(merged, key)
@@ -351,7 +350,7 @@ func (s *Store) EnsureLanguages(ctx context.Context, shipped []i18n.File) error 
 }
 
 func dropPanelText(tx *gorm.DB) error {
-	err := tx.Unscoped().
+	err := tx.
 		Where("app = ?", string(i18n.Console)).
 		Delete(&model.Translation{}).Error
 

@@ -56,7 +56,7 @@ func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, sessio
 		return err
 	}
 
-	_, err := s.store.RevokeOtherSessionsFor(ctx, admin.ID, session, time.Now())
+	_, err := s.store.RevokeOtherAdminSessionsFor(ctx, admin.ID, session, time.Now())
 	return err
 }
 

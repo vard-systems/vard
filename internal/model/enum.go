@@ -1,5 +1,7 @@
 package model
 
+import "slices"
+
 type Status string
 
 const (
@@ -12,12 +14,7 @@ const (
 var Statuses = []Status{StatusInvited, StatusActive, StatusSuspended, StatusDisabled}
 
 func (s Status) Valid() bool {
-	for _, known := range Statuses {
-		if s == known {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(Statuses, s)
 }
 
 func (s Status) String() string {
@@ -34,12 +31,7 @@ const (
 var MFAMethods = []MFAMethod{MFAMethodTOTP, MFAMethodWebAuthn}
 
 func (m MFAMethod) Valid() bool {
-	for _, known := range MFAMethods {
-		if m == known {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(MFAMethods, m)
 }
 
 func (m MFAMethod) String() string {

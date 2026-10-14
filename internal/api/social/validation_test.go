@@ -21,10 +21,6 @@ func sealer(t *testing.T) *jose.Sealer {
 	return s
 }
 
-func ptr[T any](value T) *T {
-	return &value
-}
-
 func TestProviderRequestApplyToCreating(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -36,9 +32,9 @@ func TestProviderRequestApplyToCreating(t *testing.T) {
 			name: "a provider of a kind this server knows",
 			request: providerRequest{
 				Kind:         " Google ",
-				Name:         ptr("  Google  "),
-				ClientID:     ptr(" 1234.apps.googleusercontent.com "),
-				ClientSecret: ptr("a secret"),
+				Name:         new("  Google  "),
+				ClientID:     new(" 1234.apps.googleusercontent.com "),
+				ClientSecret: new("a secret"),
 				Scopes:       &[]string{"openid", " email ", ""},
 			},
 			check: func(p model.SocialProvider) error {
@@ -62,11 +58,11 @@ func TestProviderRequestApplyToCreating(t *testing.T) {
 		{
 			name: "a second provider of the same kind, under its own name",
 			request: providerRequest{
-				Kind: "oidc", Slug: "Staff-SSO", Name: ptr("Staff SSO"),
-				ClientID: ptr("staff-portal"), ClientSecret: ptr("a secret"),
-				AuthorizeURL: ptr("https://sso.example.com/authorize"),
-				TokenURL:     ptr("https://sso.example.com/token"),
-				UserInfoURL:  ptr("https://sso.example.com/userinfo"),
+				Kind: "oidc", Slug: "Staff-SSO", Name: new("Staff SSO"),
+				ClientID: new("staff-portal"), ClientSecret: new("a secret"),
+				AuthorizeURL: new("https://sso.example.com/authorize"),
+				TokenURL:     new("https://sso.example.com/token"),
+				UserInfoURL:  new("https://sso.example.com/userinfo"),
 			},
 			check: func(p model.SocialProvider) error {
 				if p.Slug != "staff-sso" {
@@ -78,29 +74,29 @@ func TestProviderRequestApplyToCreating(t *testing.T) {
 		{
 			name: "a kind nobody offers",
 			request: providerRequest{
-				Kind: "myspace", Name: ptr("MySpace"), ClientID: ptr("id"), ClientSecret: ptr("s"),
+				Kind: "myspace", Name: new("MySpace"), ClientID: new("id"), ClientSecret: new("s"),
 			},
-			want: "kind must be one of: google, apple, facebook, yandex, vk, oidc, oauth2",
+			want: "The kind must be one of: google, apple, facebook, yandex, vk, oidc, oauth2.",
 		},
 		{
 			name:    "no name for the button",
-			request: providerRequest{Kind: "google", ClientID: ptr("id"), ClientSecret: ptr("s")},
+			request: providerRequest{Kind: "google", ClientID: new("id"), ClientSecret: new("s")},
 			want:    "name is required",
 		},
 		{
 			name:    "no client id",
-			request: providerRequest{Kind: "google", Name: ptr("Google"), ClientSecret: ptr("s")},
+			request: providerRequest{Kind: "google", Name: new("Google"), ClientSecret: new("s")},
 			want:    "client_id is required",
 		},
 		{
 			name:    "no secret",
-			request: providerRequest{Kind: "google", Name: ptr("Google"), ClientID: ptr("id")},
+			request: providerRequest{Kind: "google", Name: new("Google"), ClientID: new("id")},
 			want:    "client_secret is required",
 		},
 		{
 			name: "a custom provider with nowhere to send people",
 			request: providerRequest{
-				Kind: "oidc", Name: ptr("Staff SSO"), ClientID: ptr("id"), ClientSecret: ptr("s"),
+				Kind: "oidc", Name: new("Staff SSO"), ClientID: new("id"), ClientSecret: new("s"),
 			},
 			want: "authorize_url is required for this kind of provider",
 		},
@@ -158,7 +154,7 @@ func TestProviderRequestUpdatesOnlyWhatItMentions(t *testing.T) {
 	}
 
 	was := apple
-	request := providerRequest{IsEnabled: ptr(true)}
+	request := providerRequest{IsEnabled: new(true)}
 
 	if err := request.applyTo(&apple, seal, false); err != nil {
 		t.Fatalf("applyTo() = %v, want nothing: turning a provider on says nothing about its keys", err)
@@ -190,7 +186,7 @@ func TestProviderRequestKeepsKindAndSlug(t *testing.T) {
 		ClientID: "id", ClientSecret: []byte("sealed"), IsEnabled: true,
 	}
 
-	request := providerRequest{Kind: "facebook", Slug: "facebook", Name: ptr("Google")}
+	request := providerRequest{Kind: "facebook", Slug: "facebook", Name: new("Google")}
 	if err := request.applyTo(&provider, seal, false); err != nil {
 		t.Fatalf("applyTo() = %v", err)
 	}
@@ -209,7 +205,7 @@ func TestProviderRequestReplacesSecrets(t *testing.T) {
 		ClientSecret: []byte("sealed"),
 	}
 
-	request := providerRequest{ClientSecret: ptr("a new secret")}
+	request := providerRequest{ClientSecret: new("a new secret")}
 	if err := request.applyTo(&provider, seal, false); err != nil {
 		t.Fatalf("applyTo() = %v", err)
 	}

@@ -2,7 +2,7 @@
 export interface NavPage {
 	title: string;
 	href: string;
-	/** A Remix Icon name, as $lib/docs/icons.ts knows them. */
+	/** A Remix Icon name, as #lib/docs/icons.js knows them. */
 	icon: string;
 }
 

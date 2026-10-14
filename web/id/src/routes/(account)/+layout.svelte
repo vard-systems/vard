@@ -3,21 +3,27 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { signIn } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { Brand, Icon, LanguagePicker, ThemeToggle, type IconName } from '$lib/components';
-	import { useTranslator } from '$lib/i18n';
-	import { initials } from '$lib/utils/format';
+	import { signIn } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import {
+		Brand,
+		Icon,
+		LanguagePicker,
+		ThemeToggle,
+		type IconName
+	} from '#lib/components/index.js';
+	import { useTranslator } from '#lib/i18n/index.js';
+	import { initials } from '#lib/utils/format.js';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps & { children: Snippet } = $props();
 
 	const t = useTranslator();
 
-	const sections: { href: '/' | '/security' | '/applications'; key: string; icon: IconName }[] = [
-		{ href: '/', key: 'account.profile', icon: 'user' },
-		{ href: '/security', key: 'account.security', icon: 'lock' },
-		{ href: '/applications', key: 'account.applications', icon: 'apps' }
+	const sections: { path: '' | 'security' | 'applications'; key: string; icon: IconName }[] = [
+		{ path: '', key: 'account.profile', icon: 'user' },
+		{ path: 'security', key: 'account.security', icon: 'lock' },
+		{ path: 'applications', key: 'account.applications', icon: 'apps' }
 	];
 
 	let signingOut = $state(false);
@@ -29,7 +35,7 @@
 		} finally {
 			// One navigation that reloads the data: invalidating first would
 			// make this layout's load redirect to sign in, racing this goto.
-			await goto(resolve('/login'), { invalidateAll: true, replaceState: true });
+			await goto(resolve('login'), { refreshAll: true, replace: true });
 		}
 	}
 
@@ -39,7 +45,7 @@
 <div class="frame">
 	<header>
 		<div class="bar">
-			<a class="home" href={resolve('/')} aria-label={t('account.your_account')}><Brand /></a>
+			<a class="home" href={resolve('')} aria-label={t('account.your_account')}><Brand /></a>
 
 			<div class="end">
 				<LanguagePicker languages={data.languages} current={data.language} />
@@ -59,10 +65,10 @@
 		</div>
 
 		<nav aria-label={t('account.nav')}>
-			{#each sections as section (section.href)}
+			{#each sections as section (section.path)}
 				<a
-					href={resolve(section.href)}
-					aria-current={page.url.pathname === section.href ? 'page' : undefined}
+					href={resolve(section.path)}
+					aria-current={page.url.pathname === resolve(section.path) ? 'page' : undefined}
 				>
 					<Icon name={section.icon} size="1rem" />
 					{t(section.key)}

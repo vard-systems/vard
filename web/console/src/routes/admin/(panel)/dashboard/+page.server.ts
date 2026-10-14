@@ -1,6 +1,6 @@
-import type { AdminSession, Overview, OverviewDays } from '$lib/api';
-import { can } from '$lib/permissions';
-import { apiGet } from '$lib/server/api';
+import type { AdminSession, Overview, OverviewDays } from '#lib/api/index.js';
+import { can } from '#lib/permissions.js';
+import { apiGet } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {

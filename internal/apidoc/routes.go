@@ -279,7 +279,7 @@ func openAPIPath(path string) string {
 
 func pathParams(path string) []Param {
 	var out []Param
-	for _, segment := range strings.Split(path, "/") {
+	for segment := range strings.SplitSeq(path, "/") {
 		if name, ok := strings.CutPrefix(segment, ":"); ok {
 			out = append(out, Param{Name: name, Required: true, Schema: &Schema{Type: "string"}})
 		}

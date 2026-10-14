@@ -115,7 +115,7 @@ func (h *Handler) Update(c *gin.Context) {
 	// would sign you out of the page you saved it from.
 	changedAccess := req.Password != "" || admin.Status != model.StatusActive
 	if changedAccess && admin.ID != session.Admin(c).ID {
-		if err := h.store.RevokeSessionsFor(ctx, admin.ID, time.Now()); err != nil {
+		if err := h.store.RevokeAdminSessionsFor(ctx, admin.ID, time.Now()); err != nil {
 			respond.Failure(c, h.log, err, "ending the administrator's sessions failed")
 			return
 		}
@@ -199,7 +199,7 @@ func (h *Handler) ResetMFA(c *gin.Context) {
 	}
 
 	if admin.ID == session.Admin(c).ID {
-		respond.Conflict(c, "you cannot reset your own two-factor sign-in here; manage it from your profile")
+		respond.Fail(c, ownMFA)
 		return
 	}
 
@@ -222,7 +222,7 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 
 	if admin.ID == session.Admin(c).ID {
-		respond.Conflict(c, "you cannot delete your own account")
+		respond.Fail(c, ownAccount)
 		return
 	}
 
@@ -354,7 +354,7 @@ func (h *Handler) assignments(c *gin.Context, requested []assignmentRequest) ([]
 func (h *Handler) find(c *gin.Context) (*model.Admin, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not an administrator id")
+		respond.Fail(c, adminAbsent)
 		return nil, false
 	}
 
@@ -362,7 +362,7 @@ func (h *Handler) find(c *gin.Context) (*model.Admin, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such administrator")
+		respond.Fail(c, adminAbsent)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading administrator failed")
@@ -374,7 +374,7 @@ func (h *Handler) find(c *gin.Context) (*model.Admin, bool) {
 
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
-		respond.Conflict(c, "an administrator with that email already exists")
+		respond.Fail(c, respond.AdminEmailTaken)
 		return
 	}
 

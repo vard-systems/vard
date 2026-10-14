@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RiGlobalLine, RiHashtag, RiToggleLine, RiTranslate2 } from 'svelte-remixicon';
-	import type { Language, LocaleApp } from '$lib/api';
-	import { Badge, Code, type Column, DataTable, Tag, Tooltip } from '$lib/components/ui';
+	import type { Language, LocaleApp } from '#lib/api/index.js';
+	import { Badge, Code, type Column, DataTable, Tag, Tooltip } from '#lib/components/ui/index.js';
 
 	type Props = {
 		languages: Language[];

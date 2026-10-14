@@ -1,7 +1,7 @@
 package applications
 
 import (
-	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
@@ -9,6 +9,17 @@ import (
 	"loginer/internal/api/respond"
 	"loginer/internal/api/validate"
 	"loginer/internal/model"
+)
+
+var (
+	typeFixed              = respond.Define(http.StatusBadRequest, "application_type_fixed", respond.Admin)
+	noSecret               = respond.Define(http.StatusBadRequest, "application_no_secret", respond.Admin)
+	foreignScope           = respond.Define(http.StatusBadRequest, "application_api_scope_foreign", respond.Admin)
+	previewUserUnknown     = respond.Define(http.StatusBadRequest, "token_preview_user_unknown", respond.Admin)
+	previewAudienceUnknown = respond.Define(http.StatusBadRequest, "token_preview_audience_unknown", respond.Admin)
+	tooManyURIs            = respond.Define(http.StatusBadRequest, "application_too_many_uris", respond.Admin)
+	typeInvalid            = respond.Define(http.StatusBadRequest, "application_type_invalid", respond.Admin)
+	loginFlowUnknown       = respond.Define(http.StatusBadRequest, "application_login_flow_unknown", respond.Admin)
 )
 
 func (r *applicationRequest) applyTo(app *model.Application, creating bool) error {
@@ -19,11 +30,11 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 	}
 
 	if len(r.RedirectURIs) > maxURIs || len(r.PostLogoutRedirectURIs) > maxURIs {
-		return respond.Invalid(fmt.Sprintf("an application may have at most %d redirect URIs of each kind", maxURIs))
+		return tooManyURIs.With("max", maxURIs)
 	}
 
 	if creating && !model.ApplicationType(r.Type).Valid() {
-		return respond.Invalid("type must be one of: web, spa, native, m2m")
+		return typeInvalid.With()
 	}
 
 	app.Name = r.Name
@@ -55,7 +66,7 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 		app.LoginFlowID = flow
 	}
 
-	app.Normalise()
+	app.Normalize()
 
 	if !app.HasSecret() {
 		app.ClientSecretHash = ""
@@ -78,7 +89,7 @@ func flowID(sent string) (*uuid.UUID, error) {
 
 	id, err := uuid.Parse(trimmed)
 	if err != nil {
-		return nil, respond.Invalid("login_flow_id must be the id of a login flow")
+		return nil, loginFlowUnknown.With()
 	}
 
 	return &id, nil

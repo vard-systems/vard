@@ -1,12 +1,14 @@
 package model
 
+import "slices"
+
 const RoleSuperAdmin = "super_admin"
 
 type AdminRole struct {
 	Base
 
 	Name        string `gorm:"type:varchar(64);uniqueIndex;not null" json:"name"`
-	Description string `gorm:"size:255" json:"description,omitempty"`
+	Description string `gorm:"size:255;not null;default:''" json:"description,omitempty"`
 
 	Permissions []string `gorm:"type:text;serializer:json" json:"permissions"`
 }
@@ -24,11 +26,5 @@ func (r AdminRole) Grants(permission string) bool {
 		return true
 	}
 
-	for _, granted := range r.Permissions {
-		if granted == permission {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(r.Permissions, permission)
 }

@@ -81,7 +81,7 @@ type LoginCode struct {
 	UserID uuid.UUID `gorm:"type:uuid;not null;index"`
 	User   *User     `gorm:"constraint:OnDelete:CASCADE"`
 
-	Request string `gorm:"size:64"`
+	Request string `gorm:"size:64;not null;default:''"`
 
 	RememberMe bool `gorm:"not null"`
 

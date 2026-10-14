@@ -100,6 +100,32 @@ func (s *Store) DeleteApplication(ctx context.Context, app *model.Application) e
 			}
 		}
 
-		return tx.Unscoped().Delete(app).Error
+		return tx.Delete(app).Error
 	}), cache.Clients, cache.Admins, cache.Grants)
+}
+
+func (s *Store) ApplicationByClientID(ctx context.Context, clientID string) (*model.Application, error) {
+	kept, err := cached(ctx, s, cache.Clients, "client_id:"+clientID, func() (client, error) {
+		var app model.Application
+		if err := s.db.WithContext(ctx).First(&app, "client_id = ?", clientID).Error; err != nil {
+			return client{}, translate(err)
+		}
+
+		return client{Application: app, SecretHash: app.ClientSecretHash}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	app := kept.Application
+	app.ClientSecretHash = kept.SecretHash
+
+	return &app, nil
+}
+
+// client is how an application is cached, including its secret hash (a SHA-256
+// of a random secret) which the model omits from JSON.
+type client struct {
+	Application model.Application `json:"application"`
+	SecretHash  string            `json:"secret_hash"`
 }

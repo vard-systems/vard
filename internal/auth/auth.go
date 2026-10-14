@@ -140,7 +140,7 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 		UserAgent:   model.Truncate(req.UserAgent, 255),
 		IP:          model.Truncate(req.IP, 45),
 	}
-	if err := s.store.CreateSession(ctx, &session); err != nil {
+	if err := s.store.CreateAdminSession(ctx, &session); err != nil {
 		return "", nil, StateNone, err
 	}
 
@@ -168,7 +168,7 @@ func (s *Service) Session(ctx context.Context, token string) (*model.Admin, *mod
 		return nil, nil, StateNone, ErrNoSession
 	}
 
-	session, err := s.store.SessionByTokenHash(ctx, hashToken(token))
+	session, err := s.store.AdminSessionByTokenHash(ctx, hashToken(token))
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		return nil, nil, StateNone, ErrNoSession
@@ -222,7 +222,7 @@ func (s *Service) Logout(ctx context.Context, token string, req Request) error {
 		return nil
 	}
 
-	session, err := s.store.SessionByTokenHash(ctx, hashToken(token))
+	session, err := s.store.AdminSessionByTokenHash(ctx, hashToken(token))
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		return nil
@@ -230,7 +230,7 @@ func (s *Service) Logout(ctx context.Context, token string, req Request) error {
 		return err
 	}
 
-	if err := s.store.RevokeSession(ctx, session, time.Now()); err != nil {
+	if err := s.store.RevokeAdminSession(ctx, session, time.Now()); err != nil {
 		return err
 	}
 

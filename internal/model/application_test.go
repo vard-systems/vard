@@ -154,7 +154,7 @@ func TestApplicationValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := app(tt.kind)
 			tt.change(&a)
-			a.Normalise()
+			a.Normalize()
 
 			err := a.Validate()
 
@@ -172,14 +172,14 @@ func TestApplicationValidate(t *testing.T) {
 	}
 }
 
-// Normalise is where a type's rules are applied rather than refused: a public
+// Normalize is where a type's rules are applied rather than refused: a public
 // client can never end up with a secret or without PKCE, and a service has
 // nothing to redirect to.
-func TestApplicationNormalise(t *testing.T) {
+func TestApplicationNormalize(t *testing.T) {
 	spa := app(AppSPA)
 	spa.TokenAuthMethod = AuthClientSecretPost
 	spa.RequirePKCE = false
-	spa.Normalise()
+	spa.Normalize()
 
 	if spa.TokenAuthMethod != AuthNone || !spa.RequirePKCE || spa.HasSecret() {
 		t.Errorf("spa: auth = %s, pkce = %v, want none and true", spa.TokenAuthMethod, spa.RequirePKCE)
@@ -189,7 +189,7 @@ func TestApplicationNormalise(t *testing.T) {
 	web.TokenAuthMethod = AuthNone
 	web.GrantTypes = []string{GrantRefreshToken, GrantAuthorizationCode, GrantRefreshToken}
 	web.RedirectURIs = []string{" https://a.example.com/cb ", "", "https://a.example.com/cb"}
-	web.Normalise()
+	web.Normalize()
 
 	if web.TokenAuthMethod != AuthClientSecretBasic {
 		t.Errorf("web: auth = %s, want client_secret_basic", web.TokenAuthMethod)
@@ -207,7 +207,7 @@ func TestApplicationNormalise(t *testing.T) {
 	m2m := app(AppM2M)
 	m2m.GrantTypes = []string{GrantAuthorizationCode}
 	m2m.RedirectURIs = []string{"https://a.example.com/cb"}
-	m2m.Normalise()
+	m2m.Normalize()
 
 	if len(m2m.GrantTypes) != 1 || m2m.GrantTypes[0] != GrantClientCredentials || len(m2m.RedirectURIs) != 0 {
 		t.Errorf("m2m: grants = %v, redirects = %v, want client_credentials only and none", m2m.GrantTypes, m2m.RedirectURIs)
@@ -219,7 +219,7 @@ func TestApplicationNormalise(t *testing.T) {
 
 func TestApplicationSecret(t *testing.T) {
 	web := app(AppWeb)
-	web.Normalise()
+	web.Normalize()
 
 	secret, err := web.IssueSecret(time.Now())
 	if err != nil {
@@ -242,7 +242,7 @@ func TestApplicationSecret(t *testing.T) {
 	}
 
 	spa := app(AppSPA)
-	spa.Normalise()
+	spa.Normalize()
 	if _, err := spa.IssueSecret(time.Now()); err != ErrNoSecret {
 		t.Errorf("IssueSecret() on a public client = %v, want ErrNoSecret", err)
 	}

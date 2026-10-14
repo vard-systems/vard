@@ -42,7 +42,7 @@ func (s *Service) AdminCaller(ctx context.Context, token string) (*AdminCaller, 
 
 	catalog := model.AdminPermissionNames()
 	permissions := []string{}
-	for _, scope := range strings.Fields(claims.Scope) {
+	for scope := range strings.FieldsSeq(claims.Scope) {
 		if slices.Contains(audience.Allowed, scope) && slices.Contains(catalog, scope) {
 			permissions = append(permissions, scope)
 		}
@@ -92,7 +92,7 @@ func (s *Service) AccountCaller(ctx context.Context, token string) (*AccountCall
 	}
 
 	scopes := []string{}
-	for _, scope := range strings.Fields(claims.Scope) {
+	for scope := range strings.FieldsSeq(claims.Scope) {
 		if (scope == model.ScopeAccountRead || scope == model.ScopeAccountWrite) && slices.Contains(audience.Allowed, scope) {
 			scopes = append(scopes, scope)
 		}

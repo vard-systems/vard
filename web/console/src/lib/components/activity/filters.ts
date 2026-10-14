@@ -1,4 +1,4 @@
-import type { LogFilter } from '$lib/api';
+import type { LogFilter } from '#lib/api/index.js';
 import { actionsIn, categoryLabels, refusedActions, type Category } from './actions';
 
 export type Kind = Category | 'refused';

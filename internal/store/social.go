@@ -88,12 +88,12 @@ func (s *Store) SaveSocialProvider(ctx context.Context, provider *model.SocialPr
 
 func (s *Store) DeleteSocialProvider(ctx context.Context, provider *model.SocialProvider) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		err := tx.Unscoped().Where("provider_id = ?", provider.ID).Delete(&model.SocialIdentity{}).Error
+		err := tx.Where("provider_id = ?", provider.ID).Delete(&model.SocialIdentity{}).Error
 		if err != nil {
 			return err
 		}
 
-		return tx.Unscoped().Delete(provider).Error
+		return tx.Delete(provider).Error
 	})
 	if err != nil {
 		return err
@@ -172,7 +172,7 @@ func (s *Store) MarkIdentityUsed(ctx context.Context, identity *model.SocialIden
 }
 
 func (s *Store) DeleteSocialIdentity(ctx context.Context, identity *model.SocialIdentity) error {
-	return s.db.WithContext(ctx).Unscoped().Delete(identity).Error
+	return s.db.WithContext(ctx).Delete(identity).Error
 }
 
 func (s *Store) CreateSocialLogin(ctx context.Context, login *model.SocialLogin) error {
@@ -220,8 +220,8 @@ func (s *Store) SocialAccountsFor(ctx context.Context, userIDs []uuid.UUID) (map
 		Table("social_identities AS i").
 		Select(`i.id, i.user_id, p.name AS provider, p.slug, p.kind,
 			i.email, i.created_at AS connected_at, i.last_login_at`).
-		Joins("JOIN social_providers p ON p.id = i.provider_id AND p.deleted_at IS NULL").
-		Where("i.user_id IN ? AND i.deleted_at IS NULL", userIDs).
+		Joins("JOIN social_providers p ON p.id = i.provider_id").
+		Where("i.user_id IN ?", userIDs).
 		Order("p.position, i.created_at").
 		Scan(&rows).Error
 	if err != nil {

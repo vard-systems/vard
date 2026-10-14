@@ -16,7 +16,6 @@ import (
 func TestCachedTypesSurviveJSON(t *testing.T) {
 	// Fields JSON may leave out of a cached row.
 	allowed := map[string]string{
-		"Base.DeletedAt":        "a cached row is a live one, so it is always empty",
 		"Language.Translations": "a relation the cached reads never load",
 
 		// An administrator is kept as a principal, which spells the roles and
@@ -80,8 +79,7 @@ func TestCachedTypesSurviveJSON(t *testing.T) {
 func fieldsJSONDrops(typ reflect.Type, name string) []string {
 	var out []string
 
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+	for field := range typ.Fields() {
 		if !field.IsExported() {
 			continue
 		}

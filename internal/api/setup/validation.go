@@ -1,9 +1,15 @@
 package setup
 
 import (
+	"net/http"
 	"strings"
 
+	"loginer/internal/api/respond"
 	"loginer/internal/api/validate"
+)
+
+var (
+	alreadySetUp = respond.Define(http.StatusConflict, "setup_done", respond.Admin)
 )
 
 func (r *setupRequest) validate() error {

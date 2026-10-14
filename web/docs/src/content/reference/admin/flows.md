@@ -169,6 +169,7 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`login_flow_not_found`](/reference/errors#login_flow_not_found) | There is no such login flow. |
 
 ## POST /api/v1/admin/login-flows {#post-api-v1-admin-login-flows}
 
@@ -256,6 +257,7 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`login_flow_slug_taken`](/reference/errors#login_flow_slug_taken) | A flow with this identifier already exists. |
 
 ## PATCH /api/v1/admin/login-flows/:id {#patch-api-v1-admin-login-flows-id}
 
@@ -347,10 +349,12 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`login_flow_default_required`](/reference/errors#login_flow_default_required) | Make another flow the default rather than unmarking this one. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`login_flow_not_found`](/reference/errors#login_flow_not_found) | There is no such login flow. |
 
 ## DELETE /api/v1/admin/login-flows/:id {#delete-api-v1-admin-login-flows-id}
 
@@ -414,7 +418,9 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`login_flow_default_protected`](/reference/errors#login_flow_default_protected) | Make another flow the default before removing this one. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`login_flow_not_found`](/reference/errors#login_flow_not_found) | There is no such login flow. |

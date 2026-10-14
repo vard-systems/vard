@@ -53,7 +53,7 @@ func write(c *gin.Context, value string, maxAge int, secure bool) {
 // checking.
 func Require(service *auth.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, _ := c.Cookie(Cookie)
+		token := Token(c)
 
 		user, current, err := service.Authenticate(c.Request.Context(), token)
 		if err != nil {
@@ -116,11 +116,17 @@ func Bearer(c *gin.Context) string {
 	return strings.TrimSpace(token)
 }
 
+// Token is the administrator's session cookie, or "" when absent or
+// duplicated: a cookie planted from a sibling subdomain cannot stand in for it.
+func Token(c *gin.Context) string {
+	return single(c, Cookie)
+}
+
 // RequireSetup admits signed-in administrators and half-signed-in ones waiting
 // to enrol a second factor; it guards the enrolment endpoints.
 func RequireSetup(service *auth.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, _ := c.Cookie(Cookie)
+		token := Token(c)
 
 		user, _, state, err := service.Session(c.Request.Context(), token)
 		if err != nil || (state != auth.StateSignedIn && state != auth.StateEnroll) {

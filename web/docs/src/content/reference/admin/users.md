@@ -146,6 +146,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_role_not_found`](/reference/errors#user_role_not_found) | There is no such role. |
 
 ## GET /api/v1/admin/users/:id {#get-api-v1-admin-users-id}
 
@@ -276,6 +277,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
 
 ## GET /api/v1/admin/users/:id/roles {#get-api-v1-admin-users-id-roles}
 
@@ -370,6 +372,8 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
 
 ## GET /api/v1/admin/users/:id/role-mappings {#get-api-v1-admin-users-id-role-mappings}
 
@@ -461,6 +465,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
 
 ## POST /api/v1/admin/users {#post-api-v1-admin-users}
 
@@ -611,10 +616,13 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`user_password_required`](/reference/errors#user_password_required) | A password is required. |
+| 400 | [`user_password_too_short`](/reference/errors#user_password_too_short) | The password must be at least {min} characters. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`user_email_taken`](/reference/errors#user_email_taken) | A user with this email already exists. |
 
 ## PATCH /api/v1/admin/users/:id {#patch-api-v1-admin-users-id}
 
@@ -771,10 +779,14 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`user_password_required`](/reference/errors#user_password_required) | A password is required. |
+| 400 | [`user_password_too_short`](/reference/errors#user_password_too_short) | The password must be at least {min} characters. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
+| 409 | [`user_email_taken`](/reference/errors#user_email_taken) | A user with this email already exists. |
 
 ## DELETE /api/v1/admin/users/:id {#delete-api-v1-admin-users-id}
 
@@ -840,6 +852,7 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
 
 ## DELETE /api/v1/admin/users/:id/social-accounts/:identity {#delete-api-v1-admin-users-id-social-accounts-identity}
 
@@ -906,6 +919,8 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
+| 404 | [`user_social_account_not_found`](/reference/errors#user_social_account_not_found) | This user does not sign in with that. |
 
 ## POST /api/v1/admin/users/:id/role-mappings {#post-api-v1-admin-users-id-role-mappings}
 
@@ -1020,10 +1035,13 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`user_role_unknown`](/reference/errors#user_role_unknown) | One of the roles does not exist. |
+| 400 | [`user_roles_missing`](/reference/errors#user_roles_missing) | Name at least one role to assign. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
 
 ## DELETE /api/v1/admin/users/:id/role-mappings/:role {#delete-api-v1-admin-users-id-role-mappings-role}
 
@@ -1115,3 +1133,6 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_not_found`](/reference/errors#user_not_found) | There is no such user. |
+| 404 | [`user_role_not_found`](/reference/errors#user_role_not_found) | There is no such role. |
+| 404 | [`user_role_not_held`](/reference/errors#user_role_not_held) | The user was not given that role directly. |

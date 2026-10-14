@@ -14,7 +14,7 @@
 
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-	import { Icon } from '$lib/components/ui';
+	import { Icon } from '#lib/components/ui/index.js';
 
 	let { data, selected }: NodeProps<EndNodeType> = $props();
 </script>

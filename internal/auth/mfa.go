@@ -183,10 +183,10 @@ func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, co
 	// Every other session ends: one opened with only the password must not
 	// become fully signed in now that a factor exists.
 	if waiting != nil {
-		if _, err := s.store.RevokeOtherSessionsFor(ctx, admin.ID, waiting.ID, now); err != nil {
+		if _, err := s.store.RevokeOtherAdminSessionsFor(ctx, admin.ID, waiting.ID, now); err != nil {
 			return nil, err
 		}
-	} else if err := s.store.RevokeSessionsFor(ctx, admin.ID, now); err != nil {
+	} else if err := s.store.RevokeAdminSessionsFor(ctx, admin.ID, now); err != nil {
 		return nil, err
 	}
 
@@ -399,23 +399,23 @@ func newRecoveryCode() (string, error) {
 	return string(letters[:half]) + "-" + string(letters[half:]), nil
 }
 
-func normaliseRecoveryCode(code string) string {
+func normalizeRecoveryCode(code string) string {
 	return strings.NewReplacer("-", "", " ", "").Replace(strings.ToLower(strings.TrimSpace(code)))
 }
 
 func isRecoveryCode(code string) bool {
-	return len(normaliseRecoveryCode(code)) == recoveryCodeLetters
+	return len(normalizeRecoveryCode(code)) == recoveryCodeLetters
 }
 
 // hashRecoveryCode keys the hash with the server's secret: a code has under
 // fifty bits, which a bare SHA-256 from a database dump would give up quickly.
 func (s *Service) hashRecoveryCode(code string) string {
-	return hex.EncodeToString(s.sealer.Tag(recoveryCodePurpose, []byte(normaliseRecoveryCode(code))))
+	return hex.EncodeToString(s.sealer.Tag(recoveryCodePurpose, []byte(normalizeRecoveryCode(code))))
 }
 
 const recoveryCodePurpose = "admin recovery code"
 
 func legacyHashRecoveryCode(code string) string {
-	sum := sha256.Sum256([]byte(normaliseRecoveryCode(code)))
+	sum := sha256.Sum256([]byte(normalizeRecoveryCode(code)))
 	return hex.EncodeToString(sum[:])
 }

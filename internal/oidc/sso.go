@@ -496,7 +496,7 @@ func (s *Service) syncFromSSO(ctx context.Context, connection *model.SSOConnecti
 	var add []model.UserRole
 	for _, id := range given {
 		if !slices.Contains(held, id.String()) {
-			add = append(add, model.UserRole{Base: model.Base{ID: id}})
+			add = append(add, model.UserRole{ID: id})
 		}
 	}
 

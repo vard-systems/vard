@@ -1,6 +1,6 @@
-import type { ApplicationPage } from '$lib/api';
-import { LIST_PAGE_SIZE } from '$lib/query';
-import { apiGet, requireAnywhere } from '$lib/server/api';
+import type { ApplicationPage } from '#lib/api/index.js';
+import { LIST_PAGE_SIZE } from '#lib/query/index.js';
+import { apiGet, requireAnywhere } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {

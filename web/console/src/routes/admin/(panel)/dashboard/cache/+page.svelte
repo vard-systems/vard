@@ -10,9 +10,9 @@
 		createQuery,
 		useQueryClient
 	} from '@tanstack/svelte-query';
-	import { cacheApi, type CacheDatabaseName, type CacheKey } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { cacheKeysOptions, cacheOverviewOptions, keys } from '$lib/query';
+	import { cacheApi, type CacheDatabaseName, type CacheKey } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import { cacheKeysOptions, cacheOverviewOptions, keys } from '#lib/query/index.js';
 	import {
 		Alert,
 		Button,
@@ -27,12 +27,12 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import CacheGroups from '$lib/components/cache/CacheGroups.svelte';
-	import CacheKeyDialog from '$lib/components/cache/CacheKeyDialog.svelte';
-	import CacheKeyTable from '$lib/components/cache/CacheKeyTable.svelte';
-	import CacheStats from '$lib/components/cache/CacheStats.svelte';
-	import { databases, kindFilters } from '$lib/components/cache/cache';
+	} from '#lib/components/ui/index.js';
+	import CacheGroups from '#lib/components/cache/CacheGroups.svelte';
+	import CacheKeyDialog from '#lib/components/cache/CacheKeyDialog.svelte';
+	import CacheKeyTable from '#lib/components/cache/CacheKeyTable.svelte';
+	import CacheStats from '#lib/components/cache/CacheStats.svelte';
+	import { databases, kindFilters } from '#lib/components/cache/cache.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -53,7 +53,7 @@
 	let search = $derived(data.search);
 
 	async function apply(changes: Record<string, string>) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -64,7 +64,7 @@
 		const path = resolve('/admin/(panel)/dashboard/cache');
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

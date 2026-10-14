@@ -2,9 +2,17 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { RiShieldKeyholeLine } from 'svelte-remixicon';
-	import { adminApi, ApiError, setupApi } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { Alert, Button, Card, Icon, Input, PasswordInput, ThemeToggle } from '$lib/components/ui';
+	import { adminApi, ApiError, setupApi } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import {
+		Alert,
+		Button,
+		Card,
+		Icon,
+		Input,
+		PasswordInput,
+		ThemeToggle
+	} from '#lib/components/ui/index.js';
 
 	let firstName = $state('');
 	let lastName = $state('');
@@ -34,8 +42,8 @@
 
 			const result = await adminApi.login(email.trim(), password);
 
-			const target = result.next === 'enroll' ? '/admin/mfa-setup' : '/admin/dashboard';
-			await goto(resolve(target), { replaceState: true, invalidateAll: true });
+			const target = result.next === 'enroll' ? 'admin/mfa-setup' : 'admin/dashboard';
+			await goto(resolve(target), { replace: true, refreshAll: true });
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Could not create the account';
 			creating = false;

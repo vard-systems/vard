@@ -7,7 +7,7 @@ import {
 	type SignInRequest,
 	type SocialProvider,
 	type SSOConnection
-} from '$lib/api';
+} from '#lib/api/index.js';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ url, fetch, setHeaders }) => {

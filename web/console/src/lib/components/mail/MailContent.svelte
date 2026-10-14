@@ -6,7 +6,7 @@
 		type MailContent,
 		type MailLanguageContent,
 		type MailMessageSpec
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Button,
 		Code,
@@ -17,8 +17,8 @@
 		Tag,
 		Textarea,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 
 	type Props = {
 		content: MailContent;

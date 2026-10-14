@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { ActivityEvent } from '$lib/api';
-	import { formatDateTime, formatDayHeading, formatTime } from '$lib/utils/format';
-	import { Tag } from '$lib/components/ui';
+	import type { ActivityEvent } from '#lib/api/index.js';
+	import { formatDateTime, formatDayHeading, formatTime } from '#lib/utils/format.js';
+	import { Tag } from '#lib/components/ui/index.js';
 	import { describe } from './actions';
 
 	type Props = {

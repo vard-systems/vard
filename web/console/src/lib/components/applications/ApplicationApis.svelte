@@ -2,9 +2,9 @@
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiCodeBoxLine, RiShieldCheckLine } from 'svelte-remixicon';
-	import { applicationsApi, type APIAccess } from '$lib/api';
-	import { Alert, Badge, Checkbox, Icon, Note, Switch, notify } from '$lib/components/ui';
-	import { keys, applicationAccessOptions } from '$lib/query';
+	import { applicationsApi, type APIAccess } from '#lib/api/index.js';
+	import { Alert, Badge, Checkbox, Icon, Note, Switch, notify } from '#lib/components/ui/index.js';
+	import { keys, applicationAccessOptions } from '#lib/query/index.js';
 
 	type Props = {
 		applicationId: string;

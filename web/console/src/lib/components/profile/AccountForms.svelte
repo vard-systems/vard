@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
 	import { RiImageLine, RiLockPasswordLine, RiUserLine } from 'svelte-remixicon';
-	import { adminApi, type Admin } from '$lib/api';
+	import { adminApi, type Admin } from '#lib/api/index.js';
 	import {
 		Button,
 		FieldGrid,
@@ -10,9 +10,9 @@
 		PasswordInput,
 		Thumb,
 		notify
-	} from '$lib/components/ui';
-	import { ADMIN_DEPENDENCY, MIN_ADMIN_PASSWORD } from '$lib/constants';
-	import { initials } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import { ADMIN_DEPENDENCY, MIN_ADMIN_PASSWORD } from '#lib/constants.js';
+	import { initials } from '#lib/utils/format.js';
 
 	type Props = { admin: Admin };
 

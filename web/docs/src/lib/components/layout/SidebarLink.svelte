@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { href } from '$lib/docs/links';
-	import { iconFor } from '$lib/docs/icons';
+	import { href } from '#lib/docs/links.js';
+	import { iconFor } from '#lib/docs/icons.js';
 	import Icon from '../Icon.svelte';
 
 	type Props = {

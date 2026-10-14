@@ -1,6 +1,6 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
-import { COOKIES } from '$lib/brand';
+import { COOKIES } from '#lib/brand.js';
 
 export type Theme = 'light' | 'dark';
 

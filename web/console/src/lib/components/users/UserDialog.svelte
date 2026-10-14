@@ -10,7 +10,7 @@
 		type Role,
 		type UserField,
 		type UserRecord
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Alert,
 		Button,
@@ -28,11 +28,11 @@
 		Tag,
 		Thumb,
 		notify
-	} from '$lib/components/ui';
-	import { keys, roleMappingsOptions } from '$lib/query';
-	import { markFor as providerMark } from '$lib/components/social/providers';
-	import { formatDate, formatRelative } from '$lib/utils/format';
-	import RoleMappings from '$lib/components/roles/RoleMappings.svelte';
+	} from '#lib/components/ui/index.js';
+	import { keys, roleMappingsOptions } from '#lib/query/index.js';
+	import { markFor as providerMark } from '#lib/components/social/providers.js';
+	import { formatDate, formatRelative } from '#lib/utils/format.js';
+	import RoleMappings from '#lib/components/roles/RoleMappings.svelte';
 	import { additional } from './fields';
 	import FieldInput from './FieldInput.svelte';
 

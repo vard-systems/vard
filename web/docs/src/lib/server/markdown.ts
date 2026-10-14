@@ -6,13 +6,13 @@
  * - `> [!NOTE]`, `[!TIP]`, `[!WARNING]` callouts;
  * - code highlighted at build time in both themes, consecutive `title="…"` blocks becoming
  *   tabs;
- * - `{{name}}` and the other PLACEHOLDERS filled from $lib/brand.
+ * - `{{name}}` and the other PLACEHOLDERS filled from #lib/brand.
  */
 import { Marked, type Token, type Tokens } from 'marked';
 import { createHighlighter, type Highlighter } from 'shiki';
-import { href as docsHref } from '$lib/docs/links';
-import { PLACEHOLDERS } from '$lib/brand';
-import type { TocEntry } from '$lib/docs/types';
+import { href as docsHref } from '#lib/docs/links.js';
+import { PLACEHOLDERS } from '#lib/brand.js';
+import type { TocEntry } from '#lib/docs/types.js';
 
 const LANGUAGES = ['java', 'go', 'python', 'bash', 'json', 'http', 'html'];
 const ALIASES: Record<string, string> = {

@@ -5,8 +5,8 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { RiAddLine, RiCloseLine, RiRefreshLine, RiUpload2Line } from 'svelte-remixicon';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { flowsApi, type LoginFlow } from '$lib/api';
-	import { BRAND } from '$lib/brand';
+	import { flowsApi, type LoginFlow } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		Button,
 		Icon,
@@ -16,11 +16,11 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import FlowTable from '$lib/components/flows/FlowTable.svelte';
-	import { TEMPLATES, freeSlug, fromFile } from '$lib/components/flows/steps';
-	import { can } from '$lib/permissions';
-	import { firstPage, keys, LIST_PAGE_SIZE, loginFlowsOptions } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import FlowTable from '#lib/components/flows/FlowTable.svelte';
+	import { TEMPLATES, freeSlug, fromFile } from '#lib/components/flows/steps.js';
+	import { can } from '#lib/permissions.js';
+	import { firstPage, keys, LIST_PAGE_SIZE, loginFlowsOptions } from '#lib/query/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -52,7 +52,7 @@
 	let file = $state<HTMLInputElement>();
 
 	async function apply(changes: { search?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -63,7 +63,7 @@
 		const path = resolve('/admin/(panel)/dashboard/flows');
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

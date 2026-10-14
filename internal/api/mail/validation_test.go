@@ -44,11 +44,6 @@ func stored(t *testing.T) model.MailSettings {
 	}
 }
 
-// The pointers a PATCH is made of: "sent", as against nothing sent at all.
-func sent(value string) *string { return &value }
-func sentInt(value int) *int    { return &value }
-func sentBool(value bool) *bool { return &value }
-
 func TestSettingsRequestApplyTo(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -64,7 +59,7 @@ func TestSettingsRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "a new host, trimmed and lower case",
-			request: settingsRequest{Host: sent("  SMTP.Example.NET  ")},
+			request: settingsRequest{Host: new("  SMTP.Example.NET  ")},
 			changed: []string{"host"},
 			check: func(m model.MailSettings) error {
 				if m.Host != "smtp.example.net" {
@@ -75,17 +70,17 @@ func TestSettingsRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "the same values again are no change",
-			request: settingsRequest{Host: sent("smtp.example.com"), Port: sentInt(587)},
+			request: settingsRequest{Host: new("smtp.example.com"), Port: new(587)},
 			changed: []string{},
 		},
 		{
 			name:    "moving to the port that expects TLS from the first byte",
-			request: settingsRequest{Port: sentInt(465), Encryption: sent("tls")},
+			request: settingsRequest{Port: new(465), Encryption: new("tls")},
 			changed: []string{"port", "encryption"},
 		},
 		{
 			name:    "turning sending off leaves the server as it is",
-			request: settingsRequest{IsEnabled: sentBool(false)},
+			request: settingsRequest{IsEnabled: new(false)},
 			changed: []string{"is_enabled"},
 			check: func(m model.MailSettings) error {
 				if m.Host != "smtp.example.com" {
@@ -96,7 +91,7 @@ func TestSettingsRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "a password left out is the stored one",
-			request: settingsRequest{Username: sent("someone")},
+			request: settingsRequest{Username: new("someone")},
 			changed: []string{"username"},
 			check: func(m model.MailSettings) error {
 				if len(m.Password) == 0 {
@@ -107,7 +102,7 @@ func TestSettingsRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "a new password is sealed, not stored as it was typed",
-			request: settingsRequest{Password: sent("a new password")},
+			request: settingsRequest{Password: new("a new password")},
 			changed: []string{"password"},
 			check: func(m model.MailSettings) error {
 				if string(m.Password) == "a new password" {
@@ -121,7 +116,7 @@ func TestSettingsRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "an empty password is a server that takes none",
-			request: settingsRequest{Password: sent("")},
+			request: settingsRequest{Password: new("")},
 			changed: []string{"password"},
 			check: func(m model.MailSettings) error {
 				if len(m.Password) != 0 {
@@ -132,27 +127,27 @@ func TestSettingsRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "sending with no host",
-			request: settingsRequest{Host: sent("")},
+			request: settingsRequest{Host: new("")},
 			want:    "host is required to send email",
 		},
 		{
 			name:    "a host with the port in it",
-			request: settingsRequest{Host: sent("smtp.example.com:587")},
+			request: settingsRequest{Host: new("smtp.example.com:587")},
 			want:    "host must be a host name on its own, such as smtp.example.com",
 		},
 		{
 			name:    "an encryption nothing speaks",
-			request: settingsRequest{Encryption: sent("ssl")},
+			request: settingsRequest{Encryption: new("ssl")},
 			want:    "encryption must be one of: starttls, tls, none",
 		},
 		{
 			name:    "an address that is not one",
-			request: settingsRequest{FromAddress: sent("no-reply at example")},
+			request: settingsRequest{FromAddress: new("no-reply at example")},
 			want:    "from_address must be an email address",
 		},
 		{
 			name:    "a port nothing listens on",
-			request: settingsRequest{Port: sentInt(0)},
+			request: settingsRequest{Port: new(0)},
 			want:    "port must be between 1 and 65535",
 		},
 	}
@@ -220,8 +215,8 @@ func TestTestRequestSettings(t *testing.T) {
 	saved := stored(t)
 
 	t.Run("the form's server, the stored password", func(t *testing.T) {
-		req := testRequest{To: "someone@example.com"}
-		req.Host = sent("smtp.other.example")
+		req := testRequest{To: "someone@example.com",
+			Host: new("smtp.other.example")}
 
 		settings, err := req.settings(&saved, sealer(t))
 		if err != nil {
@@ -237,8 +232,8 @@ func TestTestRequestSettings(t *testing.T) {
 	})
 
 	t.Run("a password just typed is the one tried", func(t *testing.T) {
-		req := testRequest{To: "someone@example.com"}
-		req.Password = sent("a new password")
+		req := testRequest{To: "someone@example.com",
+			Password: new("a new password")}
 
 		settings, err := req.settings(&saved, sealer(t))
 		if err != nil {
@@ -267,13 +262,12 @@ func TestTestRequestSettings(t *testing.T) {
 	})
 
 	t.Run("a server that could not work is refused before it is dialled", func(t *testing.T) {
-		req := testRequest{To: "someone@example.com"}
-		req.Host = sent("")
+		req := testRequest{To: "someone@example.com",
+			Host: new("")}
 
 		_, err := req.settings(&saved, sealer(t))
 
-		var fault respond.Fault
-		if !errors.As(err, &fault) {
+		if _, ok := errors.AsType[respond.Fault](err); !ok {
 			t.Fatalf("settings() = %v, want a Fault", err)
 		}
 	})

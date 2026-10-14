@@ -38,12 +38,12 @@ func TestAdminRequestValidate(t *testing.T) {
 			name:     "a new administrator without a password",
 			creating: true,
 			change:   func(r *adminRequest) { r.Password, r.ConfirmPassword = "", "" },
-			want:     "password is required",
+			want:     "A password is required.",
 		},
 		{
 			name:   "a short password",
 			change: func(r *adminRequest) { r.Password, r.ConfirmPassword = "short", "short" },
-			want:   "password must be at least 10 characters",
+			want:   "The password must be at least 10 characters.",
 		},
 		{
 			name:   "passwords that differ",

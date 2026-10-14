@@ -82,6 +82,6 @@ func (s *Store) DeleteAdminRole(ctx context.Context, role *model.AdminRole) erro
 			return err
 		}
 
-		return tx.Unscoped().Delete(role).Error
+		return tx.Delete(role).Error
 	}), cache.Admins)
 }

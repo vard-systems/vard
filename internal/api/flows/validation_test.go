@@ -9,10 +9,6 @@ import (
 	"loginer/internal/model"
 )
 
-func ptr[T any](value T) *T {
-	return &value
-}
-
 func TestFlowRequestApplyToCreating(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -22,7 +18,7 @@ func TestFlowRequestApplyToCreating(t *testing.T) {
 	}{
 		{
 			name:    "a flow named and nothing else",
-			request: flowRequest{Name: ptr("  Staff sign-in  ")},
+			request: flowRequest{Name: new("  Staff sign-in  ")},
 			check: func(f model.LoginFlow) error {
 				switch {
 				case f.Name != "Staff sign-in":
@@ -39,7 +35,7 @@ func TestFlowRequestApplyToCreating(t *testing.T) {
 		},
 		{
 			name:    "an identifier of its own",
-			request: flowRequest{Name: ptr("Staff sign-in"), Slug: ptr("  STAFF  ")},
+			request: flowRequest{Name: new("Staff sign-in"), Slug: new("  STAFF  ")},
 			check: func(f model.LoginFlow) error {
 				if f.Slug != "staff" {
 					return errors.New("slug = " + f.Slug)
@@ -50,8 +46,8 @@ func TestFlowRequestApplyToCreating(t *testing.T) {
 		{
 			name: "steps with the blanks a form sends",
 			request: flowRequest{
-				Name:  ptr("Codes and a password"),
-				Steps: ptr([]model.LoginStep{"Identifier", "", " email_code ", "password"}),
+				Name:  new("Codes and a password"),
+				Steps: new([]model.LoginStep{"Identifier", "", " email_code ", "password"}),
 			},
 			check: func(f model.LoginFlow) error {
 				want := model.StepList{model.StepIdentifier, model.StepEmailCode, model.StepPassword}
@@ -63,7 +59,7 @@ func TestFlowRequestApplyToCreating(t *testing.T) {
 		},
 		{
 			name:    "making it the default also turns it on",
-			request: flowRequest{Name: ptr("Staff"), IsDefault: ptr(true), IsEnabled: ptr(false)},
+			request: flowRequest{Name: new("Staff"), IsDefault: new(true), IsEnabled: new(false)},
 			check: func(f model.LoginFlow) error {
 				if !f.IsEnabled {
 					return errors.New("the default flow was left turned off")
@@ -73,17 +69,17 @@ func TestFlowRequestApplyToCreating(t *testing.T) {
 		},
 		{
 			name:    "no name",
-			request: flowRequest{Slug: ptr("staff")},
+			request: flowRequest{Slug: new("staff")},
 			want:    "name is required",
 		},
 		{
 			name:    "a flow that asks for nothing",
-			request: flowRequest{Name: ptr("Open door"), Steps: ptr([]model.LoginStep{"identifier"})},
+			request: flowRequest{Name: new("Open door"), Steps: new([]model.LoginStep{"identifier"})},
 			want:    "a flow must ask for at least one of: password, social",
 		},
 		{
 			name:    "a session that lasts a year",
-			request: flowRequest{Name: ptr("Staff"), SessionLifetimeHours: ptr(24 * 365)},
+			request: flowRequest{Name: new("Staff"), SessionLifetimeHours: new(24 * 365)},
 			want:    "session_lifetime_hours must be between 1 and 2160",
 		},
 	}
@@ -128,7 +124,7 @@ func TestFlowRequestUpdatesOnlyWhatItMentions(t *testing.T) {
 	flow.IsDefault = false
 	was := flow
 
-	request := flowRequest{IsEnabled: ptr(false)}
+	request := flowRequest{IsEnabled: new(false)}
 
 	if err := request.applyTo(&flow, false); err != nil {
 		t.Fatalf("applyTo() = %v, want nothing", err)
@@ -159,13 +155,13 @@ func TestFlowRequestSwitchesAreIndependent(t *testing.T) {
 		set  func(*flowRequest, bool)
 		read func(model.LoginFlow) bool
 	}{
-		{"allow_sign_in", func(r *flowRequest, v bool) { r.AllowSignIn = ptr(v) }, func(f model.LoginFlow) bool { return f.AllowSignIn }},
-		{"allow_registration", func(r *flowRequest, v bool) { r.AllowRegistration = ptr(v) }, func(f model.LoginFlow) bool { return f.AllowRegistration }},
-		{"allow_password_reset", func(r *flowRequest, v bool) { r.AllowPasswordReset = ptr(v) }, func(f model.LoginFlow) bool { return f.AllowPasswordReset }},
-		{"allow_remember_me", func(r *flowRequest, v bool) { r.AllowRememberMe = ptr(v) }, func(f model.LoginFlow) bool { return f.AllowRememberMe }},
-		{"verify_email_on_register", func(r *flowRequest, v bool) { r.VerifyEmailOnRegister = ptr(v) }, func(f model.LoginFlow) bool { return f.VerifyEmailOnRegister }},
-		{"require_verified_email", func(r *flowRequest, v bool) { r.RequireVerifiedEmail = ptr(v) }, func(f model.LoginFlow) bool { return f.RequireVerifiedEmail }},
-		{"allow_email_change", func(r *flowRequest, v bool) { r.AllowEmailChange = ptr(v) }, func(f model.LoginFlow) bool { return f.AllowEmailChange }},
+		{"allow_sign_in", func(r *flowRequest, v bool) { r.AllowSignIn = new(v) }, func(f model.LoginFlow) bool { return f.AllowSignIn }},
+		{"allow_registration", func(r *flowRequest, v bool) { r.AllowRegistration = new(v) }, func(f model.LoginFlow) bool { return f.AllowRegistration }},
+		{"allow_password_reset", func(r *flowRequest, v bool) { r.AllowPasswordReset = new(v) }, func(f model.LoginFlow) bool { return f.AllowPasswordReset }},
+		{"allow_remember_me", func(r *flowRequest, v bool) { r.AllowRememberMe = new(v) }, func(f model.LoginFlow) bool { return f.AllowRememberMe }},
+		{"verify_email_on_register", func(r *flowRequest, v bool) { r.VerifyEmailOnRegister = new(v) }, func(f model.LoginFlow) bool { return f.VerifyEmailOnRegister }},
+		{"require_verified_email", func(r *flowRequest, v bool) { r.RequireVerifiedEmail = new(v) }, func(f model.LoginFlow) bool { return f.RequireVerifiedEmail }},
+		{"allow_email_change", func(r *flowRequest, v bool) { r.AllowEmailChange = new(v) }, func(f model.LoginFlow) bool { return f.AllowEmailChange }},
 	}
 
 	for _, one := range switches {
@@ -205,7 +201,7 @@ func TestFlowRequestSwitchesAreIndependent(t *testing.T) {
 func TestFlowRequestKeepsTheSlug(t *testing.T) {
 	flow := model.DefaultLoginFlow()
 
-	request := flowRequest{Slug: ptr("something-else"), Name: ptr("Renamed")}
+	request := flowRequest{Slug: new("something-else"), Name: new("Renamed")}
 	if err := request.applyTo(&flow, false); err != nil {
 		t.Fatalf("applyTo() = %v", err)
 	}

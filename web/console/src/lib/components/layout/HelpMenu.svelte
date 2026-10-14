@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RiBookOpenLine, RiGithubFill, RiKeyboardLine, RiQuestionLine } from 'svelte-remixicon';
-	import { BRAND } from '$lib/brand';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		DropdownMenu,
 		Icon,
@@ -9,7 +9,7 @@
 		MenuInfo,
 		MenuItem,
 		MenuSeparator
-	} from '$lib/components/ui';
+	} from '#lib/components/ui/index.js';
 </script>
 
 <DropdownMenu label="Help and resources">

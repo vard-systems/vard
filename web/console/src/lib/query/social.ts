@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { socialApi, type SocialProvider, type SocialSpec } from '$lib/api';
+import { socialApi, type SocialProvider, type SocialSpec } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function socialProvidersOptions(initial: {

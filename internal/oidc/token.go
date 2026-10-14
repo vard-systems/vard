@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -526,9 +527,7 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 		}
 
 		out := map[string]any{"active": true, "token_type": "Bearer"}
-		for key, value := range raw {
-			out[key] = value
-		}
+		maps.Copy(out, raw)
 		return out, nil
 	}
 

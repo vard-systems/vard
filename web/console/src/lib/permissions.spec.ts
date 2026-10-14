@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Admin } from '$lib/api';
+import type { Admin } from '#lib/api/index.js';
 import { can, canAnywhere } from './permissions';
 
 function admin(changes: Partial<Admin>): Admin {

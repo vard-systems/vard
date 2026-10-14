@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
 	import { RiAddLine } from 'svelte-remixicon';
-	import type { Language, LanguageList, LocaleApp } from '$lib/api';
-	import { Button, Icon, SearchInput, ShowMore, Toolbar } from '$lib/components/ui';
-	import { firstPage, languagesOptions, LIST_PAGE_SIZE } from '$lib/query';
+	import type { Language, LanguageList, LocaleApp } from '#lib/api/index.js';
+	import { Button, Icon, SearchInput, ShowMore, Toolbar } from '#lib/components/ui/index.js';
+	import { firstPage, languagesOptions, LIST_PAGE_SIZE } from '#lib/query/index.js';
 	import LanguageDialog from './LanguageDialog.svelte';
 	import LanguageTable from './LanguageTable.svelte';
 	import NewLanguageDialog from './NewLanguageDialog.svelte';

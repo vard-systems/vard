@@ -278,6 +278,6 @@ func (s *Store) DeleteAdmin(ctx context.Context, admin *model.Admin) error {
 			}
 		}
 
-		return tx.Unscoped().Delete(admin).Error
+		return tx.Delete(admin).Error
 	}), cache.Admins)
 }

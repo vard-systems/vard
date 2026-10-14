@@ -1,19 +1,21 @@
 <script lang="ts">
-	import '$lib/styles/app.css';
+	import '#lib/styles/app.css';
 	import { afterNavigate } from '$app/navigation';
-	import favicon from '$lib/assets/favicon.svg';
-	import { THEME_KEY } from '$lib/brand';
-	import AppHeader from '$lib/components/layout/AppHeader.svelte';
-	import Sidebar from '$lib/components/layout/Sidebar.svelte';
+	import favicon from '#lib/assets/favicon.svg';
+	import { THEME_KEY } from '#lib/brand.js';
+	import AppHeader from '#lib/components/layout/AppHeader.svelte';
+	import Sidebar from '#lib/components/layout/Sidebar.svelte';
 
 	let { data, children } = $props();
 
 	let menuOpen = $state(false);
-	afterNavigate(() => (menuOpen = false));
 
-	// Run before the body paints, so a reader who chose dark never sees a
-	// flash of light. The closing tag is split so it does not close this
-	// component's own script. Reading storage can throw in a private window.
+	afterNavigate(({ shallow, type }) => {
+		if (shallow && type === 'goto') return;
+
+		return (menuOpen = false);
+	});
+
 	const themeScript =
 		`<script>try{var t=localStorage.getItem(${JSON.stringify(THEME_KEY)});` +
 		`if(t)document.documentElement.dataset.theme=t}catch(e){}</` +
@@ -31,11 +33,10 @@
 <a class="skip" href="#content">Skip to content</a>
 
 <AppHeader {menuOpen} onMenu={() => (menuOpen = !menuOpen)} />
+
 <Sidebar sections={data.navigation} open={menuOpen} onClose={() => (menuOpen = false)} />
 
-<main id="content">
-	{@render children()}
-</main>
+<main id="content">{@render children()}</main>
 
 <style>
 	.skip {

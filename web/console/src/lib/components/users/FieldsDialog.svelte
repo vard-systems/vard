@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { RiAddLine, RiDeleteBinLine, RiPencilLine } from 'svelte-remixicon';
-	import { usersApi, type FieldType, type UserField } from '$lib/api';
+	import { usersApi, type FieldType, type UserField } from '#lib/api/index.js';
 	import {
 		Badge,
 		Button,
@@ -13,9 +13,9 @@
 		Select,
 		Switch,
 		notify
-	} from '$lib/components/ui';
-	import type { SelectOption } from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import type { SelectOption } from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import { additional, builtins } from './fields';
 	import { fieldIcons } from './fieldIcons';
 

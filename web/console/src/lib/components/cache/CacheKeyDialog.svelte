@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiDeleteBinLine, RiTimerLine } from 'svelte-remixicon';
-	import { cacheApi, messageOf, type CacheDatabaseName, type CacheKey } from '$lib/api';
+	import { cacheApi, messageOf, type CacheDatabaseName, type CacheKey } from '#lib/api/index.js';
 	import {
 		Alert,
 		CodeEditor,
@@ -15,8 +15,8 @@
 		Note,
 		Tag,
 		notify
-	} from '$lib/components/ui';
-	import { keys, cacheValueOptions } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys, cacheValueOptions } from '#lib/query/index.js';
 	import { formatBytes, formatTTL, kinds } from './cache';
 
 	type Props = {

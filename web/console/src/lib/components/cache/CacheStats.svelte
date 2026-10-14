@@ -7,8 +7,8 @@
 		RiSpeedUpLine,
 		RiUserLine
 	} from 'svelte-remixicon';
-	import type { CacheDatabase } from '$lib/api';
-	import { StatCard } from '$lib/components/ui';
+	import type { CacheDatabase } from '#lib/api/index.js';
+	import { StatCard } from '#lib/components/ui/index.js';
 
 	type Props = { database: CacheDatabase };
 

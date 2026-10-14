@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { RiDeleteBinLine } from 'svelte-remixicon';
-	import type { LoginStep, LoginStepSpec } from '$lib/api';
-	import { countOf } from '$lib/utils/format';
+	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
+	import { countOf } from '#lib/utils/format.js';
 	import {
 		Alert,
 		Button,
@@ -13,7 +13,7 @@
 		Select,
 		SwitchField,
 		Textarea
-	} from '$lib/components/ui';
+	} from '#lib/components/ui/index.js';
 	import {
 		MAX_SESSION_HOURS,
 		describe,
