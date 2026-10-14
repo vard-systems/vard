@@ -201,10 +201,7 @@ func (s *Service) waitingCode(ctx context.Context, handle string) (*codeContext,
 }
 
 func challenge(handle string, code model.LoginCode, settings model.OTPSettings, email string, now time.Time) CodeChallenge {
-	wait := int(code.SentAt.Add(settings.Resend()).Sub(now).Round(time.Second).Seconds())
-	if wait < 0 {
-		wait = 0
-	}
+	wait := max(int(code.SentAt.Add(settings.Resend()).Sub(now).Round(time.Second).Seconds()), 0)
 
 	return CodeChallenge{
 		Handle:       handle,

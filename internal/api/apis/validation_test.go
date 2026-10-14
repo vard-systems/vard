@@ -51,7 +51,7 @@ func TestAPIRequestApplyTo(t *testing.T) {
 		{
 			name:    "an update naming another API's scope",
 			request: apiRequest{Name: "Orders", Scopes: []scopeRequest{{ID: uuid.New(), Name: "orders:read"}}},
-			want:    "scopes: orders:read refers to a scope this API does not have",
+			want:    "orders:read is not a scope of this API.",
 		},
 		{
 			name:    "a scope the model refuses",

@@ -19,12 +19,12 @@ func graph(t *testing.T, roles map[string][]string) (RoleGraph, map[string]uuid.
 
 	g := RoleGraph{}
 	for name, inherits := range roles {
-		role := UserRole{Name: name}
-		role.ID = ids[name]
+		role := UserRole{Name: name,
+			ID: ids[name]}
 
 		for _, inherited := range inherits {
-			parent := UserRole{Name: inherited}
-			parent.ID = ids[inherited]
+			parent := UserRole{Name: inherited,
+				ID: ids[inherited]}
 			role.Inherits = append(role.Inherits, parent)
 		}
 

@@ -1,5 +1,5 @@
-import type { API } from '$lib/api';
-import { apiGet, requireAnywhere } from '$lib/server/api';
+import type { API } from '#lib/api/index.js';
+import { apiGet, requireAnywhere } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 const tabs = ['overview', 'settings', 'scopes', 'applications', 'logs'] as const;

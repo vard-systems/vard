@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { RiBuildingLine, RiRefreshLine, RiTranslate2 } from 'svelte-remixicon';
-	import { BRAND } from '$lib/brand';
-	import { IconButton, PageContainer, PageHeader, Tabs } from '$lib/components/ui';
-	import LanguageSettings from '$lib/components/languages/LanguageSettings.svelte';
-	import OrganizationSettings from '$lib/components/organization/OrganizationSettings.svelte';
-	import { can } from '$lib/permissions';
-	import { keys } from '$lib/query';
+	import { BRAND } from '#lib/brand.js';
+	import { IconButton, PageContainer, PageHeader, Tabs } from '#lib/components/ui/index.js';
+	import LanguageSettings from '#lib/components/languages/LanguageSettings.svelte';
+	import OrganizationSettings from '#lib/components/organization/OrganizationSettings.svelte';
+	import { can } from '#lib/permissions.js';
+	import { keys } from '#lib/query/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

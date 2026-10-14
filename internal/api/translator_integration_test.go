@@ -1,6 +1,7 @@
 package api
 
 import (
+	"maps"
 	"net/http"
 	"testing"
 
@@ -41,9 +42,7 @@ func TestLiveTranslatorsCannotRewordEmails(t *testing.T) {
 	// The whole draft, as the editor sends it, with one email and one page
 	// reworded.
 	draft := map[string]string{}
-	for key, value := range text.Messages {
-		draft[key] = value
-	}
+	maps.Copy(draft, text.Messages)
 	draft["email.reset.body"] = "Your account is at risk. Secure it at https://evil.example/r?u={link}"
 	draft["action.sign_in"] = "Sign in now"
 	translator.must(http.StatusOK, http.MethodPut, "/languages/en/translations/id", map[string]any{"messages": draft}, nil)

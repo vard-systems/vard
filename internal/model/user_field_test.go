@@ -13,9 +13,9 @@ func field(t FieldType, required bool) UserField {
 	return UserField{Name: "probe", Label: "Probe", Type: t, IsRequired: required}
 }
 
-// TestNormalise covers what a submitted value becomes, which is the one place
+// TestNormalize covers what a submitted value becomes, which is the one place
 // a field's type actually means something.
-func TestNormalise(t *testing.T) {
+func TestNormalize(t *testing.T) {
 	tests := []struct {
 		name  string
 		field UserField
@@ -39,18 +39,18 @@ func TestNormalise(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.field.Normalise(tt.input)
+			got, err := tt.field.Normalize(tt.input)
 			if err != nil {
-				t.Fatalf("Normalise(%#v) = error %v, want %#v", tt.input, err, tt.want)
+				t.Fatalf("Normalize(%#v) = error %v, want %#v", tt.input, err, tt.want)
 			}
 			if got != tt.want {
-				t.Errorf("Normalise(%#v) = %#v, want %#v", tt.input, got, tt.want)
+				t.Errorf("Normalize(%#v) = %#v, want %#v", tt.input, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestNormaliseRejects(t *testing.T) {
+func TestNormalizeRejects(t *testing.T) {
 	tests := []struct {
 		name  string
 		field UserField
@@ -67,16 +67,16 @@ func TestNormaliseRejects(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := tt.field.Normalise(tt.input); err == nil {
-				t.Errorf("Normalise(%#v) accepted the value, want an error", tt.input)
+			if _, err := tt.field.Normalize(tt.input); err == nil {
+				t.Errorf("Normalize(%#v) accepted the value, want an error", tt.input)
 			}
 		})
 	}
 }
 
 // The error names the field, because it is shown to whoever is editing.
-func TestNormaliseErrorNamesTheField(t *testing.T) {
-	_, err := UserField{Name: "phone_verified", Type: FieldBool}.Normalise("maybe")
+func TestNormalizeErrorNamesTheField(t *testing.T) {
+	_, err := UserField{Name: "phone_verified", Type: FieldBool}.Normalize("maybe")
 	if err == nil {
 		t.Fatal("want an error")
 	}
@@ -102,13 +102,15 @@ func TestFieldTypeValid(t *testing.T) {
 
 // bound is a pointer to a number, which is how a field carries a bound it
 // might not have.
+//
+//go:fix inline
 func bound(value float64) *float64 {
-	return &value
+	return new(value)
 }
 
-// TestNormaliseRules covers the rules a field can put on its values: the
+// TestNormalizeRules covers the rules a field can put on its values: the
 // checks that turn a field definition into something an admin can rely on.
-func TestNormaliseRules(t *testing.T) {
+func TestNormalizeRules(t *testing.T) {
 	tests := []struct {
 		name    string
 		field   UserField
@@ -169,13 +171,13 @@ func TestNormaliseRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := tt.field.Normalise(tt.input)
+			_, err := tt.field.Normalize(tt.input)
 
 			if tt.wantErr && err == nil {
-				t.Fatalf("Normalise(%#v) = no error, want one", tt.input)
+				t.Fatalf("Normalize(%#v) = no error, want one", tt.input)
 			}
 			if !tt.wantErr && err != nil {
-				t.Fatalf("Normalise(%#v) = error %v, want none", tt.input, err)
+				t.Fatalf("Normalize(%#v) = error %v, want none", tt.input, err)
 			}
 		})
 	}

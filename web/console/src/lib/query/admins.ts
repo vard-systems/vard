@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/svelte-query';
 
-import { adminsApi, type AdminPage, type AdminPermission, type AdminRole } from '$lib/api';
+import { adminsApi, type AdminPage, type AdminPermission, type AdminRole } from '#lib/api/index.js';
 import { keys } from './keys';
 import { LIST_PAGE_SIZE, nextOffset } from './paging';
 

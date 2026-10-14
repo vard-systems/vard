@@ -1,11 +1,19 @@
 package auth
 
 import (
+	"net/http"
 	"strings"
 	"unicode/utf8"
 
+	"loginer/internal/api/respond"
 	"loginer/internal/api/validate"
 	"loginer/internal/model"
+)
+
+var (
+	wrongCredentials = respond.Define(http.StatusUnauthorized, "admin_wrong_credentials", respond.Admin)
+	signInExpired    = respond.Define(http.StatusUnauthorized, "admin_sign_in_expired", respond.Admin)
+	signInCodeWrong  = respond.Define(http.StatusUnauthorized, "admin_sign_in_code_wrong", respond.Admin)
 )
 
 func (r *loginRequest) validate() error {
@@ -39,7 +47,7 @@ func (r *passwordRequest) validate() error {
 	}
 
 	if utf8.RuneCountInString(r.NewPassword) < model.MinAdminPasswordLength {
-		return passwordTooShort.With("min", model.MinAdminPasswordLength)
+		return respond.AdminPasswordTooShort.With("min", model.MinAdminPasswordLength)
 	}
 
 	return nil

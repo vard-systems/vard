@@ -10,7 +10,7 @@
 		RiArrowGoBackLine
 	} from 'svelte-remixicon';
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import { flowsApi, type LoginFlow, type LoginStep, type LoginStepSpec } from '$lib/api';
+	import { flowsApi, type LoginFlow, type LoginStep, type LoginStepSpec } from '#lib/api/index.js';
 	import {
 		Alert,
 		Button,
@@ -20,8 +20,8 @@
 		PageHeader,
 		Tag,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import { draftOf, download, freeSlug, problemsOf, toFile, type FlowDraft } from '../steps';
 	import FlowCanvas from './FlowCanvas.svelte';
 	import Inspector from './Inspector.svelte';
@@ -57,7 +57,8 @@
 	let leavingFor = $state<URL | null>(null);
 	let confirmingLeave = $state(false);
 
-	beforeNavigate(({ cancel, to, type }) => {
+	beforeNavigate(({ cancel, to, type, shallow }) => {
+		if (shallow && type === 'goto') return;
 		if (leaving || !editable || !dirty || creating) return;
 
 		cancel();
@@ -212,10 +213,9 @@
 		{#snippet actions()}
 			{#if editable}
 				{#if !creating && !flow?.is_default}
-					<Button variant="subtle" colorPalette="danger" onclick={() => (confirmingDelete = true)}>
-						<Icon icon={RiDeleteBinLine} />
-						Delete
-					</Button>
+					<Button variant="subtle" colorPalette="danger" onclick={() => (confirmingDelete = true)}
+						><Icon icon={RiDeleteBinLine} />Delete</Button
+					>
 				{/if}
 				{#if dirty && !creating}
 					<Button variant="subtle" onclick={discard} disabled={busy}>

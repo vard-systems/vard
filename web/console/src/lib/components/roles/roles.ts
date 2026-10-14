@@ -1,5 +1,5 @@
-import type { Admin, Application, Role, UserRoleRef } from '$lib/api';
-import { can } from '$lib/permissions';
+import type { Admin, Application, Role, UserRoleRef } from '#lib/api/index.js';
+import { can } from '#lib/permissions.js';
 
 export function reachable(from: string[], roles: Role[]): Set<string> {
 	const byId = new Map(roles.map((role) => [role.id, role]));

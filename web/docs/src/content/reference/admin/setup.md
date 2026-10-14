@@ -150,6 +150,8 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`admin_password_too_long`](/reference/errors#admin_password_too_long) | The password is too long. |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
+| 409 | [`setup_done`](/reference/errors#setup_done) | This panel has already been set up. |
 | 429 | [`rate_limited`](/reference/errors#rate_limited) | Too many attempts. Try again in {seconds} seconds. |

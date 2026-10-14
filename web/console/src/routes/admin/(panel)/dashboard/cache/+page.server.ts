@@ -1,6 +1,6 @@
-import type { CacheDatabaseName, CacheKeyPage, CacheKind, CacheOverview } from '$lib/api';
-import { CACHE_PAGE_SIZE } from '$lib/query';
-import { apiGet, requirePermission } from '$lib/server/api';
+import type { CacheDatabaseName, CacheKeyPage, CacheKind, CacheOverview } from '#lib/api/index.js';
+import { CACHE_PAGE_SIZE } from '#lib/query/index.js';
+import { apiGet, requirePermission } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 const kinds: CacheKind[] = ['entry', 'stale', 'generation', 'session', 'ratelimit', 'other'];

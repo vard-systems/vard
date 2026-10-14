@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RiGroupLine, RiKey2Line, RiShareLine, RiToggleLine } from 'svelte-remixicon';
-	import type { SocialProvider, SocialSpec } from '$lib/api';
-	import { Badge, Code, type Column, DataTable, Icon, Tag } from '$lib/components/ui';
+	import type { SocialProvider, SocialSpec } from '#lib/api/index.js';
+	import { Badge, Code, type Column, DataTable, Icon, Tag } from '#lib/components/ui/index.js';
 	import { hostOf, markFor, missingFrom } from './providers';
 
 	type Props = {

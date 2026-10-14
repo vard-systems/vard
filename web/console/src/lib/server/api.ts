@@ -1,8 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
 
-import type { Admin, AdminPermissionName } from '$lib/api';
-import { can, canAnywhere } from '$lib/permissions';
+import type { Admin, AdminPermissionName } from '#lib/api/index.js';
+import { can, canAnywhere } from '#lib/permissions.js';
 
 async function call(path: string, fetch: typeof globalThis.fetch) {
 	try {
@@ -16,7 +16,7 @@ export async function apiGet<T>(path: string, fetch: typeof globalThis.fetch): P
 	const response = await call(path, fetch);
 
 	if (response.status === 401) {
-		redirect(307, resolve('/admin/login'));
+		redirect(307, resolve('admin/login'));
 	}
 
 	if (response.status === 403) {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RiMoonLine, RiSunLine } from 'svelte-remixicon';
-	import { THEME_KEY } from '$lib/brand';
+	import { THEME_KEY } from '#lib/brand.js';
 	import Icon from './Icon.svelte';
 
 	/** What the page shows now: the reader's choice, or the system's. */

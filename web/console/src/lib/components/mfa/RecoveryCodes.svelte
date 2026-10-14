@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RiCheckLine, RiFileCopyLine } from 'svelte-remixicon';
-	import { Alert, Button, Checkbox } from '$lib/components/ui';
+	import { Alert, Button, Checkbox } from '#lib/components/ui/index.js';
 
 	type Props = {
 		codes: string[];

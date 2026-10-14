@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ApiError, requiredSSO, signIn, type CodeChallenge, type SignedIn } from '$lib/api';
+
+	import {
+		ApiError,
+		requiredSSO,
+		signIn,
+		type CodeChallenge,
+		type SignedIn
+	} from '#lib/api/index.js';
+
 	import {
 		Alert,
 		AuthCard,
@@ -12,9 +20,9 @@
 		TextField,
 		SocialButtons,
 		SSOButtons
-	} from '$lib/components';
-	import { messageOf, useTranslator } from '$lib/i18n';
-	import { authHref, leaveTo, ssoHref } from '$lib/utils/links';
+	} from '#lib/components/index.js';
+	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { authHref, leaveTo, ssoHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -51,11 +59,11 @@
 		if (result.password_change_required && result.reset_token) {
 			let query = `token=${encodeURIComponent(result.reset_token)}&reason=temporary`;
 			if (data.request) query += `&request=${encodeURIComponent(data.request)}`;
-			// replaceState so the reset token does not stay in the browser's
+			// replace so the reset token does not stay in the browser's
 			// history: this entry replaces the sign-in page rather than stacking
 			// on it, and Back does not return to a URL carrying a live token.
 			// eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved, with a query
-			await goto(`${resolve('/reset-password')}?${query}`, { replaceState: true });
+			await goto(`${resolve('reset-password')}?${query}`, { replace: true });
 			return;
 		}
 
@@ -72,10 +80,16 @@
 		}
 
 		// Signed in to the account itself. One navigation, which reloads the
-		// data on the way: a separate invalidateAll would re-run this page's
-		// load, whose redirect for a signed-in user races this goto.
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- a checked path on this site
-		await goto(next, { invalidateAll: true, replaceState: true });
+		// data on the way: a separate refreshAll would re-run this page's
+		// load, whose redirect for a signed-in user races this goto. `next` is
+		// a checked path on this site, but one with no route makes goto reject,
+		// so it is loaded the plain way and shows the not-found page.
+		try {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- a checked path on this site
+			await goto(next, { refreshAll: true, replace: true });
+		} catch {
+			window.location.replace(next);
+		}
 	}
 
 	function signedInWithCode(result: SignedIn) {
@@ -144,7 +158,7 @@
 
 		{#snippet below()}
 			{t('login.expired_or')}
-			<a href={resolve('/login')}>{t('login.expired_link')}</a>
+			<a href={resolve('login')}>{t('login.expired_link')}</a>
 		{/snippet}
 	</AuthCard>
 {:else if closed}
@@ -166,7 +180,7 @@
 		<CodeForm {challenge} onsignedin={signedInWithCode} onexpired={codeExpired} />
 
 		{#snippet below()}
-			<a href={resolve('/login')}>{t('login.code_back')}</a>
+			<a href={resolve('login')}>{t('login.code_back')}</a>
 		{/snippet}
 	</AuthCard>
 {:else}

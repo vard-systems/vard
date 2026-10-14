@@ -18,13 +18,10 @@ import (
 )
 
 var (
-	wrongPassword    = respond.Define(http.StatusBadRequest, "admin_wrong_password", respond.Admin)
-	emailTaken       = respond.Define(http.StatusConflict, "admin_email_taken", respond.Admin)
-	passwordTooShort = respond.Define(http.StatusBadRequest, "admin_password_too_short", respond.Admin)
-	passwordTooLong  = respond.Define(http.StatusBadRequest, "admin_password_too_long", respond.Admin)
-	avatarInvalid    = respond.Define(http.StatusBadRequest, "admin_avatar_invalid", respond.Admin)
-	sessionCurrent   = respond.Define(http.StatusConflict, "admin_session_current", respond.Admin)
-	sessionNotFound  = respond.Define(http.StatusNotFound, "admin_session_not_found", respond.Admin)
+	wrongPassword   = respond.Define(http.StatusBadRequest, "admin_wrong_password", respond.Admin)
+	avatarInvalid   = respond.Define(http.StatusBadRequest, "admin_avatar_invalid", respond.Admin)
+	sessionCurrent  = respond.Define(http.StatusConflict, "admin_session_current", respond.Admin)
+	sessionNotFound = respond.Define(http.StatusNotFound, "admin_session_not_found", respond.Admin)
 )
 
 const targetType = "admin_user"
@@ -61,7 +58,7 @@ func (h *Handler) Login(c *gin.Context) {
 	case errors.Is(err, authsvc.ErrInvalidCredentials):
 		// One message for every kind of failure: which usernames exist is not
 		// something a sign-in page should reveal.
-		respond.Error(c, http.StatusUnauthorized, "wrong username or password")
+		respond.Fail(c, wrongCredentials)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "login failed")
@@ -83,7 +80,7 @@ func (h *Handler) Login(c *gin.Context) {
 // State reports how far this browser's session has got (password, code,
 // enrolment). It needs no session.
 func (h *Handler) State(c *gin.Context) {
-	token, _ := c.Cookie(session.Cookie)
+	token := session.Token(c)
 
 	_, _, state, err := h.auth.Session(c.Request.Context(), token)
 	if err != nil && !errors.Is(err, authsvc.ErrNoSession) {
@@ -102,15 +99,15 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
-	token, _ := c.Cookie(session.Cookie)
+	token := session.Token(c)
 
 	admin, err := h.auth.VerifySignIn(c.Request.Context(), token, req.Code, session.RequestOf(c))
 	switch {
 	case errors.Is(err, authsvc.ErrNoSession):
-		respond.Error(c, http.StatusUnauthorized, "your sign-in has expired; enter your password again")
+		respond.Fail(c, signInExpired)
 		return
 	case errors.Is(err, authsvc.ErrInvalidCode):
-		respond.Error(c, http.StatusUnauthorized, err.Error())
+		respond.Fail(c, signInCodeWrong)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "verifying a second factor failed")
@@ -122,7 +119,7 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 
 // Logout revokes the session and clears the cookie.
 func (h *Handler) Logout(c *gin.Context) {
-	token, _ := c.Cookie(session.Cookie)
+	token := session.Token(c)
 
 	if err := h.auth.Logout(c.Request.Context(), token, session.RequestOf(c)); err != nil {
 		h.log.Error("logout failed", "error", err)
@@ -176,7 +173,7 @@ func (h *Handler) UpdateMe(c *gin.Context) {
 		respond.Fail(c, wrongPassword)
 		return
 	case errors.Is(err, store.ErrDuplicate):
-		respond.Fail(c, emailTaken)
+		respond.Fail(c, respond.AdminEmailTaken)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "updating a profile failed")
@@ -209,7 +206,7 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 		respond.Fail(c, wrongPassword)
 		return
 	case errors.Is(err, model.ErrPasswordTooLong):
-		respond.Fail(c, passwordTooLong)
+		respond.Fail(c, respond.AdminPasswordTooLong)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "changing a password failed")
@@ -224,7 +221,7 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 // Sessions lists the caller's own sessions, so they can see where they are
 // signed in.
 func (h *Handler) Sessions(c *gin.Context) {
-	sessions, err := h.store.SessionsFor(c.Request.Context(), session.Admin(c).ID, 20)
+	sessions, err := h.store.AdminSessionsFor(c.Request.Context(), session.Admin(c).ID, 20)
 	if err != nil {
 		respond.Failure(c, h.log, err, "listing sessions failed")
 		return
@@ -248,7 +245,7 @@ func (h *Handler) EndSession(c *gin.Context) {
 	}
 
 	admin := session.Admin(c)
-	ended, err := h.store.RevokeOwnSession(c.Request.Context(), admin.ID, id, time.Now())
+	ended, err := h.store.RevokeOwnAdminSession(c.Request.Context(), admin.ID, id, time.Now())
 	if err != nil {
 		respond.Failure(c, h.log, err, "ending a session failed")
 		return
@@ -267,7 +264,7 @@ func (h *Handler) EndSession(c *gin.Context) {
 func (h *Handler) EndOtherSessions(c *gin.Context) {
 	admin := session.Admin(c)
 
-	ended, err := h.store.RevokeOtherSessionsFor(c.Request.Context(), admin.ID, session.ID(c), time.Now())
+	ended, err := h.store.RevokeOtherAdminSessionsFor(c.Request.Context(), admin.ID, session.ID(c), time.Now())
 	if err != nil {
 		respond.Failure(c, h.log, err, "ending the other sessions failed")
 		return

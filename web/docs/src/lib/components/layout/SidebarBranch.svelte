@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RiArrowRightSLine } from 'svelte-remixicon';
-	import type { NavPage } from '$lib/docs/types';
-	import { iconFor } from '$lib/docs/icons';
+	import type { NavPage } from '#lib/docs/types.js';
+	import { iconFor } from '#lib/docs/icons.js';
 	import Icon from '../Icon.svelte';
 	import SidebarLink from './SidebarLink.svelte';
 

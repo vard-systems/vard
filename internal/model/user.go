@@ -16,8 +16,8 @@ type User struct {
 
 	Email           string `gorm:"uniqueIndex;size:255;not null" json:"email"`
 	IsEmailVerified bool   `gorm:"not null;default:false" json:"is_email_verified"`
-	FirstName       string `gorm:"size:100" json:"first_name"`
-	LastName        string `gorm:"size:100" json:"last_name"`
+	FirstName       string `gorm:"size:100;not null;default:''" json:"first_name"`
+	LastName        string `gorm:"size:100;not null;default:''" json:"last_name"`
 	IsActive        bool   `gorm:"not null" json:"is_active"`
 
 	PasswordHash string `gorm:"size:255;not null;default:''" json:"-"`

@@ -1,5 +1,5 @@
-import type { API, APIInput, SigningAlgorithm } from '$lib/api';
-import type { SelectOption } from '$lib/components/ui';
+import type { API, APIInput, SigningAlgorithm } from '#lib/api/index.js';
+import type { SelectOption } from '#lib/components/ui/index.js';
 
 export type ScopeRow = {
 	key: number;

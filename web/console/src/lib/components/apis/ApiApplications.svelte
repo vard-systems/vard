@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiAppsLine } from 'svelte-remixicon';
-	import { applicationsApi, type Admin, type API, type APIApplication } from '$lib/api';
+	import { applicationsApi, type Admin, type API, type APIApplication } from '#lib/api/index.js';
 	import {
 		Alert,
 		Badge,
@@ -12,10 +12,10 @@
 		SearchInput,
 		Switch,
 		notify
-	} from '$lib/components/ui';
-	import { can } from '$lib/permissions';
-	import { keys, apiApplicationsOptions } from '$lib/query';
-	import { types } from '$lib/components/applications/applications';
+	} from '#lib/components/ui/index.js';
+	import { can } from '#lib/permissions.js';
+	import { keys, apiApplicationsOptions } from '#lib/query/index.js';
+	import { types } from '#lib/components/applications/applications.js';
 
 	type Props = {
 		api: API;

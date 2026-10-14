@@ -5,10 +5,10 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { RiAddLine, RiDeleteBinLine, RiRefreshLine } from 'svelte-remixicon';
 	import { createInfiniteQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { applicationsApi, type Application } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { applicationsOptions, keys, uniqueById } from '$lib/query';
-	import { can } from '$lib/permissions';
+	import { applicationsApi, type Application } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import { applicationsOptions, keys, uniqueById } from '#lib/query/index.js';
+	import { can } from '#lib/permissions.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -21,10 +21,10 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import ApplicationDialog from '$lib/components/applications/ApplicationDialog.svelte';
-	import ApplicationTable from '$lib/components/applications/ApplicationTable.svelte';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import ApplicationDialog from '#lib/components/applications/ApplicationDialog.svelte';
+	import ApplicationTable from '#lib/components/applications/ApplicationTable.svelte';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -54,7 +54,7 @@
 	let busy = $state(false);
 
 	async function apply(changes: { search?: string; type?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -65,7 +65,7 @@
 		const path = resolve('/admin/(panel)/dashboard/applications');
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

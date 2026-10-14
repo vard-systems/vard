@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
 	import { RiRefreshLine } from 'svelte-remixicon';
-	import type { API, APILogEntry } from '$lib/api';
-	import { Alert, Badge, IconButton, Note } from '$lib/components/ui';
-	import { apiLogsOptions } from '$lib/query';
-	import { formatDateTime } from '$lib/utils/format';
+	import type { API, APILogEntry } from '#lib/api/index.js';
+	import { Alert, Badge, IconButton, Note } from '#lib/components/ui/index.js';
+	import { apiLogsOptions } from '#lib/query/index.js';
+	import { formatDateTime } from '#lib/utils/format.js';
 
 	type Props = {
 		api: API;

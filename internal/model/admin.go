@@ -24,7 +24,7 @@ type Admin struct {
 
 	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
 	LastLoginAt     *time.Time `json:"last_login_at,omitempty"`
-	LastLoginIP     string     `gorm:"size:45" json:"last_login_ip,omitempty"`
+	LastLoginIP     string     `gorm:"size:45;not null;default:''" json:"last_login_ip,omitempty"`
 
 	FailedLoginCount int        `gorm:"not null;default:0" json:"-"`
 	LockedUntil      *time.Time `json:"locked_until,omitempty"`

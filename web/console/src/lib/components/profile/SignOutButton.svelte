@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { RiLogoutBoxRLine } from 'svelte-remixicon';
-	import { adminApi } from '$lib/api';
-	import { Button, type Variant } from '$lib/components/ui';
+	import { adminApi } from '#lib/api/index.js';
+	import { Button, type Variant } from '#lib/components/ui/index.js';
 
 	type Props = { variant?: Variant };
 
@@ -25,12 +25,12 @@
 			// and the cache behind them — and go to the sign-in page. What
 			// one administrator saw is not for whoever signs in next.
 			queryClient.clear();
-			await invalidateAll();
-			await goto(resolve('/admin/login'), { replaceState: true });
+			await refreshAll();
+			await goto(resolve('admin/login'), { replace: true });
 		}
 	}
 </script>
 
-<Button {variant} icon={RiLogoutBoxRLine} loading={signingOut} onclick={signOut}>
-	{signingOut ? 'Signing out…' : 'Sign out'}
-</Button>
+<Button {variant} icon={RiLogoutBoxRLine} loading={signingOut} onclick={signOut}
+	>{signingOut ? 'Signing out…' : 'Sign out'}</Button
+>

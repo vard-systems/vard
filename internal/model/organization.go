@@ -18,13 +18,13 @@ type Organization struct {
 
 	Slug string `gorm:"size:64;not null;uniqueIndex" json:"slug"`
 
-	LogoURL string `gorm:"size:512" json:"logo_url"`
+	LogoURL string `gorm:"size:512;not null;default:''" json:"logo_url"`
 
-	SupportEmail string `gorm:"size:255" json:"support_email"`
-	SupportPhone string `gorm:"size:32" json:"support_phone"`
+	SupportEmail string `gorm:"size:255;not null;default:''" json:"support_email"`
+	SupportPhone string `gorm:"size:32;not null;default:''" json:"support_phone"`
 
-	TermsURL   string `gorm:"size:512" json:"terms_url"`
-	PrivacyURL string `gorm:"size:512" json:"privacy_url"`
+	TermsURL   string `gorm:"size:512;not null;default:''" json:"terms_url"`
+	PrivacyURL string `gorm:"size:512;not null;default:''" json:"privacy_url"`
 	Timezone   string `gorm:"size:64;not null;default:UTC" json:"timezone"`
 }
 

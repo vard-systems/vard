@@ -64,7 +64,7 @@ func TestCompose(t *testing.T) {
 
 // headerValue is one header's value, from the block compose wrote.
 func headerValue(headers, name string) string {
-	for _, line := range strings.Split(headers, "\r\n") {
+	for line := range strings.SplitSeq(headers, "\r\n") {
 		if after, found := strings.CutPrefix(line, name+": "); found {
 			return after
 		}

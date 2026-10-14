@@ -199,6 +199,7 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`user_field_name_taken`](/reference/errors#user_field_name_taken) | A field with this name already exists. |
 
 ## PATCH /api/v1/admin/user-fields/:id {#patch-api-v1-admin-user-fields-id}
 
@@ -304,6 +305,7 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_field_not_found`](/reference/errors#user_field_not_found) | There is no such field. |
 
 ## DELETE /api/v1/admin/user-fields/:id {#delete-api-v1-admin-user-fields-id}
 
@@ -369,3 +371,4 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_field_not_found`](/reference/errors#user_field_not_found) | There is no such field. |

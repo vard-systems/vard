@@ -1,7 +1,7 @@
-import { logQuery, type LogPage } from '$lib/api';
-import { apiGet, requirePermission } from '$lib/server/api';
-import { filterFrom } from '$lib/components/activity/filters';
-import { LOGS_PAGE_SIZE } from '$lib/query';
+import { logQuery, type LogPage } from '#lib/api/index.js';
+import { apiGet, requirePermission } from '#lib/server/api.js';
+import { filterFrom } from '#lib/components/activity/filters.js';
+import { LOGS_PAGE_SIZE } from '#lib/query/index.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {

@@ -9,10 +9,6 @@ import (
 	"loginer/internal/model"
 )
 
-func ptr(value int) *int {
-	return &value
-}
-
 func TestSettingsRequestApplyTo(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -27,47 +23,47 @@ func TestSettingsRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "a longer code",
-			request: settingsRequest{CodeLength: ptr(8)},
+			request: settingsRequest{CodeLength: new(8)},
 			changed: []string{"code_length"},
 		},
 		{
 			name:    "the same values again are no change",
-			request: settingsRequest{CodeLength: ptr(6), MaxAttempts: ptr(5)},
+			request: settingsRequest{CodeLength: new(6), MaxAttempts: new(5)},
 			changed: []string{},
 		},
 		{
 			name: "every setting at once, in the order they are listed",
 			request: settingsRequest{
-				CodeLength:      ptr(4),
-				LifetimeMinutes: ptr(5),
-				MaxAttempts:     ptr(3),
-				ResendSeconds:   ptr(30),
+				CodeLength:      new(4),
+				LifetimeMinutes: new(5),
+				MaxAttempts:     new(3),
+				ResendSeconds:   new(30),
 			},
 			changed: []string{"code_length", "lifetime_minutes", "max_attempts", "resend_seconds"},
 		},
 		{
 			name:    "no wait between messages",
-			request: settingsRequest{ResendSeconds: ptr(0)},
+			request: settingsRequest{ResendSeconds: new(0)},
 			changed: []string{"resend_seconds"},
 		},
 		{
 			name:    "a code too short to be worth guessing at",
-			request: settingsRequest{CodeLength: ptr(3)},
+			request: settingsRequest{CodeLength: new(3)},
 			want:    "code_length must be between 4 and 10",
 		},
 		{
 			name:    "a code that outlives the message it came in",
-			request: settingsRequest{LifetimeMinutes: ptr(1440)},
+			request: settingsRequest{LifetimeMinutes: new(1440)},
 			want:    "lifetime_minutes must be between 1 and 60",
 		},
 		{
 			name:    "guesses without end",
-			request: settingsRequest{MaxAttempts: ptr(0)},
+			request: settingsRequest{MaxAttempts: new(0)},
 			want:    "max_attempts must be between 1 and 10",
 		},
 		{
 			name:    "a wait that is a wall",
-			request: settingsRequest{ResendSeconds: ptr(3600)},
+			request: settingsRequest{ResendSeconds: new(3600)},
 			want:    "resend_seconds must be between 0 and 900",
 		},
 	}

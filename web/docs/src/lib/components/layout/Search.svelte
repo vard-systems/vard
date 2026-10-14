@@ -6,8 +6,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { RiCornerDownLeftLine, RiFileList3Line, RiSearchLine } from 'svelte-remixicon';
-	import { href } from '$lib/docs/links';
-	import type { SearchEntry } from '$lib/docs/types';
+	import { href } from '#lib/docs/links.js';
+	import type { SearchEntry } from '#lib/docs/types.js';
 	import Icon from '../Icon.svelte';
 
 	let dialog = $state<HTMLDialogElement>();

@@ -17,7 +17,7 @@
 		type ApplicationWithSecret,
 		type GrantType,
 		type Scope
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Badge,
 		Button,
@@ -33,10 +33,10 @@
 		Tabs,
 		Textarea,
 		notify
-	} from '$lib/components/ui';
-	import Choice from '$lib/components/roles/Choice.svelte';
-	import { keys, loginFlowChoicesOptions } from '$lib/query';
-	import { formatDateTime } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import Choice from '#lib/components/roles/Choice.svelte';
+	import { keys, loginFlowChoicesOptions } from '#lib/query/index.js';
+	import { formatDateTime } from '#lib/utils/format.js';
 	import { authMethods, blank, grants, lines, scopes, types } from './applications';
 	import ApplicationApis from './ApplicationApis.svelte';
 	import SecretPanel from './SecretPanel.svelte';

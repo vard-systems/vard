@@ -89,6 +89,7 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 401 | [`admin_wrong_credentials`](/reference/errors#admin_wrong_credentials) | Wrong username or password. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 429 | [`rate_limited`](/reference/errors#rate_limited) | Too many attempts. Try again in {seconds} seconds. |
 
@@ -242,6 +243,8 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 401 | [`admin_sign_in_code_wrong`](/reference/errors#admin_sign_in_code_wrong) | That code is not right. Check the time on your phone and try the newest code. |
+| 401 | [`admin_sign_in_expired`](/reference/errors#admin_sign_in_expired) | Your sign-in has expired. Enter your password again. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 429 | [`rate_limited`](/reference/errors#rate_limited) | Too many attempts. Try again in {seconds} seconds. |
 

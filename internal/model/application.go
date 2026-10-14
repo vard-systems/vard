@@ -23,23 +23,23 @@ type Application struct {
 	Base
 
 	Name        string          `gorm:"size:100;not null" json:"name"`
-	Description string          `gorm:"size:255" json:"description"`
+	Description string          `gorm:"size:255;not null;default:''" json:"description"`
 	Type        ApplicationType `gorm:"type:varchar(16);not null;index" json:"type"`
 
 	// LogoURL and ClientURI are shown on the sign-in pages. There is no
 	// consent page: every registered application is trusted (see README.md).
-	LogoURL    string `gorm:"size:512" json:"logo_url"`
-	WebsiteURL string `gorm:"size:512" json:"website_url"`
+	LogoURL    string `gorm:"size:512;not null;default:''" json:"logo_url"`
+	WebsiteURL string `gorm:"size:512;not null;default:''" json:"website_url"`
 
-	PrivacyURL string `gorm:"size:512" json:"privacy_url"`
-	TermsURL   string `gorm:"size:512" json:"terms_url"`
+	PrivacyURL string `gorm:"size:512;not null;default:''" json:"privacy_url"`
+	TermsURL   string `gorm:"size:512;not null;default:''" json:"terms_url"`
 
 	AllowRegistration bool `gorm:"not null" json:"allow_registration"`
 
 	ClientID string `gorm:"size:64;uniqueIndex;not null" json:"client_id"`
 
-	ClientSecretHash string     `gorm:"size:64" json:"-"`
-	SecretHint       string     `gorm:"size:8" json:"secret_hint"`
+	ClientSecretHash string     `gorm:"size:64;not null;default:''" json:"-"`
+	SecretHint       string     `gorm:"size:8;not null;default:''" json:"secret_hint"`
 	SecretCreatedAt  *time.Time `json:"secret_created_at"`
 
 	TokenAuthMethod AuthMethod `gorm:"type:varchar(32);not null" json:"token_auth_method"`
@@ -138,7 +138,7 @@ func (a Application) HasSecret() bool {
 	return a.TokenAuthMethod != AuthNone
 }
 
-func (a *Application) Normalise() {
+func (a *Application) Normalize() {
 	switch {
 	case a.Type.Public():
 		a.TokenAuthMethod = AuthNone

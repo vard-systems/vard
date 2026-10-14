@@ -7,11 +7,11 @@
 		RiSidebarFoldLine,
 		RiSidebarUnfoldLine
 	} from 'svelte-remixicon';
-	import type { Admin, OrganizationBrand } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { IconButton, ThemeToggle, Thumb } from '$lib/components/ui';
-	import { useShell } from '$lib/state/shell.svelte';
-	import { initials } from '$lib/utils/format';
+	import type { Admin, OrganizationBrand } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import { IconButton, ThemeToggle, Thumb } from '#lib/components/ui/index.js';
+	import { useShell } from '#lib/state/shell.svelte.js';
+	import { initials } from '#lib/utils/format.js';
 	import AccountMenu from './AccountMenu.svelte';
 	import CommandPalette from './CommandPalette.svelte';
 	import HelpMenu from './HelpMenu.svelte';
@@ -41,7 +41,7 @@
 	{/if}
 
 	<div class="brand-column">
-		<a class="brand" href={resolve('/admin/dashboard')} aria-label="{name} Console">
+		<a class="brand" href={resolve('admin/dashboard')} aria-label="{name} Console">
 			<Thumb
 				src={organization.logo_url}
 				text={initials(name)}

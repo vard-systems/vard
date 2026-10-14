@@ -6,8 +6,8 @@
 		RiPriceTag3Line,
 		RiTimerLine
 	} from 'svelte-remixicon';
-	import type { CacheKey } from '$lib/api';
-	import { Code, type Column, DataTable, Tag } from '$lib/components/ui';
+	import type { CacheKey } from '#lib/api/index.js';
+	import { Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
 	import { formatBytes, formatTTL, kinds } from './cache';
 
 	type Props = {

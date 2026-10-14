@@ -37,7 +37,7 @@ export default defineConfig({
 			},
 			adapter: adapter(),
 			// Absolute, because a page is rendered once and its links must not depend
-			// on which page asked first (see the cache in $lib/server/markdown.ts).
+			// on which page asked first (see the cache in #lib/server/markdown.js).
 			paths: { base, relative: false },
 			prerender: { handleHttpError: 'fail', handleMissingId: 'fail' }
 		})

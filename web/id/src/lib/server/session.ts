@@ -1,6 +1,6 @@
 import { error, redirect, type Cookies } from '@sveltejs/kit';
-import { ApiError, account, type User } from '$lib/api';
-import { COOKIES } from '$lib/brand';
+import { ApiError, account, type User } from '#lib/api/index.js';
+import { COOKIES } from '#lib/brand.js';
 
 export async function currentUser(
 	cookies: Cookies,

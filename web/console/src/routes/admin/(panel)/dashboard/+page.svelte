@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
 		RiAppsLine,
@@ -13,15 +13,15 @@
 		RiShieldCheckLine,
 		RiUserStarLine
 	} from 'svelte-remixicon';
-	import type { OverviewDays } from '$lib/api';
-	import { countOf } from '$lib/utils/format';
-	import { BRAND } from '$lib/brand';
-	import { logsHref } from '$lib/components/activity/filters';
-	import ActivityChart from '$lib/components/activity/ActivityChart.svelte';
-	import ActivityFeed from '$lib/components/activity/ActivityFeed.svelte';
-	import SignInHealth from '$lib/components/activity/SignInHealth.svelte';
-	import TopActors from '$lib/components/activity/TopActors.svelte';
-	import SessionList from '$lib/components/profile/SessionList.svelte';
+	import type { OverviewDays } from '#lib/api/index.js';
+	import { countOf } from '#lib/utils/format.js';
+	import { BRAND } from '#lib/brand.js';
+	import { logsHref } from '#lib/components/activity/filters.js';
+	import ActivityChart from '#lib/components/activity/ActivityChart.svelte';
+	import ActivityFeed from '#lib/components/activity/ActivityFeed.svelte';
+	import SignInHealth from '#lib/components/activity/SignInHealth.svelte';
+	import TopActors from '#lib/components/activity/TopActors.svelte';
+	import SessionList from '#lib/components/profile/SessionList.svelte';
 	import {
 		Icon,
 		IconButton,
@@ -32,8 +32,8 @@
 		SegmentedControl,
 		StatCard,
 		Tag
-	} from '$lib/components/ui';
-	import { can, canAnywhere } from '$lib/permissions';
+	} from '#lib/components/ui/index.js';
+	import { can, canAnywhere } from '#lib/permissions.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -53,7 +53,7 @@
 		// resolve() has already applied any base path; the query is only
 		// appended to what it returned.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(days === '14' ? path : `${path}?days=${days}`, { noScroll: true, keepFocus: true });
+		await goto(days === '14' ? path : `${path}?days=${days}`, { reset: false });
 	}
 
 	const logsPage = resolve('/admin/(panel)/dashboard/logs');
@@ -72,7 +72,7 @@
 	async function refresh() {
 		refreshing = true;
 		try {
-			await Promise.all([invalidateAll(), new Promise((done) => setTimeout(done, 400))]);
+			await Promise.all([refreshAll(), new Promise((done) => setTimeout(done, 400))]);
 		} finally {
 			refreshing = false;
 		}

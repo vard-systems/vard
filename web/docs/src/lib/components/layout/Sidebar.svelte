@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { href } from '$lib/docs/links';
-	import type { NavSection } from '$lib/docs/types';
+	import { href } from '#lib/docs/links.js';
+	import type { NavSection } from '#lib/docs/types.js';
 	import SidebarBranch from './SidebarBranch.svelte';
 	import SidebarLink from './SidebarLink.svelte';
 

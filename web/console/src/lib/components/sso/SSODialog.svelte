@@ -19,7 +19,7 @@
 		type SSOProtocol,
 		type SSORoleMapping,
 		type SSOTestResult
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Alert,
 		Button,
@@ -36,8 +36,8 @@
 		Tabs,
 		Textarea,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import DomainsField from './DomainsField.svelte';
 	import RoleMappings from './RoleMappings.svelte';
 

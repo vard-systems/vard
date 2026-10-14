@@ -16,8 +16,8 @@
 		createQuery,
 		useQueryClient
 	} from '@tanstack/svelte-query';
-	import { usersApi, type UserRecord } from '$lib/api';
-	import { BRAND } from '$lib/brand';
+	import { usersApi, type UserRecord } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		applicationChoicesOptions,
 		keys,
@@ -25,8 +25,8 @@
 		uniqueById,
 		userFieldsOptions,
 		usersOptions
-	} from '$lib/query';
-	import { can } from '$lib/permissions';
+	} from '#lib/query/index.js';
+	import { can } from '#lib/permissions.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -40,11 +40,11 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import FieldsDialog from '$lib/components/users/FieldsDialog.svelte';
-	import UserDialog from '$lib/components/users/UserDialog.svelte';
-	import UserTable from '$lib/components/users/UserTable.svelte';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import FieldsDialog from '#lib/components/users/FieldsDialog.svelte';
+	import UserDialog from '#lib/components/users/UserDialog.svelte';
+	import UserTable from '#lib/components/users/UserTable.svelte';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -87,7 +87,7 @@
 	let busy = $state(false);
 
 	async function apply(changes: { search?: string; verified?: string; role?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -100,7 +100,7 @@
 		// resolve() has already applied any base path; the query is only ever
 		// appended to what it returned.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

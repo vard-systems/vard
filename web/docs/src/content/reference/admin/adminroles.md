@@ -272,6 +272,7 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`admin_role_name_taken`](/reference/errors#admin_role_name_taken) | An admin role with this name already exists. |
 
 ## PATCH /api/v1/admin/admin-roles/:id {#patch-api-v1-admin-admin-roles-id}
 
@@ -388,8 +389,11 @@ response.raise_for_status()
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
+| 403 | [`admin_role_built_in`](/reference/errors#admin_role_built_in) | super_admin is built in and cannot be changed or removed. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`admin_role_not_found`](/reference/errors#admin_role_not_found) | There is no such admin role. |
+| 409 | [`admin_role_name_taken`](/reference/errors#admin_role_name_taken) | An admin role with this name already exists. |
 
 ## DELETE /api/v1/admin/admin-roles/:id {#delete-api-v1-admin-admin-roles-id}
 
@@ -454,5 +458,7 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
+| 403 | [`admin_role_built_in`](/reference/errors#admin_role_built_in) | super_admin is built in and cannot be changed or removed. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`admin_role_not_found`](/reference/errors#admin_role_not_found) | There is no such admin role. |

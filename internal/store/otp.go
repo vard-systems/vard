@@ -70,7 +70,7 @@ func (s *Store) CreateLoginCode(ctx context.Context, code *model.LoginCode) erro
 			return translate(err)
 		}
 
-		if err := tx.Unscoped().
+		if err := tx.
 			Where("user_id = ? AND used_at IS NULL", code.UserID).
 			Delete(&model.LoginCode{}).Error; err != nil {
 			return translate(err)

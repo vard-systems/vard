@@ -9,7 +9,7 @@
 		type Node
 	} from '@xyflow/svelte';
 	import { RiFlagLine, RiLoginCircleLine } from 'svelte-remixicon';
-	import type { LoginStep, LoginStepSpec } from '$lib/api';
+	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 	import { describe, labelFor, markFor, specFor } from '../steps';
 	import EndNode, { type EndNodeData } from './EndNode.svelte';
 	import InsertEdge, { type InsertEdgeData } from './InsertEdge.svelte';

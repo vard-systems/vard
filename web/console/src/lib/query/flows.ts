@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { flowsApi, type LoginFlow, type LoginStepSpec } from '$lib/api';
+import { flowsApi, type LoginFlow, type LoginStepSpec } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function loginFlowsOptions(initial: { flows: LoginFlow[]; step_kinds: LoginStepSpec[] }) {

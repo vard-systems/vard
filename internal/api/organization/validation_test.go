@@ -23,10 +23,6 @@ func stored() model.Organization {
 	}
 }
 
-func ptr(value string) *string {
-	return &value
-}
-
 func TestOrganizationRequestApplyTo(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -42,7 +38,7 @@ func TestOrganizationRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "a new name, trimmed",
-			request: organizationRequest{Name: ptr("  Acme Inc  ")},
+			request: organizationRequest{Name: new("  Acme Inc  ")},
 			changed: []string{"name"},
 			check: func(o model.Organization) error {
 				if o.Name != "Acme Inc" {
@@ -53,7 +49,7 @@ func TestOrganizationRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "a slug is stored lower case",
-			request: organizationRequest{Slug: ptr("Acme-Inc")},
+			request: organizationRequest{Slug: new("Acme-Inc")},
 			changed: []string{"slug"},
 			check: func(o model.Organization) error {
 				if o.Slug != "acme-inc" {
@@ -64,67 +60,67 @@ func TestOrganizationRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "a new timezone",
-			request: organizationRequest{Timezone: ptr("Asia/Bishkek")},
+			request: organizationRequest{Timezone: new("Asia/Bishkek")},
 			changed: []string{"timezone"},
 		},
 		{
 			name:    "an empty string clears a setting that may be empty",
-			request: organizationRequest{LogoURL: ptr(""), SupportPhone: ptr("")},
+			request: organizationRequest{LogoURL: new(""), SupportPhone: new("")},
 			changed: []string{"logo_url", "support_phone"},
 		},
 		{
 			name:    "the same values again are no change",
-			request: organizationRequest{Name: ptr("Acme"), Slug: ptr("acme")},
+			request: organizationRequest{Name: new("Acme"), Slug: new("acme")},
 			changed: []string{},
 		},
 		{
 			name:    "new agreements",
-			request: organizationRequest{TermsURL: ptr("https://acme.example/legal/terms")},
+			request: organizationRequest{TermsURL: new("https://acme.example/legal/terms")},
 			changed: []string{"terms_url"},
 		},
 		{
 			name:    "a name cleared",
-			request: organizationRequest{Name: ptr("   ")},
+			request: organizationRequest{Name: new("   ")},
 			want:    "name is required",
 		},
 		{
 			name:    "a slug with spaces",
-			request: organizationRequest{Slug: ptr("acme inc")},
+			request: organizationRequest{Slug: new("acme inc")},
 			want:    "slug must be lower case letters, numbers and dashes, such as acme-inc",
 		},
 		{
 			name:    "a timezone cleared",
-			request: organizationRequest{Timezone: ptr("")},
+			request: organizationRequest{Timezone: new("")},
 			want:    "timezone is required",
 		},
 		{
 			name:    "a timezone that is an offset",
-			request: organizationRequest{Timezone: ptr("GMT+6")},
+			request: organizationRequest{Timezone: new("GMT+6")},
 			want:    "timezone must be a zone such as Asia/Bishkek or UTC",
 		},
 		{
 			name:    "an address that is not one",
-			request: organizationRequest{SupportEmail: ptr("support at acme")},
+			request: organizationRequest{SupportEmail: new("support at acme")},
 			want:    "support_email must be an email address",
 		},
 		{
 			name:    "a logo that is not a full address",
-			request: organizationRequest{LogoURL: ptr("/logo.svg")},
+			request: organizationRequest{LogoURL: new("/logo.svg")},
 			want:    "logo_url must be a full address starting with http:// or https://",
 		},
 		{
 			name:    "a logo that could run something",
-			request: organizationRequest{LogoURL: ptr("javascript:alert(1)")},
+			request: organizationRequest{LogoURL: new("javascript:alert(1)")},
 			want:    "logo_url must be a full address starting with http:// or https://",
 		},
 		{
 			name:    "a support number nobody could dial",
-			request: organizationRequest{SupportPhone: ptr("ring us")},
+			request: organizationRequest{SupportPhone: new("ring us")},
 			want:    "support_phone must be a number someone can dial, such as +996 555 123456",
 		},
 		{
 			name:    "terms that are not a full address",
-			request: organizationRequest{TermsURL: ptr("example.com/terms")},
+			request: organizationRequest{TermsURL: new("example.com/terms")},
 			want:    "terms_url must be a full address starting with http:// or https://",
 		},
 	}

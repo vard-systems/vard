@@ -40,7 +40,7 @@ func (h *Handler) List(c *gin.Context) {
 	if query.Role != nil {
 		role, err := h.store.UserRole(ctx, *query.Role)
 		if errors.Is(err, store.ErrNotFound) || err == nil && !session.SeesRole(c, *role) {
-			respond.NotFound(c, "no such role")
+			respond.Fail(c, respond.UserRoleNotFound)
 			return
 		}
 		if err != nil {
@@ -121,14 +121,14 @@ func (h *Handler) Disconnect(c *gin.Context) {
 
 	id, err := uuid.Parse(c.Param("identity"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a connection id")
+		respond.Fail(c, identityAbsent)
 		return
 	}
 
 	identity, err := h.store.SocialIdentityByID(c.Request.Context(), id)
 	switch {
 	case errors.Is(err, store.ErrNotFound) || err == nil && identity.UserID != user.ID:
-		respond.NotFound(c, "this user does not sign in with that")
+		respond.Fail(c, identityAbsent)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading the connection failed")
@@ -240,7 +240,7 @@ func (h *Handler) Roles(c *gin.Context) {
 		apps = slices.DeleteFunc(apps, func(app model.Application) bool { return app.ClientID != clientID })
 
 		if len(apps) == 0 {
-			respond.NotFound(c, "no such application")
+			respond.Fail(c, respond.ApplicationNotFound)
 			return
 		}
 	}
@@ -273,7 +273,7 @@ func (h *Handler) AssignRoles(c *gin.Context) {
 
 	var req assignRequest
 	if err := c.ShouldBindJSON(&req); err != nil || len(req.Roles) == 0 {
-		respond.BadRequest(c, "roles: name at least one role to assign")
+		respond.Fail(c, noRoles)
 		return
 	}
 
@@ -284,7 +284,7 @@ func (h *Handler) AssignRoles(c *gin.Context) {
 
 	roles, err := h.store.UserRolesByID(ctx, req.Roles)
 	if errors.Is(err, store.ErrNotFound) {
-		respond.BadRequest(c, "roles: one of them does not exist")
+		respond.Fail(c, roleUnknown)
 		return
 	}
 	if err != nil {
@@ -294,7 +294,7 @@ func (h *Handler) AssignRoles(c *gin.Context) {
 
 	for _, role := range roles {
 		if !session.SeesRole(c, role) {
-			respond.BadRequest(c, "roles: one of them does not exist")
+			respond.Fail(c, roleUnknown)
 			return
 		}
 
@@ -321,7 +321,7 @@ func (h *Handler) UnassignRole(c *gin.Context) {
 
 	roleID, err := uuid.Parse(c.Param("role"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a role id")
+		respond.Fail(c, respond.UserRoleNotFound)
 		return
 	}
 
@@ -333,7 +333,7 @@ func (h *Handler) UnassignRole(c *gin.Context) {
 	role, err := h.store.UserRole(ctx, roleID)
 	switch {
 	case errors.Is(err, store.ErrNotFound), err == nil && !session.SeesRole(c, *role):
-		respond.NotFound(c, "no such role")
+		respond.Fail(c, respond.UserRoleNotFound)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading role failed")
@@ -344,7 +344,7 @@ func (h *Handler) UnassignRole(c *gin.Context) {
 	}
 
 	if !slices.ContainsFunc(user.Roles, func(held model.UserRole) bool { return held.ID == role.ID }) {
-		respond.NotFound(c, "the user was not given that role directly")
+		respond.Fail(c, roleNotHeld)
 		return
 	}
 
@@ -413,7 +413,7 @@ func (h *Handler) build(c *gin.Context, req *userRequest, into *model.User) (*mo
 		self = into.ID
 	}
 
-	data, err := normalise(ctx, h.store, fields, req.Data, self)
+	data, err := normalize(ctx, h.store, fields, req.Data, self)
 	if err != nil {
 		return nil, err
 	}
@@ -487,7 +487,7 @@ func visibleRoles(c *gin.Context, user *model.User) {
 func (h *Handler) find(c *gin.Context) (*model.User, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a user id")
+		respond.Fail(c, respond.UserNotFound)
 		return nil, false
 	}
 
@@ -495,7 +495,7 @@ func (h *Handler) find(c *gin.Context) (*model.User, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such user")
+		respond.Fail(c, respond.UserNotFound)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading user failed")
@@ -507,7 +507,7 @@ func (h *Handler) find(c *gin.Context) (*model.User, bool) {
 
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
-		respond.Conflict(c, "a user with that email already exists")
+		respond.Fail(c, emailTaken)
 		return
 	}
 

@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -12,7 +13,7 @@ type LoginFlow struct {
 
 	Slug string `gorm:"size:64;not null;uniqueIndex" json:"slug"`
 
-	Description string `gorm:"size:500" json:"description"`
+	Description string `gorm:"size:500;not null;default:''" json:"description"`
 
 	IsDefault bool `gorm:"not null" json:"is_default"`
 
@@ -273,11 +274,5 @@ func (f LoginFlow) PublicOptions() PublicLoginOptions {
 }
 
 func (f LoginFlow) Offers(step LoginStep) bool {
-	for _, named := range f.Steps {
-		if named == step {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(f.Steps, step)
 }

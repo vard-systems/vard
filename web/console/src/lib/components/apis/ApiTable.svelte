@@ -6,8 +6,8 @@
 		RiLockLine,
 		RiShieldCheckLine
 	} from 'svelte-remixicon';
-	import type { API } from '$lib/api';
-	import { Badge, DataTable, type Column } from '$lib/components/ui';
+	import type { API } from '#lib/api/index.js';
+	import { Badge, DataTable, type Column } from '#lib/components/ui/index.js';
 
 	type Props = {
 		apis: API[];

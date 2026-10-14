@@ -134,7 +134,7 @@ func (h *Handler) withCount(c *gin.Context, role *model.AdminRole) roleResponse 
 func (h *Handler) findEditable(c *gin.Context) (*model.AdminRole, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a role id")
+		respond.Fail(c, roleAbsent)
 		return nil, false
 	}
 
@@ -142,13 +142,13 @@ func (h *Handler) findEditable(c *gin.Context) (*model.AdminRole, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such role")
+		respond.Fail(c, roleAbsent)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading admin role failed")
 		return nil, false
 	case role.IsSuperAdmin():
-		respond.Error(c, http.StatusForbidden, "super_admin is built in and cannot be changed or removed")
+		respond.Fail(c, superAdminFixed)
 		return nil, false
 	}
 
@@ -157,7 +157,7 @@ func (h *Handler) findEditable(c *gin.Context) (*model.AdminRole, bool) {
 
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
-		respond.Conflict(c, "an admin role with that name already exists")
+		respond.Fail(c, roleNameTaken)
 		return
 	}
 

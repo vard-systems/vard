@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ApiError, requiredSSO, signIn } from '$lib/api';
+	import { ApiError, requiredSSO, signIn } from '#lib/api/index.js';
 	import {
 		Alert,
 		AuthCard,
@@ -8,10 +8,10 @@
 		PasswordField,
 		TextField,
 		SocialButtons
-	} from '$lib/components';
-	import { legalLinks } from '$lib/utils/legal';
-	import { messageOf, useTranslator } from '$lib/i18n';
-	import { authHref, leaveTo, ssoHref } from '$lib/utils/links';
+	} from '#lib/components/index.js';
+	import { legalLinks } from '#lib/utils/legal.js';
+	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { authHref, leaveTo, ssoHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

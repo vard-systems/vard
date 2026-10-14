@@ -16,8 +16,9 @@ first — `internal/api/fields/` is the smallest complete example.
 2. Queries in `internal/store` — never in the handler — returning models, and
    `store.ErrNotFound` / `store.ErrDuplicate` for what the caller has to know.
 3. The rules in `validation.go`, or in the model when they are what the thing
-   *is* rather than what this request may say. A broken rule is a
-   `respond.Fault` with the status to answer with.
+   *is* rather than what this request may say. A broken rule is a problem
+   from `respond.Define`, with its sentence in `i18n/console/en/server.json`
+   (see "An error" in CLAUDE.md) — never a sentence written in Go.
 4. Mount it in `registerRoutes` in `internal/api/server.go`, behind
    `session.Require` and the permission it needs, on the admin server unless it
    is genuinely public.

@@ -16,20 +16,20 @@ type AuditLog struct {
 	// AdminID is the admin who acted, and is null for actions the system
 	// took on its own. It is not a foreign key: the log outlives the account.
 	AdminID    *uuid.UUID `gorm:"type:uuid;index" json:"admin_id,omitempty"`
-	ActorEmail string     `gorm:"size:255" json:"actor_email,omitempty"`
+	ActorEmail string     `gorm:"size:255;not null;default:''" json:"actor_email,omitempty"`
 
 	Action string `gorm:"size:128;not null" json:"action"`
 
-	TargetType string `gorm:"index;size:64" json:"target_type,omitempty"`
-	TargetID   string `gorm:"index;size:64" json:"target_id,omitempty"`
+	TargetType string `gorm:"index;size:64;not null;default:''" json:"target_type,omitempty"`
+	TargetID   string `gorm:"index;size:64;not null;default:''" json:"target_id,omitempty"`
 
 	// Metadata carries whatever else is worth keeping, such as the fields that
 	// changed. Never put secrets or passwords in it.
 	Metadata map[string]any `gorm:"serializer:json" json:"metadata,omitempty"`
 
-	IP        string `gorm:"size:45" json:"ip,omitempty"`
-	UserAgent string `gorm:"size:255" json:"user_agent,omitempty"`
-	RequestID string `gorm:"index;size:64" json:"request_id,omitempty"`
+	IP        string `gorm:"size:45;not null;default:''" json:"ip,omitempty"`
+	UserAgent string `gorm:"size:255;not null;default:''" json:"user_agent,omitempty"`
+	RequestID string `gorm:"index;size:64;not null;default:''" json:"request_id,omitempty"`
 }
 
 func (AuditLog) TableName() string {

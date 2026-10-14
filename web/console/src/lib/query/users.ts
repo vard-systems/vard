@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/svelte-query';
 
-import { usersApi, type UserField, type UserPage } from '$lib/api';
+import { usersApi, type UserField, type UserPage } from '#lib/api/index.js';
 import { keys } from './keys';
 import { LIST_PAGE_SIZE, nextOffset } from './paging';
 

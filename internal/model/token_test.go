@@ -37,8 +37,8 @@ func newFixture() fixture {
 	f.app.ID = uuid.New()
 
 	scope := func(name string) APIScope {
-		s := APIScope{Name: name}
-		s.ID = uuid.New()
+		s := APIScope{Name: name,
+			ID: uuid.New()}
 		return s
 	}
 	f.read, f.write, f.refund = scope("orders:read"), scope("orders:write"), scope("orders:refund")
@@ -175,8 +175,8 @@ func TestEvaluateTokenScopeRules(t *testing.T) {
 			change: func(f *fixture, r *TokenRequest) {
 				// Roles are already resolved: an inherited role is simply
 				// among them.
-				editor := UserRole{Name: "editor", APIScopes: []APIScope{f.write}}
-				editor.ID = uuid.New()
+				editor := UserRole{Name: "editor", APIScopes: []APIScope{f.write},
+					ID: uuid.New()}
 				r.Roles = append(r.Roles, editor)
 			},
 			scope:   "orders:write",
@@ -436,8 +436,8 @@ func TestEvaluateTokenIgnoresOtherApplicationsRoles(t *testing.T) {
 	f := newFixture()
 
 	blog := uuid.New()
-	blogWriter := UserRole{Name: "writer", ApplicationID: &blog, APIScopes: []APIScope{f.write}}
-	blogWriter.ID = uuid.New()
+	blogWriter := UserRole{Name: "writer", ApplicationID: &blog, APIScopes: []APIScope{f.write},
+		ID: uuid.New()}
 
 	req := f.request("openid roles orders:write")
 	req.Roles = []UserRole{blogWriter}
@@ -452,8 +452,8 @@ func TestEvaluateTokenIgnoresOtherApplicationsRoles(t *testing.T) {
 	}
 
 	// The same grant on one of the shop's own roles counts.
-	shopWriter := UserRole{Name: "writer", ApplicationID: &f.app.ID, APIScopes: []APIScope{f.write}}
-	shopWriter.ID = uuid.New()
+	shopWriter := UserRole{Name: "writer", ApplicationID: &f.app.ID, APIScopes: []APIScope{f.write},
+		ID: uuid.New()}
 	req.Roles = []UserRole{shopWriter}
 
 	if d := decision(EvaluateToken(req), "orders:write"); !d.Granted {

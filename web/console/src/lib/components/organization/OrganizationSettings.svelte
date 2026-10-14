@@ -12,7 +12,7 @@
 		RiShieldCheckLine,
 		RiTimeLine
 	} from 'svelte-remixicon';
-	import { organizationApi, type Organization, type OrganizationSettings } from '$lib/api';
+	import { organizationApi, type Organization, type OrganizationSettings } from '#lib/api/index.js';
 	import {
 		Alert,
 		Code,
@@ -24,10 +24,10 @@
 		Tag,
 		Thumb,
 		notify
-	} from '$lib/components/ui';
-	import { ADMIN_DEPENDENCY } from '$lib/constants';
-	import { keys, organizationOptions } from '$lib/query';
-	import { formatDate, initials } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import { ADMIN_DEPENDENCY } from '#lib/constants.js';
+	import { keys, organizationOptions } from '#lib/query/index.js';
+	import { formatDate, initials } from '#lib/utils/format.js';
 
 	type Props = {
 		initial: Organization;

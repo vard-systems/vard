@@ -1,4 +1,4 @@
-import type { AdminPermission, AdminPermissionName, AdminRole } from '$lib/api';
+import type { AdminPermission, AdminPermissionName, AdminRole } from '#lib/api/index.js';
 
 export function byGroup(catalog: AdminPermission[]): [string, AdminPermission[]][] {
 	const groups = new Map<string, AdminPermission[]>();

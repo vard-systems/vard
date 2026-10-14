@@ -111,3 +111,7 @@ var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 func contains(search string) string {
 	return "%" + likeEscaper.Replace(strings.ToLower(search)) + "%"
 }
+
+// ErrAlreadyUsed is a single-use secret presented again; it differs from
+// ErrNotFound because a replay revokes what the first use issued.
+var ErrAlreadyUsed = errors.New("already used")

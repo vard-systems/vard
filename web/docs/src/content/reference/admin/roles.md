@@ -115,9 +115,11 @@ response.raise_for_status()
 
 | Status | Code | Means |
 | --- | --- | --- |
+| 400 | [`user_role_scope_invalid`](/reference/errors#user_role_scope_invalid) | The scope must be "global" or "application". |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`application_not_found`](/reference/errors#application_not_found) | There is no such application. |
 
 ## GET /api/v1/admin/user-roles/:id {#get-api-v1-admin-user-roles-id}
 
@@ -182,6 +184,7 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_role_not_found`](/reference/errors#user_role_not_found) | There is no such role. |
 
 ## POST /api/v1/admin/user-roles {#post-api-v1-admin-user-roles}
 
@@ -263,10 +266,12 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`user_role_application_unknown`](/reference/errors#user_role_application_unknown) | The role's application does not exist. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`user_role_name_taken`](/reference/errors#user_role_name_taken) | A role with this name already exists in this scope. |
 
 ## PATCH /api/v1/admin/user-roles/:id {#patch-api-v1-admin-user-roles-id}
 
@@ -360,6 +365,8 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_role_not_found`](/reference/errors#user_role_not_found) | There is no such role. |
+| 409 | [`user_role_name_taken`](/reference/errors#user_role_name_taken) | A role with this name already exists in this scope. |
 
 ## DELETE /api/v1/admin/user-roles/:id {#delete-api-v1-admin-user-roles-id}
 
@@ -427,3 +434,4 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`user_role_not_found`](/reference/errors#user_role_not_found) | There is no such role. |

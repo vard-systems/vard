@@ -5166,6 +5166,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_role_name_taken": {
+                    "summary": "An admin role with this name already exists.",
+                    "value": {
+                      "code": "admin_role_name_taken",
+                      "error": "An admin role with this name already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `admin_role_name_taken`"
           }
         },
         "security": [
@@ -5221,6 +5240,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "admin_role_built_in": {
+                    "summary": "super_admin is built in and cannot be changed or removed.",
+                    "value": {
+                      "code": "admin_role_built_in",
+                      "error": "super_admin is built in and cannot be changed or removed."
+                    }
+                  },
                   "cross_origin": {
                     "summary": "Requests from {origin} are not allowed.",
                     "value": {
@@ -5241,7 +5267,26 @@
                 }
               }
             },
-            "description": "Forbidden: `cross_origin`, `forbidden`"
+            "description": "Forbidden: `admin_role_built_in`, `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_role_not_found": {
+                    "summary": "There is no such admin role.",
+                    "value": {
+                      "code": "admin_role_not_found",
+                      "error": "There is no such admin role."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `admin_role_not_found`"
           }
         },
         "security": [
@@ -5339,6 +5384,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "admin_role_built_in": {
+                    "summary": "super_admin is built in and cannot be changed or removed.",
+                    "value": {
+                      "code": "admin_role_built_in",
+                      "error": "super_admin is built in and cannot be changed or removed."
+                    }
+                  },
                   "cross_origin": {
                     "summary": "Requests from {origin} are not allowed.",
                     "value": {
@@ -5359,7 +5411,45 @@
                 }
               }
             },
-            "description": "Forbidden: `cross_origin`, `forbidden`"
+            "description": "Forbidden: `admin_role_built_in`, `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_role_not_found": {
+                    "summary": "There is no such admin role.",
+                    "value": {
+                      "code": "admin_role_not_found",
+                      "error": "There is no such admin role."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `admin_role_not_found`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_role_name_taken": {
+                    "summary": "An admin role with this name already exists.",
+                    "value": {
+                      "code": "admin_role_name_taken",
+                      "error": "An admin role with this name already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `admin_role_name_taken`"
           }
         },
         "security": [
@@ -5478,6 +5568,20 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "admin_password_required": {
+                    "summary": "A password is required.",
+                    "value": {
+                      "code": "admin_password_required",
+                      "error": "A password is required."
+                    }
+                  },
+                  "admin_password_too_short": {
+                    "summary": "The password must be at least {min} characters.",
+                    "value": {
+                      "code": "admin_password_too_short",
+                      "error": "The password must be at least {min} characters."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -5491,7 +5595,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `admin_password_required`, `admin_password_too_short`, `invalid_body`"
           },
           "401": {
             "content": {
@@ -5537,6 +5641,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_email_taken": {
+                    "summary": "An administrator with this email already exists.",
+                    "value": {
+                      "code": "admin_email_taken",
+                      "error": "An administrator with this email already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `admin_email_taken`"
           },
           "default": {
             "content": {
@@ -5631,6 +5754,44 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_not_found": {
+                    "summary": "There is no such administrator.",
+                    "value": {
+                      "code": "admin_not_found",
+                      "error": "There is no such administrator."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `admin_not_found`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_own_account": {
+                    "summary": "You cannot delete your own account.",
+                    "value": {
+                      "code": "admin_own_account",
+                      "error": "You cannot delete your own account."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `admin_own_account`"
           }
         },
         "security": [
@@ -5712,6 +5873,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_not_found": {
+                    "summary": "There is no such administrator.",
+                    "value": {
+                      "code": "admin_not_found",
+                      "error": "There is no such administrator."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `admin_not_found`"
           }
         },
         "security": [
@@ -5753,6 +5933,20 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "admin_password_required": {
+                    "summary": "A password is required.",
+                    "value": {
+                      "code": "admin_password_required",
+                      "error": "A password is required."
+                    }
+                  },
+                  "admin_password_too_short": {
+                    "summary": "The password must be at least {min} characters.",
+                    "value": {
+                      "code": "admin_password_too_short",
+                      "error": "The password must be at least {min} characters."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -5766,7 +5960,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `admin_password_required`, `admin_password_too_short`, `invalid_body`"
           },
           "401": {
             "content": {
@@ -5812,6 +6006,44 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_not_found": {
+                    "summary": "There is no such administrator.",
+                    "value": {
+                      "code": "admin_not_found",
+                      "error": "There is no such administrator."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `admin_not_found`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_email_taken": {
+                    "summary": "An administrator with this email already exists.",
+                    "value": {
+                      "code": "admin_email_taken",
+                      "error": "An administrator with this email already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `admin_email_taken`"
           },
           "default": {
             "content": {
@@ -5903,6 +6135,44 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_not_found": {
+                    "summary": "There is no such administrator.",
+                    "value": {
+                      "code": "admin_not_found",
+                      "error": "There is no such administrator."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `admin_not_found`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_own_mfa": {
+                    "summary": "You cannot reset your own two-factor sign-in here. Manage it from your profile.",
+                    "value": {
+                      "code": "admin_own_mfa",
+                      "error": "You cannot reset your own two-factor sign-in here. Manage it from your profile."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `admin_own_mfa`"
           },
           "default": {
             "content": {
@@ -6042,6 +6312,20 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "api_scope_foreign": {
+                    "summary": "{scope} is not a scope of this API.",
+                    "value": {
+                      "code": "api_scope_foreign",
+                      "error": "{scope} is not a scope of this API."
+                    }
+                  },
+                  "api_too_many_scopes": {
+                    "summary": "An API may have at most {max} scopes.",
+                    "value": {
+                      "code": "api_too_many_scopes",
+                      "error": "An API may have at most {max} scopes."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -6055,7 +6339,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `api_scope_foreign`, `api_too_many_scopes`, `invalid_body`"
           },
           "401": {
             "content": {
@@ -6108,6 +6392,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_identifier_taken": {
+                    "summary": "An API with this identifier already exists.",
+                    "value": {
+                      "code": "api_identifier_taken",
+                      "error": "An API with this identifier already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `api_identifier_taken`"
           },
           "default": {
             "content": {
@@ -6216,6 +6519,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_not_found": {
+                    "summary": "There is no such API.",
+                    "value": {
+                      "code": "api_not_found",
+                      "error": "There is no such API."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `api_not_found`"
           },
           "409": {
             "content": {
@@ -6330,6 +6652,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_not_found": {
+                    "summary": "There is no such API.",
+                    "value": {
+                      "code": "api_not_found",
+                      "error": "There is no such API."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `api_not_found`"
           }
         },
         "security": [
@@ -6381,6 +6722,27 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "api_identifier_fixed": {
+                    "summary": "An API's identifier cannot be changed: register a new API instead.",
+                    "value": {
+                      "code": "api_identifier_fixed",
+                      "error": "An API's identifier cannot be changed: register a new API instead."
+                    }
+                  },
+                  "api_scope_foreign": {
+                    "summary": "{scope} is not a scope of this API.",
+                    "value": {
+                      "code": "api_scope_foreign",
+                      "error": "{scope} is not a scope of this API."
+                    }
+                  },
+                  "api_too_many_scopes": {
+                    "summary": "An API may have at most {max} scopes.",
+                    "value": {
+                      "code": "api_too_many_scopes",
+                      "error": "An API may have at most {max} scopes."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -6394,7 +6756,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `api_identifier_fixed`, `api_scope_foreign`, `api_too_many_scopes`, `invalid_body`"
           },
           "401": {
             "content": {
@@ -6447,6 +6809,44 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_not_found": {
+                    "summary": "There is no such API.",
+                    "value": {
+                      "code": "api_not_found",
+                      "error": "There is no such API."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `api_not_found`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_identifier_taken": {
+                    "summary": "An API with this identifier already exists.",
+                    "value": {
+                      "code": "api_identifier_taken",
+                      "error": "An API with this identifier already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `api_identifier_taken`"
           },
           "default": {
             "content": {
@@ -6556,6 +6956,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_not_found": {
+                    "summary": "There is no such API.",
+                    "value": {
+                      "code": "api_not_found",
+                      "error": "There is no such API."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `api_not_found`"
           }
         },
         "security": [
@@ -6649,6 +7068,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_not_found": {
+                    "summary": "There is no such API.",
+                    "value": {
+                      "code": "api_not_found",
+                      "error": "There is no such API."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `api_not_found`"
           }
         },
         "security": [
@@ -6793,6 +7231,27 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "application_login_flow_unknown": {
+                    "summary": "There is no such login flow.",
+                    "value": {
+                      "code": "application_login_flow_unknown",
+                      "error": "There is no such login flow."
+                    }
+                  },
+                  "application_too_many_uris": {
+                    "summary": "An application may have at most {max} redirect URIs of each kind.",
+                    "value": {
+                      "code": "application_too_many_uris",
+                      "error": "An application may have at most {max} redirect URIs of each kind."
+                    }
+                  },
+                  "application_type_invalid": {
+                    "summary": "The type must be one of: web, spa, native, m2m.",
+                    "value": {
+                      "code": "application_type_invalid",
+                      "error": "The type must be one of: web, spa, native, m2m."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -6806,7 +7265,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `application_login_flow_unknown`, `application_too_many_uris`, `application_type_invalid`, `invalid_body`"
           },
           "401": {
             "content": {
@@ -6950,6 +7409,25 @@
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`"
+          },
           "409": {
             "content": {
               "application/json": {
@@ -7063,6 +7541,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`"
           }
         },
         "security": [
@@ -7122,6 +7619,34 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "application_login_flow_unknown": {
+                    "summary": "There is no such login flow.",
+                    "value": {
+                      "code": "application_login_flow_unknown",
+                      "error": "There is no such login flow."
+                    }
+                  },
+                  "application_too_many_uris": {
+                    "summary": "An application may have at most {max} redirect URIs of each kind.",
+                    "value": {
+                      "code": "application_too_many_uris",
+                      "error": "An application may have at most {max} redirect URIs of each kind."
+                    }
+                  },
+                  "application_type_fixed": {
+                    "summary": "An application's type cannot be changed: register a new application instead.",
+                    "value": {
+                      "code": "application_type_fixed",
+                      "error": "An application's type cannot be changed: register a new application instead."
+                    }
+                  },
+                  "application_type_invalid": {
+                    "summary": "The type must be one of: web, spa, native, m2m.",
+                    "value": {
+                      "code": "application_type_invalid",
+                      "error": "The type must be one of: web, spa, native, m2m."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -7135,7 +7660,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `application_login_flow_unknown`, `application_too_many_uris`, `application_type_fixed`, `application_type_invalid`, `invalid_body`"
           },
           "401": {
             "content": {
@@ -7195,6 +7720,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`, `system_application_change`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`"
           }
         },
         "security": [
@@ -7285,6 +7829,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`"
           }
         },
         "security": [
@@ -7397,6 +7960,32 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`, `system_api_access`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_not_found": {
+                    "summary": "There is no such API.",
+                    "value": {
+                      "code": "api_not_found",
+                      "error": "There is no such API."
+                    }
+                  },
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `api_not_found`, `application_not_found`"
           }
         },
         "security": [
@@ -7463,6 +8052,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "application_api_scope_foreign": {
+                    "summary": "One of the scopes is not a scope of {api}.",
+                    "value": {
+                      "code": "application_api_scope_foreign",
+                      "error": "One of the scopes is not a scope of {api}."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -7476,7 +8072,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `application_api_scope_foreign`, `invalid_body`"
           },
           "401": {
             "content": {
@@ -7536,6 +8132,32 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`, `system_api_access`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "api_not_found": {
+                    "summary": "There is no such API.",
+                    "value": {
+                      "code": "api_not_found",
+                      "error": "There is no such API."
+                    }
+                  },
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `api_not_found`, `application_not_found`"
           }
         },
         "security": [
@@ -7582,6 +8204,25 @@
               }
             },
             "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_no_secret": {
+                    "summary": "A public client has no secret to rotate.",
+                    "value": {
+                      "code": "application_no_secret",
+                      "error": "A public client has no secret to rotate."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request: `application_no_secret`"
           },
           "401": {
             "content": {
@@ -7641,6 +8282,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`, `system_application_change`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`"
           }
         },
         "security": [
@@ -7715,6 +8375,20 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "token_preview_audience_unknown": {
+                    "summary": "No API has that identifier.",
+                    "value": {
+                      "code": "token_preview_audience_unknown",
+                      "error": "No API has that identifier."
+                    }
+                  },
+                  "token_preview_user_unknown": {
+                    "summary": "There is no such user to preview a token for.",
+                    "value": {
+                      "code": "token_preview_user_unknown",
+                      "error": "There is no such user to preview a token for."
+                    }
                   }
                 },
                 "schema": {
@@ -7722,7 +8396,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `token_preview_audience_unknown`, `token_preview_user_unknown`"
           },
           "401": {
             "content": {
@@ -7775,6 +8449,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`"
           }
         },
         "security": [
@@ -7853,6 +8546,25 @@
               }
             },
             "description": "Bad Request: `invalid_body`"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_wrong_credentials": {
+                    "summary": "Wrong username or password.",
+                    "value": {
+                      "code": "admin_wrong_credentials",
+                      "error": "Wrong username or password."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized: `admin_wrong_credentials`"
           },
           "403": {
             "content": {
@@ -8000,6 +8712,32 @@
               }
             },
             "description": "Bad Request: `invalid_body`"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "admin_sign_in_code_wrong": {
+                    "summary": "That code is not right. Check the time on your phone and try the newest code.",
+                    "value": {
+                      "code": "admin_sign_in_code_wrong",
+                      "error": "That code is not right. Check the time on your phone and try the newest code."
+                    }
+                  },
+                  "admin_sign_in_expired": {
+                    "summary": "Your sign-in has expired. Enter your password again.",
+                    "value": {
+                      "code": "admin_sign_in_expired",
+                      "error": "Your sign-in has expired. Enter your password again."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized: `admin_sign_in_code_wrong`, `admin_sign_in_expired`"
           },
           "403": {
             "content": {
@@ -9976,6 +10714,25 @@
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "login_flow_slug_taken": {
+                    "summary": "A flow with this identifier already exists.",
+                    "value": {
+                      "code": "login_flow_slug_taken",
+                      "error": "A flow with this identifier already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `login_flow_slug_taken`"
+          },
           "default": {
             "content": {
               "application/json": {
@@ -10023,6 +10780,25 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "login_flow_default_protected": {
+                    "summary": "Make another flow the default before removing this one.",
+                    "value": {
+                      "code": "login_flow_default_protected",
+                      "error": "Make another flow the default before removing this one."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request: `login_flow_default_protected`"
           },
           "401": {
             "content": {
@@ -10075,6 +10851,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "login_flow_not_found": {
+                    "summary": "There is no such login flow.",
+                    "value": {
+                      "code": "login_flow_not_found",
+                      "error": "There is no such login flow."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `login_flow_not_found`"
           }
         },
         "security": [
@@ -10153,6 +10948,25 @@
             },
             "description": "Forbidden: `forbidden`"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "login_flow_not_found": {
+                    "summary": "There is no such login flow.",
+                    "value": {
+                      "code": "login_flow_not_found",
+                      "error": "There is no such login flow."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `login_flow_not_found`"
+          },
           "default": {
             "content": {
               "application/json": {
@@ -10216,6 +11030,13 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "login_flow_default_required": {
+                    "summary": "Make another flow the default rather than unmarking this one.",
+                    "value": {
+                      "code": "login_flow_default_required",
+                      "error": "Make another flow the default rather than unmarking this one."
+                    }
                   }
                 },
                 "schema": {
@@ -10223,7 +11044,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `login_flow_default_required`"
           },
           "401": {
             "content": {
@@ -10276,6 +11097,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "login_flow_not_found": {
+                    "summary": "There is no such login flow.",
+                    "value": {
+                      "code": "login_flow_not_found",
+                      "error": "There is no such login flow."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `login_flow_not_found`"
           },
           "default": {
             "content": {
@@ -11563,6 +12403,27 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "mfa_code_wrong": {
+                    "summary": "That code is not right. Check the time on your phone and try the newest code.",
+                    "value": {
+                      "code": "mfa_code_wrong",
+                      "error": "That code is not right. Check the time on your phone and try the newest code."
+                    }
+                  },
+                  "mfa_disabled": {
+                    "summary": "Two-factor sign-in is not on.",
+                    "value": {
+                      "code": "mfa_disabled",
+                      "error": "Two-factor sign-in is not on."
+                    }
+                  },
+                  "mfa_not_enrolling": {
+                    "summary": "Start setting up an authenticator first.",
+                    "value": {
+                      "code": "mfa_not_enrolling",
+                      "error": "Start setting up an authenticator first."
+                    }
                   }
                 },
                 "schema": {
@@ -11570,7 +12431,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `mfa_code_wrong`, `mfa_disabled`, `mfa_not_enrolling`"
           },
           "401": {
             "content": {
@@ -11609,6 +12470,32 @@
               }
             },
             "description": "Forbidden: `cross_origin`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "mfa_enabled": {
+                    "summary": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it.",
+                    "value": {
+                      "code": "mfa_enabled",
+                      "error": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it."
+                    }
+                  },
+                  "mfa_required": {
+                    "summary": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead.",
+                    "value": {
+                      "code": "mfa_required",
+                      "error": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `mfa_enabled`, `mfa_required`"
           },
           "429": {
             "content": {
@@ -11669,6 +12556,27 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "mfa_code_wrong": {
+                    "summary": "That code is not right. Check the time on your phone and try the newest code.",
+                    "value": {
+                      "code": "mfa_code_wrong",
+                      "error": "That code is not right. Check the time on your phone and try the newest code."
+                    }
+                  },
+                  "mfa_disabled": {
+                    "summary": "Two-factor sign-in is not on.",
+                    "value": {
+                      "code": "mfa_disabled",
+                      "error": "Two-factor sign-in is not on."
+                    }
+                  },
+                  "mfa_not_enrolling": {
+                    "summary": "Start setting up an authenticator first.",
+                    "value": {
+                      "code": "mfa_not_enrolling",
+                      "error": "Start setting up an authenticator first."
+                    }
                   }
                 },
                 "schema": {
@@ -11676,7 +12584,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `mfa_code_wrong`, `mfa_disabled`, `mfa_not_enrolling`"
           },
           "401": {
             "content": {
@@ -11715,6 +12623,32 @@
               }
             },
             "description": "Forbidden: `cross_origin`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "mfa_enabled": {
+                    "summary": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it.",
+                    "value": {
+                      "code": "mfa_enabled",
+                      "error": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it."
+                    }
+                  },
+                  "mfa_required": {
+                    "summary": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead.",
+                    "value": {
+                      "code": "mfa_required",
+                      "error": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `mfa_enabled`, `mfa_required`"
           },
           "429": {
             "content": {
@@ -11792,6 +12726,27 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "mfa_code_wrong": {
+                    "summary": "That code is not right. Check the time on your phone and try the newest code.",
+                    "value": {
+                      "code": "mfa_code_wrong",
+                      "error": "That code is not right. Check the time on your phone and try the newest code."
+                    }
+                  },
+                  "mfa_disabled": {
+                    "summary": "Two-factor sign-in is not on.",
+                    "value": {
+                      "code": "mfa_disabled",
+                      "error": "Two-factor sign-in is not on."
+                    }
+                  },
+                  "mfa_not_enrolling": {
+                    "summary": "Start setting up an authenticator first.",
+                    "value": {
+                      "code": "mfa_not_enrolling",
+                      "error": "Start setting up an authenticator first."
+                    }
                   }
                 },
                 "schema": {
@@ -11799,7 +12754,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `mfa_code_wrong`, `mfa_disabled`, `mfa_not_enrolling`"
           },
           "401": {
             "content": {
@@ -11838,6 +12793,32 @@
               }
             },
             "description": "Forbidden: `cross_origin`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "mfa_enabled": {
+                    "summary": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it.",
+                    "value": {
+                      "code": "mfa_enabled",
+                      "error": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it."
+                    }
+                  },
+                  "mfa_required": {
+                    "summary": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead.",
+                    "value": {
+                      "code": "mfa_required",
+                      "error": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `mfa_enabled`, `mfa_required`"
           },
           "429": {
             "content": {
@@ -11916,6 +12897,27 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "mfa_code_wrong": {
+                    "summary": "That code is not right. Check the time on your phone and try the newest code.",
+                    "value": {
+                      "code": "mfa_code_wrong",
+                      "error": "That code is not right. Check the time on your phone and try the newest code."
+                    }
+                  },
+                  "mfa_disabled": {
+                    "summary": "Two-factor sign-in is not on.",
+                    "value": {
+                      "code": "mfa_disabled",
+                      "error": "Two-factor sign-in is not on."
+                    }
+                  },
+                  "mfa_not_enrolling": {
+                    "summary": "Start setting up an authenticator first.",
+                    "value": {
+                      "code": "mfa_not_enrolling",
+                      "error": "Start setting up an authenticator first."
+                    }
                   }
                 },
                 "schema": {
@@ -11923,7 +12925,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `mfa_code_wrong`, `mfa_disabled`, `mfa_not_enrolling`"
           },
           "401": {
             "content": {
@@ -11962,6 +12964,32 @@
               }
             },
             "description": "Forbidden: `cross_origin`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "mfa_enabled": {
+                    "summary": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it.",
+                    "value": {
+                      "code": "mfa_enabled",
+                      "error": "Two-factor sign-in is already on. Give a code from your current authenticator to replace it."
+                    }
+                  },
+                  "mfa_required": {
+                    "summary": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead.",
+                    "value": {
+                      "code": "mfa_required",
+                      "error": "Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `mfa_enabled`, `mfa_required`"
           },
           "429": {
             "content": {
@@ -12915,6 +13943,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "admin_password_too_long": {
+                    "summary": "The password is too long.",
+                    "value": {
+                      "code": "admin_password_too_long",
+                      "error": "The password is too long."
+                    }
+                  },
                   "invalid_body": {
                     "summary": "The request could not be read. Reload the page and try again.",
                     "value": {
@@ -12928,7 +13963,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `admin_password_too_long`, `invalid_body`"
           },
           "403": {
             "content": {
@@ -12948,6 +13983,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "setup_done": {
+                    "summary": "This panel has already been set up.",
+                    "value": {
+                      "code": "setup_done",
+                      "error": "This panel has already been set up."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `setup_done`"
           },
           "429": {
             "content": {
@@ -13287,6 +14341,13 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "social_provider_kind_invalid": {
+                    "summary": "The kind must be one of: {kinds}.",
+                    "value": {
+                      "code": "social_provider_kind_invalid",
+                      "error": "The kind must be one of: {kinds}."
+                    }
                   }
                 },
                 "schema": {
@@ -13294,7 +14355,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `social_provider_kind_invalid`"
           },
           "401": {
             "content": {
@@ -13347,6 +14408,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "social_provider_slug_taken": {
+                    "summary": "A provider with this identifier already exists.",
+                    "value": {
+                      "code": "social_provider_slug_taken",
+                      "error": "A provider with this identifier already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `social_provider_slug_taken`"
           },
           "default": {
             "content": {
@@ -13454,6 +14534,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "social_provider_not_found": {
+                    "summary": "There is no such provider.",
+                    "value": {
+                      "code": "social_provider_not_found",
+                      "error": "There is no such provider."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `social_provider_not_found`"
           }
         },
         "security": [
@@ -13532,6 +14631,25 @@
             },
             "description": "Forbidden: `forbidden`"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "social_provider_not_found": {
+                    "summary": "There is no such provider.",
+                    "value": {
+                      "code": "social_provider_not_found",
+                      "error": "There is no such provider."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `social_provider_not_found`"
+          },
           "default": {
             "content": {
               "application/json": {
@@ -13603,6 +14721,13 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "social_provider_kind_invalid": {
+                    "summary": "The kind must be one of: {kinds}.",
+                    "value": {
+                      "code": "social_provider_kind_invalid",
+                      "error": "The kind must be one of: {kinds}."
+                    }
                   }
                 },
                 "schema": {
@@ -13610,7 +14735,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `social_provider_kind_invalid`"
           },
           "401": {
             "content": {
@@ -13663,6 +14788,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "social_provider_not_found": {
+                    "summary": "There is no such provider.",
+                    "value": {
+                      "code": "social_provider_not_found",
+                      "error": "There is no such provider."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `social_provider_not_found`"
           },
           "409": {
             "content": {
@@ -13802,6 +14946,32 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "social_provider_not_found": {
+                    "summary": "There is no such provider.",
+                    "value": {
+                      "code": "social_provider_not_found",
+                      "error": "There is no such provider."
+                    }
+                  },
+                  "social_provider_secret_missing": {
+                    "summary": "There is no secret stored for this provider.",
+                    "value": {
+                      "code": "social_provider_secret_missing",
+                      "error": "There is no secret stored for this provider."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `social_provider_not_found`, `social_provider_secret_missing`"
           }
         },
         "security": [
@@ -14947,6 +16117,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_field_name_taken": {
+                    "summary": "A field with this name already exists.",
+                    "value": {
+                      "code": "user_field_name_taken",
+                      "error": "A field with this name already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `user_field_name_taken`"
           }
         },
         "security": [
@@ -15036,6 +16225,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_field_not_found": {
+                    "summary": "There is no such field.",
+                    "value": {
+                      "code": "user_field_not_found",
+                      "error": "There is no such field."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_field_not_found`"
           }
         },
         "security": [
@@ -15168,6 +16376,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_field_not_found": {
+                    "summary": "There is no such field.",
+                    "value": {
+                      "code": "user_field_not_found",
+                      "error": "There is no such field."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_field_not_found`"
           }
         },
         "security": [
@@ -15227,6 +16454,25 @@
             },
             "description": "OK"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_scope_invalid": {
+                    "summary": "The scope must be \"global\" or \"application\".",
+                    "value": {
+                      "code": "user_role_scope_invalid",
+                      "error": "The scope must be \"global\" or \"application\"."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request: `user_role_scope_invalid`"
+          },
           "401": {
             "content": {
               "application/json": {
@@ -15271,6 +16517,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`"
           }
         },
         "security": [
@@ -15317,6 +16582,13 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "user_role_application_unknown": {
+                    "summary": "The role's application does not exist.",
+                    "value": {
+                      "code": "user_role_application_unknown",
+                      "error": "The role's application does not exist."
+                    }
                   }
                 },
                 "schema": {
@@ -15324,7 +16596,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `user_role_application_unknown`"
           },
           "401": {
             "content": {
@@ -15377,6 +16649,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_name_taken": {
+                    "summary": "A role with this name already exists in this scope.",
+                    "value": {
+                      "code": "user_role_name_taken",
+                      "error": "A role with this name already exists in this scope."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `user_role_name_taken`"
           },
           "default": {
             "content": {
@@ -15486,6 +16777,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_not_found": {
+                    "summary": "There is no such role.",
+                    "value": {
+                      "code": "user_role_not_found",
+                      "error": "There is no such role."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_role_not_found`"
           }
         },
         "security": [
@@ -15564,6 +16874,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_not_found": {
+                    "summary": "There is no such role.",
+                    "value": {
+                      "code": "user_role_not_found",
+                      "error": "There is no such role."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_role_not_found`"
           },
           "default": {
             "content": {
@@ -15699,6 +17028,44 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_not_found": {
+                    "summary": "There is no such role.",
+                    "value": {
+                      "code": "user_role_not_found",
+                      "error": "There is no such role."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_role_not_found`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_name_taken": {
+                    "summary": "A role with this name already exists in this scope.",
+                    "value": {
+                      "code": "user_role_name_taken",
+                      "error": "A role with this name already exists in this scope."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `user_role_name_taken`"
           },
           "default": {
             "content": {
@@ -16046,6 +17413,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_not_found": {
+                    "summary": "There is no such role.",
+                    "value": {
+                      "code": "user_role_not_found",
+                      "error": "There is no such role."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_role_not_found`"
           }
         },
         "security": [
@@ -16111,6 +17497,20 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "user_password_required": {
+                    "summary": "A password is required.",
+                    "value": {
+                      "code": "user_password_required",
+                      "error": "A password is required."
+                    }
+                  },
+                  "user_password_too_short": {
+                    "summary": "The password must be at least {min} characters.",
+                    "value": {
+                      "code": "user_password_too_short",
+                      "error": "The password must be at least {min} characters."
+                    }
                   }
                 },
                 "schema": {
@@ -16118,7 +17518,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `user_password_required`, `user_password_too_short`"
           },
           "401": {
             "content": {
@@ -16171,6 +17571,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_email_taken": {
+                    "summary": "A user with this email already exists.",
+                    "value": {
+                      "code": "user_email_taken",
+                      "error": "A user with this email already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `user_email_taken`"
           }
         },
         "security": [
@@ -16260,6 +17679,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_not_found`"
           }
         },
         "security": [
@@ -16359,6 +17797,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_not_found`"
           }
         },
         "security": [
@@ -16434,6 +17891,20 @@
                       "code": "invalid_body",
                       "error": "The request could not be read. Reload the page and try again."
                     }
+                  },
+                  "user_password_required": {
+                    "summary": "A password is required.",
+                    "value": {
+                      "code": "user_password_required",
+                      "error": "A password is required."
+                    }
+                  },
+                  "user_password_too_short": {
+                    "summary": "The password must be at least {min} characters.",
+                    "value": {
+                      "code": "user_password_too_short",
+                      "error": "The password must be at least {min} characters."
+                    }
                   }
                 },
                 "schema": {
@@ -16441,7 +17912,7 @@
                 }
               }
             },
-            "description": "Bad Request: `invalid_body`"
+            "description": "Bad Request: `invalid_body`, `user_password_required`, `user_password_too_short`"
           },
           "401": {
             "content": {
@@ -16494,6 +17965,44 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_not_found`"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_email_taken": {
+                    "summary": "A user with this email already exists.",
+                    "value": {
+                      "code": "user_email_taken",
+                      "error": "A user with this email already exists."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict: `user_email_taken`"
           }
         },
         "security": [
@@ -16584,6 +18093,25 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_not_found`"
           }
         },
         "security": [
@@ -16638,6 +18166,32 @@
             },
             "description": "OK"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_role_unknown": {
+                    "summary": "One of the roles does not exist.",
+                    "value": {
+                      "code": "user_role_unknown",
+                      "error": "One of the roles does not exist."
+                    }
+                  },
+                  "user_roles_missing": {
+                    "summary": "Name at least one role to assign.",
+                    "value": {
+                      "code": "user_roles_missing",
+                      "error": "Name at least one role to assign."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request: `user_role_unknown`, `user_roles_missing`"
+          },
           "401": {
             "content": {
               "application/json": {
@@ -16689,6 +18243,25 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_not_found`"
           }
         },
         "security": [
@@ -16794,6 +18367,39 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  },
+                  "user_role_not_found": {
+                    "summary": "There is no such role.",
+                    "value": {
+                      "code": "user_role_not_found",
+                      "error": "There is no such role."
+                    }
+                  },
+                  "user_role_not_held": {
+                    "summary": "The user was not given that role directly.",
+                    "value": {
+                      "code": "user_role_not_held",
+                      "error": "The user was not given that role directly."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_not_found`, `user_role_not_found`, `user_role_not_held`"
           }
         },
         "security": [
@@ -16892,6 +18498,32 @@
               }
             },
             "description": "Forbidden: `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "application_not_found": {
+                    "summary": "There is no such application.",
+                    "value": {
+                      "code": "application_not_found",
+                      "error": "There is no such application."
+                    }
+                  },
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `application_not_found`, `user_not_found`"
           }
         },
         "security": [
@@ -17116,6 +18748,32 @@
               }
             },
             "description": "Forbidden: `cross_origin`, `forbidden`"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "user_not_found": {
+                    "summary": "There is no such user.",
+                    "value": {
+                      "code": "user_not_found",
+                      "error": "There is no such user."
+                    }
+                  },
+                  "user_social_account_not_found": {
+                    "summary": "This user does not sign in with that.",
+                    "value": {
+                      "code": "user_social_account_not_found",
+                      "error": "This user does not sign in with that."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found: `user_not_found`, `user_social_account_not_found`"
           }
         },
         "security": [

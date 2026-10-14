@@ -278,7 +278,7 @@ func TestPaths(t *testing.T) {
 // comment is a doc comment reading text, as the parser would make it.
 func comment(text string) *ast.CommentGroup {
 	group := &ast.CommentGroup{}
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		group.List = append(group.List, &ast.Comment{Text: strings.TrimRight("// "+line, " ")})
 	}
 	return group

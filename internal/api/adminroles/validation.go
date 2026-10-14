@@ -8,6 +8,12 @@ import (
 	"loginer/internal/model"
 )
 
+var (
+	roleAbsent      = respond.Define(http.StatusNotFound, "admin_role_not_found", respond.Admin)
+	superAdminFixed = respond.Define(http.StatusForbidden, "admin_role_built_in", respond.Admin)
+	roleNameTaken   = respond.Define(http.StatusConflict, "admin_role_name_taken", respond.Admin)
+)
+
 func init() {
 	validate.Register("adminrole", model.RoleNamePattern.MatchString)
 }

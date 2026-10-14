@@ -59,7 +59,7 @@ func (h *Handler) Create(c *gin.Context) {
 		Status:    model.StatusActive,
 	}
 	if err := admin.SetPassword(req.Password); errors.Is(err, model.ErrPasswordTooLong) {
-		respond.BadRequest(c, "password is too long")
+		respond.Fail(c, respond.AdminPasswordTooLong)
 		return
 	} else if err != nil {
 		respond.Failure(c, h.log, err, "hashing the password failed")
@@ -69,7 +69,7 @@ func (h *Handler) Create(c *gin.Context) {
 	err := h.store.CreateFirstAdmin(c.Request.Context(), &admin)
 	switch {
 	case errors.Is(err, store.ErrAdminExists):
-		respond.Conflict(c, "this panel has already been set up")
+		respond.Fail(c, alreadySetUp)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "creating the first administrator failed")

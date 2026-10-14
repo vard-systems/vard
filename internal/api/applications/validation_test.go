@@ -33,7 +33,7 @@ func TestApplicationRequestApplyTo(t *testing.T) {
 			name:     "no type",
 			creating: true,
 			change:   func(r *applicationRequest) { r.Type = "" },
-			want:     "type must be one of: web, spa, native, m2m",
+			want:     "The type must be one of: web, spa, native, m2m.",
 		},
 		{
 			name:   "an update ignores the type",
@@ -55,7 +55,7 @@ func TestApplicationRequestApplyTo(t *testing.T) {
 					r.RedirectURIs = append(r.RedirectURIs, "https://shop.example.com/"+strings.Repeat("a", i+1))
 				}
 			},
-			want: "an application may have at most 20 redirect URIs of each kind",
+			want: "An application may have at most 20 redirect URIs of each kind.",
 		},
 		{
 			name:     "a rule the model keeps",

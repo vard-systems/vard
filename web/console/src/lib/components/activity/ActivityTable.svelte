@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { RiFileList3Line, RiMapPinLine, RiPulseLine, RiTimeLine } from 'svelte-remixicon';
-	import type { LogEntry } from '$lib/api';
-	import { DataTable, Tag, type Column } from '$lib/components/ui';
-	import { describeUserAgent, formatDateTime, formatRelative } from '$lib/utils/format';
+	import type { LogEntry } from '#lib/api/index.js';
+	import { DataTable, Tag, type Column } from '#lib/components/ui/index.js';
+	import { describeUserAgent, formatDateTime, formatRelative } from '#lib/utils/format.js';
 	import { describe } from './actions';
 
 	type Props = {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RiAddLine, RiCloseLine } from 'svelte-remixicon';
-	import { Button, Icon, Input } from '$lib/components/ui';
+	import { Button, Icon, Input } from '#lib/components/ui/index.js';
 
 	type Props = {
 		domains: string[];

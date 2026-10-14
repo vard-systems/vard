@@ -12,8 +12,7 @@ import (
 
 // status is the status a fault carries, or 0 when the error is not one.
 func status(err error) int {
-	var fault respond.Fault
-	if errors.As(err, &fault) {
+	if fault, ok := errors.AsType[respond.Fault](err); ok {
 		return fault.Status
 	}
 

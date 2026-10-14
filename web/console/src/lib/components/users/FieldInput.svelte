@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { UserField } from '$lib/api';
-	import { DatePicker, Input, Switch } from '$lib/components/ui';
+	import type { UserField } from '#lib/api/index.js';
+	import { DatePicker, Input, Switch } from '#lib/components/ui/index.js';
 	import { fieldIcons } from './fieldIcons';
 
 	type Props = {

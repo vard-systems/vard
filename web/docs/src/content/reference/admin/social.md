@@ -177,6 +177,7 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`social_provider_not_found`](/reference/errors#social_provider_not_found) | There is no such provider. |
 
 ## GET /api/v1/admin/social-providers/:id/secret {#get-api-v1-admin-social-providers-id-secret}
 
@@ -250,6 +251,8 @@ response.raise_for_status()
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`social_provider_not_found`](/reference/errors#social_provider_not_found) | There is no such provider. |
+| 404 | [`social_provider_secret_missing`](/reference/errors#social_provider_secret_missing) | There is no secret stored for this provider. |
 
 ## POST /api/v1/admin/social-providers {#post-api-v1-admin-social-providers}
 
@@ -338,10 +341,12 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`social_provider_kind_invalid`](/reference/errors#social_provider_kind_invalid) | The kind must be one of: {kinds}. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 409 | [`social_provider_slug_taken`](/reference/errors#social_provider_slug_taken) | A provider with this identifier already exists. |
 
 ## PATCH /api/v1/admin/social-providers/:id {#patch-api-v1-admin-social-providers-id}
 
@@ -436,10 +441,12 @@ Errors come back as an [OAuth error](/reference/errors#oauth-errors): `{"error",
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`social_provider_kind_invalid`](/reference/errors#social_provider_kind_invalid) | The kind must be one of: {kinds}. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`social_provider_not_found`](/reference/errors#social_provider_not_found) | There is no such provider. |
 | 409 | [`social_provider_repointed`](/reference/errors#social_provider_repointed) | This provider already has linked accounts, so it cannot be pointed at a different one. Register a new provider instead. |
 
 ## DELETE /api/v1/admin/social-providers/:id {#delete-api-v1-admin-social-providers-id}
@@ -506,3 +513,4 @@ response.raise_for_status()
 | 401 | [`token_refused`](/reference/errors#token_refused) | This access token is not accepted by the admin API: it has expired, is for another API, is not a service's token, or its application has lost access. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
 | 403 | [`forbidden`](/reference/errors#forbidden) | You do not have permission to do that. |
+| 404 | [`social_provider_not_found`](/reference/errors#social_provider_not_found) | There is no such provider. |

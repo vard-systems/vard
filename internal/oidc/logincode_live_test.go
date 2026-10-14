@@ -71,12 +71,10 @@ func TestLiveCodesTypedAtOnceAreEachCounted(t *testing.T) {
 			var start, done sync.WaitGroup
 			start.Add(1)
 			for i := range codesAtOnce {
-				done.Add(1)
-				go func() {
-					defer done.Done()
+				done.Go(func() {
 					start.Wait()
 					_, results[i] = s.SubmitLoginCode(ctx, handle, tt.typed(right, i), Client{})
-				}()
+				})
 			}
 			start.Done()
 			done.Wait()

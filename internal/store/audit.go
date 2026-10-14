@@ -126,18 +126,18 @@ func (s *Store) Counts(ctx context.Context, now, since time.Time) (Counts, error
 
 	err := s.db.WithContext(ctx).Raw(`
 		SELECT
-			(SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) AS users,
-			(SELECT COUNT(*) FROM users WHERE deleted_at IS NULL AND is_active) AS active_users,
-			(SELECT COUNT(*) FROM users WHERE deleted_at IS NULL AND created_at >= @since) AS new_users,
-			(SELECT COUNT(*) FROM applications WHERE deleted_at IS NULL) AS applications,
-			(SELECT COUNT(*) FROM applications WHERE deleted_at IS NULL AND is_enabled) AS enabled_applications,
-			(SELECT COUNT(*) FROM apis WHERE deleted_at IS NULL) AS apis,
-			(SELECT COUNT(*) FROM api_scopes WHERE deleted_at IS NULL) AS api_scopes,
-			(SELECT COUNT(*) FROM user_roles WHERE deleted_at IS NULL) AS user_roles,
-			(SELECT COUNT(*) FROM admins WHERE deleted_at IS NULL) AS admins,
-			(SELECT COUNT(*) FROM admins WHERE deleted_at IS NULL AND locked_until > @now) AS locked_admins,
+			(SELECT COUNT(*) FROM users) AS users,
+			(SELECT COUNT(*) FROM users WHERE is_active) AS active_users,
+			(SELECT COUNT(*) FROM users WHERE created_at >= @since) AS new_users,
+			(SELECT COUNT(*) FROM applications) AS applications,
+			(SELECT COUNT(*) FROM applications WHERE is_enabled) AS enabled_applications,
+			(SELECT COUNT(*) FROM apis) AS apis,
+			(SELECT COUNT(*) FROM api_scopes) AS api_scopes,
+			(SELECT COUNT(*) FROM user_roles) AS user_roles,
+			(SELECT COUNT(*) FROM admins) AS admins,
+			(SELECT COUNT(*) FROM admins WHERE locked_until > @now) AS locked_admins,
 			(SELECT COUNT(*) FROM admin_sessions
-				WHERE deleted_at IS NULL AND revoked_at IS NULL AND expires_at > @now) AS active_sessions`,
+				WHERE revoked_at IS NULL AND expires_at > @now) AS active_sessions`,
 		map[string]any{"now": now, "since": since},
 	).Scan(&counts).Error
 

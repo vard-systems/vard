@@ -25,7 +25,7 @@ type UserRole struct {
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 
 	Name        string `gorm:"size:64;not null;uniqueIndex:idx_user_roles_application_name,priority:2" json:"name"`
-	Description string `gorm:"size:255" json:"description"`
+	Description string `gorm:"size:255;not null;default:''" json:"description"`
 	IsDefault   bool   `gorm:"not null;default:false;index" json:"is_default"`
 
 	Inherits []UserRole `gorm:"many2many:user_role_inherits;joinForeignKey:RoleID;joinReferences:InheritedRoleID;constraint:OnDelete:CASCADE" json:"inherits,omitempty"`

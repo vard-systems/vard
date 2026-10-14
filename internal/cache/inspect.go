@@ -162,7 +162,7 @@ func (c *Cache) Keys(ctx context.Context, q KeyQuery) ([]Key, uint64, error) {
 	)
 	// A bounded number of steps: a pattern that matches little in a large
 	// database would otherwise walk all of it for one page.
-	for step := 0; step < 50; step++ {
+	for range 50 {
 		names, next, err := c.client.Scan(ctx, cursor, pattern, 500).Result()
 		if err != nil {
 			return nil, 0, err

@@ -56,7 +56,7 @@ func (s *Store) AdminMFACounts(ctx context.Context) (total, withMFA int64, err e
 		Model(&model.Admin{}).
 		Where("id IN (?)", s.db.Model(&model.MFA{}).
 			Select("admin_id").
-			Where("confirmed_at IS NOT NULL AND deleted_at IS NULL")).
+			Where("confirmed_at IS NOT NULL")).
 		Count(&withMFA).Error
 
 	return total, withMFA, err

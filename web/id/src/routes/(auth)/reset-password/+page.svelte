@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { signIn } from '$lib/api';
-	import { Alert, AuthCard, Button, PasswordField } from '$lib/components';
-	import { messageOf, useTranslator } from '$lib/i18n';
-	import { authHref } from '$lib/utils/links';
+	import { signIn } from '#lib/api/index.js';
+	import { Alert, AuthCard, Button, PasswordField } from '#lib/components/index.js';
+	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { authHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -64,7 +64,8 @@
 		{#snippet below()}
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 			<a href={authHref('/forgot-password', request)}>{t('reset.expired_new')}</a>
-			· <a href={resolve('/login')}>{t('action.sign_in')}</a>
+			·
+			<a href={resolve('login')}>{t('action.sign_in')}</a>
 		{/snippet}
 	</AuthCard>
 {:else}

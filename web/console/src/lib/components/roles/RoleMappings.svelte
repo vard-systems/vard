@@ -8,11 +8,25 @@
 		RiNodeTree,
 		RiShieldUserLine
 	} from 'svelte-remixicon';
-	import { usersApi, type Admin, type Application, type Role, type RoleMapping } from '$lib/api';
-	import { Alert, Button, Icon, IconButton, Switch, Tooltip, notify } from '$lib/components/ui';
-	import { canAnywhere } from '$lib/permissions';
-	import { keys, roleMappingsOptions } from '$lib/query';
-	import { countOf } from '$lib/utils/format';
+	import {
+		usersApi,
+		type Admin,
+		type Application,
+		type Role,
+		type RoleMapping
+	} from '#lib/api/index.js';
+	import {
+		Alert,
+		Button,
+		Icon,
+		IconButton,
+		Switch,
+		Tooltip,
+		notify
+	} from '#lib/components/ui/index.js';
+	import { canAnywhere } from '#lib/permissions.js';
+	import { keys, roleMappingsOptions } from '#lib/query/index.js';
+	import { countOf } from '#lib/utils/format.js';
 	import RolePicker from './RolePicker.svelte';
 	import { canAssign } from './roles';
 

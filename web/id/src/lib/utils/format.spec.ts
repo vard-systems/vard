@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { translator } from '$lib/i18n';
-import { base } from '$lib/i18n/messages';
+import { translator } from '#lib/i18n/index.js';
+import { base } from '#lib/i18n/messages.js';
 import { describeDevice, formatDate, initials, timeAgo } from './format';
 
 const english = translator(

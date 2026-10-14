@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { languagesApi, type LanguageList, type LocaleApp } from '$lib/api';
+import { languagesApi, type LanguageList, type LocaleApp } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function languagesOptions(initial: LanguageList) {

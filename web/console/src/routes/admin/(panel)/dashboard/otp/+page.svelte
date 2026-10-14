@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiRefreshLine } from 'svelte-remixicon';
-	import { BRAND } from '$lib/brand';
-	import { IconButton, PageContainer, PageHeader } from '$lib/components/ui';
-	import OtpSettings from '$lib/components/otp/OtpSettings.svelte';
-	import { keys, otpOptions } from '$lib/query';
+	import { BRAND } from '#lib/brand.js';
+	import { IconButton, PageContainer, PageHeader } from '#lib/components/ui/index.js';
+	import OtpSettings from '#lib/components/otp/OtpSettings.svelte';
+	import { keys, otpOptions } from '#lib/query/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { Checkbox } from '$lib/components/ui';
+	import { Checkbox } from '#lib/components/ui/index.js';
 
 	type Props = {
 		name: string;

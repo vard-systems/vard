@@ -1,7 +1,7 @@
 <script lang="ts" module>
 	import type { ComponentType } from 'svelte';
 	import type { Node } from '@xyflow/svelte';
-	import type { LoginStep } from '$lib/api';
+	import type { LoginStep } from '#lib/api/index.js';
 
 	export type StepNodeData = {
 		step: LoginStep;
@@ -23,7 +23,7 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
 	import { RiCloseLine, RiLock2Line } from 'svelte-remixicon';
-	import { Icon } from '$lib/components/ui';
+	import { Icon } from '#lib/components/ui/index.js';
 
 	let { data, selected }: NodeProps<StepNodeType> = $props();
 </script>

@@ -89,7 +89,7 @@ func TestUserRequestPassword(t *testing.T) {
 		want     string // the message, or "" when the request is fine
 	}{
 		{name: "a new user with a password", creating: true, password: "long-enough", confirm: "long-enough"},
-		{name: "a new user without one", creating: true, want: "password is required"},
+		{name: "a new user without one", creating: true, want: "A password is required."},
 		{name: "an update keeping the password", creating: false},
 		{name: "an update changing it", creating: false, password: "long-enough", confirm: "long-enough"},
 		{
@@ -97,7 +97,7 @@ func TestUserRequestPassword(t *testing.T) {
 			creating: true,
 			password: "short",
 			confirm:  "short",
-			want:     "password must be at least 8 characters",
+			want:     "The password must be at least 8 characters.",
 		},
 		{
 			name:     "longer than bcrypt reads",

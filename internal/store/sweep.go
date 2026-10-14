@@ -71,14 +71,14 @@ func (s *Store) deleteInBatches(ctx context.Context, table any, kind, where stri
 	var removed int64
 
 	for {
-		batch := s.db.Model(table).Unscoped().Select("id").Where(where, arg).Limit(sweepBatch)
+		batch := s.db.Model(table).Select("id").Where(where, arg).Limit(sweepBatch)
 
 		var (
 			deleted int64
 			err     error
 		)
 		if kind == "" {
-			result := s.db.WithContext(ctx).Unscoped().Where("id IN (?)", batch).Delete(table)
+			result := s.db.WithContext(ctx).Where("id IN (?)", batch).Delete(table)
 			deleted, err = result.RowsAffected, result.Error
 		} else {
 			// The table name is the model's, never anything a request said.

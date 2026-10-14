@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -20,12 +21,7 @@ const (
 var FieldTypes = []FieldType{FieldText, FieldNumber, FieldBool, FieldEmail, FieldDate}
 
 func (t FieldType) Valid() bool {
-	for _, known := range FieldTypes {
-		if t == known {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(FieldTypes, t)
 }
 
 type UserField struct {
@@ -99,7 +95,7 @@ func (e ErrFieldValue) Error() string {
 	return fmt.Sprintf("%s: %s", e.Field, e.Reason)
 }
 
-func (f UserField) Normalise(value any) (any, error) {
+func (f UserField) Normalize(value any) (any, error) {
 	if value == nil {
 		return nil, f.requiredError()
 	}

@@ -2,24 +2,24 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { RiShieldCheckLine } from 'svelte-remixicon';
-	import { adminApi } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import TotpSetup from '$lib/components/mfa/TotpSetup.svelte';
-	import { Card, Icon, ThemeToggle } from '$lib/components/ui';
+	import { adminApi } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import TotpSetup from '#lib/components/mfa/TotpSetup.svelte';
+	import { Card, Icon, ThemeToggle } from '#lib/components/ui/index.js';
 
 	let { data } = $props();
 
 	async function done() {
-		await goto(resolve('/admin/dashboard'), { replaceState: true, invalidateAll: true });
+		await goto(resolve('admin/dashboard'), { replace: true, refreshAll: true });
 	}
 
 	async function cancel() {
 		if (data.enrolling) {
 			// Half signed in: leaving without a factor means signing out.
 			await adminApi.logout().catch(() => {});
-			await goto(resolve('/admin/login'), { replaceState: true, invalidateAll: true });
+			await goto(resolve('admin/login'), { replace: true, refreshAll: true });
 		} else {
-			await goto(resolve('/admin/dashboard'));
+			await goto(resolve('admin/dashboard'));
 		}
 	}
 </script>

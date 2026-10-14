@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
+	"maps"
 	"math/big"
 	"net/http"
 	"net/http/cookiejar"
@@ -205,9 +206,7 @@ func (f *oauthFixture) authorizeURL(challenge string, extra url.Values) string {
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
 	}
-	for key, values := range extra {
-		query[key] = values
-	}
+	maps.Copy(query, extra)
 
 	return f.s.root + "/oauth2/authorize?" + query.Encode()
 }

@@ -8,7 +8,7 @@
 		type SocialProviderInput,
 		type SocialSpec,
 		type SocialTokenAuth
-	} from '$lib/api';
+	} from '#lib/api/index.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -21,8 +21,8 @@
 		Select,
 		SwitchField,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import { kindOptions, tokenAuthOptions } from './providers';
 	import SecretField from './SecretField.svelte';
 

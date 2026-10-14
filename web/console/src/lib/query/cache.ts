@@ -6,7 +6,7 @@ import {
 	type CacheKeyPage,
 	type CacheKind,
 	type CacheOverview
-} from '$lib/api';
+} from '#lib/api/index.js';
 import { keys } from './keys';
 
 export type CacheKeyParams = {

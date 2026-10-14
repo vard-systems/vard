@@ -1,6 +1,12 @@
 import type { ComponentType } from 'svelte';
 import { RiAppsLine, RiComputerLine, RiServerLine, RiSmartphoneLine } from 'svelte-remixicon';
-import type { ApplicationInput, ApplicationType, AuthMethod, GrantType, Scope } from '$lib/api';
+import type {
+	ApplicationInput,
+	ApplicationType,
+	AuthMethod,
+	GrantType,
+	Scope
+} from '#lib/api/index.js';
 
 export const types: Record<
 	ApplicationType,

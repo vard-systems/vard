@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { apisApi, type API } from '$lib/api';
-	import { Button, notify } from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	import { apisApi, type API } from '#lib/api/index.js';
+	import { Button, notify } from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 	import ScopeEditor from './ScopeEditor.svelte';
 	import { apiInput, scopeInput, scopeProblem, scopeRow, type ScopeRow } from './scopes';
 

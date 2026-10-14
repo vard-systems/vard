@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { SSOConnection } from '$lib/api';
-	import { useTranslator } from '$lib/i18n';
-	import { ssoHref } from '$lib/utils/links';
+	import type { SSOConnection } from '#lib/api/index.js';
+	import { useTranslator } from '#lib/i18n/index.js';
+	import { ssoHref } from '#lib/utils/links.js';
 	import Icon from './Icon.svelte';
 
 	type Props = {

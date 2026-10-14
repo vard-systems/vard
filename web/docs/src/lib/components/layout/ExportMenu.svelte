@@ -5,8 +5,8 @@
 -->
 <script lang="ts">
 	import { RiArrowDownSLine, RiBracesLine, RiDownload2Line, RiStackLine } from 'svelte-remixicon';
-	import { BRAND } from '$lib/brand';
-	import { href } from '$lib/docs/links';
+	import { BRAND } from '#lib/brand.js';
+	import { href } from '#lib/docs/links.js';
 	import Icon from '../Icon.svelte';
 
 	let open = $state(false);

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { RiKey2Line, RiShareLine, RiShieldUserLine } from 'svelte-remixicon';
-	import type { Application, SocialKind, UserField, UserRecord } from '$lib/api';
-	import { Badge, Code, type Column, DataTable, Icon, Tooltip } from '$lib/components/ui';
-	import { markFor as providerMark } from '$lib/components/social/providers';
+	import type { Application, SocialKind, UserField, UserRecord } from '#lib/api/index.js';
+	import { Badge, Code, type Column, DataTable, Icon, Tooltip } from '#lib/components/ui/index.js';
+	import { markFor as providerMark } from '#lib/components/social/providers.js';
 	import FieldValue from './FieldValue.svelte';
 	import { valueOf } from './fields';
 	import { fieldIcons, idIcon } from './fieldIcons';

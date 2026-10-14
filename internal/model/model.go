@@ -7,13 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// Base carries the columns every table has. Nothing soft-deletes, so DeletedAt
-// is always null and unindexed.
+// Base carries the columns every table has. Nothing is soft-deleted: a delete
+// removes the row, so what an administrator removes is gone from the database.
 type Base struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"-"`
+	ID        uuid.UUID `gorm:"type:uuid;primarykey" json:"id"`
+	CreatedAt time.Time `gorm:"not null" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null" json:"updated_at"`
 }
 
 func (b *Base) BeforeCreate(*gorm.DB) error {

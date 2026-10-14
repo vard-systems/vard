@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RiErrorWarningLine, RiLockLine, RiShieldCheckLine } from 'svelte-remixicon';
-	import type { Overview } from '$lib/api';
-	import { Alert, Icon, List, ListItem, Tag } from '$lib/components/ui';
+	import type { Overview } from '#lib/api/index.js';
+	import { Alert, Icon, List, ListItem, Tag } from '#lib/components/ui/index.js';
 
 	type Props = {
 		signIns: Overview['sign_ins'];

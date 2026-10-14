@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SocialProvider } from '$lib/api';
+	import type { SocialProvider } from '#lib/api/index.js';
 	import Icon, { type IconName } from './Icon.svelte';
 
 	type Props = {

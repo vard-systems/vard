@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { ApiError, signIn } from '$lib/api';
+import { ApiError, signIn } from '#lib/api/index.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, fetch }) => {

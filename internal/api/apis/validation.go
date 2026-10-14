@@ -1,13 +1,20 @@
 package apis
 
 import (
-	"fmt"
+	"net/http"
 
 	"github.com/google/uuid"
 
 	"loginer/internal/api/respond"
 	"loginer/internal/api/validate"
 	"loginer/internal/model"
+)
+
+var (
+	identifierFixed = respond.Define(http.StatusBadRequest, "api_identifier_fixed", respond.Admin)
+	identifierTaken = respond.Define(http.StatusConflict, "api_identifier_taken", respond.Admin)
+	tooManyScopes   = respond.Define(http.StatusBadRequest, "api_too_many_scopes", respond.Admin)
+	foreignScope    = respond.Define(http.StatusBadRequest, "api_scope_foreign", respond.Admin)
 )
 
 func (r *apiRequest) applyTo(api *model.API, creating bool) error {
@@ -18,7 +25,7 @@ func (r *apiRequest) applyTo(api *model.API, creating bool) error {
 	}
 
 	if len(r.Scopes) > maxScopes {
-		return respond.Invalid(fmt.Sprintf("an API may have at most %d scopes", maxScopes))
+		return tooManyScopes.With("max", maxScopes)
 	}
 
 	// A scope sent with an id has to be one of this API's own: an id from
@@ -34,7 +41,7 @@ func (r *apiRequest) applyTo(api *model.API, creating bool) error {
 
 		if sent.ID != uuid.Nil {
 			if creating || !own[sent.ID.String()] {
-				return respond.Invalid("scopes: " + sent.Name + " refers to a scope this API does not have")
+				return foreignScope.With("scope", sent.Name)
 			}
 			scope.ID = sent.ID
 		}

@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { getContext, setContext } from 'svelte';
 import { addMessages, format, getMessageFormatter, init, json, locale } from 'svelte-i18n';
-import { ApiError } from '$lib/api/client';
+import { ApiError } from '#lib/api/client.js';
 import { BASE, base, type Messages } from './messages';
 
 export { BASE, type Messages } from './messages';

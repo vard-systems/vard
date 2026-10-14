@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Role } from '$lib/api';
+import type { Role } from '#lib/api/index.js';
 import { mayInherit, reachable, wouldCycle } from './roles';
 
 function role(id: string, inherits: string[] = [], application_id: string | null = null): Role {

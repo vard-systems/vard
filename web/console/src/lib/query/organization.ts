@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { organizationApi, type Organization } from '$lib/api';
+import { organizationApi, type Organization } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function organizationOptions(initial: { organization: Organization }) {

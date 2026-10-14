@@ -5,15 +5,15 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { RiAddLine, RiDeleteBinLine, RiRefreshLine } from 'svelte-remixicon';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { adminsApi, type AdminRole } from '$lib/api';
-	import { BRAND } from '$lib/brand';
+	import { adminsApi, type AdminRole } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		adminPermissionsOptions,
 		adminRolesOptions,
 		firstPage,
 		keys,
 		LIST_PAGE_SIZE
-	} from '$lib/query';
+	} from '#lib/query/index.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -25,10 +25,10 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import AdminRoleDialog from '$lib/components/admins/AdminRoleDialog.svelte';
-	import AdminRoleTable from '$lib/components/admins/AdminRoleTable.svelte';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import AdminRoleDialog from '#lib/components/admins/AdminRoleDialog.svelte';
+	import AdminRoleTable from '#lib/components/admins/AdminRoleTable.svelte';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -63,7 +63,7 @@
 	let busy = $state(false);
 
 	async function apply(changes: { search?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -74,7 +74,7 @@
 		const path = resolve('/admin/(panel)/dashboard/admin-roles');
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

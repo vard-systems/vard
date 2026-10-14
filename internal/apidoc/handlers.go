@@ -218,7 +218,7 @@ func (r *handlerReading) queryStruct(t types.Type) {
 		return
 	}
 	for i := range st.NumFields() {
-		name := strings.Split(reflect.StructTag(st.Tag(i)).Get("form"), ",")[0]
+		name, _, _ := strings.Cut(reflect.StructTag(st.Tag(i)).Get("form"), ",")
 		if name == "" || name == "-" {
 			continue
 		}

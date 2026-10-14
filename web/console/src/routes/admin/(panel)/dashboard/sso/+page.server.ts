@@ -1,6 +1,6 @@
-import type { Role, SSOConnection } from '$lib/api';
-import { canAnywhere } from '$lib/permissions';
-import { apiGet, requirePermission } from '$lib/server/api';
+import type { Role, SSOConnection } from '#lib/api/index.js';
+import { canAnywhere } from '#lib/permissions.js';
+import { apiGet, requirePermission } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent }) => {

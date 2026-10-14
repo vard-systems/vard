@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import type { LoginFlow, LoginStepSpec } from '$lib/api';
-import { apiGet, requirePermission } from '$lib/server/api';
+import type { LoginFlow, LoginStepSpec } from '#lib/api/index.js';
+import { apiGet, requirePermission } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, params }) => {

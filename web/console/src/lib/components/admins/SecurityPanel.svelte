@@ -1,8 +1,15 @@
 <script lang="ts">
 	import { createMutation } from '@tanstack/svelte-query';
 	import { RiShieldKeyholeLine } from 'svelte-remixicon';
-	import { adminsApi, type AdminSecurity } from '$lib/api';
-	import { Alert, Panel, SwitchField, Tag, ConfirmDialog, notify } from '$lib/components/ui';
+	import { adminsApi, type AdminSecurity } from '#lib/api/index.js';
+	import {
+		Alert,
+		Panel,
+		SwitchField,
+		Tag,
+		ConfirmDialog,
+		notify
+	} from '#lib/components/ui/index.js';
 
 	type Props = {
 		security: AdminSecurity;

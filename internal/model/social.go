@@ -36,16 +36,16 @@ type SocialProvider struct {
 
 	AllowRegistration bool `gorm:"not null" json:"allow_registration"`
 
-	AuthorizeURL string `gorm:"size:512" json:"authorize_url"`
-	TokenURL     string `gorm:"size:512" json:"token_url"`
-	UserinfoURL  string `gorm:"size:512" json:"userinfo_url"`
+	AuthorizeURL string `gorm:"size:512;not null;default:''" json:"authorize_url"`
+	TokenURL     string `gorm:"size:512;not null;default:''" json:"token_url"`
+	UserinfoURL  string `gorm:"size:512;not null;default:''" json:"userinfo_url"`
 
-	TokenAuth SocialTokenAuth `gorm:"type:varchar(32)" json:"token_auth"`
+	TokenAuth SocialTokenAuth `gorm:"type:varchar(32);not null;default:''" json:"token_auth"`
 
 	// Apple's client secret is a JWT signed per request with the team's key;
 	// PrivateKey is the .p8 contents, sealed.
-	TeamID     string `gorm:"size:64" json:"team_id"`
-	KeyID      string `gorm:"size:64" json:"key_id"`
+	TeamID     string `gorm:"size:64;not null;default:''" json:"team_id"`
+	KeyID      string `gorm:"size:64;not null;default:''" json:"key_id"`
 	PrivateKey []byte `gorm:"type:bytea" json:"-"`
 }
 
@@ -64,7 +64,7 @@ type SocialIdentity struct {
 	ProviderID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_social_identities_subject,priority:1" json:"provider_id"`
 	Subject    string    `gorm:"size:255;not null;uniqueIndex:idx_social_identities_subject,priority:2" json:"subject"`
 
-	Email       string     `gorm:"size:255" json:"email"`
+	Email       string     `gorm:"size:255;not null;default:''" json:"email"`
 	LastLoginAt *time.Time `json:"last_login_at"`
 
 	Provider *SocialProvider `gorm:"constraint:OnDelete:CASCADE" json:"-"`
@@ -98,11 +98,11 @@ type SocialLogin struct {
 	StateHash  string    `gorm:"size:64;not null;uniqueIndex" json:"-"`
 	ProviderID uuid.UUID `gorm:"type:uuid;not null;index" json:"provider_id"`
 
-	Verifier string `gorm:"size:128" json:"-"`
+	Verifier string `gorm:"size:128;not null;default:''" json:"-"`
 
-	Request string `gorm:"size:64" json:"-"`
+	Request string `gorm:"size:64;not null;default:''" json:"-"`
 
-	Next string `gorm:"size:512" json:"-"`
+	Next string `gorm:"size:512;not null;default:''" json:"-"`
 
 	ExpiresAt time.Time `gorm:"not null;index" json:"-"`
 }

@@ -10,8 +10,8 @@ import {
 	RiTimerFlashLine
 } from 'svelte-remixicon';
 import type { ComponentType } from 'svelte';
-import type { LoginStep, LoginStepSpec } from '$lib/api';
-import { BRAND } from '$lib/brand';
+import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
+import { BRAND } from '#lib/brand.js';
 
 const marks: Record<LoginStep, ComponentType> = {
 	identifier: RiAtLine,

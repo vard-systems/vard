@@ -1,4 +1,4 @@
-import type { LogFilter } from '$lib/api';
+import type { LogFilter } from '#lib/api/index.js';
 import type { CacheKeyParams } from './cache';
 import type { RoleListParams } from './roles';
 

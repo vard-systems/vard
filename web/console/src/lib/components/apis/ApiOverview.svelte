@@ -7,8 +7,8 @@
 		RiShieldUserLine,
 		RiTimerLine
 	} from 'svelte-remixicon';
-	import type { API } from '$lib/api';
-	import { CodeBlock, FormSection, Icon, Input } from '$lib/components/ui';
+	import type { API } from '#lib/api/index.js';
+	import { CodeBlock, FormSection, Icon, Input } from '#lib/components/ui/index.js';
 	import { lifetimeLabel } from './scopes';
 
 	type Props = {

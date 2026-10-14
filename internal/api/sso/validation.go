@@ -66,7 +66,7 @@ func (r *connectionRequest) applyTo(connection *model.SSOConnection, sealer *jos
 	if r.Scopes != nil {
 		scopes := model.StringList{}
 		for _, scope := range *r.Scopes {
-			for _, piece := range strings.Fields(scope) {
+			for piece := range strings.FieldsSeq(scope) {
 				if !slices.Contains(scopes, piece) {
 					scopes = append(scopes, piece)
 				}

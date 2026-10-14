@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { RiSettings3Line, RiUserLine } from 'svelte-remixicon';
-	import type { Admin } from '$lib/api';
-	import { FullscreenDialog, Tabs, Tag, Thumb } from '$lib/components/ui';
-	import { initials } from '$lib/utils/format';
+	import type { Admin } from '#lib/api/index.js';
+	import { FullscreenDialog, Tabs, Tag, Thumb } from '#lib/components/ui/index.js';
+	import { initials } from '#lib/utils/format.js';
 	import AccountForms from './AccountForms.svelte';
 	import SecuritySettings from './SecuritySettings.svelte';
 

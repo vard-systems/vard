@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
 	import { RiDownload2Line, RiErrorWarningLine, RiUpload2Line } from 'svelte-remixicon';
-	import type { LocaleApp } from '$lib/api';
-	import { countOf } from '$lib/utils/format';
-	import { Alert, Button, Icon, SearchInput, Switch, notify } from '$lib/components/ui';
+	import type { LocaleApp } from '#lib/api/index.js';
+	import { countOf } from '#lib/utils/format.js';
+	import { Alert, Button, Icon, SearchInput, Switch, notify } from '#lib/components/ui/index.js';
 	import { nest } from './flatten';
-	import { translationOptions } from '$lib/query';
+	import { translationOptions } from '#lib/query/index.js';
 	import { download, missingParameters, readTranslationFile } from './translations';
 
 	type Props = {

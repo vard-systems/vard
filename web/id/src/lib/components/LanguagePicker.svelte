@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import type { PublicLanguage } from '$lib/api';
-	import { useTranslator } from '$lib/i18n';
-	import { switchLanguage } from '$lib/i18n/switch';
+	import type { PublicLanguage } from '#lib/api/index.js';
+	import { useTranslator } from '#lib/i18n/index.js';
+	import { switchLanguage } from '#lib/i18n/switch.js';
 	import Icon from './Icon.svelte';
 
 	type Props = {
@@ -23,7 +23,7 @@
 	    for it. The server remembers the choice and redirects the parameter
 	    away. */
 	function href(code: string): string {
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		url.searchParams.set('lang', code);
 
 		return `${url.pathname}${url.search}`;

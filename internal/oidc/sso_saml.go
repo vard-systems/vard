@@ -157,8 +157,7 @@ func (s *Service) completeSAML(connection *model.SSOConnection, login *model.SSO
 
 	assertion, err := provider.ParseResponse(r, []string{login.SAMLRequestID})
 	if err != nil {
-		var invalid *saml.InvalidResponseError
-		if errors.As(err, &invalid) {
+		if invalid, ok := errors.AsType[*saml.InvalidResponseError](err); ok {
 			err = fmt.Errorf("%w: %v", err, invalid.PrivateErr)
 		}
 		return nil, upstream("response", err)

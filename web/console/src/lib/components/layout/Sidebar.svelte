@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { MediaQuery } from 'svelte/reactivity';
-	import type { Admin } from '$lib/api';
-	import { useShell } from '$lib/state/shell.svelte';
+	import type { Admin } from '#lib/api/index.js';
+	import { useShell } from '#lib/state/shell.svelte.js';
 	import SidebarGroup from './sidebar/SidebarGroup.svelte';
 	import { isCurrentSection, visibleGroups, type Section } from './sidebar/sections';
 

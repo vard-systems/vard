@@ -224,7 +224,7 @@ func (s *Store) DeleteAPI(ctx context.Context, api *model.API) error {
 			return err
 		}
 
-		return tx.Unscoped().Delete(api).Error
+		return tx.Delete(api).Error
 	}), cache.Grants)
 }
 

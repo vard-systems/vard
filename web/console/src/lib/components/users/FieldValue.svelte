@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { FieldType } from '$lib/api';
-	import { Badge } from '$lib/components/ui';
-	import { formatDate } from '$lib/utils/format';
+	import type { FieldType } from '#lib/api/index.js';
+	import { Badge } from '#lib/components/ui/index.js';
+	import { formatDate } from '#lib/utils/format.js';
 
 	type Props = {
 		type: FieldType;

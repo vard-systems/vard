@@ -5,9 +5,9 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { RiRefreshLine } from 'svelte-remixicon';
 	import { createInfiniteQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { sessionsApi, type UserSessionRecord } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { keys, sessionsOptions } from '$lib/query';
+	import { sessionsApi, type UserSessionRecord } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import { keys, sessionsOptions } from '#lib/query/index.js';
 	import {
 		ConfirmDialog,
 		FilterChip,
@@ -17,10 +17,10 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import SessionTable from '$lib/components/sessions/SessionTable.svelte';
-	import { can } from '$lib/permissions';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import SessionTable from '#lib/components/sessions/SessionTable.svelte';
+	import { can } from '#lib/permissions.js';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -40,7 +40,7 @@
 	let asking = $state(false);
 
 	async function apply(changes: { search?: string; user?: string; email?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -51,7 +51,7 @@
 		const path = resolve('/admin/(panel)/dashboard/sessions');
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

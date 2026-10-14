@@ -156,3 +156,30 @@ func TestScopedChecks(t *testing.T) {
 		t.Error("SeesRole: want the global roles and their application's, and not another's")
 	}
 }
+
+func TestToken(t *testing.T) {
+	cases := []struct {
+		name   string
+		header string
+		want   string
+	}{
+		{name: "no cookie", header: "", want: ""},
+		{name: "one cookie", header: Cookie + "=abc", want: "abc"},
+		{name: "another cookie beside it", header: "theme=dark; " + Cookie + "=abc", want: "abc"},
+		{name: "a second one planted from a sibling subdomain", header: Cookie + "=planted; " + Cookie + "=abc", want: ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+			if tc.header != "" {
+				c.Request.Header.Set("Cookie", tc.header)
+			}
+
+			if got := Token(c); got != tc.want {
+				t.Errorf("Token = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

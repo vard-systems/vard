@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RiAppsLine, RiGitBranchLine, RiListOrdered2, RiToggleLine } from 'svelte-remixicon';
-	import type { LoginFlow, LoginStepSpec } from '$lib/api';
-	import { Badge, type Column, DataTable, Icon, Tag, Tooltip } from '$lib/components/ui';
+	import type { LoginFlow, LoginStepSpec } from '#lib/api/index.js';
+	import { Badge, type Column, DataTable, Icon, Tag, Tooltip } from '#lib/components/ui/index.js';
 	import { describe, labelFor, markFor, specFor } from './steps';
 
 	type Props = {

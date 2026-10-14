@@ -8,8 +8,8 @@
 		RiToggleLine,
 		RiShapesLine
 	} from 'svelte-remixicon';
-	import type { Application } from '$lib/api';
-	import { Badge, Code, type Column, DataTable, Icon } from '$lib/components/ui';
+	import type { Application } from '#lib/api/index.js';
+	import { Badge, Code, type Column, DataTable, Icon } from '#lib/components/ui/index.js';
 	import { ADMIN_CLI, types } from './applications';
 
 	type Props = {

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
-	import { ApiError, mfaApi, type MfaEnrolment } from '$lib/api';
-	import { Alert, Button, CopyButton, Input } from '$lib/components/ui';
+	import { ApiError, mfaApi, type MfaEnrolment } from '#lib/api/index.js';
+	import { Alert, Button, CopyButton, Input } from '#lib/components/ui/index.js';
 	import RecoveryCodes from './RecoveryCodes.svelte';
 
 	type Props = {

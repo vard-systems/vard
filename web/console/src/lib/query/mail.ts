@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { mailApi, type MailContent, type MailResponse } from '$lib/api';
+import { mailApi, type MailContent, type MailResponse } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function mailOptions(initial: MailResponse) {

@@ -10,8 +10,8 @@
 		createQuery,
 		useQueryClient
 	} from '@tanstack/svelte-query';
-	import { adminsApi, type AdminRecord } from '$lib/api';
-	import { BRAND } from '$lib/brand';
+	import { adminsApi, type AdminRecord } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import {
 		adminPermissionsOptions,
 		adminRolesOptions,
@@ -19,7 +19,7 @@
 		applicationChoicesOptions,
 		keys,
 		uniqueById
-	} from '$lib/query';
+	} from '#lib/query/index.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -33,11 +33,11 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import AdminDialog from '$lib/components/admins/AdminDialog.svelte';
-	import AdminTable from '$lib/components/admins/AdminTable.svelte';
-	import SecurityPanel from '$lib/components/admins/SecurityPanel.svelte';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import AdminDialog from '#lib/components/admins/AdminDialog.svelte';
+	import AdminTable from '#lib/components/admins/AdminTable.svelte';
+	import SecurityPanel from '#lib/components/admins/SecurityPanel.svelte';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -71,7 +71,7 @@
 	let busy = $state(false);
 
 	async function apply(changes: { search?: string; status?: string; role?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -82,7 +82,7 @@
 		const path = resolve('/admin/(panel)/dashboard/admins');
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

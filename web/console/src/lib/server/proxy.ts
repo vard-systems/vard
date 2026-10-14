@@ -1,5 +1,5 @@
-import { env } from '$env/dynamic/private';
-import type { HandleFetch } from '@sveltejs/kit';
+import type { HandleFetch } from '@sveltejs/kit/hooks';
+import { API_URL } from '$app/env/private';
 
 const API_PATHS = ['/api/v1/admin'];
 
@@ -21,7 +21,7 @@ export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
 	// address in its LOGINER_TRUSTED_PROXIES.
 	headers.set('x-forwarded-for', event.getClientAddress());
 
-	const target = new URL(url.pathname + url.search, env.API_URL ?? 'http://localhost:8081');
+	const target = new URL(url.pathname + url.search, API_URL);
 	const method = request.method;
 	const body = method === 'GET' || method === 'HEAD' ? undefined : await request.arrayBuffer();
 

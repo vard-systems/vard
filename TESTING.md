@@ -177,15 +177,37 @@ Doc comments on handlers and request fields were kept, because `make docs`
 builds the public API reference from them. Migration files were left
 untouched: a migration that has run anywhere is never edited.
 
+## Refactor and security pass (14 October 2026)
+
+Go 1.27.2. Every check passes: `make check`, `make test-integration` (36
+packages), `make web-check`, `make docs-check`, the apps' unit tests (console
+61, id 39), `staticcheck`, and `govulncheck` (no reachable vulnerability).
+
+| # | Problem | Fix |
+|---|---------|-----|
+| 13 | **Go standard library and `x/net` vulnerabilities:** `govulncheck` found 9 reachable advisories in Go 1.27.1 and `x/net` v0.59.0 (HTTP/2 crash and flow-control bugs, HTTP/1 desync, MIME header memory limit, TLS ECH). | Go 1.27.2 and `x/net` v0.61.0. Every Go dependency is on its latest release. |
+| 14 | **About 50 modules never run:** the `goose` CLI, a `tool` in `go.mod`, linked every database driver it supports (ClickHouse, YDB, Azure SDK, gRPC), including three deprecated modules. | `make migrate-new` calls the goose library through `cmd/migrate new`; the tool is gone, and with it every deprecated module. |
+| 15 | **The admin session cookie accepted a planted duplicate.** The user cookies already refused two cookies of one name (a sibling subdomain can set one); the admin cookie was read raw in seven places. | All read through `session.Token`; test added. |
+| 16 | **The API sent no security headers of its own.** It relied on the proxy in front of it. | `middleware.SecurityHeaders`: `nosniff`, `no-referrer`, no framing, `default-src 'none'`. The console also sends `Referrer-Policy` and `nosniff` itself. |
+| 17 | **About 70 errors were English sentences written in Go**, against the repository's own rule: no stable code, missing from the API reference. | Each is a defined problem with a code and a catalog sentence (shared ones in `respond/shared.go`). A malformed id now answers `*_not_found`, as the newer handlers did. The API reference documents about 50 errors it did not list before. |
+| 18 | **Columns that could hold what the code cannot read:** 74 text columns were nullable while read into a plain `string` (one NULL fails every read of that row), every `created_at`/`updated_at` was nullable, and 30 tables kept GORM's soft-delete column although nothing is soft-deleted. | Migration `tighten_columns`: text columns `NOT NULL DEFAULT ''` (existing NULLs filled), timestamps `NOT NULL`, `deleted_at` dropped. Rehearsed on a database built by the previous release with NULLs planted: up, down and up again. |
+| 19 | **Files holding many subjects:** `model/oauth.go` held seven tables and `store/oauth.go` seven subjects; `store/sessions.go` held admin sessions beside user ones. | One file per table or subject; admin session methods are named for admins (`CreateAdminSession`, …). |
+| 20 | **Older idioms** where Go now has a standard form (pointer helpers, `strings.SplitSeq`, `maps.Copy`, `errors.AsType`). | Applied Go's `modernize` fixes. Migrations that have run were left untouched. |
+| 21 | **The apps were a major version behind:** SvelteKit 2, adapter-node 5, Vitest 4. | SvelteKit 3, adapter-node 6, Vitest 5 in all three apps, with the official codemod and the manual steps after it: `#lib` imports, route-id `resolve()`, read-only `page.url`, `refreshAll`, `goto`'s renamed options (`replace` still keeps a reset token out of history), and server environment in `src/env.ts`. The codemod left `API_URL` empty when unset, which would have broken every API call in development; the default was restored. A sign-in `next` path with no route now loads plainly instead of leaving the user on the sign-in page. adapter-node dropped `ORIGIN`, so the containers read the public address from Caddy's forwarded headers instead (checked against a stub API). `bun audit` is clean in every app: SvelteKit 3 ships `cookie` v2, and an override replaces the unused old `esbuild` in `svelte-i18n`. |
+
+Static analysis: `gosec` findings were reviewed again and are the expected ones
+listed above, plus the migration's table names (constants) being formatted
+into SQL.
+
 ## Known items (not changed)
+
+- **TypeScript 7** is not taken: SvelteKit 3 requires TypeScript 6, and
+  `svelte-check` and `typescript-eslint` do not support 7 yet (its compiler API
+  arrives in 7.1). `@types/node` stays on 24, the Node version the images run.
 
 - **Chirp font licence:** the console bundles Chirp, X's proprietary typeface.
   Replace it, or confirm you have a licence, before publishing the console as
   open source.
-- **`cookie@0.6.0`**, pinned by SvelteKit itself: a low-severity advisory that
-  needs attacker-chosen cookie names. All names here are fixed.
-- **Old `esbuild`** inside `svelte-i18n`: the advisory concerns esbuild's dev
-  server, which is never run.
 - **Platform coverage:** the Docker stack was tested on Apple Silicon only.
   Building on linux/amd64 in CI is recommended.
 - **Single test machine:** load numbers come from a laptop running the

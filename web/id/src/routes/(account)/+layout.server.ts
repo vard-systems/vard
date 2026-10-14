@@ -1,5 +1,5 @@
-import { signIn, type LoginOptions } from '$lib/api';
-import { requireUser } from '$lib/server/session';
+import { signIn, type LoginOptions } from '#lib/api/index.js';
+import { requireUser } from '#lib/server/session.js';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ cookies, fetch, url, setHeaders }) => {

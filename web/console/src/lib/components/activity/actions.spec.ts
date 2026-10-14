@@ -1,6 +1,6 @@
 import { describe as group, expect, it } from 'vitest';
 
-import type { ActivityEvent } from '$lib/api';
+import type { ActivityEvent } from '#lib/api/index.js';
 import { describe } from './actions';
 
 function event(changes: Partial<ActivityEvent>): ActivityEvent {

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { useTranslator } from '$lib/i18n';
+	import { useTranslator } from '#lib/i18n/index.js';
 	import { resolve } from '$app/paths';
-	import { Alert, AuthCard } from '$lib/components';
+	import { Alert, AuthCard } from '#lib/components/index.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -26,7 +26,7 @@
 	{/if}
 
 	{#snippet below()}
-		<a href={resolve('/login')}>{t('logged_out.sign_in')}</a>
+		<a href={resolve('login')}>{t('logged_out.sign_in')}</a>
 	{/snippet}
 </AuthCard>
 

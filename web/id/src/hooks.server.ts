@@ -1,9 +1,9 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
 
-import { COOKIES } from '$lib/brand';
-import { BASE } from '$lib/i18n';
+import { COOKIES } from '#lib/brand.js';
+import { BASE } from '#lib/i18n/index.js';
 
-export { handleFetch } from '$lib/server/proxy';
+export { handleFetch } from '#lib/server/proxy.js';
 
 /**
  * Writes the reader's theme and language into <html> before sending, so there is no flash and

@@ -18,8 +18,8 @@ import {
 	RiShieldKeyholeLine,
 	RiShieldUserLine
 } from 'svelte-remixicon';
-import type { Admin } from '$lib/api';
-import { can, canAnywhere } from '$lib/permissions';
+import type { Admin } from '#lib/api/index.js';
+import { can, canAnywhere } from '#lib/permissions.js';
 
 export type Section = Extract<
 	Exclude<RouteId, `${string}[${string}`>,

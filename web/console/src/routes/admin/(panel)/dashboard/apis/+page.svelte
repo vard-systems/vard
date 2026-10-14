@@ -5,10 +5,10 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { RiAddLine, RiDeleteBinLine, RiRefreshLine } from 'svelte-remixicon';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { apisApi, type API } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { apisOptions, firstPage, keys, LIST_PAGE_SIZE } from '$lib/query';
-	import { can } from '$lib/permissions';
+	import { apisApi, type API } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import { apisOptions, firstPage, keys, LIST_PAGE_SIZE } from '#lib/query/index.js';
+	import { can } from '#lib/permissions.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -20,10 +20,10 @@
 		ShowMore,
 		Toolbar,
 		notify
-	} from '$lib/components/ui';
-	import ApiDialog from '$lib/components/apis/ApiDialog.svelte';
-	import ApiTable from '$lib/components/apis/ApiTable.svelte';
-	import { countOf } from '$lib/utils/format';
+	} from '#lib/components/ui/index.js';
+	import ApiDialog from '#lib/components/apis/ApiDialog.svelte';
+	import ApiTable from '#lib/components/apis/ApiTable.svelte';
+	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -55,7 +55,7 @@
 	let busy = $state(false);
 
 	async function apply(changes: { search?: string }) {
-		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const params = new SvelteURLSearchParams(page.url.search);
 
 		for (const [key, value] of Object.entries(changes)) {
 			if (value) params.set(key, value);
@@ -66,7 +66,7 @@
 		const path = resolve('/admin/(panel)/dashboard/apis');
 
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(query ? `${path}?${query}` : path, { keepFocus: true, noScroll: true });
+		await goto(query ? `${path}?${query}` : path, { reset: false });
 	}
 
 	let timer: ReturnType<typeof setTimeout>;

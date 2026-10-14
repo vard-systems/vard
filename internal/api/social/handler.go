@@ -83,7 +83,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	if err := h.store.CreateSocialProvider(c.Request.Context(), provider); err != nil {
 		if errors.Is(err, store.ErrDuplicate) {
-			respond.Conflict(c, "a provider with that identifier already exists")
+			respond.Fail(c, slugTaken)
 			return
 		}
 
@@ -179,7 +179,7 @@ func (h *Handler) Secret(c *gin.Context) {
 	}
 
 	if len(sealed) == 0 {
-		respond.NotFound(c, "there is no secret stored for this provider")
+		respond.Fail(c, noSecret)
 		return
 	}
 
@@ -220,7 +220,7 @@ func (h *Handler) Delete(c *gin.Context) {
 func (h *Handler) find(c *gin.Context) (*model.SocialProvider, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a provider id")
+		respond.Fail(c, providerAbsent)
 		return nil, false
 	}
 
@@ -228,7 +228,7 @@ func (h *Handler) find(c *gin.Context) (*model.SocialProvider, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such provider")
+		respond.Fail(c, providerAbsent)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading social provider failed")

@@ -267,7 +267,7 @@ func validation(tag string, schema *Schema) (rules []string, required bool) {
 		unit = ""
 	}
 
-	for _, rule := range strings.Split(tag, ",") {
+	for rule := range strings.SplitSeq(tag, ",") {
 		name, value, _ := strings.Cut(rule, "=")
 		switch name {
 		case "required":

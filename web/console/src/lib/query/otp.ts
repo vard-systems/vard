@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { otpApi, type OTPResponse } from '$lib/api';
+import { otpApi, type OTPResponse } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function otpOptions(initial: OTPResponse) {

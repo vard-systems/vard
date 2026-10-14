@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { Overview } from '$lib/api';
-	import { countOf, formatShortDay } from '$lib/utils/format';
+	import type { Overview } from '#lib/api/index.js';
+	import { countOf, formatShortDay } from '#lib/utils/format.js';
 
 	type Props = {
 		daily: Overview['daily'];

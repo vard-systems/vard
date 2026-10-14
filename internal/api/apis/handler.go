@@ -99,7 +99,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if req.Identifier != "" && req.Identifier != api.Identifier {
-		respond.BadRequest(c, "identifier cannot be changed: register a new API instead")
+		respond.Fail(c, identifierFixed)
 		return
 	}
 
@@ -229,7 +229,7 @@ func (h *Handler) withCount(c *gin.Context, api *model.API) apiResponse {
 func (h *Handler) find(c *gin.Context) (*model.API, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not an API id")
+		respond.Fail(c, respond.APINotFound)
 		return nil, false
 	}
 
@@ -237,7 +237,7 @@ func (h *Handler) find(c *gin.Context) (*model.API, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such API")
+		respond.Fail(c, respond.APINotFound)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading API failed")
@@ -249,7 +249,7 @@ func (h *Handler) find(c *gin.Context) (*model.API, bool) {
 
 func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
 	if errors.Is(err, store.ErrDuplicate) {
-		respond.Conflict(c, "an API with that identifier already exists")
+		respond.Fail(c, identifierTaken)
 		return
 	}
 

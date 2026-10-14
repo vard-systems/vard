@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { Attachment } from 'svelte/attachments';
 	import { RiArrowLeftLine, RiArrowRightLine, RiEditLine } from 'svelte-remixicon';
-	import { BRAND, LANGUAGE_KEY } from '$lib/brand';
-	import { href } from '$lib/docs/links';
-	import Icon from '$lib/components/Icon.svelte';
-	import Toc from '$lib/components/Toc.svelte';
+	import { BRAND, LANGUAGE_KEY } from '#lib/brand.js';
+	import { href } from '#lib/docs/links.js';
+	import Icon from '#lib/components/Icon.svelte';
+	import Toc from '#lib/components/Toc.svelte';
 
 	let { data } = $props();
 

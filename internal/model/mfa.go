@@ -13,7 +13,7 @@ type MFA struct {
 	Admin   Admin     `gorm:"foreignKey:AdminID" json:"-"`
 
 	Method MFAMethod `gorm:"type:varchar(32);index;not null" json:"method"`
-	Label  string    `gorm:"size:100" json:"label,omitempty"`
+	Label  string    `gorm:"size:100;not null;default:''" json:"label,omitempty"`
 
 	// Secret is the TOTP seed, or the WebAuthn credential. Encrypt it before
 	// it is written; the database should never hold it in the clear.

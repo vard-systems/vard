@@ -12,9 +12,9 @@
 		RiGithubFill,
 		RiSearchLine
 	} from 'svelte-remixicon';
-	import type { Admin } from '$lib/api';
-	import { BRAND } from '$lib/brand';
-	import { Icon, IconButton, Kbd } from '$lib/components/ui';
+	import type { Admin } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
+	import { Icon, IconButton, Kbd } from '#lib/components/ui/index.js';
 	import { visibleGroups } from './sidebar/sections';
 
 	type Command = {

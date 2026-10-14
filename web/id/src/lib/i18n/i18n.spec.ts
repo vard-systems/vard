@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ApiError } from '$lib/api/client';
+import { ApiError } from '#lib/api/client.js';
 import { chooseLanguage, messageOf, translator } from './index';
 
 const offered = ['en', 'de', 'ru'];

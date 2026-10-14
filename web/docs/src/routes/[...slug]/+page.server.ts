@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { pageAt, pages } from '$lib/server/content';
-import { render } from '$lib/server/markdown';
+import { pageAt, pages } from '#lib/server/content.js';
+import { render } from '#lib/server/markdown.js';
 import type { EntryGenerator, PageServerLoad } from './$types';
 
 // Every page, so the build renders the ones no link reaches as well.

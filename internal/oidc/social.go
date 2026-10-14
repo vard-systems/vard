@@ -608,8 +608,7 @@ func (s *Service) signInWithIdentity(
 func (s *Service) socialSSORequired(ctx context.Context, email string) error {
 	err := s.ssoRequiredFor(ctx, email)
 
-	var required *SSORequired
-	if errors.As(err, &required) {
+	if _, ok := errors.AsType[*SSORequired](err); ok {
 		return ErrSocialSSORequired
 	}
 
@@ -701,7 +700,7 @@ func claimAt(claims map[string]any, path string) any {
 	}
 
 	var current any = claims
-	for _, step := range strings.Split(path, ".") {
+	for step := range strings.SplitSeq(path, ".") {
 		switch node := current.(type) {
 		case map[string]any:
 			current = node[step]

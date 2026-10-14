@@ -3,7 +3,7 @@
  * its directory places it in the sidebar; guides choose their section with `section:` so
  * regrouping never moves an address. content/reference is written by `make docs`.
  */
-import type { NavSection } from '$lib/docs/types';
+import type { NavSection } from '#lib/docs/types.js';
 
 export interface Page {
 	/** The address without the leading slash: "" for the home page. */

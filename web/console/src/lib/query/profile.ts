@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/svelte-query';
 
-import { adminApi, mfaApi } from '$lib/api';
+import { adminApi, mfaApi } from '#lib/api/index.js';
 import { keys } from './keys';
 
 export function profileSessionsOptions() {

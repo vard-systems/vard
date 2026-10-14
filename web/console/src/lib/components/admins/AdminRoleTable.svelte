@@ -7,8 +7,8 @@
 		RiLockLine,
 		RiShieldKeyholeLine
 	} from 'svelte-remixicon';
-	import type { AdminRole } from '$lib/api';
-	import { Badge, Code, type Column, DataTable } from '$lib/components/ui';
+	import type { AdminRole } from '#lib/api/index.js';
+	import { Badge, Code, type Column, DataTable } from '#lib/components/ui/index.js';
 
 	type Props = {
 		roles: AdminRole[];

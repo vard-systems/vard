@@ -1,8 +1,8 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
 
-import { COOKIES } from '$lib/brand';
+import { COOKIES } from '#lib/brand.js';
 
-export { handleFetch } from '$lib/server/proxy';
+export { handleFetch } from '#lib/server/proxy.js';
 
 /**
  * Writes the reader's chosen theme into <html> before it is sent, so there is no
@@ -23,6 +23,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// how clickjacking gets a click or a password it should not.
 	response.headers.set('X-Frame-Options', 'DENY');
 	response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+	// The edge sets these too; the panel sets them itself so that it is just
+	// as safe behind any other proxy.
+	response.headers.set('Referrer-Policy', 'no-referrer');
+	response.headers.set('X-Content-Type-Options', 'nosniff');
 
 	return response;
 };

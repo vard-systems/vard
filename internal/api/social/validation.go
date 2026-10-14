@@ -1,6 +1,7 @@
 package social
 
 import (
+	"net/http"
 	"strings"
 
 	"loginer/internal/api/respond"
@@ -9,11 +10,18 @@ import (
 	"loginer/internal/model"
 )
 
+var (
+	slugTaken      = respond.Define(http.StatusConflict, "social_provider_slug_taken", respond.Admin)
+	noSecret       = respond.Define(http.StatusNotFound, "social_provider_secret_missing", respond.Admin)
+	providerAbsent = respond.Define(http.StatusNotFound, "social_provider_not_found", respond.Admin)
+	kindUnknown    = respond.Define(http.StatusBadRequest, "social_provider_kind_invalid", respond.Admin)
+)
+
 func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.Sealer, creating bool) error {
 	if creating {
 		kind := model.SocialKind(strings.ToLower(strings.TrimSpace(r.Kind)))
 		if _, known := model.SocialSpecFor(kind); !known {
-			return respond.Invalid("kind must be one of: " + strings.Join(kindNames(), ", "))
+			return kindUnknown.With("kinds", strings.Join(kindNames(), ", "))
 		}
 
 		provider.Kind = kind

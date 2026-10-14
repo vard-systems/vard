@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
-import type { API, Application, ApplicationPage, RolePage } from '$lib/api';
-import { can, canAnywhere } from '$lib/permissions';
-import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE, ROLE_CHOICES_LIMIT } from '$lib/query';
-import { apiGet } from '$lib/server/api';
+import type { API, Application, ApplicationPage, RolePage } from '#lib/api/index.js';
+import { can, canAnywhere } from '#lib/permissions.js';
+import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE, ROLE_CHOICES_LIMIT } from '#lib/query/index.js';
+import { apiGet } from '#lib/server/api.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, parent, url }) => {

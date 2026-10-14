@@ -1,9 +1,11 @@
 import { resolve } from '$app/paths';
+import type { Path } from '$app/types';
 
 export type AuthPage = '/login' | '/register' | '/forgot-password' | '/sso';
 
 export function authHref(page: AuthPage, request: string | null): string {
-	const path = resolve(page);
+	// resolve() reads a leading slash as a route id; a page is a plain path.
+	const path = resolve(page.slice(1) as Path);
 	return request ? `${path}?request=${encodeURIComponent(request)}` : path;
 }
 

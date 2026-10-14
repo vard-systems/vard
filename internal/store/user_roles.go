@@ -184,7 +184,7 @@ func (s *Store) DeleteUserRole(ctx context.Context, role *model.UserRole) error 
 			}
 		}
 
-		return tx.Unscoped().Delete(role).Error
+		return tx.Delete(role).Error
 	}), cache.Grants)
 }
 
@@ -230,4 +230,18 @@ func (s *Store) countBy(ctx context.Context, table, column string, only []uuid.U
 	}
 
 	return counts, nil
+}
+
+func (s *Store) EffectiveRoles(ctx context.Context, user *model.User) ([]model.UserRole, error) {
+	graph, err := s.RoleGraph(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	held := make([]uuid.UUID, 0, len(user.Roles))
+	for _, role := range user.Roles {
+		held = append(held, role.ID)
+	}
+
+	return graph.Effective(held), nil
 }

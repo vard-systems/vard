@@ -2,7 +2,7 @@
 	import { tick, untrack } from 'svelte';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { navigating } from '$app/state';
-	import { NavigationProgress } from '$lib/state/progress.svelte';
+	import { NavigationProgress } from '#lib/state/progress.svelte.js';
 
 	const FADE = 150;
 
@@ -23,6 +23,7 @@
 	const finish = () => void progress.finish();
 
 	beforeNavigate((navigation) => {
+		if (navigation.shallow && navigation.type === 'goto') return;
 		if (navigation.willUnload) return;
 
 		progress.start();

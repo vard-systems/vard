@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { Application, Organization } from '$lib/api';
-	import { useTranslator } from '$lib/i18n';
-	import { legalLinks } from '$lib/utils/legal';
+	import type { Application, Organization } from '#lib/api/index.js';
+	import { useTranslator } from '#lib/i18n/index.js';
+	import { legalLinks } from '#lib/utils/legal.js';
 	import AppMark from './AppMark.svelte';
 
 	type Props = {

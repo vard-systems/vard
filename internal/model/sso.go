@@ -54,22 +54,22 @@ type SSOConnection struct {
 
 	// OpenID Connect: the issuer, whose discovery document says everything
 	// else, and the client this server is registered as there.
-	Issuer       string     `gorm:"size:512" json:"issuer"`
-	ClientID     string     `gorm:"size:255" json:"client_id"`
+	Issuer       string     `gorm:"size:512;not null;default:''" json:"issuer"`
+	ClientID     string     `gorm:"size:255;not null;default:''" json:"client_id"`
 	ClientSecret []byte     `gorm:"type:bytea" json:"-"`
 	Scopes       StringList `gorm:"serializer:json" json:"scopes"`
 
 	// SAML 2.0: the provider's metadata (from MetadataURL or pasted) with its
 	// entity ID, sign-in address and signing certificate.
-	MetadataURL string `gorm:"size:1024" json:"metadata_url"`
-	Metadata    string `gorm:"type:text" json:"metadata"`
+	MetadataURL string `gorm:"size:1024;not null;default:''" json:"metadata_url"`
+	Metadata    string `gorm:"type:text;not null;default:''" json:"metadata"`
 	// NameIDFormat is what to ask the provider to identify people by.
-	NameIDFormat SSONameIDFormat `gorm:"type:varchar(16)" json:"name_id_format"`
+	NameIDFormat SSONameIDFormat `gorm:"type:varchar(16);not null;default:''" json:"name_id_format"`
 	// SignRequests signs the authentication requests sent to the provider,
 	// for the providers that require it.
 	SignRequests  bool   `gorm:"not null" json:"sign_requests"`
 	SPKey         []byte `gorm:"type:bytea" json:"-"`
-	SPCertificate string `gorm:"type:text" json:"sp_certificate"`
+	SPCertificate string `gorm:"type:text;not null;default:''" json:"sp_certificate"`
 
 	// Matching is what to do with an address this server already has.
 	Matching SSOMatching `gorm:"type:varchar(16);not null" json:"matching"`
@@ -81,10 +81,10 @@ type SSOConnection struct {
 
 	// The names of the claims or attributes to read. Empty is the protocol's
 	// usual ones (SSOAttributeDefaults).
-	EmailAttribute     string `gorm:"size:255" json:"email_attribute"`
-	FirstNameAttribute string `gorm:"size:255" json:"first_name_attribute"`
-	LastNameAttribute  string `gorm:"size:255" json:"last_name_attribute"`
-	GroupsAttribute    string `gorm:"size:255" json:"groups_attribute"`
+	EmailAttribute     string `gorm:"size:255;not null;default:''" json:"email_attribute"`
+	FirstNameAttribute string `gorm:"size:255;not null;default:''" json:"first_name_attribute"`
+	LastNameAttribute  string `gorm:"size:255;not null;default:''" json:"last_name_attribute"`
+	GroupsAttribute    string `gorm:"size:255;not null;default:''" json:"groups_attribute"`
 
 	// RoleMappings give a role to everybody the provider puts in a group.
 	RoleMappings SSORoleMappings `gorm:"type:jsonb;serializer:json;not null" json:"role_mappings"`
@@ -309,7 +309,7 @@ type SSOIdentity struct {
 	UserID       uuid.UUID  `gorm:"type:uuid;not null;index" json:"user_id"`
 	ConnectionID uuid.UUID  `gorm:"type:uuid;not null;uniqueIndex:idx_sso_identities_subject,priority:1" json:"connection_id"`
 	Subject      string     `gorm:"size:512;not null;uniqueIndex:idx_sso_identities_subject,priority:2" json:"subject"`
-	Email        string     `gorm:"size:255" json:"email"`
+	Email        string     `gorm:"size:255;not null;default:''" json:"email"`
 	LastLoginAt  *time.Time `json:"last_login_at"`
 
 	Connection *SSOConnection `gorm:"constraint:OnDelete:CASCADE" json:"-"`
@@ -326,12 +326,12 @@ type SSOLogin struct {
 	StateHash    string    `gorm:"size:64;not null;uniqueIndex" json:"-"`
 	ConnectionID uuid.UUID `gorm:"type:uuid;not null;index" json:"connection_id"`
 
-	Verifier      string `gorm:"size:128" json:"-"`
-	Nonce         string `gorm:"size:128" json:"-"`
-	SAMLRequestID string `gorm:"size:128" json:"-"`
+	Verifier      string `gorm:"size:128;not null;default:''" json:"-"`
+	Nonce         string `gorm:"size:128;not null;default:''" json:"-"`
+	SAMLRequestID string `gorm:"size:128;not null;default:''" json:"-"`
 
-	Request string `gorm:"size:64" json:"-"`
-	Next    string `gorm:"size:512" json:"-"`
+	Request string `gorm:"size:64;not null;default:''" json:"-"`
+	Next    string `gorm:"size:512;not null;default:''" json:"-"`
 
 	ExpiresAt time.Time `gorm:"not null;index" json:"-"`
 

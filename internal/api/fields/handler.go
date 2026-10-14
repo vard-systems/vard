@@ -56,7 +56,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	if err := h.store.CreateUserField(c.Request.Context(), field); err != nil {
 		if errors.Is(err, store.ErrDuplicate) {
-			respond.Conflict(c, "a field with that name already exists")
+			respond.Fail(c, nameTaken)
 			return
 		}
 
@@ -119,7 +119,7 @@ func (h *Handler) Delete(c *gin.Context) {
 func (h *Handler) find(c *gin.Context) (*model.UserField, bool) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		respond.BadRequest(c, "that is not a field id")
+		respond.Fail(c, fieldAbsent)
 		return nil, false
 	}
 
@@ -127,7 +127,7 @@ func (h *Handler) find(c *gin.Context) (*model.UserField, bool) {
 
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		respond.NotFound(c, "no such field")
+		respond.Fail(c, fieldAbsent)
 		return nil, false
 	case err != nil:
 		respond.Failure(c, h.log, err, "loading user field failed")

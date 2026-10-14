@@ -160,8 +160,13 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`mfa_code_wrong`](/reference/errors#mfa_code_wrong) | That code is not right. Check the time on your phone and try the newest code. |
+| 400 | [`mfa_disabled`](/reference/errors#mfa_disabled) | Two-factor sign-in is not on. |
+| 400 | [`mfa_not_enrolling`](/reference/errors#mfa_not_enrolling) | Start setting up an authenticator first. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
+| 409 | [`mfa_enabled`](/reference/errors#mfa_enabled) | Two-factor sign-in is already on. Give a code from your current authenticator to replace it. |
+| 409 | [`mfa_required`](/reference/errors#mfa_required) | Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead. |
 | 429 | [`rate_limited`](/reference/errors#rate_limited) | Too many attempts. Try again in {seconds} seconds. |
 
 ## POST /api/v1/admin/mfa/totp/confirm {#post-api-v1-admin-mfa-totp-confirm}
@@ -248,8 +253,13 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`mfa_code_wrong`](/reference/errors#mfa_code_wrong) | That code is not right. Check the time on your phone and try the newest code. |
+| 400 | [`mfa_disabled`](/reference/errors#mfa_disabled) | Two-factor sign-in is not on. |
+| 400 | [`mfa_not_enrolling`](/reference/errors#mfa_not_enrolling) | Start setting up an authenticator first. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
+| 409 | [`mfa_enabled`](/reference/errors#mfa_enabled) | Two-factor sign-in is already on. Give a code from your current authenticator to replace it. |
+| 409 | [`mfa_required`](/reference/errors#mfa_required) | Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead. |
 | 429 | [`rate_limited`](/reference/errors#rate_limited) | Too many attempts. Try again in {seconds} seconds. |
 
 ## DELETE /api/v1/admin/mfa/totp {#delete-api-v1-admin-mfa-totp}
@@ -324,8 +334,13 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`mfa_code_wrong`](/reference/errors#mfa_code_wrong) | That code is not right. Check the time on your phone and try the newest code. |
+| 400 | [`mfa_disabled`](/reference/errors#mfa_disabled) | Two-factor sign-in is not on. |
+| 400 | [`mfa_not_enrolling`](/reference/errors#mfa_not_enrolling) | Start setting up an authenticator first. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
+| 409 | [`mfa_enabled`](/reference/errors#mfa_enabled) | Two-factor sign-in is already on. Give a code from your current authenticator to replace it. |
+| 409 | [`mfa_required`](/reference/errors#mfa_required) | Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead. |
 | 429 | [`rate_limited`](/reference/errors#rate_limited) | Too many attempts. Try again in {seconds} seconds. |
 
 ## POST /api/v1/admin/mfa/recovery-codes {#post-api-v1-admin-mfa-recovery-codes}
@@ -412,6 +427,11 @@ response.raise_for_status()
 | Status | Code | Means |
 | --- | --- | --- |
 | 400 | [`invalid_body`](/reference/errors#invalid_body) | The request could not be read. Reload the page and try again. |
+| 400 | [`mfa_code_wrong`](/reference/errors#mfa_code_wrong) | That code is not right. Check the time on your phone and try the newest code. |
+| 400 | [`mfa_disabled`](/reference/errors#mfa_disabled) | Two-factor sign-in is not on. |
+| 400 | [`mfa_not_enrolling`](/reference/errors#mfa_not_enrolling) | Start setting up an authenticator first. |
 | 401 | [`not_signed_in`](/reference/errors#not_signed_in) | You are not signed in. |
 | 403 | [`cross_origin`](/reference/errors#cross_origin) | Requests from {origin} are not allowed. |
+| 409 | [`mfa_enabled`](/reference/errors#mfa_enabled) | Two-factor sign-in is already on. Give a code from your current authenticator to replace it. |
+| 409 | [`mfa_required`](/reference/errors#mfa_required) | Two-factor sign-in is required for every administrator and cannot be turned off. Replace your authenticator instead. |
 | 429 | [`rate_limited`](/reference/errors#rate_limited) | Too many attempts. Try again in {seconds} seconds. |

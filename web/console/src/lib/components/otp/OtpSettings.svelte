@@ -2,7 +2,7 @@
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
 	import { RiGitBranchLine, RiHashtag, RiShieldKeyholeLine, RiTimerLine } from 'svelte-remixicon';
-	import { otpApi, type OTPResponse, type OTPSettingsInput } from '$lib/api';
+	import { otpApi, type OTPResponse, type OTPSettingsInput } from '#lib/api/index.js';
 	import {
 		Alert,
 		FieldGrid,
@@ -14,8 +14,8 @@
 		Tag,
 		Thumb,
 		notify
-	} from '$lib/components/ui';
-	import { keys } from '$lib/query';
+	} from '#lib/components/ui/index.js';
+	import { keys } from '#lib/query/index.js';
 
 	type Props = {
 		settings: OTPResponse;

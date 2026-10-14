@@ -1,11 +1,19 @@
 package flows
 
 import (
+	"net/http"
 	"strings"
 
 	"loginer/internal/api/respond"
 	"loginer/internal/api/validate"
 	"loginer/internal/model"
+)
+
+var (
+	slugTaken    = respond.Define(http.StatusConflict, "login_flow_slug_taken", respond.Admin)
+	keepADefault = respond.Define(http.StatusBadRequest, "login_flow_default_required", respond.Admin)
+	defaultStays = respond.Define(http.StatusBadRequest, "login_flow_default_protected", respond.Admin)
+	flowAbsent   = respond.Define(http.StatusNotFound, "login_flow_not_found", respond.Admin)
 )
 
 func (r *flowRequest) applyTo(flow *model.LoginFlow, creating bool) error {

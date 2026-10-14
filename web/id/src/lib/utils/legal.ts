@@ -1,4 +1,4 @@
-import type { Application, Organization } from '$lib/api';
+import type { Application, Organization } from '#lib/api/index.js';
 
 export type LegalLink = { key: string; href: string };
 

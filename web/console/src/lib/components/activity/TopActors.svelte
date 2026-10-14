@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Overview } from '$lib/api';
-	import { List, ListItem, Tag, Thumb } from '$lib/components/ui';
-	import { initials } from '$lib/utils/format';
+	import type { Overview } from '#lib/api/index.js';
+	import { List, ListItem, Tag, Thumb } from '#lib/components/ui/index.js';
+	import { initials } from '#lib/utils/format.js';
 
 	type Props = {
 		actors: Overview['top_actors'];

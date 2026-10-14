@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { replaceState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { createQuery } from '@tanstack/svelte-query';
@@ -11,15 +11,15 @@
 		RiSettings3Line,
 		RiShieldCheckLine
 	} from 'svelte-remixicon';
-	import { BRAND } from '$lib/brand';
-	import { Badge, CopyButton, Icon, Note, PageHeader, Tabs } from '$lib/components/ui';
-	import { can } from '$lib/permissions';
-	import { apiOptions } from '$lib/query';
-	import ApiApplications from '$lib/components/apis/ApiApplications.svelte';
-	import ApiLogs from '$lib/components/apis/ApiLogs.svelte';
-	import ApiOverview from '$lib/components/apis/ApiOverview.svelte';
-	import ApiScopes from '$lib/components/apis/ApiScopes.svelte';
-	import ApiSettings from '$lib/components/apis/ApiSettings.svelte';
+	import { BRAND } from '#lib/brand.js';
+	import { Badge, CopyButton, Icon, Note, PageHeader, Tabs } from '#lib/components/ui/index.js';
+	import { can } from '#lib/permissions.js';
+	import { apiOptions } from '#lib/query/index.js';
+	import ApiApplications from '#lib/components/apis/ApiApplications.svelte';
+	import ApiLogs from '#lib/components/apis/ApiLogs.svelte';
+	import ApiOverview from '#lib/components/apis/ApiOverview.svelte';
+	import ApiScopes from '#lib/components/apis/ApiScopes.svelte';
+	import ApiSettings from '#lib/components/apis/ApiSettings.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -34,19 +34,25 @@
 	function show(value: string) {
 		tab = value;
 
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		if (value === 'overview') url.searchParams.delete('tab');
 		else url.searchParams.set('tab', value);
 
 		// The same page, with only its query changed.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		replaceState(url, page.state);
+		goto(url, { shallow: true, replace: true, state: page.state });
 	}
 
 	const tabs = $derived([
 		{ value: 'overview', label: 'Overview', icon: RiDashboardLine },
 		{ value: 'settings', label: 'Settings', icon: RiSettings3Line },
-		{ value: 'scopes', label: 'Scopes', icon: RiLockLine, count: api.scopes.length },
+		{
+			value: 'scopes',
+			label: 'Scopes',
+			icon: RiLockLine,
+			count: api.scopes.length
+		},
+
 		{
 			value: 'applications',
 			label: 'Applications',

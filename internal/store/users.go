@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -91,7 +92,7 @@ func (s *Store) DeleteUser(ctx context.Context, user *model.User) error {
 			return err
 		}
 
-		return tx.Unscoped().Delete(user).Error
+		return tx.Delete(user).Error
 	})
 }
 
@@ -115,4 +116,92 @@ func (s *Store) FieldValueTaken(ctx context.Context, field string, value any, ex
 	}
 
 	return count > 0, nil
+}
+
+func (s *Store) UserByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user model.User
+	err := s.db.WithContext(ctx).Preload("Roles", byName).First(&user, "email = ?", model.NormalizeEmail(email)).Error
+	if err != nil {
+		return nil, translate(err)
+	}
+
+	return &user, nil
+}
+
+// MarkUserSignedIn records the sign-in and clears failed attempts. It writes
+// only these columns, so roles removed by SSO role sync during the sign-in are
+// not written back.
+func (s *Store) MarkUserSignedIn(ctx context.Context, user *model.User, at time.Time) error {
+	return s.db.WithContext(ctx).Model(user).Omit(clause.Associations).Updates(map[string]any{
+		"last_login_at":      at,
+		"failed_login_count": 0,
+		"locked_until":       nil,
+	}).Error
+}
+
+func (s *Store) ReserveUserLogin(ctx context.Context, user *model.User, at time.Time, max int, lockFor time.Duration) (bool, error) {
+	var rows []struct {
+		LockedUntil *time.Time
+	}
+
+	// The WHERE matches no row while locked, so nothing is counted; otherwise
+	// the attempt is counted and the `max`th locks.
+	err := s.db.WithContext(ctx).Raw(`
+		UPDATE users SET
+			locked_until = CASE WHEN failed_login_count + 1 >= @max THEN @until ELSE locked_until END,
+			failed_login_count = CASE WHEN failed_login_count + 1 >= @max THEN 0 ELSE failed_login_count + 1 END
+		WHERE id = @id AND (locked_until IS NULL OR locked_until <= @now)
+		RETURNING locked_until`,
+		map[string]any{"max": max, "until": at.Add(lockFor), "id": user.ID, "now": at},
+	).Scan(&rows).Error
+	if err != nil {
+		return false, err
+	}
+
+	return len(rows) > 0, nil
+}
+
+func (s *Store) ClearUserFailedLogins(ctx context.Context, user *model.User, at time.Time) error {
+	return s.db.WithContext(ctx).Model(user).Omit(clause.Associations).Updates(map[string]any{
+		"failed_login_count": 0,
+		"locked_until":       nil,
+	}).Error
+}
+
+func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep uuid.UUID, at time.Time) error {
+	var ended []model.UserSession
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := tx.Model(user).Updates(map[string]any{
+			"password_hash":         user.PasswordHash,
+			"is_password_temporary": false,
+		}).Error
+		if err != nil {
+			return err
+		}
+
+		if ended, err = revokeUserSessionsIn(tx, at, "user_id = ? AND id <> ?", user.ID, keep); err != nil {
+			return err
+		}
+
+		statements := []string{
+			"UPDATE refresh_tokens SET revoked_at = @at WHERE user_id = @user AND revoked_at IS NULL",
+			"UPDATE password_resets SET used_at = @at WHERE user_id = @user AND used_at IS NULL",
+			pendingEmailChangesUsed,
+		}
+		for _, statement := range statements {
+			if err := tx.Exec(statement, map[string]any{"at": at, "user": user.ID, "keep": keep}).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	s.putUserSessions(ctx, ended...)
+
+	return nil
 }

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { RiFileTextLine, RiRefreshLine, RiServerLine } from 'svelte-remixicon';
-	import { BRAND } from '$lib/brand';
-	import { IconButton, PageContainer, PageHeader, Tabs } from '$lib/components/ui';
-	import MailContent from '$lib/components/mail/MailContent.svelte';
-	import MailServer from '$lib/components/mail/MailServer.svelte';
-	import { keys, mailContentOptions, mailOptions } from '$lib/query';
+	import { BRAND } from '#lib/brand.js';
+	import { IconButton, PageContainer, PageHeader, Tabs } from '#lib/components/ui/index.js';
+	import MailContent from '#lib/components/mail/MailContent.svelte';
+	import MailServer from '#lib/components/mail/MailServer.svelte';
+	import { keys, mailContentOptions, mailOptions } from '#lib/query/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

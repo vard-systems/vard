@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RiEyeLine, RiEyeOffLine, RiPencilLine } from 'svelte-remixicon';
-	import { ApiError, socialApi } from '$lib/api';
-	import { Button, CopyButton, Icon, Input, Textarea } from '$lib/components/ui';
+	import { ApiError, socialApi } from '#lib/api/index.js';
+	import { Button, CopyButton, Icon, Input, Textarea } from '#lib/components/ui/index.js';
 
 	type Props = {
 		providerId?: string | null;

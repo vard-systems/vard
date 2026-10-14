@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { signIn } from '$lib/api';
-	import { Alert, AuthCard, Button } from '$lib/components';
-	import { messageOf, useTranslator } from '$lib/i18n';
-	import { authHref } from '$lib/utils/links';
+	import { signIn } from '#lib/api/index.js';
+	import { Alert, AuthCard, Button } from '#lib/components/index.js';
+	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { authHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

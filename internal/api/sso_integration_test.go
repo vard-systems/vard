@@ -91,7 +91,7 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 
 		// A scope it does not know refuses the whole sign-in, the way
 		// Keycloak does.
-		for _, scope := range strings.Fields(q.Get("scope")) {
+		for scope := range strings.FieldsSeq(q.Get("scope")) {
 			if !slices.Contains(fakeScopes, scope) {
 				values.Set("error", "invalid_scope")
 				values.Set("error_description", "Invalid scopes: "+q.Get("scope"))
@@ -134,9 +134,7 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 			"iss": f.server.URL, "aud": fakeClientID, "nonce": code.nonce,
 			"iat": time.Now().Unix(), "exp": time.Now().Add(5 * time.Minute).Unix(),
 		}
-		for name, value := range person {
-			claims[name] = value
-		}
+		maps.Copy(claims, person)
 
 		signer := f.key
 		if f.forger != nil {
