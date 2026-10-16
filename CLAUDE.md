@@ -1,77 +1,77 @@
 # CLAUDE.md
 
-An OAuth 2.0 / OpenID Connect server in Go, with three SvelteKit apps under
-`web/`: `console` (the admin panel), `id` (sign-in pages and a user's own
-account) and `docs` (documentation for developers integrating with it).
-`README.md` is the overview and `TESTING.md` the test report; update either
-when a change makes a sentence in it untrue.
+## Overview
+
+An OAuth 2.0 authorization server and OpenID Connect provider in Go, with
+three SvelteKit apps under `web/`:
+
+| App           | Port | What it is                                        |
+| ------------- | ---- | ------------------------------------------------- |
+| `web/id`      | 5173 | Hosted sign-in pages and each user's own account  |
+| `web/console` | 5174 | The admin panel                                   |
+| `web/docs`    | 5175 | Documentation for developers integrating with it  |
+
+The API listens on `:8080` (provider and account API) and `:8081` (admin API).
+Postgres holds everything; Redis is an optional cache. `README.md` is the
+overview, `TESTING.md` the test report — update either when a change makes a
+sentence in it untrue.
 
 ## Commands
 
-| What                         | Command                                                                   |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| Format, vet and test Go      | `make check`                                                              |
-| Tests that need Postgres     | `make test-integration` (every `TestLive…`, throwaway DBs)                |
-| Lint and type-check the apps | `make web-check` (or `bun run lint` / `bun run check` in `web/<app>`)     |
-| Test the apps                | `make web-test`                                                           |
-| API reference                | `make docs` writes it, `make docs-check` verifies it                      |
-| Migrations                   | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status` |
-| Run everything               | `make dev` — API :8080/:8081, id :5173, console :5174, docs :5175         |
-| Benchmarks                   | `make bench`                                                              |
+| What                           | Command                                                       |
+| ------------------------------ | ------------------------------------------------------------- |
+| Run everything (hot reload)    | `make dev` — API, id, console, docs; app logs in `.logs/`     |
+| Run only the API               | `make run`                                                    |
+| Go: format, vet, unit tests    | `make check`                                                  |
+| Go: tests against Postgres     | `make test-integration` (every `TestLive…`, throwaway DBs)    |
+| Apps: lint and type-check      | `make web-check` (or `bun run lint` / `bun run check` in an app) |
+| Apps: unit tests               | `make web-test`                                               |
+| Apps: production builds        | `make web-build`                                              |
+| API reference                  | `make docs` writes it, `make docs-check` verifies it          |
+| Migrations                     | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status` |
+| Benchmarks                     | `make bench`                                                  |
+| Production stack on this machine | `make deploy-local` → https://id.localhost, https://admin-id.localhost |
+| Everything else                | `make` lists every target                                     |
 
-Before calling a change done: `make check`, and `make web-check` if an app
-changed. Run `make test-integration` after touching a migration, the store,
-hand-written SQL, or the route table — unit tests never see a real database.
-Formatting is enforced; the hook in `.claude/` formats each file as it is
-written, and `bunx prettier --write <path>` fixes what `bun run lint` refuses.
+Project commands in `.claude/commands/`: `/check` (every check), `/preview`
+(the app in a browser on spare ports), `/endpoint` (add an admin endpoint),
+`/migration` (write a migration).
 
-Never read `.env` (it holds the secret key); `.env.example` documents every
-variable. The apps log to `.logs/<app>.log`. If a stack is already running on
-8080/8081/5173/5174, do not restart it — `/preview` starts a throwaway one.
-
-## Layout
+## Architecture
 
 ```
 cmd/loginer/main.go      startup, in order, in one function
+cmd/migrate, cmd/apidoc  the migration runner; the API reference generator
 internal/brand           the project's name and every name built from it
 internal/config          reads .env
-internal/model           one file per table, every model listed in model.All
+internal/model           one file per table; every model listed in model.All
 internal/store           every query in the project, one file per subject
 internal/cache           Redis: the cache and session databases, rate-limit counts
 internal/auth            signing administrators in, and what they may do
 internal/oidc            the provider: authorize, tokens, userinfo, logout, social, SSO
-internal/api/server.go   the engine and the table of every route
+internal/api/server.go   the engine and the route table (registerPublicRoutes,
+                         registerAdminRoutes)
 internal/api/<subject>/  handler.go, request.go, response.go, validation.go
-internal/api/respond     answers and the problem catalog (respond/shared.go: problems
-                         several handlers use)
+internal/api/respond     answers and the problem catalog (shared.go: problems
+                         several packages use)
 internal/apidoc          writes the API reference from the source
 migrations/              the schema, then one file per change, applied in order
+i18n/                    translations: id/<locale>/ for the sign-in pages,
+                         console/en/ for the admin API's problems
 web/console/src/lib/     api/, query/, components/ui/, components/<feature>/
 web/docs/src/content/    the docs: guides by hand, reference/ by make docs
+deploy/                  compose.yaml, Dockerfiles, Caddyfile.local
 ```
 
-Layering: nothing above `store` writes a query, and nothing below `api` knows
+**Layering.** Nothing above `store` writes a query; nothing below `api` knows
 about HTTP. A handler reads a request, asks the store, and answers. Rules live
 in `validation.go` and the model.
 
-## The apps (SvelteKit 3)
-
-- Imports from `src/lib` use the `#lib` subpath import and name the file:
-  `import { BRAND } from '#lib/brand.js'` (the `.js` resolves to the `.ts`).
-  There is no `$lib` and no `svelte.config.js`; configuration is the
-  `sveltekit({...})` plugin in `vite.config.ts`.
-- `resolve()` reads a leading slash as a route id, groups included
-  (`resolve('/admin/(panel)/dashboard/users')`); a plain path has none
-  (`resolve('login')`).
-- `page.url` is read-only: copy it (`new URL(page.url.href)`) before changing it.
-- Reload data with `refreshAll()`, not `invalidateAll()`. `goto` takes
-  `replace`, `refreshAll` and `reset: false`, and rejects a path with no route.
-- Server environment comes from `src/env.ts` (`defineEnvVars`, where each
-  default lives) and is read from `$app/env/private`.
-- Behind the proxy, adapter-node learns the public address from
-  `PROTOCOL_HEADER`/`HOST_HEADER` (`deploy/compose.yaml`); there is no `ORIGIN`.
-- TypeScript stays on 6 until SvelteKit, `svelte-check` and `typescript-eslint`
-  support 7.
+**Production.** Caddy is the edge. Each app is served on its own origin together
+with the API paths it calls, so cookies are host-only and nothing is
+cross-origin: `id.<domain>` → `web/id` + `:8080`, `admin-id.<domain>` →
+`web/console` + `:8081` (staff networks only). The apps run as adapter-node
+servers; static assets are precompressed and cached as `immutable`.
 
 ## Security invariants
 
@@ -85,9 +85,9 @@ code near it, and add a test when adding a case.
 - **Single-use means one atomic `UPDATE … WHERE used_at IS NULL`** checked by
   `RowsAffected`, never read-then-write. A replayed code revokes what the
   first use issued; a replayed refresh token revokes its family.
-- **Session cookies are read through `session.Token`, `session.UserToken`
-  or `session.SignInState`**, which treat a duplicated cookie (one planted
-  from a sibling subdomain) as none. Never `c.Cookie(...)` for a session.
+- **Session cookies are read through `session.Token`, `session.UserToken` or
+  `session.SignInState`**, which treat a duplicated cookie (planted from a
+  sibling subdomain) as none. Never `c.Cookie(...)` for a session.
 - **Outbound requests to admin- or user-supplied URLs** (social, SSO, SAML
   metadata) go through `newFederationClient` in `internal/oidc/outbound.go`,
   which refuses private, link-local and metadata addresses at dial time.
@@ -101,156 +101,177 @@ code near it, and add a test when adding a case.
   anything else goes through `respond.Failure`, which logs it and answers 500.
   The request log records the path, never the query string.
 - **Every response carries security headers** — the API's from
-  `middleware.SecurityHeaders`, each app's from its `hooks.server.ts`.
+  `middleware.SecurityHeaders`, each app's from its `hooks.server.ts`. App
+  pages are sent `Cache-Control: no-store`: each is drawn for one person.
 
-## Adding things
+## How things are added
 
-**An endpoint.** Write the method in its package under `internal/api/`,
-keeping the four files, and mount it in `registerRoutes` in
-`internal/api/server.go` behind `session.Require` and the permission it needs
-— a route guarded by a permission under `managed` also takes an admin-cli
-token; a route for a person alone goes under `signedIn`. The handler's doc
-comment and its request fields' comments are its documentation: run
-`make docs` (`TestTheReferenceIsCurrent` fails until you do). `/endpoint`
-walks through it.
+**An endpoint.** The method in its package under `internal/api/`, keeping the
+four files; mounted in `internal/api/server.go` behind `session.Require` and
+the permission it needs. A route under `managed` (`session.RequireAny`) also
+takes an admin-cli token; a route for a person alone goes under `signedIn`.
+The handler's doc comment and its request fields' comments are the API
+reference: run `make docs`. `/endpoint` walks through it.
 
-**An error.** Never a sentence in Go. Define the problem beside the handler
-— `var taken = respond.Define(http.StatusConflict, "language_code_taken", respond.Admin)`
-— or in `respond/shared.go` if more than one package answers with it. Answer
-with `respond.Fail(c, taken)` or return `taken.With("code", code)`, and add
+**An error.** Never a sentence in Go. Define the problem beside the handler —
+`var taken = respond.Define(http.StatusConflict, "language_code_taken", respond.Admin)`
+— or in `respond/shared.go` if several packages use it. Answer with
+`respond.Fail(c, taken)` or return `taken.With("code", code)`, and add
 `error.language_code_taken` to `i18n/<app>/<locale>/server.json` for each app
 it is for (`Public` → `id`, `Admin` → `console`, `Both`). A parameter in the
 sentence is listed in `TestErrorParametersAreSent`. A malformed id is answered
-like a missing one: `*_not_found`. `TestErrorCodesMatchTheCatalogs` fails
-until code and catalog agree. The one exception is `respond.Invalid`, which
-passes on a model's own validation sentence.
+like a missing one: `*_not_found`. The one exception is `respond.Invalid`,
+which passes on a model's own validation sentence.
 
-**A model.** A struct in `internal/model` in a file of its own, embedding
-`Base`, registered in `model.All()` — bump the count in
-`TestAllListsEveryModel`. Columns say what the Go type can hold: a plain
-`string` column is `not null;default:''`, a `bool` or `int` is `not null`,
-and anything that may be absent is a pointer. Nothing is soft-deleted:
-deletes remove the row.
+**A model.** A struct in its own file in `internal/model`, embedding `Base`,
+registered in `model.All()` — bump the count in `TestAllListsEveryModel`. A
+plain `string` column is `not null;default:''`, a `bool` or `int` is
+`not null`, anything that may be absent is a pointer. Nothing is soft-deleted.
 
-**A migration.** `migrations/20260927000000_schema.go` builds a fresh
-database from `model.All()`, so a new model's table follows — but existing
-databases are stepped forward, never rebuilt, so every change after it gets
-its own migration (`make migrate-new name=x`; `/migration` walks through it).
-`up` must also be a no-op on a fresh database (the schema step already built
-the new shape), `down` undoes it, and lists of tables or columns are written
-out rather than read from the models, so the file means the same thing
-forever. No migration that has run anywhere is edited. Test the upgrade of an
-existing database, not just a fresh one.
+**A migration.** `migrations/20260927000000_schema.go` builds a fresh database
+from `model.All()`; existing databases are stepped forward, so every change
+after it gets its own file (`make migrate-new name=x`; `/migration`). `up` is a
+no-op on a fresh database, `down` undoes it, and table and column lists are
+written out, never read from the models. Test the upgrade of an existing
+database, not just a fresh one.
 
 **A permission.** A constant and catalog entry in
 `internal/model/admin_permission.go`, routes guarded with `session.Can` or
 `session.CanAnywhere`, and the name added to `AdminPermissionName` in
-`web/console/src/lib/api/types.ts`. The panel builds its permission UI from
-the catalog, and `store.EnsureSystemAPIs` makes it an admin API scope on the
-next start.
+`web/console/src/lib/api/types.ts`. `store.EnsureSystemAPIs` makes it an
+admin API scope on the next start.
 
-**An activity log entry.** `audit.Record` / `RecordWith` in the handler, then
+**An activity log entry.** `h.audit.Record` / `RecordWith` in the handler, then
 a sentence, icon and category in
-`web/console/src/lib/components/activity/actions.ts`. If the target is a
-record the log can name, say who may see that name in `maySeeName` in
-`internal/api/activity/handler.go`.
+`web/console/src/lib/components/activity/actions.ts`. If the log can name the
+target, say who may see that name in `maySeeName`
+(`internal/api/activity/handler.go`).
 
-**A setting the outside world sees.** Follow `internal/api/organization/`:
-the panel writes it, the discovery document publishes the agreements
+**A setting the outside world sees.** Follow `internal/api/organization/`: the
+panel writes it, the discovery document publishes the agreements
 (`internal/oidc/provider.go`), and the sign-in pages read the rest from
 `GET /api/v1/account/organization`, which takes no session — so only what a
-stranger may see goes in `PublicOrganization`. A setting nothing reads is a
-note, not a setting.
+stranger may see goes in `PublicOrganization`.
 
-**A setting that decides how people sign in.** Copy the organisation's or
+**A setting that decides how people sign in.** Like the organisation's or
 `admin_security`: a singleton row seeded from configuration on first start,
-owned by the panel afterwards, and read where it matters on each request.
+owned by the panel afterwards, read where it matters on each request.
 
-**A social provider.** One entry in `model.SocialSpecs` — endpoints, scopes,
-where the identity is in the answer, and quirks. The flow, panel and sign-in
-pages all read it. Only an installation's credentials go in the database.
-
-**A login step.** One entry in `model.LoginStepSpecs`; `Implemented` says
-whether the server runs it yet. Implementing one is flipping that flag and
-writing the step.
+**A social provider.** One entry in `model.SocialSpecs`. **A login step.** One
+entry in `model.LoginStepSpecs`; `Implemented` says whether the server runs it.
 
 **A cached read.** Only in the store, with `cached(ctx, s, group, field, load)`,
-only for something every request asks for and almost nothing changes. A new
-group is a constant in `internal/cache` listed in `cache.Groups` under `cache`
-(anybody may see it) or `sessions` (decides who is signed in). Every write
-calls `s.forget(ctx, group)` — or returns `s.forgetting(ctx, err, group)` —
-after it commits. Cache a projection, never a model carrying a secret, and add
-it to `TestCachedTypesSurviveJSON`. Sessions are put after each write
-(`putAdminSessions` / `putUserSessions`). Never cache users, codes or refresh
-tokens. Redis is optional: everything must work with a nil cache.
+only for what every request asks for and almost nothing changes. A new group
+is a constant in `internal/cache` listed in `cache.Groups`. Every write calls
+`s.forget(ctx, group)` (or returns `s.forgetting(ctx, err, group)`) after it
+commits. Cache a projection, never a model carrying a secret, and add it to
+`TestCachedTypesSurviveJSON`. Never cache users, codes or refresh tokens.
+Everything must work with a nil cache.
 
-**A language** (sign-in pages only; the panel is English). Installations add
-their own in the panel. To ship one, add `i18n/id/<tag>/` with the same groups
-as `en` — `common`, `auth`, `account`, `server`, `validation`, `email` — and
-`$name`/`$native` in `common.json`. `TestTranslationsAreComplete` fails when a
-shipped language falls behind `en`. `i18n/console/en/` holds only the English
-of the admin API's problems.
+**A language** (sign-in pages only; the panel is English). Add `i18n/id/<tag>/`
+with the same groups as `en` and `$name`/`$native` in `common.json`.
 
-**Text in the sign-in pages.** Never a literal: `const t = useTranslator()`
-and `t('area.thing', { param })`, with the key added to every group under
-`i18n/id/`. The product's own name comes from `#lib/brand.js`, not a dictionary.
-
-**Text in the panel.** The opposite: English, in the markup. An error shown to
-an administrator is the sentence the API sent (`messageOf` in `#lib/api/index.js`).
+**A panel page.** `+page.server.ts` checks the permission (`requirePermission`
+/ `requireAnywhere`) and fetches with `apiGet`; `+page.svelte` seeds a TanStack
+query from it. Query options in `lib/query/` (key in `lib/query/keys.ts`), the
+client call in `lib/api/admin.ts`, components in `lib/components/<feature>/`.
+Add the route to `lib/components/layout/sidebar/sections.ts` with an `allowed`
+check. Build from `#lib/components/ui`; a page never writes a colour, a height
+or a hover state itself.
 
 **A colour, size or font in the panel.** `web/console/src/lib/theme/theme.ts`
-decides the look; `bun run theme` writes `lib/styles/tokens.css` and
-`fonts.css` from it (never edit those by hand). Components name tokens —
-`var(--color-brand)`. `web/docs/src/lib/styles/tokens.css` copies the
-console's tokens, so a change to `theme.ts` is copied there too.
+decides; `bun run theme` writes `lib/styles/tokens.css` and `fonts.css` (never
+edit those by hand). `web/docs/src/lib/styles/tokens.css` copies the console's
+tokens, so a change is copied there too.
 
-**A panel page.** `+page.server.ts` checks the permission
-(`requirePermission` / `requireAnywhere`) and fetches with `apiGet`;
-`+page.svelte` seeds a TanStack query from it; query options live in
-`lib/query/` with their key in `lib/query/keys.ts`, the client call in
-`lib/api/admin.ts`, components in `lib/components/<feature>/`. Add the route
-to `sections.ts` with an `allowed` check — the sidebar and command palette
-read it. Pages render on the server: fetch in `+page.server.ts`, never in
-`onMount`. Build from `#lib/components/ui`; a page never writes a colour, a
-height or a hover state itself.
+**The docs.** Markdown in `web/docs/src/content/`, where the path is the
+address. Front matter: `section:` (one of `SECTIONS` in
+`web/docs/src/lib/server/content.ts`), `order:`, `nav:`. Write `{{name}}` and
+the other `PLACEHOLDERS` of `web/docs/src/lib/brand.ts`. Examples are
+consecutive fenced blocks titled `"cURL"`, `"Java"`, `"Go"`, `"Python"`, in
+that order.
 
-**The docs.** Markdown in `web/docs/src/content/`, where a file's path is its
-address. Front matter places a guide in the sidebar: `section:` (one of
-`SECTIONS` in `web/docs/src/lib/server/content.ts`), `order:`, `nav:`. Write
-`{{name}}` and the other `PLACEHOLDERS` of `web/docs/src/lib/brand.ts`, never
-the project's name. Examples are consecutive fenced blocks titled `"cURL"`,
-`"Java"`, `"Go"`, `"Python"`, in that order. `content/reference/` belongs to
-`make docs` and is never edited.
+## Conventions
 
-**The project's own name.** Never spelled out. `internal/brand` holds it for
-the server and `web/<app>/src/lib/brand.ts` for each app.
-`TestNothingElseSpellsTheName` fails on a hand-written one, and
-`TestTheAppsSpellTheSameNames` checks the cookies the server and apps share.
-A rename is those constants, the module path in `go.mod`, the three
-`brand.ts`, and a `git mv` of the command's directory under `cmd/` — plus
-`.env.example`, `deploy/`, the `Makefile` and `scripts/`.
+- **Text.** Sign-in pages: never a literal — `const t = useTranslator()` and
+  `t('area.thing', { param })`, the key added to every group under `i18n/id/`.
+  Panel: the opposite — English in the markup; an error shown is the sentence
+  the API sent (`messageOf` from `#lib/api/index.js`).
+- **The project's own name is never spelled out.** `internal/brand` holds it
+  for the server and `web/<app>/src/lib/brand.ts` for each app;
+  `TestNothingElseSpellsTheName` fails on a hand-written one.
+- **SvelteKit 3.** Imports from `src/lib` use `#lib` and name the file
+  (`import { BRAND } from '#lib/brand.js'`); there is no `$lib` and no
+  `svelte.config.js` — configuration is `sveltekit({...})` in `vite.config.ts`.
+  `resolve()` reads a leading slash as a route id, groups included
+  (`resolve('/admin/(panel)/dashboard/users')`). `page.url` is read-only. Reload
+  with `refreshAll()`, not `invalidateAll()`. Server environment comes from
+  `src/env.ts` and is read from `$app/env/private`. Pages render on the server:
+  fetch in `+page.server.ts`, never in `onMount`.
+- **Comments** are few and short and say *why* — a security reason, a race, a
+  protocol rule — never what the next line does. Handler and request-field doc
+  comments stay: they are the API reference.
+- **Names** are spelled out; identifiers use American spelling (`Normalize`,
+  `Organization`), prose may be British.
+- **Tests** are table-driven and named for what they prove ("a slug with
+  spaces", not "TestCase3"). Tests needing Postgres are named `TestLive…` and
+  skip without `LOGINER_TEST_DB_DSN`.
+- **Formatting is enforced.** The hook in `.claude/hooks/format.sh` runs gofmt
+  or the app's Prettier on every file written; `bunx prettier --write <path>`
+  fixes what `bun run lint` refuses.
 
-## Style
+## Gotchas and warnings
 
-Code is written to be read. Comments are few and short and say _why_ — a
-security reason, a race, a protocol rule — never what the next line does.
-Names are spelled out; identifiers use American spelling (`Normalize`,
-`Organization`), prose may be British. Handler and request-field doc comments
-stay: they are the API reference.
+- **Never read `.env`** — it holds the secret key. `.env.example` documents
+  every variable.
+- **Do not restart a running stack.** If anything answers on 8080, 8081, 5173
+  or 5174, leave it alone; `/preview` raises a throwaway one on spare ports
+  with its own database and Redis prefix, and takes it down afterwards.
+- **Never edit a migration that has run anywhere**, and never edit
+  `web/docs/src/content/reference/` — `make docs` owns it.
+- **`make dev` is slow on the first load** (several seconds for the console):
+  the dev server pre-bundles all of `svelte-remixicon`. Production builds
+  tree-shake it and are fast. This is accepted; do not rewrite the imports.
+- **A bare `node build` cannot sign in**: the apps call the API on their own
+  origin, and only Vite's dev proxy or Caddy routes those paths. To try
+  production builds, use `make deploy-local`.
+- **adapter-node needs its headers.** In `deploy/compose.yaml` it requires
+  `x-forwarded-for` (`ADDRESS_HEADER`) and answers 503 without it; it learns its
+  public address from `PROTOCOL_HEADER`/`HOST_HEADER` — there is no `ORIGIN`.
+- **Caddy runs directives in its own order.** The staff-only check in the
+  console's site must stay a `handle` and come first, or the admin API is open
+  to the internet. `deploy/Caddyfile` is the server's own and not in the
+  repository; `deploy/Caddyfile.local` is.
+- **Redis is optional.** Every path must work with a nil cache, and Redis is
+  never the only copy of anything.
+- **The console's vitest has a browser project** that needs Playwright's
+  Chromium. `make web-test` runs only the `server` project; use it.
+- **The shell is zsh.** An unquoted glob such as `--include=*.go` fails with
+  "no matches found" — quote it.
+- **TypeScript stays on 6** until SvelteKit, `svelte-check` and
+  `typescript-eslint` support 7.
 
-Tests are table-driven and named for what they prove ("a slug with spaces",
-not "TestCase3"). Tests needing Postgres are named `TestLive…` and skip
-without `LOGINER_TEST_DB_DSN`.
+## Definition of done
 
-## `.claude/`
+A change is finished when all of this holds, and the summary says which checks
+ran and their result — or which were skipped and why:
 
-```
-settings.json        the permission allowlist and the formatting hook
-hooks/format.sh      gofmt or the app's Prettier, on every file written
-commands/check.md    /check      every check this repository has
-commands/preview.md  /preview    the app in a browser, on spare ports
-commands/endpoint.md /endpoint   add an admin API endpoint
-commands/migration.md /migration write a migration
-```
+1. `make check` passes (gofmt, go vet, Go unit tests).
+2. If an app changed: `make web-check` is clean and `make web-test` passes.
+3. If a migration, the store, hand-written SQL or a route changed:
+   `make test-integration` passes.
+4. If a handler's doc comment, a request field or a route changed: `make docs`
+   was run and `make docs-check` passes.
+5. Every new problem code is in the catalogs, every new key in every language,
+   every new permission in `types.ts`.
+6. New behaviour has a test; a security case has one without exception.
+7. A user-visible change was looked at in a browser (`/preview`).
+8. `README.md`, `TESTING.md` and this file say nothing the change made untrue.
 
-`settings.local.json` is for personal overrides and is not committed.
+## Git
+
+- **Never commit, push, branch, tag or open a pull request unless asked** in
+  this conversation. Leave changes in the working tree and say what changed.
+- When asked to commit: never `--amend`, `--force` or `--no-verify`, and never
+  rewrite history that has been pushed. Branch off `main` first if on it.
+- `.claude/settings.local.json` is personal and is not committed.
