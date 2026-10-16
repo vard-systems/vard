@@ -13,7 +13,7 @@ COMPOSE_LOCAL := $(COMPOSE) -f deploy/compose.local.yaml
 .DEFAULT_GOAL := help
 .PHONY: help setup full-start dev run build test bench test-integration check docs docs-check \
 	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
-	web-check web-build deploy-build deploy-up deploy-down deploy-logs \
+	web-check web-test web-build deploy-build deploy-up deploy-down deploy-logs \
 	deploy-local deploy-local-down deploy-local-logs clean
 
 help: ## Show this help
@@ -59,6 +59,9 @@ docs-check: ## Fail if the API reference is behind the Go source
 
 web-check: ## Lint and type-check the web apps
 	@for app in $(APPS); do echo "==> $$app"; (cd web/$$app && bun run lint && bun run check) || exit 1; done
+
+web-test: ## Run the console and id unit tests
+	@for app in console id; do echo "==> $$app"; (cd web/$$app && bunx vitest --run --project server) || exit 1; done
 
 web-build: ## Build the web apps
 	@for app in $(APPS); do echo "==> $$app"; (cd web/$$app && bun run build) || exit 1; done

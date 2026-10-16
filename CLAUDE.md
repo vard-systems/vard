@@ -8,15 +8,16 @@ when a change makes a sentence in it untrue.
 
 ## Commands
 
-| What                         | Command                                                     |
-| ---------------------------- | ----------------------------------------------------------- |
-| Format, vet and test Go      | `make check`                                                |
-| Tests that need Postgres     | `make test-integration` (every `TestLive…`, throwaway DBs)  |
-| Lint and type-check the apps | `make web-check` (or `bun run lint` / `bun run check` in `web/<app>`) |
-| API reference                | `make docs` writes it, `make docs-check` verifies it        |
+| What                         | Command                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| Format, vet and test Go      | `make check`                                                              |
+| Tests that need Postgres     | `make test-integration` (every `TestLive…`, throwaway DBs)                |
+| Lint and type-check the apps | `make web-check` (or `bun run lint` / `bun run check` in `web/<app>`)     |
+| Test the apps                | `make web-test`                                                           |
+| API reference                | `make docs` writes it, `make docs-check` verifies it                      |
 | Migrations                   | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status` |
-| Run everything               | `make dev` — API :8080/:8081, id :5173, console :5174, docs :5175 |
-| Benchmarks                   | `make bench`                                                |
+| Run everything               | `make dev` — API :8080/:8081, id :5173, console :5174, docs :5175         |
+| Benchmarks                   | `make bench`                                                              |
 
 Before calling a change done: `make check`, and `make web-check` if an app
 changed. Run `make test-integration` after touching a migration, the store,
@@ -231,7 +232,7 @@ A rename is those constants, the module path in `go.mod`, the three
 
 ## Style
 
-Code is written to be read. Comments are few and short and say *why* — a
+Code is written to be read. Comments are few and short and say _why_ — a
 security reason, a race, a protocol rule — never what the next line does.
 Names are spelled out; identifiers use American spelling (`Normalize`,
 `Organization`), prose may be British. Handler and request-field doc comments
