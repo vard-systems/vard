@@ -11,6 +11,7 @@
       "Bash(make test)",
       "Bash(make test-integration)",
       "Bash(make web-check)",
+      "Bash(make web-test)",
       "Bash(make web-build)",
       "Bash(make build)",
       "Bash(make migrate-status)",
