@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { MIN_ADMIN_PASSWORD } from '#lib/constants.js';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAddLine, RiCloseLine, RiMailLine, RiShieldKeyholeLine } from 'svelte-remixicon';
+	import { RiAddLine, RiCloseLine, RiMailLine, RiShieldKeyholeLine } from '#lib/icons.js';
 	import {
 		adminsApi,
 		type AdminInput,

@@ -1,3 +1,4 @@
+// Package database opens the Postgres connection and runs the migrations.
 package database
 
 import (

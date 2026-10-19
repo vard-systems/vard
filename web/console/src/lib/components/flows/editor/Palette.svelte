@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiDraggable } from 'svelte-remixicon';
+	import { RiDraggable } from '#lib/icons.js';
 	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 	import { Icon, Note } from '#lib/components/ui/index.js';
 	import { describe, labelFor, markFor } from '../steps';

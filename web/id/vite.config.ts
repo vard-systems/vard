@@ -1,17 +1,12 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 
-// The paths the API answers. The browser calls them on this app's own origin;
-// the dev server passes them on to the API (API_URL, set by scripts/start.sh),
-// so cookies stay host-only and nothing is cross-origin. A built app needs
-// none of this: the binary serves it on the API's own listener.
-const apiPaths = ['/oauth2', '/.well-known', '/api/v1/account'];
-const api = process.env.API_URL ?? 'http://localhost:8080';
-
 export default defineConfig({
-	// id 5173, console 5174.
+	// id 5173, console 5174. Under `make dev` the browser opens these: the dev
+	// server renders the pages, and src/hooks.server.ts passes the API's paths
+	// on to the API, as the built server does in production.
 	//
 	// The translations are read from i18n/ at the top of the repository,
 	// which is outside this app, so the dev server is told it may serve that
@@ -19,7 +14,6 @@ export default defineConfig({
 	server: {
 		port: 5173,
 		strictPort: true,
-		proxy: Object.fromEntries(apiPaths.map((path) => [path, api])),
 		fs: { allow: [fileURLToPath(new URL('../../i18n', import.meta.url))] }
 	},
 
@@ -31,26 +25,18 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// A single-page app: build/ holds static files and one index.html for
-			// every route, which the Go server embeds and serves (web/embed.go,
-			// internal/webui).
-			adapter: adapter({
-				pages: 'build',
-				assets: 'build',
-				fallback: 'index.html',
-				precompress: false
-			}),
+			// A Node server (`node build`) that renders each page before sending
+			// it, title and all, and passes the API's paths on (hooks.server.ts).
+			adapter: adapter(),
 
-			// Every script is the app's own: the one SvelteKit writes into
-			// index.html is allowed by its hash, in a <meta> tag, since a static
-			// file cannot carry a fresh nonce; the rest are files from 'self', so
-			// an injected <script> does not run. Styles stay inline-able
-			// (Svelte's transitions and component style attributes need it);
-			// images may be logos and avatars on any https address an
-			// administrator gave. Framing is refused by internal/webui's header:
-			// a <meta> cannot say frame-ancestors.
+			// Every script is the app's own: the ones SvelteKit writes into a
+			// page carry a fresh nonce, the rest are files from 'self', so an
+			// injected <script> does not run. Styles stay inline-able (Svelte's
+			// transitions and component style attributes need it); images may be
+			// logos and avatars on any https address an administrator gave. The
+			// policy is sent as a header, so it can forbid framing too.
 			csp: {
-				mode: 'hash',
+				mode: 'auto',
 				directives: {
 					'default-src': ['self'],
 					'script-src': ['self'],
@@ -59,7 +45,8 @@ export default defineConfig({
 					'font-src': ['self'],
 					'connect-src': ['self'],
 					'object-src': ['none'],
-					'base-uri': ['self']
+					'base-uri': ['self'],
+					'frame-ancestors': ['none']
 				}
 			}
 		})

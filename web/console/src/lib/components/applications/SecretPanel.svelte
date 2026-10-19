@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiErrorWarningLine } from 'svelte-remixicon';
+	import { RiErrorWarningLine } from '#lib/icons.js';
 	import { CopyButton, Icon } from '#lib/components/ui/index.js';
 
 	type Props = {

@@ -1,3 +1,4 @@
+// Package roles manages the roles users are given, globally or per application.
 package roles
 
 import (
@@ -9,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
@@ -22,7 +23,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }
@@ -83,7 +83,6 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, newPageResponse(roles, details, total, query))
 }
 
-// Get returns one role.
 func (h *Handler) Get(c *gin.Context) {
 	role, ok := h.find(c, "")
 	if !ok {
@@ -131,7 +130,7 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	if err := h.store.CreateUserRole(c.Request.Context(), role); err != nil {
-		h.respondWrite(c, err, "creating role failed")
+		respond.Taken(c, h.log, err, roleNameTaken, "creating role failed")
 		return
 	}
 
@@ -160,7 +159,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if err := h.store.SaveUserRole(c.Request.Context(), role); err != nil {
-		h.respondWrite(c, err, "updating role failed")
+		respond.Taken(c, h.log, err, roleNameTaken, "updating role failed")
 		return
 	}
 
@@ -332,13 +331,4 @@ func (h *Handler) find(c *gin.Context, permission string) (*model.UserRole, bool
 	}
 
 	return role, true
-}
-
-func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
-	if errors.Is(err, store.ErrDuplicate) {
-		respond.Fail(c, roleNameTaken)
-		return
-	}
-
-	respond.Failure(c, h.log, err, note)
 }

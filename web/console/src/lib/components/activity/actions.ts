@@ -1,4 +1,3 @@
-import type { ComponentType } from 'svelte';
 import {
 	RiAdminLine,
 	RiAppsLine,
@@ -17,8 +16,9 @@ import {
 	RiShieldKeyholeLine,
 	RiShieldUserLine,
 	RiTranslate2,
-	RiUserLine
-} from 'svelte-remixicon';
+	RiUserLine,
+	type IconData
+} from '#lib/icons.js';
 import type { ActivityEvent } from '#lib/api/index.js';
 
 /**
@@ -36,7 +36,7 @@ type Action = {
 	after?: string;
 	category: Category;
 	tone?: Tone;
-	icon: ComponentType;
+	icon: IconData;
 };
 
 const actions: Record<string, Action> = {
@@ -587,7 +587,7 @@ export type Described = {
 	detail: string;
 	category: Category;
 	tone: Tone;
-	icon: ComponentType;
+	icon: IconData;
 };
 
 const selfTargeted = new Set([

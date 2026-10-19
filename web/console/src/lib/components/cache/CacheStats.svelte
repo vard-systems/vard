@@ -6,7 +6,7 @@
 		RiShieldUserLine,
 		RiSpeedUpLine,
 		RiUserLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { CacheDatabase } from '#lib/api/index.js';
 	import { StatCard } from '#lib/components/ui/index.js';
 

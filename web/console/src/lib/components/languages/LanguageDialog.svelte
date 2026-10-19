@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiSettings3Line, RiTranslate2 } from 'svelte-remixicon';
+	import { RiSettings3Line, RiTranslate2 } from '#lib/icons.js';
 	import { languagesApi, type Language, type LocaleApp } from '#lib/api/index.js';
 	import {
 		Button,

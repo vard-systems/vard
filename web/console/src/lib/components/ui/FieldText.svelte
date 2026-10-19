@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
+	import type { IconData } from '#lib/icons.js';
 	import Icon from './Icon.svelte';
 
-	type Props = { label: string; icon?: ComponentType; required?: boolean };
+	type Props = { label: string; icon?: IconData; required?: boolean };
 
 	let { label, icon, required = false }: Props = $props();
 </script>

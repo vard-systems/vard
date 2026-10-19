@@ -6,7 +6,7 @@ import { keys } from './keys';
 export function profileSessionsOptions() {
 	return queryOptions({
 		queryKey: keys.profile.sessions,
-		queryFn: async () => (await adminApi.profileSessions()).sessions
+		queryFn: async () => (await adminApi.profileSessions()).sessions ?? []
 	});
 }
 

@@ -1,5 +1,10 @@
-import type { ComponentType } from 'svelte';
-import { RiAppsLine, RiComputerLine, RiServerLine, RiSmartphoneLine } from 'svelte-remixicon';
+import {
+	RiAppsLine,
+	RiComputerLine,
+	RiServerLine,
+	RiSmartphoneLine,
+	type IconData
+} from '#lib/icons.js';
 import type {
 	ApplicationInput,
 	ApplicationType,
@@ -10,7 +15,7 @@ import type {
 
 export const types: Record<
 	ApplicationType,
-	{ label: string; description: string; icon: ComponentType; public: boolean }
+	{ label: string; description: string; icon: IconData; public: boolean }
 > = {
 	web: {
 		label: 'Web application',

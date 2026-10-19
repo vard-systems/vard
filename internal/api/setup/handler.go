@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
@@ -21,7 +21,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, log *slog.Logger) *Handler {
 	return &Handler{store: st, log: log}
 }

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiLinksLine } from 'svelte-remixicon';
+	import { RiLinksLine } from '#lib/icons.js';
 	import { apisApi, type API, type SigningAlgorithm } from '#lib/api/index.js';
 	import {
 		Button,
@@ -101,7 +101,7 @@
 		mutationFn: () => apisApi.remove(api.id),
 		onSuccess: async () => {
 			notify.success(`${api.name} deleted`);
-			await goto(resolve('/admin/(panel)/dashboard/apis'));
+			await goto(resolve('/(panel)/apis'));
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.apis.all }),
 				queryClient.invalidateQueries({ queryKey: keys.roles.all }),

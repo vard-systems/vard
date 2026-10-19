@@ -49,7 +49,6 @@ type listResponse struct {
 	Steps []model.LoginStepSpec `json:"step_kinds"`
 }
 
-// response is what the single-flow endpoints answer with.
 type response struct {
 	Flow flowResponse `json:"flow"`
 }

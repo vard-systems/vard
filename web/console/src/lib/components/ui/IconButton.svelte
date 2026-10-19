@@ -1,12 +1,12 @@
 <script lang="ts">
+	import type { IconData } from '#lib/icons.js';
 	import { Portal } from '@ark-ui/svelte/portal';
 	import { Tooltip } from '@ark-ui/svelte/tooltip';
-	import type { ComponentType } from 'svelte';
 	import type { ControlProps, Size } from './control';
 	import Icon from './Icon.svelte';
 
 	type Props = Omit<ControlProps, 'icon'> & {
-		icon: ComponentType;
+		icon: IconData;
 		label: string;
 		placement?: 'top' | 'bottom' | 'left' | 'right';
 		onclick?: () => void;

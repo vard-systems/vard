@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiBookOpenLine, RiGithubFill, RiKeyboardLine, RiQuestionLine } from 'svelte-remixicon';
+	import { RiGithubFill, RiKeyboardLine, RiQuestionLine } from '#lib/icons.js';
 	import { BRAND } from '#lib/brand.js';
 	import {
 		DropdownMenu,
@@ -16,13 +16,6 @@
 	{#snippet trigger()}<Icon icon={RiQuestionLine} size="1.125rem" />{/snippet}
 
 	<MenuGroup label="Resources">
-		<MenuItem
-			value="documentation"
-			icon={RiBookOpenLine}
-			label="Documentation"
-			description="Guides and the API reference"
-			href={BRAND.docsUrl}
-		/>
 		<MenuItem
 			value="github"
 			icon={RiGithubFill}

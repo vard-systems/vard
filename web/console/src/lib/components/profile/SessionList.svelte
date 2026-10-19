@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiComputerLine, RiSmartphoneLine } from 'svelte-remixicon';
+	import { RiComputerLine, RiSmartphoneLine } from '#lib/icons.js';
 	import type { AdminSession } from '#lib/api/index.js';
 	import { Button, List, ListItem, Tag, Thumb } from '#lib/components/ui/index.js';
 	import { describeUserAgent, formatDateTime, formatRelative } from '#lib/utils/format.js';

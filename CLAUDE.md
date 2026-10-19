@@ -5,37 +5,35 @@
 An OAuth 2.0 authorization server and OpenID Connect provider in Go, with
 two SvelteKit apps under `web/`:
 
-| App           | `make dev`            | Built (`make run`)    | What it is                                       |
+| App           | `make dev`            | `make docker-local`   | What it is                                       |
 | ------------- | --------------------- | --------------------- | ------------------------------------------------ |
 | `web/id`      | http://localhost:5173 | http://localhost:8080 | Hosted sign-in pages and each user's own account |
 | `web/console` | http://localhost:5174 | http://localhost:8081 | The admin panel                                  |
 
-One Go binary is the whole server, PocketBase-style: it listens on `:8080`
-(provider and account API, and the id app) and `:8081` (admin API, and the
-console), with both apps built to static files and compiled in
-(`web/embed.go`). No Node.js runs in production, and no proxy: each app is
-served on its own origin together with the API paths it calls. Everything is
-plain http on localhost for now; TLS will come from a proxy in front.
+One Go binary is the API: `:8080` (provider and account API) and `:8081`
+(admin API). Each app is a SvelteKit Node server in front of it that renders
+its pages and passes the API paths it calls on to it, so each app is one
+origin and the browser never reaches the API directly. Everything is plain
+http on localhost for now; TLS will come from a proxy in front.
 Postgres holds everything; Redis is an optional cache. `README.md` is the
-overview, `TESTING.md` the test report — update either when a change makes a
-sentence in it untrue.
+overview for people; update it when a change makes a sentence in it untrue.
 
 ## Commands
 
-| What                                 | Command                                                                   |
-| ------------------------------------ | ------------------------------------------------------------------------- |
-| Run everything (hot reload)          | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/` |
-| Run only the API                     | `make run`                                                                |
-| Go: format, vet, unit tests          | `make check`                                                              |
-| Go: tests against Postgres           | `make test-integration` (every `TestLive…`, throwaway DBs)                |
-| Apps: lint and type-check            | `make web-check` (or `bun run lint` / `bun run check` in an app)          |
-| Apps: unit tests                     | `make web-test`                                                           |
-| Apps: build (embedded by the binary) | `make web` — `make build` runs it first                                   |
-| API reference (OpenAPI)              | `make docs` writes it, `make docs-check` verifies it                      |
-| Migrations                           | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status` |
-| Benchmarks                           | `make bench`                                                              |
-| Production stack on this machine     | `make deploy-local` → http://localhost:8080, http://localhost:8081        |
-| Everything else                      | `make` lists every target                                                 |
+| What                             | Command                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------- |
+| Run everything (hot reload)      | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/` |
+| Run only the API                 | `make run`                                                                |
+| Lint and unit-test everything    | `make check` (`lint` + `test`; each also as `-go` / `-web`)               |
+| Format everything                | `make fmt` (`lint` only reports, never rewrites)                          |
+| Go: tests against Postgres       | `make test-integration` (every `TestLive…`, throwaway DBs)                |
+| Everything CI would run          | `make ci` (`check`, `test-integration`, `docker-config`)                  |
+| Build                            | `make build` (`build-api` → `bin/loginer`, `build-web` → `node build`)    |
+| Console's generated files        | `make generate` (theme tokens, fonts, icons)                              |
+| Migrations                       | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status` |
+| Benchmarks, vulnerabilities      | `make bench`, `make vuln`                                                 |
+| Production stack on this machine | `make docker-local` → http://localhost:8080, http://localhost:8081        |
+| Everything else                  | `make` lists every target                                                 |
 
 Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 (the app in a browser on spare ports), `/endpoint` (add an admin endpoint),
@@ -45,7 +43,7 @@ Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 
 ```
 cmd/loginer/main.go      startup, in order, in one function
-cmd/migrate, cmd/apidoc  the migration runner; the OpenAPI generator
+cmd/migrate              the migration runner
 internal/brand           the project's name and every name built from it
 internal/config          reads .env
 internal/model           one file per table; every model listed in model.All
@@ -53,43 +51,50 @@ internal/store           every query in the project, one file per subject
 internal/cache           Redis: the cache and session databases, rate-limit counts
 internal/auth            signing administrators in, and what they may do
 internal/oidc            the provider: authorize, tokens, userinfo, logout, social, SSO
+internal/jose            JWT signing and verifying, and Sealer (secrets at rest)
+internal/mail, totp      sending email; time-based one-time codes
+internal/database        the Postgres connection and the migration runner
 internal/api/server.go   the engine and the route table (registerPublicRoutes,
                          registerAdminRoutes)
-internal/api/<subject>/  handler.go, request.go, response.go, validation.go
-internal/api/respond     answers and the problem catalog (shared.go: problems
-                         several packages use)
-internal/api/ui.go       WithPublicUI / WithAdminUI: the app on every path the API
-                         does not answer; unknown API paths stay JSON 404s
-internal/webui           SPA: a built app from an fs.FS, index.html for routes
-internal/apidoc          writes internal/api/reference/*.json (the OpenAPI the
-                         server answers) from the source
+internal/api/<subject>/  one package per subject the API answers about:
+                         handler.go, request.go, response.go, validation.go
+internal/api/kit/        what every handler shares: respond (answers and the
+                         problem catalog; shared.go: problems several packages
+                         use), validate, query, session (who is calling, route
+                         guards), audit, cors, csrf, ratelimit, middleware
 migrations/              the schema, then one file per change, applied in order
 i18n/                    translations: id/<locale>/ for the sign-in pages,
                          console/en/ for the admin API's problems
-web/embed.go             go:embed of web/id/build and web/console/build
-web/console/src/lib/     api/, query/, components/ui/, components/<feature>/
-deploy/                  compose.yaml (make deploy-up, make deploy-local), Dockerfiles
+web/<app>/src/hooks.server.ts  the app's server: API paths passed on
+                         (lib/server/api.ts), page headers (lib/server/headers.ts)
+web/console/src/lib/     api/, query/, components/ui/, components/<feature>/,
+                         icons.ts and styles/tokens.css (generated: make generate)
+web/console/scripts/     theme.ts and icons.ts, the generators
+scripts/                 what the Makefile runs: setup, dev, docker-local, db;
+                         lib.sh (load_env) is shared by all of them
+deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles
 ```
 
 **Layering.** Nothing above `store` writes a query; nothing below `api` knows
 about HTTP. A handler reads a request, asks the store, and answers. Rules live
 in `validation.go` and the model.
 
-**The origins.** Built, the binary serves `web/id` on `:8080` beside
-`/oauth2/*`, `/.well-known/*` and `/api/v1/account/*`, and `web/console` on
-`:8081` beside `/api/v1/admin/*` (`internal/api/ui.go`). Under `make dev` each
-Vite dev server stands in: it serves its app and passes the paths in its
-`apiPaths` (`vite.config.ts`) on to the API (`API_URL`).
-`TestEveryRouteIsReachableThroughItsApp` holds every route to those lists. In
-`deploy/compose.yaml` the API publishes both ports itself, `8081` on the
-host's loopback only. Cookies are host-only and nothing is cross-origin.
+**The origins.** Each app's `hooks.server.ts` passes the paths in its
+`API_PATHS` (`src/lib/server/api.ts`) on to `API_URL` — `/oauth2`,
+`/.well-known` and `/api/v1/account` for `web/id`, `/api/v1/admin` for
+`web/console` — with the caller's address in `X-Forwarded-For` and anything a
+client sent there dropped. The same hook carries the browser's requests and
+the ones a load makes while a page is rendered, in `make dev` and in
+production alike. `TestEveryRouteIsReachableThroughItsApp` holds every route
+to those lists. In `deploy/compose.yaml` only the apps publish ports, the
+console's on the host's loopback only. Cookies are host-only and nothing is
+cross-origin.
 
-**The apps.** Single-page apps (`adapter-static`, `ssr = false` in each root
-layout): the binary serves one `index.html` for every route and the browser
-draws the page from the API's answers. Files under `_app/immutable/` are
-cached for a year; everything else, `index.html` first, is revalidated. Under
-`make dev` (`LOGINER_WEB_DEV=true`) the binary serves neither app and Vite
-does, with hot reload.
+**The apps.** Rendered on the server (`adapter-node`, `node build`): every
+page arrives with its content and its `<title>`, then hydrates. Loads call
+the API with the load's `fetch` on the app's own origin, which works on the
+server and in the browser. A load that needs the request itself (cookies,
+`Accept-Language`) is a `+layout.server.ts`.
 
 ## Security invariants
 
@@ -113,20 +118,19 @@ code near it, and add a test when adding a case.
   `safePath` (Go) / `safeNext` (`web/id`). Never redirect to a raw parameter.
 - **Unknown accounts cost the same as wrong passwords** (`CompareDummyPassword`),
   and sign-in failures give one answer, so timing and wording reveal nothing.
-- **Browsers are held to exact origin lists** (`api/cors`, `api/csrf`): no
+- **Browsers are held to exact origin lists** (`api/kit/cors`, `api/kit/csrf`): no
   wildcards, no suffix matching. State-changing requests must be JSON.
 - **Nothing internal reaches a browser.** Every answer is a defined problem;
   anything else goes through `respond.Failure`, which logs it and answers 500.
   The request log records the path, never the query string.
 - **Every response carries security headers** — the API's from
   `middleware.SecurityHeaders`, each app's (`Permissions-Policy` among them)
-  from `internal/webui`. HSTS comes with the TLS proxy, later. The
-  page shell holds no one's data; what is personal comes from API answers.
+  from `src/lib/server/headers.ts`. HSTS comes with the TLS proxy, later.
+  A rendered page holds the reader's data, so every page is `no-store`.
 - **The apps run no script they did not ship.** Their Content Security Policy
-  is SvelteKit's `csp` option in each `vite.config.ts`, written into
-  `index.html` as a `<meta>`: `script-src 'self'` plus the hash of SvelteKit's
-  bootstrap script. `internal/webui` adds `frame-ancestors 'none'` as a header,
-  which a `<meta>` cannot carry. Never add `'unsafe-inline'` or
+  is SvelteKit's `csp` option in each `vite.config.ts`, sent as a header:
+  `script-src 'self'` plus a fresh nonce for SvelteKit's own scripts, and
+  `frame-ancestors 'none'`. Never add `'unsafe-inline'` or
   `'unsafe-eval'` to scripts, an inline `<script>` to `app.html`, or an outside
   origin to `connect-src`; a new external resource is a deliberate change to
   that list.
@@ -137,13 +141,13 @@ code near it, and add a test when adding a case.
 four files; mounted in `internal/api/server.go` behind `session.Require` and
 the permission it needs. A route under `managed` (`session.RequireAny`) also
 takes an admin-cli token; a route for a person alone goes under `signedIn`.
-The handler's doc comment and its request fields' comments are the API
-reference: run `make docs`. `/endpoint` walks through it.
+`/endpoint` walks through it.
 
 **An error.** Never a sentence in Go. Define the problem beside the handler —
 `var taken = respond.Define(http.StatusConflict, "language_code_taken", respond.Admin)`
-— or in `respond/shared.go` if several packages use it. Answer with
-`respond.Fail(c, taken)` or return `taken.With("code", code)`, and add
+— or in `kit/respond/shared.go` if several packages use it. Answer with
+`respond.Fail(c, taken)` or return `taken.With("code", code)` (a write that
+may hit a unique value: `respond.Taken`), and add
 `error.language_code_taken` to `i18n/<app>/<locale>/server.json` for each app
 it is for (`Public` → `id`, `Admin` → `console`, `Both`). A parameter in the
 sentence is listed in `TestErrorParametersAreSent`. A malformed id is answered
@@ -198,18 +202,28 @@ Everything must work with a nil cache.
 **A language** (sign-in pages only; the panel is English). Add `i18n/id/<tag>/`
 with the same groups as `en` and `$name`/`$native` in `common.json`.
 
-**A panel page.** `+page.ts` checks the permission (`requirePermission` /
-`requireAnywhere`, from `#lib/api/load.js`) and fetches with `apiGet`; the API
-enforces the same permission on every call. `+page.svelte` seeds a TanStack
-query from it. Query options in `lib/query/` (key in `lib/query/keys.ts`), the
-client call in `lib/api/admin.ts`, components in `lib/components/<feature>/`.
-Add the route to `lib/components/layout/sidebar/sections.ts` with an `allowed`
-check. Build from `#lib/components/ui`; a page never writes a colour, a height
-or a hover state itself.
+**A panel page.** A folder under `src/routes/(panel)/`, whose layout signs
+the administrator in and draws the header and sidebar. `+page.ts` checks the
+permission (`requirePermission` / `requireAnywhere`, from `#lib/api/load.js`)
+and fetches through the typed client in `lib/api/admin.ts`, wrapped in
+`fromApi` — an endpoint's path and answer are written there once, never in a
+load. The API enforces the same permission on every call. `+page.svelte` seeds
+a TanStack query from it. Query options in `lib/query/` (key in
+`lib/query/keys.ts`), components in `lib/components/<feature>/`. A list's
+filters live in its address: `setSearchParams` and `debounce` from
+`#lib/utils/url.js`. Add the route to `lib/components/layout/sidebar/sections.ts`
+with an `allowed` check. Build from `#lib/components/ui`; a page never writes a
+colour, a height or a hover state itself.
 
 **A colour, size or font in the panel.** `web/console/src/lib/theme/theme.ts`
 decides; `bun run theme` writes `lib/styles/tokens.css` and `fonts.css` (never
 edit those by hand).
+
+**An icon in the panel.** Import it from `#lib/icons.js` by its Remix Icon
+name (`add-line` → `RiAddLine`) and pass it to a component's `icon` prop or to
+`<Icon icon={…} />`; then `bun run icons` writes its path into
+`lib/icons.ts` (never edit that by hand). An icon is data (`IconData`), not a
+component.
 
 ## Conventions
 
@@ -224,15 +238,15 @@ edit those by hand).
   (`import { BRAND } from '#lib/brand.js'`); there is no `$lib` and no
   `svelte.config.js` — configuration is `sveltekit({...})` in `vite.config.ts`.
   `resolve()` reads a leading slash as a route id, groups included
-  (`resolve('/admin/(panel)/dashboard/users')`). `page.url` is read-only. Reload
-  with `refreshAll()`, not `invalidateAll()`. Pages are drawn in the browser:
-  fetch in the page's `load` (`+page.ts`), never in `onMount`. There are no
-  server files — no `+page.server.ts`, no `hooks.server.ts`, no form actions —
-  since a static build cannot run them; what needs a server is an API
-  endpoint. The theme is applied before the first paint by `static/theme.js`.
+  (`resolve('/(panel)/users')`). `page.url` is read-only. Reload
+  with `refreshAll()`, not `invalidateAll()`. Fetch in the page's `load`
+  (`+page.ts`), never in `onMount`. Code that runs while a page renders runs
+  on the server too: no `document`, `window` or `localStorage` outside an
+  effect, an event handler or a `browser` check. What the server needs to do
+  for the API is the API's job, not a form action. The theme is applied
+  before the first paint by `static/theme.js`.
 - **Comments** are few and short and say _why_ — a security reason, a race, a
-  protocol rule — never what the next line does. Handler and request-field doc
-  comments stay: they are the API reference.
+  protocol rule — never what the next line does.
 - **Names** are spelled out; identifiers use American spelling (`Normalize`,
   `Organization`), prose may be British.
 - **Tests** are table-driven and named for what they prove ("a slug with
@@ -249,27 +263,24 @@ edit those by hand).
 - **Do not restart a running stack.** If anything answers on 8080, 8081, 5173
   or 5174, leave it alone; `/preview` raises a throwaway one on spare ports
   with its own database and Redis prefix, and takes it down afterwards.
-- **Never edit a migration that has run anywhere**, and never edit
-  `internal/api/reference/*.json` by hand — `make docs` owns it.
-- **`make dev` is slow on the first load** (several seconds for the console):
-  the dev server pre-bundles all of `svelte-remixicon`. Production builds
-  tree-shake it and are fast. This is accepted; do not rewrite the imports.
-- **The binary needs the builds to compile.** `web/embed.go` fails with
-  "pattern all:id/build: no matching files found" until `make web` has run.
-  `make check`, `test`, `run` and `dev` build them when missing; `make build`
-  always rebuilds them. They are gitignored: to commit them like PocketBase,
-  drop `/build` from each app's `.gitignore` and run `make web` before
-  committing.
-- **Under `make dev` the browser opens Vite's ports, not the API's.** The
-  API's URLs (issuer, admin URL) are Vite's then, and a path the API answers
-  reaches it only if it is in that app's `apiPaths`.
-- **The dev URLs are fixed by `scripts/start.sh`**, which exports
+- **Never edit a migration that has run anywhere.**
+- **The browser opens the apps' ports, never the API's.** The API's URLs
+  (issuer, admin URL) are the apps', and a path the API answers reaches it
+  only if it is in that app's `API_PATHS`.
+- **The dev URLs are fixed by `scripts/dev.sh`**, which exports
   `LOGINER_ISSUER`, `LOGINER_ACCOUNT_URL`, `LOGINER_ADMIN_URL`,
-  `LOGINER_TRUSTED_PROXIES` and `LOGINER_WEB_DEV` over whatever `.env` says.
-- **No proxy is trusted until there is one.** `LOGINER_TRUSTED_PROXIES` is
-  empty, so `X-Forwarded-For` is ignored. When a TLS proxy goes in front, list
-  its address alone — never a whole private range — and keep the admin port
-  off the public network.
+  and `LOGINER_TRUSTED_PROXIES` over whatever `.env` says.
+- **The API trusts the apps' servers and nobody else** to say who the
+  caller is: loopback under `make dev`, the two containers' fixed addresses
+  in `deploy/compose.yaml` — never a whole private range. When a TLS proxy
+  goes in front of the apps, adapter-node has to be told to read the caller
+  from it (`ADDRESS_HEADER`, `XFF_DEPTH`), and the API ports stay unpublished.
+- **The scripts read `.env` with `load_env` (`scripts/lib.sh`), the server
+  with viper,** and the scripts export what they read, which the server then
+  believes. A difference between the two is a different value depending on
+  how the server was started — for `LOGINER_SECRET_KEY`, signing keys one of
+  them cannot open. `TestTheScriptsReadDotEnvLikeTheServer` holds them
+  together; change both or neither.
 - **Redis is optional.** Every path must work with a nil cache, and Redis is
   never the only copy of anything.
 - **The shell is zsh.** An unquoted glob such as `--include=*.go` fails with
@@ -282,18 +293,16 @@ edit those by hand).
 A change is finished when all of this holds, and the summary says which checks
 ran and their result — or which were skipped and why:
 
-1. `make check` passes (gofmt, go vet, Go unit tests).
-2. If an app changed: `make web-check` is clean and `make web-test` passes.
-   If anything under `deploy/` changed: `docker compose -f deploy/compose.yaml config -q` passes.
+1. `make check` passes: formatting, go vet, staticcheck, both apps' lint and
+   type-check, and every unit test.
+2. If anything under `deploy/` changed: `make docker-config` passes.
 3. If a migration, the store, hand-written SQL or a route changed:
    `make test-integration` passes.
-4. If a handler's doc comment, a request field or a route changed: `make docs`
-   was run and `make docs-check` passes.
-5. Every new problem code is in the catalogs, every new key in every language,
+4. Every new problem code is in the catalogs, every new key in every language,
    every new permission in `types.ts`.
-6. New behaviour has a test; a security case has one without exception.
-7. A user-visible change was looked at in a browser (`/preview`).
-8. `README.md`, `TESTING.md` and this file say nothing the change made untrue.
+5. New behaviour has a test; a security case has one without exception.
+6. A user-visible change was looked at in a browser (`/preview`).
+7. `README.md` and this file say nothing the change made untrue.
 
 ## Git
 

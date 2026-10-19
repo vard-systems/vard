@@ -1,3 +1,4 @@
+// Package fields manages the custom profile fields users carry.
 package fields
 
 import (
@@ -8,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
@@ -20,7 +21,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }

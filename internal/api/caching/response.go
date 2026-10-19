@@ -72,7 +72,6 @@ func newDatabaseResponse(stats cache.Stats) databaseResponse {
 	return out
 }
 
-// keyResponse is one key, described.
 type keyResponse struct {
 	Name  string `json:"name"`
 	Kind  string `json:"kind"`

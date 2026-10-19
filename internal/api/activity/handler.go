@@ -1,3 +1,5 @@
+// Package activity serves the activity log to the panel: the overview, the
+// filtered log and its CSV export.
 package activity
 
 import (
@@ -10,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	"loginer/internal/api/query"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
+	"loginer/internal/api/kit/query"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
@@ -36,7 +38,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, log *slog.Logger) *Handler {
 	return &Handler{store: st, log: log}
 }
@@ -119,10 +120,21 @@ func (h *Handler) Logs(c *gin.Context) {
 
 // Export writes matching entries as CSV, newest first, up to exportLimit,
 // hiding exactly what the logs page hides.
+//
+// The first page is read before anything is sent, so a failure to read it is
+// an error answer rather than an empty file. Once the file has begun, a later
+// failure can only end it early; that is logged, and so is a client that went
+// away, which also stops the reading.
 func (h *Handler) Export(c *gin.Context) {
 	filter, err := parseFilter(c, exportPage)
 	if err != nil {
 		respond.Failure(c, h.log, err, "reading the log filters failed")
+		return
+	}
+
+	events, next, err := h.store.AuditQuery(c.Request.Context(), filter)
+	if err != nil {
+		respond.Failure(c, h.log, err, "exporting logs failed")
 		return
 	}
 
@@ -133,13 +145,7 @@ func (h *Handler) Export(c *gin.Context) {
 	out := csv.NewWriter(c.Writer)
 	_ = out.Write([]string{"time", "actor", "action", "target_type", "target_id", "target", "detail", "ip", "user_agent"})
 
-	for written := 0; written < exportLimit; {
-		events, next, err := h.store.AuditQuery(c.Request.Context(), filter)
-		if err != nil {
-			h.log.Error("exporting logs failed", "error", err)
-			break
-		}
-
+	for written := 0; ; {
 		described, err := h.describe(c, events)
 		if err != nil {
 			h.log.Error("naming what the export was about failed", "error", err)
@@ -164,11 +170,22 @@ func (h *Handler) Export(c *gin.Context) {
 			written++
 		}
 
+		// csv.Writer keeps its first error; one here is the connection.
 		out.Flush()
-		if next == nil {
+		if err := out.Error(); err != nil {
+			h.log.Warn("the log export stopped: the client went away", "error", err)
+			return
+		}
+
+		if next == nil || written == exportLimit {
 			break
 		}
+
 		filter.Before = next
+		if events, next, err = h.store.AuditQuery(c.Request.Context(), filter); err != nil {
+			h.log.Error("exporting logs failed part way; the file is cut short", "error", err)
+			break
+		}
 	}
 
 	out.Flush()

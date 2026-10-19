@@ -1,19 +1,32 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
+	import type { IconData } from '#lib/icons.js';
 
 	type Props = {
-		icon: ComponentType;
+		icon: IconData;
 		size?: string;
+		/** What the icon says, for a screen reader. Without one the icon is decoration and hidden. */
 		label?: string;
 	};
 
-	let { icon: Glyph, size = '1rem', label }: Props = $props();
+	let { icon, size = '1rem', label }: Props = $props();
 </script>
 
-<Glyph {size} {label} class="icon" />
+<svg
+	class="icon"
+	viewBox="0 0 24 24"
+	width={size}
+	height={size}
+	fill="currentColor"
+	role={label ? 'img' : undefined}
+	aria-label={label || undefined}
+	aria-hidden={label ? undefined : 'true'}
+	xmlns="http://www.w3.org/2000/svg"
+>
+	<path d={icon} />
+</svg>
 
 <style>
-	:global(.icon) {
+	.icon {
 		flex: none;
 		vertical-align: -0.125em;
 	}

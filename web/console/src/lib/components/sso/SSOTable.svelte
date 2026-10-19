@@ -5,7 +5,7 @@
 		RiGroupLine,
 		RiShieldKeyholeLine,
 		RiToggleLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { SSOConnection } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable, Icon, Tag } from '#lib/components/ui/index.js';
 

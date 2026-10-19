@@ -1,3 +1,5 @@
+// Package apis manages the APIs applications request tokens for: their scopes,
+// the applications allowed to call them, and their logs.
 package apis
 
 import (
@@ -8,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
 	"loginer/internal/model"
 	"loginer/internal/oidc"
 	"loginer/internal/store"
@@ -50,7 +52,6 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, newListResponse(apis, details))
 }
 
-// Get returns one API.
 func (h *Handler) Get(c *gin.Context) {
 	api, ok := h.find(c)
 	if !ok {
@@ -75,7 +76,7 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	if err := h.store.CreateAPI(c.Request.Context(), api); err != nil {
-		h.respondWrite(c, err, "creating API failed")
+		respond.Taken(c, h.log, err, identifierTaken, "creating API failed")
 		return
 	}
 
@@ -117,7 +118,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if err := h.store.SaveAPI(c.Request.Context(), api); err != nil {
-		h.respondWrite(c, err, "updating API failed")
+		respond.Taken(c, h.log, err, identifierTaken, "updating API failed")
 		return
 	}
 
@@ -245,13 +246,4 @@ func (h *Handler) find(c *gin.Context) (*model.API, bool) {
 	}
 
 	return api, true
-}
-
-func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
-	if errors.Is(err, store.ErrDuplicate) {
-		respond.Fail(c, identifierTaken)
-		return
-	}
-
-	respond.Failure(c, h.log, err, note)
 }

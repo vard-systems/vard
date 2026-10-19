@@ -1,3 +1,5 @@
+// Package sso manages single sign-on connections to an organisation's own
+// identity provider, over OIDC or SAML.
 package sso
 
 import (
@@ -10,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/validate"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/validate"
 	"loginer/internal/jose"
 	"loginer/internal/model"
 	"loginer/internal/oidc"
@@ -28,7 +30,6 @@ type Handler struct {
 	issuer   string
 }
 
-// New returns a Handler.
 func New(st *store.Store, sealer *jose.Sealer, provider *oidc.Service, recorder audit.Recorder, log *slog.Logger, issuer string) *Handler {
 	return &Handler{store: st, sealer: sealer, provider: provider, audit: recorder, log: log, issuer: issuer}
 }
@@ -57,7 +58,6 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// Get returns one connection.
 func (h *Handler) Get(c *gin.Context) {
 	connection, ok := h.find(c)
 	if !ok {

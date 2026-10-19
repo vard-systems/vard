@@ -1,3 +1,5 @@
+// Package cachetest opens a throwaway Redis for tests, under a key prefix of its
+// own that is flushed afterwards.
 package cachetest
 
 import (

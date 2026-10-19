@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
-	import { RiImageLine, RiLockPasswordLine, RiUserLine } from 'svelte-remixicon';
+	import { RiImageLine, RiLockPasswordLine, RiUserLine } from '#lib/icons.js';
 	import { adminApi, type Admin } from '#lib/api/index.js';
 	import {
 		Button,

@@ -9,24 +9,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Each app calls its API on its own origin. The binary serves both on the
-// API's listener, so there every route is reachable; under `make dev` the
-// Vite dev server answers that origin and passes on only the paths in its
-// config's apiPaths. A route outside them would reach the API's tests and
-// nobody in development, so the list is held to the routes here.
+// A browser never reaches the API directly: each app's server answers its
+// origin and passes on only the paths in its API_PATHS
+// (web/<app>/src/lib/server/api.ts). A route outside them would reach the
+// API's tests and nobody else, so the list is held to the routes here.
 func TestEveryRouteIsReachableThroughItsApp(t *testing.T) {
 	tests := []struct {
 		name   string
 		engine *gin.Engine
-		config string
+		source string
 	}{
-		{"the public API, through the id app", testEngine(), "../../web/id/vite.config.ts"},
-		{"the admin API, through the console", testAdminEngine(), "../../web/console/vite.config.ts"},
+		{"the public API, through the id app", testEngine(), "../../web/id/src/lib/server/api.ts"},
+		{"the admin API, through the console", testAdminEngine(), "../../web/console/src/lib/server/api.ts"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			paths := viteAPIPaths(t, read(t, test.config))
+			paths := apiPaths(t, read(t, test.source))
 
 			for _, route := range test.engine.Routes() {
 				// The orchestrator's, asked on the API's own port.
@@ -35,7 +34,7 @@ func TestEveryRouteIsReachableThroughItsApp(t *testing.T) {
 				}
 
 				if !anyPrefix(paths, concrete(route.Path)) {
-					t.Errorf("%s %s is not passed on to the API by %s", route.Method, route.Path, test.config)
+					t.Errorf("%s %s is not passed on to the API by %s", route.Method, route.Path, test.source)
 				}
 			}
 		})
@@ -58,13 +57,13 @@ func concrete(route string) string {
 	return regexp.MustCompile(`[:*][a-z_]+`).ReplaceAllString(route, "x")
 }
 
-// viteAPIPaths reads the `const apiPaths = [...]` list of a vite.config.ts.
-func viteAPIPaths(t *testing.T, config string) []string {
+// apiPaths reads the `const API_PATHS = [...]` list of an app's api.ts.
+func apiPaths(t *testing.T, source string) []string {
 	t.Helper()
 
-	list := regexp.MustCompile(`(?s)const apiPaths = \[(.*?)\]`).FindStringSubmatch(config)
+	list := regexp.MustCompile(`(?s)const API_PATHS = \[(.*?)\]`).FindStringSubmatch(source)
 	if list == nil {
-		t.Fatal("the config has no `const apiPaths = [...]`")
+		t.Fatal("the file has no `const API_PATHS = [...]`")
 	}
 
 	var paths []string
@@ -75,8 +74,7 @@ func viteAPIPaths(t *testing.T, config string) []string {
 	return paths
 }
 
-// anyPrefix matches as Vite's proxy does for a key that is not a regular
-// expression: the request path starts with it.
+// anyPrefix matches as isApiPath does: the request path starts with one.
 func anyPrefix(prefixes []string, path string) bool {
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(path, prefix) {

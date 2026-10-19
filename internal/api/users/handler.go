@@ -1,3 +1,5 @@
+// Package users manages user accounts, their roles and their linked social
+// accounts.
 package users
 
 import (
@@ -10,10 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
-	"loginer/internal/api/validate"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
+	"loginer/internal/api/kit/validate"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
@@ -24,7 +26,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }
@@ -67,7 +68,6 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, newPageResponse(users, total, query))
 }
 
-// Get returns one user.
 func (h *Handler) Get(c *gin.Context) {
 	user, ok := h.find(c)
 	if !ok {
@@ -162,7 +162,7 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	if err := h.store.CreateUser(c.Request.Context(), user); err != nil {
-		h.respondWrite(c, err, "creating user failed")
+		respond.Taken(c, h.log, err, emailTaken, "creating user failed")
 		return
 	}
 
@@ -193,7 +193,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if err := h.store.SaveUser(c.Request.Context(), user); err != nil {
-		h.respondWrite(c, err, "updating user failed")
+		respond.Taken(c, h.log, err, emailTaken, "updating user failed")
 		return
 	}
 
@@ -503,13 +503,4 @@ func (h *Handler) find(c *gin.Context) (*model.User, bool) {
 	}
 
 	return user, true
-}
-
-func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
-	if errors.Is(err, store.ErrDuplicate) {
-		respond.Fail(c, emailTaken)
-		return
-	}
-
-	respond.Failure(c, h.log, err, note)
 }

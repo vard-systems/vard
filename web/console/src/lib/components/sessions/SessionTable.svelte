@@ -6,7 +6,7 @@
 		RiLogoutBoxRLine,
 		RiTimeLine,
 		RiUserLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { UserSessionRecord } from '#lib/api/index.js';
 	import { Button, DataTable, Icon, type Column } from '#lib/components/ui/index.js';
 	import { describeUserAgent, formatDateTime, formatRelative } from '#lib/utils/format.js';

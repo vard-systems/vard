@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { ComponentType, Snippet } from 'svelte';
+	import type { IconData } from '#lib/icons.js';
+	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
 
 	type Props = {
-		icon?: ComponentType;
+		icon?: IconData;
 		lead?: Snippet;
 		label: string;
 		description?: string;

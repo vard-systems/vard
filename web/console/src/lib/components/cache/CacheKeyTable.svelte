@@ -5,7 +5,7 @@
 		RiKey2Line,
 		RiPriceTag3Line,
 		RiTimerLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { CacheKey } from '#lib/api/index.js';
 	import { Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
 	import { formatBytes, formatTTL, kinds } from './cache';

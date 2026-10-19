@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 )
 
 // TestRoleRequestValidate covers the name a role is checked for by, which is

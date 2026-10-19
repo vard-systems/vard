@@ -101,7 +101,6 @@ func newSecretResponse(app applicationResponse, secret string) secretResponse {
 	return secretResponse{Application: app, ClientSecret: secret}
 }
 
-// pageResponse is a page of applications.
 type pageResponse struct {
 	Applications []applicationResponse `json:"applications"`
 	Total        int64                 `json:"total"`

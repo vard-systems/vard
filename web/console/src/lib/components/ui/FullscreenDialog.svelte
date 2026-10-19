@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { Dialog } from '@ark-ui/svelte/dialog';
 	import { Portal } from '@ark-ui/svelte/portal';
-	import { RiCloseLine } from 'svelte-remixicon';
+	import { RiCloseLine } from '#lib/icons.js';
 	import Code from './Code.svelte';
 	import IconButton from './IconButton.svelte';
 

@@ -1,12 +1,11 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
 	import { Menu } from '@ark-ui/svelte/menu';
-	import { RiExternalLinkLine } from 'svelte-remixicon';
+	import { RiExternalLinkLine, type IconData } from '#lib/icons.js';
 	import Icon from './Icon.svelte';
 
 	type Props = {
 		value: string;
-		icon: ComponentType;
+		icon: IconData;
 		label: string;
 		description?: string;
 		href?: string;

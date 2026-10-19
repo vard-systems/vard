@@ -3,8 +3,8 @@ package languages
 import (
 	"strings"
 
-	"loginer/internal/api/respond"
-	"loginer/internal/api/validate"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/validate"
 	"loginer/internal/model"
 )
 

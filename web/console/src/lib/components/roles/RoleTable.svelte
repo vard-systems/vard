@@ -6,7 +6,7 @@
 		RiGroupLine,
 		RiNodeTree,
 		RiShieldUserLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { Application, Role, UserRoleRef } from '#lib/api/index.js';
 	import { Badge, DataTable, Icon, type Column } from '#lib/components/ui/index.js';
 
@@ -53,7 +53,7 @@
 	const SHOWN = 3;
 
 	function holders(role: Role): string {
-		return `${resolve('/admin/(panel)/dashboard/users')}?role=${role.id}`;
+		return `${resolve('/(panel)/users')}?role=${role.id}`;
 	}
 </script>
 

@@ -32,7 +32,7 @@ export function highlighted(source: () => string): { readonly html: string } {
 		let current = true;
 
 		const frame = requestAnimationFrame(() => {
-			highlight(code).then((result) => {
+			void highlight(code).then((result) => {
 				if (current) html = result;
 			});
 		});

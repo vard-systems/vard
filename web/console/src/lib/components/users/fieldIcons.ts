@@ -1,15 +1,15 @@
-import type { ComponentType } from 'svelte';
 import {
 	RiCalendarLine,
 	RiHashtag,
 	RiKey2Line,
 	RiMailLine,
 	RiText,
-	RiToggleLine
-} from 'svelte-remixicon';
+	RiToggleLine,
+	type IconData
+} from '#lib/icons.js';
 import type { FieldType } from '#lib/api/index.js';
 
-export const fieldIcons: Record<FieldType, ComponentType> = {
+export const fieldIcons: Record<FieldType, IconData> = {
 	text: RiText,
 	number: RiHashtag,
 	bool: RiToggleLine,

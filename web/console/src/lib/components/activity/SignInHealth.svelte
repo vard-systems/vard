@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiErrorWarningLine, RiLockLine, RiShieldCheckLine } from 'svelte-remixicon';
+	import { RiErrorWarningLine, RiLockLine, RiShieldCheckLine } from '#lib/icons.js';
 	import type { Overview } from '#lib/api/index.js';
 	import { Alert, Icon, List, ListItem, Tag } from '#lib/components/ui/index.js';
 

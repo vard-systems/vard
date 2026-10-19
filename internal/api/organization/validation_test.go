@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/model"
 )
 

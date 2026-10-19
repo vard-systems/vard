@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"loginer/internal/api/validate"
+	"loginer/internal/api/kit/validate"
 	"loginer/internal/oidc"
 )
 

@@ -25,7 +25,7 @@ func TestTheAppsSpellTheSameNames(t *testing.T) {
 	// the console knows the admin session and where the project lives, and the
 	// sign-in pages know the two the provider reads back.
 	want := map[string][]string{
-		"web/console/src/lib/brand.ts": {AdminSessionCookie, DocsURL, GitHubURL},
+		"web/console/src/lib/brand.ts": {AdminSessionCookie, GitHubURL},
 		"web/id/src/lib/brand.ts":      {UserSessionCookie, LanguageCookie},
 	}
 

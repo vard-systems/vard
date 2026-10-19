@@ -237,3 +237,23 @@ func TestLiveLogFilters(t *testing.T) {
 		t.Errorf("export = %d lines starting %q, want a header and three rows", len(lines), lines[0])
 	}
 }
+
+// An export whose first read fails answers with an error, not with an empty
+// file that would look like there was nothing to export.
+func TestLiveAnExportThatCannotReadAnswersAnError(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+
+	// Signing in wrote to the log; only now is it taken away.
+	if err := s.db.Exec("ALTER TABLE audit_logs RENAME TO audit_logs_gone").Error; err != nil {
+		t.Fatal(err)
+	}
+
+	body, status := super.raw(http.MethodGet, "/logs/export")
+	if status != http.StatusInternalServerError {
+		t.Errorf("export = %d, want 500", status)
+	}
+	if strings.HasPrefix(body, "time,actor") {
+		t.Error("the failed export still began a CSV file")
+	}
+}

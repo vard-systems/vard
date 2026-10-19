@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Toast, Toaster } from '@ark-ui/svelte/toast';
-	import { RiCheckboxCircleFill, RiCloseLine, RiErrorWarningFill } from 'svelte-remixicon';
+	import { RiCheckboxCircleFill, RiCloseLine, RiErrorWarningFill } from '#lib/icons.js';
 	import Icon from './Icon.svelte';
 	import { toaster } from './toast';
 </script>

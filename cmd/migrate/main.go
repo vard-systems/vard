@@ -1,3 +1,5 @@
+// Command migrate applies, rolls back, lists and creates the database migrations
+// in migrations/.
 package main
 
 import (

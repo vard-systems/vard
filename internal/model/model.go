@@ -1,3 +1,5 @@
+// Package model is the database schema: one struct per table, with the rules
+// each row must keep.
 package model
 
 import (

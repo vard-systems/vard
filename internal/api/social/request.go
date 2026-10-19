@@ -1,6 +1,5 @@
 package social
 
-// targetType is what these rows are called in the activity log.
 const targetType = "social_provider"
 
 // providerRequest is a PATCH: a setting left out stays as it is, so

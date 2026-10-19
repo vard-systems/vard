@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiExternalLinkLine } from 'svelte-remixicon';
+	import { RiExternalLinkLine } from '#lib/icons.js';
 	import {
 		socialApi,
 		type SocialKind,

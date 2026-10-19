@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Formats the file an edit just wrote, so nothing reaches `make check` or
-# `bun run lint` badly spaced: Go through gofmt, the apps' files through the
+# Formats the file an edit just wrote, so nothing reaches `make lint` badly
+# spaced: Go through gofmt, the apps' files through the
 # Prettier each app already has installed.
 #
 # Claude Code runs this as a PostToolUse hook and hands it the tool call as

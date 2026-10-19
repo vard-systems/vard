@@ -1,3 +1,5 @@
+// Package organization manages the organisation's name, look and agreements
+// that the sign-in pages show.
 package organization
 
 import (
@@ -6,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/store"
 )
 
@@ -17,12 +19,10 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }
 
-// Get returns the organisation.
 func (h *Handler) Get(c *gin.Context) {
 	organization, err := h.store.Organization(c.Request.Context())
 	if err != nil {

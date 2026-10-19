@@ -1,3 +1,5 @@
+// Package admins manages administrator accounts and the panel's sign-in
+// security settings.
 package admins
 
 import (
@@ -10,10 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
-	"loginer/internal/api/validate"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
+	"loginer/internal/api/kit/validate"
 	"loginer/internal/auth"
 	"loginer/internal/model"
 	"loginer/internal/store"
@@ -26,7 +28,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, service *auth.Service, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, auth: service, audit: recorder, log: log}
 }
@@ -44,7 +45,6 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, newPageResponse(admins, total, query))
 }
 
-// Get returns one administrator.
 func (h *Handler) Get(c *gin.Context) {
 	admin, ok := h.find(c)
 	if !ok {
@@ -70,7 +70,7 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	if err := h.store.CreateAdmin(c.Request.Context(), admin); err != nil {
-		h.respondWrite(c, err, "creating administrator failed")
+		respond.Taken(c, h.log, err, respond.AdminEmailTaken, "creating administrator failed")
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *Handler) Update(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	if err := h.store.SaveAdmin(ctx, admin); err != nil {
-		h.respondWrite(c, err, "updating administrator failed")
+		respond.Taken(c, h.log, err, respond.AdminEmailTaken, "updating administrator failed")
 		return
 	}
 
@@ -370,13 +370,4 @@ func (h *Handler) find(c *gin.Context) (*model.Admin, bool) {
 	}
 
 	return admin, true
-}
-
-func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
-	if errors.Is(err, store.ErrDuplicate) {
-		respond.Fail(c, respond.AdminEmailTaken)
-		return
-	}
-
-	respond.Failure(c, h.log, err, note)
 }

@@ -6,7 +6,7 @@
 		RiKey2Line,
 		RiLockLine,
 		RiShieldKeyholeLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { AdminRole } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable } from '#lib/components/ui/index.js';
 
@@ -34,7 +34,7 @@
 	}
 
 	function holders(role: AdminRole): string {
-		return `${resolve('/admin/(panel)/dashboard/admins')}?role=${role.id}`;
+		return `${resolve('/(panel)/admins')}?role=${role.id}`;
 	}
 </script>
 

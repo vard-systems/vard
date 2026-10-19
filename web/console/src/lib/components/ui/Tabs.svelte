@@ -1,12 +1,13 @@
 <script lang="ts">
-	import type { ComponentType, Snippet } from 'svelte';
+	import type { IconData } from '#lib/icons.js';
+	import type { Snippet } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import Icon from './Icon.svelte';
 
 	type Tab = {
 		value: string;
 		label: string;
-		icon?: ComponentType;
+		icon?: IconData;
 		count?: number;
 		disabled?: boolean;
 	};

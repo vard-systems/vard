@@ -6,7 +6,7 @@
 		RiSearchLine,
 		RiShieldCheckLine,
 		RiUserLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import {
 		applicationsApi,
 		type Admin,

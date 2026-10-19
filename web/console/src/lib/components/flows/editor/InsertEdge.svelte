@@ -13,7 +13,7 @@
 
 <script lang="ts">
 	import { BaseEdge, EdgeLabel, getStraightPath, type EdgeProps } from '@xyflow/svelte';
-	import { RiAddLine } from 'svelte-remixicon';
+	import { RiAddLine } from '#lib/icons.js';
 	import { Icon } from '#lib/components/ui/index.js';
 
 	let { id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<InsertEdgeType> = $props();

@@ -1,3 +1,6 @@
+// Package oauth answers the OAuth 2.0 and OpenID Connect endpoints (discovery,
+// keys, authorize, token, userinfo, logout, revocation, introspection) and the
+// redirects of social sign-in and single sign-on.
 package oauth
 
 import (
@@ -7,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
 	"loginer/internal/brand"
 	"loginer/internal/oidc"
 )

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiKey2Line, RiShareLine, RiShieldUserLine } from 'svelte-remixicon';
+	import { RiKey2Line, RiShareLine, RiShieldUserLine } from '#lib/icons.js';
 	import type { Application, SocialKind, UserField, UserRecord } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable, Icon, Tooltip } from '#lib/components/ui/index.js';
 	import { markFor as providerMark } from '#lib/components/social/providers.js';

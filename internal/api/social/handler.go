@@ -1,3 +1,4 @@
+// Package social manages the social sign-in providers (Google, GitHub, Apple…).
 package social
 
 import (
@@ -8,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/jose"
 	"loginer/internal/model"
 	"loginer/internal/store"
@@ -23,7 +24,6 @@ type Handler struct {
 	issuer string
 }
 
-// New returns a Handler.
 func New(st *store.Store, sealer *jose.Sealer, recorder audit.Recorder, log *slog.Logger, issuer string) *Handler {
 	return &Handler{store: st, sealer: sealer, audit: recorder, log: log, issuer: issuer}
 }
@@ -47,7 +47,6 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, newListResponse(providers, counts, h.issuer))
 }
 
-// Get returns one provider.
 func (h *Handler) Get(c *gin.Context) {
 	provider, ok := h.find(c)
 	if !ok {

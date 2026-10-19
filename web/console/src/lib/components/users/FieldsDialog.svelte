@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAddLine, RiDeleteBinLine, RiPencilLine } from 'svelte-remixicon';
+	import { RiAddLine, RiDeleteBinLine, RiPencilLine } from '#lib/icons.js';
 	import { usersApi, type FieldType, type UserField } from '#lib/api/index.js';
 	import {
 		Badge,

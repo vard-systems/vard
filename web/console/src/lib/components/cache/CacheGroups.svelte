@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiDatabase2Line, RiEraserLine, RiFilter3Line } from 'svelte-remixicon';
+	import { RiDatabase2Line, RiEraserLine, RiFilter3Line } from '#lib/icons.js';
 	import type { CacheGroup } from '#lib/api/index.js';
 	import { Button, Icon, List, ListItem, Panel, Tag, Thumb } from '#lib/components/ui/index.js';
 

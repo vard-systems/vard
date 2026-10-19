@@ -2,7 +2,6 @@ package adminroles
 
 import "strings"
 
-// targetType is what these rows are called in the activity log.
 const targetType = "admin_role"
 
 // roleRequest is the body of the create and update endpoints. Permissions are

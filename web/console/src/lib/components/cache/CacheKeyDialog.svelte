@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiDeleteBinLine, RiTimerLine } from 'svelte-remixicon';
+	import { RiDeleteBinLine, RiTimerLine } from '#lib/icons.js';
 	import { cacheApi, messageOf, type CacheDatabaseName, type CacheKey } from '#lib/api/index.js';
 	import {
 		Alert,

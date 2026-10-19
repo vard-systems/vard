@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiComputerLine, RiShieldKeyholeLine } from 'svelte-remixicon';
+	import { RiComputerLine, RiShieldKeyholeLine } from '#lib/icons.js';
 	import { adminApi, messageOf, mfaApi, type AdminSession } from '#lib/api/index.js';
 	import RecoveryCodes from '#lib/components/mfa/RecoveryCodes.svelte';
 	import TotpSetup from '#lib/components/mfa/TotpSetup.svelte';

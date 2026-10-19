@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiCheckLine, RiFileCopyLine } from 'svelte-remixicon';
+	import { RiCheckLine, RiFileCopyLine } from '#lib/icons.js';
 	import IconButton from './IconButton.svelte';
 
 	type Props = {

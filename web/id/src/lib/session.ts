@@ -1,4 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
+import { resolve } from '$app/paths';
 import { ApiError, account, type User } from '#lib/api/index.js';
 
 /** Who is signed in, asked of the API: the session cookie is HttpOnly, so
@@ -15,21 +16,25 @@ export async function currentUser(fetch: typeof globalThis.fetch): Promise<User 
 
 export async function requireUser(fetch: typeof globalThis.fetch, url: URL): Promise<User> {
 	const user = await currentUser(fetch);
-
-	if (!user) {
-		redirect(303, `/login?next=${encodeURIComponent(url.pathname + url.search)}`);
-	}
+	if (!user) toSignIn(url);
 
 	return user;
 }
 
+/** `call`, or the sign-in page when the session ended in the meantime. */
 export async function asUser<T>(call: () => Promise<T>, url: URL): Promise<T> {
 	try {
 		return await call();
 	} catch (err) {
-		if (err instanceof ApiError && err.status === 401) {
-			redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
-		}
+		if (err instanceof ApiError && err.status === 401) toSignIn(url);
 		throw err;
 	}
+}
+
+/** The sign-in page, coming back to the whole of `url` (its query too) once signed in. */
+function toSignIn(url: URL): never {
+	redirect(
+		303,
+		`${resolve('/(auth)/login')}?next=${encodeURIComponent(url.pathname + url.search)}`
+	);
 }

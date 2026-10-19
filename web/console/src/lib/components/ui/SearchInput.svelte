@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiSearchLine } from 'svelte-remixicon';
+	import { RiSearchLine } from '#lib/icons.js';
 	import type { Size } from './control';
 	import Icon from './Icon.svelte';
 

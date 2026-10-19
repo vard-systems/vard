@@ -6,7 +6,7 @@ import { COOKIES, LANGUAGE_DEPENDENCY } from '#lib/brand.js';
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 /** Keeps the reader's language for a year, on this host only. */
-export function rememberLanguage(code: string) {
+function rememberLanguage(code: string) {
 	document.cookie = `${COOKIES.language}=${encodeURIComponent(code)}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
 }
 

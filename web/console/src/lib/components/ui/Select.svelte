@@ -1,8 +1,7 @@
 <script lang="ts" generics="Value extends string">
-	import type { ComponentType } from 'svelte';
 	import { createListCollection, Select as ArkSelect } from '@ark-ui/svelte/select';
 	import { Portal } from '@ark-ui/svelte/portal';
-	import { RiArrowDownSLine, RiCheckLine, RiCloseLine } from 'svelte-remixicon';
+	import { RiArrowDownSLine, RiCheckLine, RiCloseLine, type IconData } from '#lib/icons.js';
 	import FieldText from './FieldText.svelte';
 	import Icon from './Icon.svelte';
 	import type { SelectOption } from './select';
@@ -12,7 +11,7 @@
 		value: Value;
 		options: readonly (Value | SelectOption<Value>)[];
 		placeholder?: string;
-		icon?: ComponentType;
+		icon?: IconData;
 		hint?: string;
 		error?: string;
 		required?: boolean;
@@ -44,9 +43,7 @@
 	}: Props = $props();
 
 	const items = $derived(
-		options.map((option) =>
-			typeof option === 'string' ? ({ value: option } as SelectOption<Value>) : option
-		)
+		options.map((option) => (typeof option === 'string' ? { value: option } : option))
 	);
 
 	const collection = $derived(

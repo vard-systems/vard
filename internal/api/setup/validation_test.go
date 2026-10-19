@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 )
 
 // TestSetupRequestValidate covers the form the whole panel is opened with.

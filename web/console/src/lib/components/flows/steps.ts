@@ -7,13 +7,13 @@ import {
 	RiMailLine,
 	RiShareLine,
 	RiShieldCheckLine,
-	RiTimerFlashLine
-} from 'svelte-remixicon';
-import type { ComponentType } from 'svelte';
+	RiTimerFlashLine,
+	type IconData
+} from '#lib/icons.js';
 import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 import { BRAND } from '#lib/brand.js';
 
-const marks: Record<LoginStep, ComponentType> = {
+const marks: Record<LoginStep, IconData> = {
 	identifier: RiAtLine,
 	password: RiKey2Line,
 	social: RiShareLine,
@@ -23,7 +23,7 @@ const marks: Record<LoginStep, ComponentType> = {
 	consent: RiCheckboxCircleLine
 };
 
-export function markFor(step: LoginStep): ComponentType {
+export function markFor(step: LoginStep): IconData {
 	return marks[step] ?? RiCheckboxCircleLine;
 }
 
@@ -124,7 +124,7 @@ export type FlowTemplate = {
 	id: string;
 	name: string;
 	hint: string;
-	icon: ComponentType;
+	icon: IconData;
 	draft: FlowDraft;
 };
 
@@ -228,7 +228,7 @@ export function fromFile(text: string, kinds: LoginStepSpec[]): FlowDraft {
 		file === null ||
 		typeof file.name !== 'string' ||
 		!Array.isArray(file.steps) ||
-		!file.steps.every((step) => known.has(step as LoginStep))
+		!file.steps.every((step) => known.has(step))
 	) {
 		throw new Error('That file is not a login flow exported from here.');
 	}
@@ -239,7 +239,7 @@ export function fromFile(text: string, kinds: LoginStepSpec[]): FlowDraft {
 		slug: typeof file.slug === 'string' ? file.slug : slugFrom(file.name),
 		description: typeof file.description === 'string' ? file.description : '',
 		is_enabled: file.is_enabled !== false,
-		steps: file.steps as LoginStep[],
+		steps: file.steps,
 		allow_sign_in: file.allow_sign_in !== false,
 		allow_registration: file.allow_registration !== false,
 		allow_password_reset: file.allow_password_reset !== false,

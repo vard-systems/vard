@@ -7,7 +7,6 @@ export const BRAND = {
 
 	slug: 'loginer',
 
-	docsUrl: 'https://loginer.org/docs',
 	githubUrl: 'https://github.com/loginer/loginer'
 } as const;
 

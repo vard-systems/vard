@@ -1,3 +1,5 @@
+// Package config reads the server's settings from the environment and .env, and
+// refuses ones that cannot work.
 package config
 
 import (
@@ -46,10 +48,6 @@ type Config struct {
 	// believes no one. Behind a proxy it must be set, or every request (and the
 	// rate limit) counts as the proxy's.
 	TrustedProxies []string
-
-	// WebDev leaves the apps to their Vite dev servers (`make dev`) instead
-	// of serving the builds compiled into the binary.
-	WebDev bool
 
 	// SecretKey seals stored private keys and secrets. Losing it signs everyone
 	// out; leaking it with the database lets anyone sign tokens.
@@ -189,7 +187,6 @@ func Load() (Config, error) {
 		RateLimit:          v.GetInt(env("RATE_LIMIT")),
 		TrustedProxies:     splitList(v.GetString(env("TRUSTED_PROXIES"))),
 		SecretKey:          v.GetString(env("SECRET_KEY")),
-		WebDev:             v.GetBool(env("WEB_DEV")),
 		Mail: Mail{
 			Host:     v.GetString(env("SMTP_HOST")),
 			Port:     v.GetInt(env("SMTP_PORT")),

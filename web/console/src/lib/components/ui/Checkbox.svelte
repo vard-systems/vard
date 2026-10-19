@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Checkbox } from '@ark-ui/svelte/checkbox';
-	import { RiCheckLine, RiSubtractLine } from 'svelte-remixicon';
+	import { RiCheckLine, RiSubtractLine } from '#lib/icons.js';
 	import Icon from './Icon.svelte';
 
 	type Props = {

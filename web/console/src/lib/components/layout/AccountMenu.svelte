@@ -7,7 +7,7 @@
 		RiLogoutBoxRLine,
 		RiShieldUserLine,
 		RiUserSettingsLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import { adminApi, type Admin } from '#lib/api/index.js';
 	import {
 		ConfirmDialog,
@@ -55,7 +55,7 @@
 			// one administrator saw is not for whoever signs in next.
 			queryClient.clear();
 			await refreshAll();
-			await goto(resolve('admin/login'), { replace: true });
+			await goto(resolve('/login'), { replace: true });
 		}
 	}
 </script>

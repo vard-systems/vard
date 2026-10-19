@@ -6,15 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/query"
+	"loginer/internal/api/kit/query"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
 
-// targetType is what these records are called in the activity log.
 const targetType = "admin_user"
 
-// maxPageSize caps how many administrators one request can ask for.
 const maxPageSize = 200
 
 // adminRequest is the create and update body. The address is the username, and

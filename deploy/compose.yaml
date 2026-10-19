@@ -1,9 +1,9 @@
-# Production: Postgres, Redis, and the API — one binary that also serves the
-# id app and the console, compiled into it — over plain http. Only the API
-# publishes ports. See the repository README.
+# Production: Postgres, Redis, the API, and the two apps as Node servers in
+# front of it, over plain http. Only the apps publish ports: each renders its
+# pages and passes the API's paths on. See the repository README.
 #
 #   cp deploy/.env.example deploy/.env    # fill it in
-#   make deploy-up
+#   make docker-up
 
 name: loginer
 
@@ -17,6 +17,19 @@ x-hardened: &hardened
   restart: unless-stopped
   logging: *logging
   security_opt: ["no-new-privileges:true"]
+
+# What both apps share. They start once the API answers. Their healthcheck
+# asks for a static file, so it says the server is up without rendering a
+# page, and filling the API's log, every few seconds.
+x-web: &web
+  <<: *hardened
+  depends_on:
+    api: { condition: service_healthy }
+  healthcheck:
+    test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/favicon.svg"]
+    interval: 5s
+    timeout: 3s
+    retries: 24
 
 services:
   postgres:
@@ -87,11 +100,6 @@ services:
     # cmd/loginer/main.go); Docker's own default is 10s, which would SIGKILL
     # it half way through every deploy.
     stop_grace_period: 20s
-    # 8080 is the id app with the provider and the account API; 8081 the
-    # console with the admin API, published on this machine's loopback only,
-    # so the admin API is not on the network. Reach it over an SSH tunnel
-    # (ssh -L 8081:localhost:8081 server).
-    ports: ["8080:8080", "127.0.0.1:8081:8081"]
     environment:
       LOGINER_ISSUER: ${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}
       LOGINER_ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in deploy/.env}
@@ -106,9 +114,10 @@ services:
       # After the first start the setting lives in the database.
       LOGINER_ADMIN_MFA: ${LOGINER_ADMIN_MFA:-required}
       LOGINER_RATE_LIMIT: ${LOGINER_RATE_LIMIT:-20}
-      # Nothing is in front of the API, so no one may say who the caller is.
-      # A proxy put in front later is listed here, and never a whole range.
-      LOGINER_TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      # Only the two apps forward a caller's address, from their fixed
+      # addresses below — not the whole subnet, which is also Postgres and
+      # Redis.
+      LOGINER_TRUSTED_PROXIES: 172.30.0.2/32,172.30.0.3/32
       LOGINER_SMTP_HOST: ${LOGINER_SMTP_HOST:-}
       LOGINER_SMTP_PORT: ${LOGINER_SMTP_PORT:-587}
       LOGINER_SMTP_USERNAME: ${LOGINER_SMTP_USERNAME:-}
@@ -116,8 +125,49 @@ services:
       LOGINER_SMTP_FROM: ${LOGINER_SMTP_FROM:-}
     networks: [internal]
 
+  # The users' site: the sign-in pages, with the provider and the account API
+  # passed on to the public listener.
+  id:
+    <<: *web
+    build:
+      {
+        context: ..,
+        dockerfile: deploy/docker/web.Dockerfile,
+        args: { APP: web/id },
+      }
+    environment:
+      API_URL: http://api:8080
+    ports: ["8080:3000"]
+    networks:
+      internal: { ipv4_address: 172.30.0.2 }
+
+  # The staff site: the panel, with the admin API passed on to the admin
+  # listener. Published on this machine's loopback only, so the panel and the
+  # admin API are not on the network; reach it over an SSH tunnel
+  # (ssh -L 8081:localhost:8081 server).
+  console:
+    <<: *web
+    build:
+      {
+        context: ..,
+        dockerfile: deploy/docker/web.Dockerfile,
+        args: { APP: web/console },
+      }
+    environment:
+      API_URL: http://api:8081
+    ports: ["127.0.0.1:8081:3000"]
+    networks:
+      internal: { ipv4_address: 172.30.0.3 }
+
 networks:
   internal:
+    ipam:
+      config:
+        # The apps get .2 and .3 by name above; everything else is handed an
+        # address out of the upper half, so a dynamic one can never land on
+        # an address the API trusts.
+        - subnet: 172.30.0.0/24
+          ip_range: 172.30.0.128/25
 
 volumes:
   postgres:
