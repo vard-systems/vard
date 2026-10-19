@@ -1,6 +1,19 @@
-# The Loginer API. Build context: the repository root.
+# The Loginer server: the API, with the id app and the console compiled in.
+# Build context: the repository root.
 #
-#   docker build -f deploy/docker/api.Dockerfile -t loginer-api .
+#   docker build -f deploy/docker/api.Dockerfile -t loginer .
+
+# The two apps, as static files. The id app imports the shipped translations
+# from i18n/ at the top of the repository, so each app keeps its place in the
+# tree here and that relative import still resolves.
+FROM oven/bun:1-alpine AS web
+WORKDIR /src
+COPY web/id/package.json web/id/bun.lock web/id/
+COPY web/console/package.json web/console/bun.lock web/console/
+RUN cd web/id && bun install --frozen-lockfile && cd ../console && bun install --frozen-lockfile
+COPY i18n i18n
+COPY web web
+RUN cd web/id && bun run build && cd ../console && bun run build
 
 FROM golang:1.27-alpine AS build
 WORKDIR /src
@@ -12,6 +25,9 @@ COPY migrations ./migrations
 # The shipped translations are a Go package (i18n/i18n.go) that embeds
 # the JSON beside it, and internal/api/respond imports it.
 COPY i18n ./i18n
+COPY web/embed.go ./web/
+COPY --from=web /src/web/id/build ./web/id/build
+COPY --from=web /src/web/console/build ./web/console/build
 ARG VERSION=dev
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/loginer ./cmd/loginer
 
@@ -24,6 +40,6 @@ COPY --from=build /out/loginer ./loginer
 RUN mkdir migrations
 USER loginer
 ENV GIN_MODE=release LOGINER_ADDR=:8080 LOGINER_ADMIN_ADDR=:8081
-# 8080 public, 8081 admin: neither is published; Caddy reaches them.
+# 8080 public, 8081 admin; deploy/compose.yaml publishes them.
 EXPOSE 8080 8081
 ENTRYPOINT ["/app/loginer"]

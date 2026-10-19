@@ -1,9 +1,5 @@
 declare global {
-	namespace App {
-		interface Locals {
-			language?: string;
-		}
-	}
+	namespace App {}
 }
 
 export {};

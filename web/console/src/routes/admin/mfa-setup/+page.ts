@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
 import { adminApi, mfaApi } from '#lib/api/index.js';
-import type { PageServerLoad } from './$types';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch }) => {
+export const load: PageLoad = async ({ fetch }) => {
 	const { state } = await adminApi.session(fetch).catch(() => ({ state: 'none' as const }));
 
 	if (state === 'none' || state === 'mfa') redirect(307, resolve('admin/login'));

@@ -8,7 +8,7 @@ async function call(path: string, fetch: typeof globalThis.fetch) {
 	try {
 		return await fetch(`/api/v1${path}`);
 	} catch {
-		error(503, 'Could not reach the admin API. Is it running, and is API_URL right?');
+		error(503, 'Could not reach the admin API.');
 	}
 }
 

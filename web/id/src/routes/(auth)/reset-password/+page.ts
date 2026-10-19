@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
 import { ApiError, signIn } from '#lib/api/index.js';
-import type { PageServerLoad } from './$types';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url, fetch }) => {
+export const load: PageLoad = async ({ url, fetch }) => {
 	const token = url.searchParams.get('token') ?? '';
 	const temporary = url.searchParams.get('reason') === 'temporary';
 

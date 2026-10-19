@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Prepare a fresh checkout: .env with its own secret key, the database and its
-# migrations, and the web apps' dependencies. Safe to run again.
+# migrations, and the web apps and their builds. Safe to run again.
 
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -40,10 +40,8 @@ go mod download
 scripts/db.sh create
 go run ./cmd/migrate up
 
-for app in console id docs; do
-	echo "==> web/$app"
-	(cd "web/$app" && bun install --frozen-lockfile)
-	[[ ! -f web/$app/.env.example || -f web/$app/.env ]] || cp "web/$app/.env.example" "web/$app/.env"
-done
+# The apps' dependencies, and their builds: the binary embeds them, so it
+# does not compile until they exist.
+make --no-print-directory web
 
 echo "Ready. Start everything with: make dev"

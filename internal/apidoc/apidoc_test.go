@@ -18,7 +18,7 @@ import (
 	"loginer/internal/config"
 )
 
-// The reference is committed, so the docs app and the server can be built
+// The reference is committed, so the server can be built
 // without running the generator. This is what keeps it honest: a route, a
 // doc comment, a request field or a problem changed without `make docs`
 // fails here, the way the panel's tokens fail `bun run check`.
@@ -257,19 +257,16 @@ func TestFieldsAreNamedAsTheyAreSent(t *testing.T) {
 }
 
 func TestPaths(t *testing.T) {
-	tests := []struct{ gin, openAPI, anchor string }{
-		{"/api/v1/admin/users/:id", "/api/v1/admin/users/{id}", "get-api-v1-admin-users-id"},
-		{"/.well-known/openid-configuration", "/.well-known/openid-configuration", "get-well-known-openid-configuration"},
-		{"/oauth2/token", "/oauth2/token", "get-oauth2-token"},
+	tests := []struct{ gin, openAPI string }{
+		{"/api/v1/admin/users/:id", "/api/v1/admin/users/{id}"},
+		{"/.well-known/openid-configuration", "/.well-known/openid-configuration"},
+		{"/oauth2/token", "/oauth2/token"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.gin, func(t *testing.T) {
 			if got := openAPIPath(tt.gin); got != tt.openAPI {
 				t.Errorf("openAPIPath = %q, want %q", got, tt.openAPI)
-			}
-			if got := anchor(Operation{Method: "GET", Path: tt.gin}); got != tt.anchor {
-				t.Errorf("anchor = %q, want %q", got, tt.anchor)
 			}
 		})
 	}

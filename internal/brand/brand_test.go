@@ -27,9 +27,6 @@ func TestTheAppsSpellTheSameNames(t *testing.T) {
 	want := map[string][]string{
 		"web/console/src/lib/brand.ts": {AdminSessionCookie, DocsURL, GitHubURL},
 		"web/id/src/lib/brand.ts":      {UserSessionCookie, LanguageCookie},
-		// The docs name both sessions and both of the server's own APIs in
-		// their examples, and link the source.
-		"web/docs/src/lib/brand.ts": {UserSessionCookie, AdminSessionCookie, DocsURL, GitHubURL, AdminAPIIdentifier, AccountAPIIdentifier},
 	}
 
 	for file, names := range want {
@@ -82,7 +79,6 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 	allowed := map[string]bool{
 		filepath.FromSlash("web/console/src/lib/brand.ts"): true,
 		filepath.FromSlash("web/id/src/lib/brand.ts"):      true,
-		filepath.FromSlash("web/docs/src/lib/brand.ts"):    true,
 	}
 
 	skipped := map[string]bool{

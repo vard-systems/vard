@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"loginer/internal/brand"
+	"loginer/internal/model"
 )
 
 func (b *built) openAPI(server Server) ([]byte, error) {
@@ -354,4 +355,11 @@ func jsonSchema(s *Schema, definition bool) map[string]any {
 	}
 
 	return out
+}
+
+func accountScope(op Operation) string {
+	if op.Method == http.MethodGet {
+		return model.ScopeAccountRead
+	}
+	return model.ScopeAccountWrite
 }

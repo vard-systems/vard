@@ -1,37 +1,20 @@
-import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
-import { playwright } from '@vitest/browser-playwright';
-import adapter from '@sveltejs/adapter-node';
+import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
-// The API is reached on this app's own origin, as in production, where the
-// reverse proxy routes these paths to it. Same origin means the session cookie
-// belongs to this app's host — so the server-side renderer can read it — and
-// the browser needs no CORS. API_URL is where the API really listens.
-const { API_URL = 'http://localhost:8081' } = loadEnv(
-	process.env.NODE_ENV ?? 'development',
-	process.cwd(),
-	''
-);
-
-const api = { target: API_URL, xfwd: true };
-const proxy = {
-	'/api/v1/admin': api
-};
+// The paths the API answers. The browser calls them on this app's own origin;
+// the dev server passes them on to the API (API_URL, set by scripts/start.sh),
+// so cookies stay host-only and nothing is cross-origin. A built app needs
+// none of this: the binary serves it on the API's own listener.
+const apiPaths = ['/api/v1/admin'];
+const api = process.env.API_URL ?? 'http://localhost:8081';
 
 export default defineConfig({
-	// id 5173, console 5174 — in both modes of scripts/start.sh.
+	// id 5173, console 5174.
 	server: {
 		port: 5174,
 		strictPort: true,
-		proxy
-	},
-
-	// The query library ships its components as .svelte files. Node cannot
-	// import those, so while rendering on the server Vite has to compile it
-	// with everything else rather than leaving it to the runtime.
-	ssr: {
-		noExternal: ['@tanstack/svelte-query']
+		proxy: Object.fromEntries(apiPaths.map((path) => [path, api]))
 	},
 
 	plugins: [
@@ -42,37 +25,42 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// adapter-node builds a Node server, run behind the reverse proxy that
-			// routes the API paths to the API (Caddy, in deploy/).
-			adapter: adapter()
+			// A single-page app: build/ holds static files and one index.html for
+			// every route, which the Go server embeds and serves (web/embed.go,
+			// internal/webui).
+			adapter: adapter({
+				pages: 'build',
+				assets: 'build',
+				fallback: 'index.html',
+				precompress: false
+			}),
+
+			// Every script is the app's own: the one SvelteKit writes into
+			// index.html is allowed by its hash, in a <meta> tag, since a static
+			// file cannot carry a fresh nonce; the rest are files from 'self', so
+			// an injected <script> does not run. Styles stay inline-able
+			// (Svelte's transitions and component style attributes need it);
+			// images may be logos and avatars on any https address an
+			// administrator gave. Framing is refused by internal/webui's header:
+			// a <meta> cannot say frame-ancestors.
+			csp: {
+				mode: 'hash',
+				directives: {
+					'default-src': ['self'],
+					'script-src': ['self'],
+					'style-src': ['self', 'unsafe-inline'],
+					'img-src': ['self', 'data:', 'https:'],
+					'font-src': ['self'],
+					'connect-src': ['self'],
+					'object-src': ['none'],
+					'base-uri': ['self']
+				}
+			}
 		})
 	],
 	test: {
 		expect: { requireAssertions: true },
-		projects: [
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'client',
-					browser: {
-						enabled: true,
-						provider: playwright(),
-						instances: [{ browser: 'chromium', headless: true }]
-					},
-					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
-				}
-			},
-
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'server',
-					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
-				}
-			}
-		]
+		environment: 'node',
+		include: ['src/**/*.{test,spec}.{js,ts}']
 	}
 });

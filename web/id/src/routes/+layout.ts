@@ -2,10 +2,17 @@ import { redirect } from '@sveltejs/kit';
 import { signIn, type PublicLanguage } from '#lib/api/index.js';
 import { COOKIES, LANGUAGE_DEPENDENCY } from '#lib/brand.js';
 import { BASE, chooseLanguage, type Messages } from '#lib/i18n/index.js';
+import { rememberLanguage } from '#lib/i18n/switch.js';
+import { readCookie } from '#lib/utils/cookies.js';
 import { safeNext } from '#lib/utils/next.js';
-import type { LayoutServerLoad } from './$types';
+import type { LayoutLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, request, url }) => {
+// A single-page app: the Go server sends one index.html for every route, and
+// everything is drawn in the browser from the API's answers.
+export const ssr = false;
+export const prerender = false;
+
+export const load: LayoutLoad = async ({ depends, fetch, url }) => {
 	depends(LANGUAGE_DEPENDENCY);
 
 	const asked = url.searchParams.get('lang') ?? undefined;
@@ -15,19 +22,14 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 		.catch(() => ({ languages: [] as PublicLanguage[], default: BASE }));
 
 	const language = chooseLanguage(
-		asked ?? cookies.get(COOKIES.language),
-		request.headers.get('accept-language'),
+		asked ?? readCookie(COOKIES.language),
+		navigator.languages.join(','),
 		offered.languages.map((one) => one.code),
 		offered.default
 	);
 
 	if (asked !== undefined) {
-		cookies.set(COOKIES.language, language, {
-			path: '/',
-			httpOnly: false,
-			sameSite: 'lax',
-			maxAge: 60 * 60 * 24 * 365
-		});
+		rememberLanguage(language);
 
 		const clean = new URL(url);
 		clean.searchParams.delete('lang');
@@ -45,8 +47,6 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 				.then((text) => text.messages)
 				.catch(() => ({}))
 		: {};
-
-	locals.language = language;
 
 	return { language, languages: offered.languages, messages };
 };

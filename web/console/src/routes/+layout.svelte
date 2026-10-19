@@ -10,8 +10,7 @@
 
 	let { children }: LayoutProps = $props();
 
-	// One cache for this visitor, built here so that rendering on the server
-	// gives each request its own.
+	// One cache for this visitor, for as long as the tab is open.
 	const queryClient = createQueryClient();
 
 	// After a deploy, a tab that was already open still runs the old code;

@@ -1,6 +1,6 @@
 /**
  * Dates travel as ISO days ("2026-03-12") and display day-first ("12/03/2026") regardless of
- * locale, so the server and browser render the same.
+ * locale, so every administrator reads them the same way.
  */
 import { parseDate, type DateValue } from '@ark-ui/svelte/date-picker';
 

@@ -47,6 +47,10 @@ type Config struct {
 	// rate limit) counts as the proxy's.
 	TrustedProxies []string
 
+	// WebDev leaves the apps to their Vite dev servers (`make dev`) instead
+	// of serving the builds compiled into the binary.
+	WebDev bool
+
 	// SecretKey seals stored private keys and secrets. Losing it signs everyone
 	// out; leaking it with the database lets anyone sign tokens.
 	SecretKey string
@@ -148,8 +152,8 @@ func Load() (Config, error) {
 	v.SetDefault(env("ADMIN_MFA"), "optional")
 	v.SetDefault(env("KEY_ROTATION_DAYS"), 90)
 	v.SetDefault(env("AUDIT_RETENTION_DAYS"), 365)
-	v.SetDefault(env("ISSUER"), "http://localhost:5173")
-	v.SetDefault(env("ADMIN_URL"), "http://localhost:5174")
+	v.SetDefault(env("ISSUER"), "http://localhost:8080")
+	v.SetDefault(env("ADMIN_URL"), "http://localhost:8081")
 	v.SetDefault(env("SMTP_PORT"), 587)
 	v.SetDefault(env("SMTP_FROM"), brand.Name+" <no-reply@localhost>")
 	v.SetDefault(env("DB_DRIVER"), "postgres")
@@ -185,6 +189,7 @@ func Load() (Config, error) {
 		RateLimit:          v.GetInt(env("RATE_LIMIT")),
 		TrustedProxies:     splitList(v.GetString(env("TRUSTED_PROXIES"))),
 		SecretKey:          v.GetString(env("SECRET_KEY")),
+		WebDev:             v.GetBool(env("WEB_DEV")),
 		Mail: Mail{
 			Host:     v.GetString(env("SMTP_HOST")),
 			Port:     v.GetInt(env("SMTP_PORT")),

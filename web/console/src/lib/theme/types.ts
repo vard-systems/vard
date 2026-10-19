@@ -37,7 +37,3 @@ export type Theme<ColorName extends string = string> = {
 		sets: { prefix: string; selectors: string[] }[];
 	};
 };
-
-export function cssVar(name: TokenName): string {
-	return `var(--${name})`;
-}

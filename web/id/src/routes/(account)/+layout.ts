@@ -1,11 +1,9 @@
 import { signIn, type LoginOptions } from '#lib/api/index.js';
-import { requireUser } from '#lib/server/session.js';
-import type { LayoutServerLoad } from './$types';
+import { requireUser } from '#lib/session.js';
+import type { LayoutLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ cookies, fetch, url, setHeaders }) => {
-	setHeaders({ 'cache-control': 'private, no-store' });
-
-	const user = await requireUser(cookies, fetch, url);
+export const load: LayoutLoad = async ({ fetch, url }) => {
+	const user = await requireUser(fetch, url);
 
 	// A page that hides a control because one request failed is worse than one
 	// that offers it and is refused, so this answers null rather than throwing.

@@ -6,10 +6,10 @@ import type {
 	ApplicationPage
 } from '#lib/api/index.js';
 import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE } from '#lib/query/index.js';
-import { apiGet, requirePermission } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet, requirePermission } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent, url }) => {
+export const load: PageLoad = async ({ fetch, parent, url }) => {
 	requirePermission((await parent()).admin, 'super_admin');
 
 	const search = url.searchParams.get('search')?.trim() ?? '';

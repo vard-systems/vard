@@ -1,9 +1,9 @@
 import type { Role, SSOConnection } from '#lib/api/index.js';
 import { canAnywhere } from '#lib/permissions.js';
-import { apiGet, requirePermission } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet, requirePermission } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent }) => {
+export const load: PageLoad = async ({ fetch, parent }) => {
 	const { admin } = await parent();
 	requirePermission(admin, 'sso.read');
 

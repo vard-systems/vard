@@ -22,6 +22,8 @@ import (
 	"loginer/internal/mail"
 	"loginer/internal/oidc"
 	"loginer/internal/store"
+	"loginer/internal/webui"
+	"loginer/web"
 )
 
 var (
@@ -135,6 +137,14 @@ func run(log *slog.Logger) error {
 	admin, err := api.NewAdmin(cfg, st, log, provider, shared)
 	if err != nil {
 		return err
+	}
+
+	if cfg.WebDev {
+		log.Info("apps: left to the Vite dev servers (LOGINER_WEB_DEV)")
+	} else {
+		api.WithPublicUI(public, webui.SPA(web.ID))
+		api.WithAdminUI(admin, webui.SPA(web.Console))
+		log.Info("apps: served from the binary", "id", cfg.Addr, "console", cfg.AdminAddr)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

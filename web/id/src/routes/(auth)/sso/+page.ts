@@ -1,12 +1,12 @@
 import { redirect } from '@sveltejs/kit';
-import { currentUser } from '#lib/server/session.js';
+import { currentUser } from '#lib/session.js';
 import { safeNext } from '#lib/utils/next.js';
-import type { PageServerLoad } from './$types';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url, cookies, fetch }) => {
+export const load: PageLoad = async ({ url, fetch }) => {
 	const next = safeNext(url.searchParams.get('next'));
 
-	if (!url.searchParams.get('request') && (await currentUser(cookies, fetch))) {
+	if (!url.searchParams.get('request') && (await currentUser(fetch))) {
 		redirect(303, next);
 	}
 

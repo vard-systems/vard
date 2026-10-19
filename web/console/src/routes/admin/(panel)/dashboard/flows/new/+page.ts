@@ -1,8 +1,8 @@
 import type { LoginFlow, LoginStepSpec } from '#lib/api/index.js';
-import { apiGet, requirePermission } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet, requirePermission } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent, url }) => {
+export const load: PageLoad = async ({ fetch, parent, url }) => {
 	requirePermission((await parent()).admin, 'login_flows.write');
 
 	const { flows, step_kinds } = await apiGet<{ flows: LoginFlow[]; step_kinds: LoginStepSpec[] }>(

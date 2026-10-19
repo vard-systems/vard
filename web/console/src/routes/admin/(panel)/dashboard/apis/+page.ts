@@ -1,8 +1,8 @@
 import type { API } from '#lib/api/index.js';
-import { apiGet, requireAnywhere } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet, requireAnywhere } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent, url }) => {
+export const load: PageLoad = async ({ fetch, parent, url }) => {
 	requireAnywhere((await parent()).admin, 'apis.read');
 
 	const search = url.searchParams.get('search')?.trim() ?? '';

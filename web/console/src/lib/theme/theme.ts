@@ -344,5 +344,3 @@ export const theme: Theme<ColorName> = {
 		]
 	}
 };
-
-export const breakpoints = theme.breakpoints;

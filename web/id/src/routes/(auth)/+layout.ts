@@ -8,12 +8,9 @@ import {
 	type SocialProvider,
 	type SSOConnection
 } from '#lib/api/index.js';
-import type { LayoutServerLoad } from './$types';
+import type { LayoutLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ url, fetch, setHeaders }) => {
-	// A sign-in page is never cached: it is about one sign-in, for one person.
-	setHeaders({ 'cache-control': 'no-store' });
-
+export const load: LayoutLoad = async ({ url, fetch }) => {
 	const request = url.searchParams.get('request');
 
 	const [organization, socialProviders, sso, login] = await Promise.all([

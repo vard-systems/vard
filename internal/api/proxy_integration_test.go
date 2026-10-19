@@ -16,10 +16,10 @@ import (
 // These tests put a reverse proxy in front of the server, as a deployment
 // does, and check what the server believes about who is calling.
 //
-// The proxy behaves like Caddy, which throws away any X-Forwarded-For the
-// client sent and writes the address it was connected from, or like nginx's
-// $proxy_add_x_forwarded_for, which appends that address to whatever the
-// client sent. Every test client
+// The proxy either throws away any X-Forwarded-For the client sent and writes
+// the address it was connected from, or, like nginx's
+// $proxy_add_x_forwarded_for, appends that address to whatever the client
+// sent. Every test client
 // connects from 127.0.0.1, so a test names the address it stands for in
 // testClientHeader and the proxy forwards that instead.
 

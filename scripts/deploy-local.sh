@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 #
-# Start the production stack on this machine: deploy/compose.yaml with
-# deploy/compose.local.yaml over it, served on https://id.localhost and
-# https://admin-id.localhost. Safe to run again.
-#
-# What differs from a server is only what cannot work on one machine — see
-# deploy/Caddyfile.local. Everything else is the stack that would be deployed.
+# Start the production stack on this machine: deploy/compose.yaml, served on
+# http://localhost:8080 and http://localhost:8081. Safe to run again.
 
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -13,7 +9,7 @@ set -euo pipefail
 need docker "https://docs.docker.com/engine/install"
 need openssl "install openssl"
 
-compose=(docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml)
+compose=(docker compose -f deploy/compose.yaml)
 
 # set_value KEY VALUE — in deploy/.env, whether or not the key is there yet.
 # The delimiter is | because a base64 secret can contain / but never that.
@@ -30,16 +26,19 @@ if [[ ! -f deploy/.env ]]; then
 	umask 077
 	cp deploy/.env.example deploy/.env
 
-	set_value PUBLIC_URL https://id.localhost
-	set_value ADMIN_URL https://admin-id.localhost
 	set_value LOGINER_SECRET_KEY "$(openssl rand -base64 32)"
 	set_value POSTGRES_PASSWORD "$(openssl rand -hex 32)"
 	# So the first administrator can be created without an authenticator app.
 	# A server runs this as required; deploy/compose.yaml asks for that.
 	set_value LOGINER_ADMIN_MFA optional
 
-	echo "created deploy/.env for https://id.localhost — it is gitignored"
+	echo "created deploy/.env for http://localhost:8080 — it is gitignored"
 fi
+
+# The addresses are this machine's whatever deploy/.env says, including one
+# made when the stack was served on https://id.localhost.
+set_value PUBLIC_URL http://localhost:8080
+set_value ADMIN_URL http://localhost:8081
 
 # Redis keeps nothing on disk and reads its password at every start, so one
 # can be filled in at any time, including into a deploy/.env made before it
@@ -54,12 +53,8 @@ cat <<'TEXT'
 
 Ready.
 
-  https://admin-id.localhost/admin/login   the panel — makes the first administrator
-  https://id.localhost/login               the sign-in pages
-
-The certificate is Caddy's own CA, so the browser will warn once; the foot of
-deploy/Caddyfile.local says how to trust it. Chrome and Firefox resolve
-*.localhost themselves, so /etc/hosts needs nothing.
+  http://localhost:8081/admin/login   the panel — makes the first administrator
+  http://localhost:8080/login         the sign-in pages
 
   make deploy-local-logs   follow the API
   make deploy-local-down   stop it and drop its data

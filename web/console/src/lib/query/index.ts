@@ -1,11 +1,10 @@
 export { createQueryClient } from './client';
 export { keys } from './keys';
-export { firstPage, LIST_PAGE_SIZE, nextOffset, uniqueById } from './paging';
+export { firstPage, LIST_PAGE_SIZE, uniqueById } from './paging';
 export { LOGS_PAGE_SIZE, logsOptions } from './logs';
 export { mfaStatusOptions, profileSessionsOptions } from './profile';
 export {
 	roleMappingsOptions,
-	USER_SEARCH_LIMIT,
 	userFieldsOptions,
 	userSearchOptions,
 	usersOptions,

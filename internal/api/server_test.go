@@ -19,7 +19,7 @@ func init() {
 
 // testEngine builds the real public server, with its logging discarded.
 func testEngine(origins ...string) *gin.Engine {
-	cfg := config.Config{Addr: ":0", CORSOrigins: origins, AccountURL: "http://localhost:5175"}
+	cfg := config.Config{Addr: ":0", CORSOrigins: origins, AccountURL: "http://localhost:5173"}
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	r, err := NewPublic(cfg, log, nil, nil)
@@ -172,7 +172,7 @@ func TestNewRefusesABadTrustedProxy(t *testing.T) {
 // The public server serves its OpenAPI document to anyone, addressed at the
 // issuer, so a tool pointed at it calls the right place.
 func TestThePublicDocumentIsServed(t *testing.T) {
-	cfg := config.Config{Issuer: "https://id.example.com", AccountURL: "http://localhost:5175"}
+	cfg := config.Config{Issuer: "https://id.example.com", AccountURL: "http://localhost:5173"}
 	r, err := NewPublic(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 	if err != nil {
 		t.Fatal(err)

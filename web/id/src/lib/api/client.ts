@@ -18,10 +18,7 @@ type Options = {
 	fetch?: Fetch;
 };
 
-/**
- * Calls the API at /api/v1 on this origin. From a server load pass the load's `fetch`, which
- * hooks.server.ts routes straight to the API with the reader's cookie.
- */
+/** Calls the API at /api/v1 on this origin. From a load, pass the load's `fetch`. */
 export async function request<T>(path: string, options: Options = {}): Promise<T> {
 	const { method = 'GET', body, fetch: fetcher = globalThis.fetch } = options;
 

@@ -1,10 +1,10 @@
 import { error } from '@sveltejs/kit';
 import type { LanguageList, Organization } from '#lib/api/index.js';
 import { can } from '#lib/permissions.js';
-import { apiGet } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent }) => {
+export const load: PageLoad = async ({ fetch, parent }) => {
 	const { admin } = await parent();
 
 	const mayReadOrganization = can(admin, 'organization.read');

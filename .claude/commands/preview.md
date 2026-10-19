@@ -23,6 +23,7 @@ it:
      LOGINER_DB_DRIVER=postgres LOGINER_DB_MIGRATE=true LOGINER_DB_MIGRATE_DIR=./migrations \
      LOGINER_ISSUER=http://localhost:5183 LOGINER_ACCOUNT_URL=http://localhost:5183 \
      LOGINER_ADMIN_URL=http://localhost:5184 LOGINER_ADMIN_MFA=optional \
+     LOGINER_TRUSTED_PROXIES= LOGINER_WEB_DEV=true \
      LOGINER_SECRET_KEY=preview-secret-key-0123456789abcdef \
      LOGINER_REDIS_PREFIX=loginer-preview: \
      bin/loginer-preview &
@@ -34,21 +35,27 @@ it:
    share one Redis, each reads the other's cached rows — an organisation
    whose id is not in its own database, say — and saves go wrong.
 
-3. The panel against it: `API_URL=http://localhost:8091 bunx vite dev --port 5184 --strictPort`
-   from `web/console`.
+3. The panel against it, from `web/console` — its dev server passes
+   `/api/v1/admin` on to `API_URL`, so the browser calls the API on the
+   panel's own origin:
+   `API_URL=http://localhost:8091 bunx vite dev --port 5184 --strictPort`
+   (and, for the sign-in pages, from `web/id`:
+   `API_URL=http://localhost:8090 bunx vite dev --port 5183 --strictPort`).
+
 4. The first administrator, since the database is empty:
 
    ```sh
-   curl -s -X POST http://localhost:8091/api/v1/admin/setup \
+   curl -s -X POST http://localhost:5184/api/v1/admin/setup \
      -H "Content-Type: application/json" -H "Origin: http://localhost:5184" \
      -d '{"email":"preview@example.com","password":"preview-password-1","first_name":"Preview"}'
    ```
 
-5. Sign in at `http://localhost:5184/admin/login` with the browser tools and go
-   to the path. Look at it in both themes if the change is visual — the header's
-   toggle switches them.
+5. Sign in at `http://localhost:5184/admin/login` with the browser tools and
+   go to the path. Look at it in both themes if the change is visual — the
+   header's toggle switches them.
 
-Then take it all down: stop both processes, `DROP DATABASE loginer_preview WITH (FORCE)`,
-clear its cache (`redis-cli --scan --pattern 'loginer-preview:*' | xargs redis-cli del`),
-and close the tab. Say what you saw, and what you changed if you fixed
-something.
+Then take it all down: stop every process you started — the API and the Vite
+servers, found by their spare ports, never the running stack's —
+`DROP DATABASE loginer_preview WITH (FORCE)`, clear its cache
+(`redis-cli --scan --pattern 'loginer-preview:*' | xargs redis-cli del`), and
+close the tab. Say what you saw, and what you changed if you fixed something.

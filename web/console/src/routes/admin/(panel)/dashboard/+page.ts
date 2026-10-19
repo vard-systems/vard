@@ -1,9 +1,9 @@
 import type { AdminSession, Overview, OverviewDays } from '#lib/api/index.js';
 import { can } from '#lib/permissions.js';
-import { apiGet } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent, url }) => {
+export const load: PageLoad = async ({ fetch, parent, url }) => {
 	const { admin } = await parent();
 
 	const asked = Number(url.searchParams.get('days'));

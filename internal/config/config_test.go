@@ -110,14 +110,14 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if !cfg.DB.Migrate {
 		t.Error("Migrate = false, want the default true")
 	}
-	if cfg.Issuer != "http://localhost:5173" || cfg.AccountURL != cfg.Issuer || cfg.AdminURL != "http://localhost:5174" {
+	if cfg.Issuer != "http://localhost:8080" || cfg.AccountURL != cfg.Issuer || cfg.AdminURL != "http://localhost:8081" {
 		t.Errorf("Issuer, AccountURL, AdminURL = %q, %q, %q, want the local defaults", cfg.Issuer, cfg.AccountURL, cfg.AdminURL)
 	}
 	if cfg.AdminAddr != "127.0.0.1:8081" || len(cfg.CORSOrigins) != 0 || cfg.RateLimit != 20 {
 		t.Errorf("AdminAddr, CORSOrigins, RateLimit = %q, %v, %d, want 127.0.0.1:8081, none, 20", cfg.AdminAddr, cfg.CORSOrigins, cfg.RateLimit)
 	}
 	if cfg.SecureUserCookies || cfg.SecureAdminCookies {
-		t.Error("cookies are secure on plain http localhost")
+		t.Error("cookies are secure on the http defaults, which a browser would not send back")
 	}
 	// A fresh installation does not make anybody set up an authenticator:
 	// each administrator turns one on for themselves, and a super admin can
@@ -216,6 +216,26 @@ LOGINER_ADMIN_URL=https://admin-id.mywebsite.com
 	}
 	if Origin("https://id.mywebsite.com/login?x=1") != "https://id.mywebsite.com" {
 		t.Error("Origin did not keep only the scheme and host")
+	}
+}
+
+// Served over plain http, a Secure cookie would never be sent back, so the
+// sessions are not marked Secure.
+func TestLoadKeepsCookiesPlainOnHTTP(t *testing.T) {
+	writeEnv(t, `
+LOGINER_DB_DSN=postgres://u:p@localhost:5432/db
+LOGINER_SECRET_KEY=0123456789abcdef0123456789abcdef
+LOGINER_ISSUER=http://localhost:5173
+LOGINER_ADMIN_URL=http://localhost:5174
+`)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if cfg.SecureUserCookies || cfg.SecureAdminCookies {
+		t.Error("cookies are secure on plain http")
 	}
 }
 

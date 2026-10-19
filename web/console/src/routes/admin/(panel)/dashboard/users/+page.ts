@@ -7,10 +7,10 @@ import type {
 } from '#lib/api/index.js';
 import { APPLICATION_CHOICES_LIMIT, LIST_PAGE_SIZE, ROLE_CHOICES_LIMIT } from '#lib/query/index.js';
 import { canAnywhere } from '#lib/permissions.js';
-import { apiGet, requirePermission } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet, requirePermission } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent, url }) => {
+export const load: PageLoad = async ({ fetch, parent, url }) => {
 	const { admin } = await parent();
 	requirePermission(admin, 'users.read');
 

@@ -3,7 +3,7 @@
 // defined beside them. TestTheReferenceIsCurrent fails when the committed
 // reference is behind.
 //
-// It writes an OpenAPI 3.1 document per server and Markdown pages for web/docs.
+// It writes an OpenAPI 3.1 document per server, which the server answers.
 // `make docs` runs it.
 package apidoc
 

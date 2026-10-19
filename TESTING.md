@@ -126,7 +126,7 @@ tests check that:
   and the session records the real client IP;
 - each client behind a trusted proxy gets its own rate-limit budget;
 - a forged `X-Forwarded-For` is ignored, whether the proxy replaces the header
-  (like Caddy) or appends to it (like nginx);
+  or appends to it (like nginx);
 - a misconfigured, untrusted proxy fails closed: all clients share one budget
   rather than going unlimited;
 - with no proxy configured, `X-Forwarded-For` is ignored.
@@ -248,3 +248,132 @@ that wait):
 | --------------------------------- | ------------------- |
 | Console, production, sign-in page | 29 requests, 412 KB |
 | id, production, sign-in page      | 20 requests, 68 KB  |
+
+## Docs app removed; a Content Security Policy for the apps (16 October 2026)
+
+`web/docs` is gone, with everything that only served it: its port in
+`make dev`, its place in `make setup` and the `make web-*` targets, its entry
+in the brand tests, and the Markdown pages and Postman collections
+`cmd/apidoc` wrote for it. `make docs` now writes only the two OpenAPI
+documents the server answers itself (`internal/api/reference/`).
+
+console and id now send a Content Security Policy from SvelteKit's own `csp`
+option: scripts only from the app, each page's own carrying a fresh nonce;
+styles from the app or inline; images from the app, `data:` or `https:` (logos
+and avatars an administrator gave); nothing framed. It replaces the
+`frame-ancestors` header the hooks set by hand.
+
+Checked in Chrome against a throwaway API, in development and in the
+production builds: 18 console pages loaded signed in (the flow editor and TOTP
+setup among them), 8 client-side navigations, and the id sign-in, register,
+password-reset, signed-out and error pages — no policy violations and no page
+errors.
+
+## Caddy in front of `make dev` (16 October 2026)
+
+`make dev` now runs Caddy (`deploy/Caddyfile.dev`) in front of the Vite dev
+servers and the API, with the production routing: https://id.localhost serves
+the sign-in pages with the provider and account API paths, and
+https://admin-id.localhost the panel with the admin API. Vite's own API
+proxies are gone, so development and production share one routing, one origin
+per app, https and Secure host-only cookies. Caddy signs with its own local CA,
+which `make setup` trusts once (`make trust`). The default URLs in `.env.example`
+and the config are the Caddy ones, and `/preview` raises its own edge on a
+spare port.
+
+Checked against a throwaway API on spare ports through the same Caddyfile, in
+Chrome: the first administrator created through the edge, a sign-in whose
+session cookie came back Secure and scoped to `admin-id.localhost` alone, 17
+console pages and 3 id pages with no console error, policy violation or page
+error, Vite's hot-reload socket connected through Caddy on every page, and the
+discovery document naming the https issuer. A new config test keeps cookies
+plain on http.
+
+## A production edge from shared snippets (18 October 2026)
+
+Taken from the proxy guidance of Authelia (forwarded headers, trusted proxies,
+its `SetBaseSecurityHeaders`) and PocketBase (body limit, timeouts behind
+Caddy). All three Caddyfiles now import `deploy/caddy/snippets.caddy`, where the
+routing is written once, and `deploy/Caddyfile.prod` is committed: the same
+file on every server, reading its URLs, ACME email, staff networks and any
+proxies in front of it from `deploy/.env`. What the snippets add:
+
+- the caller's address resolved once at the edge (`{client_ip}`, honouring
+  only `TRUSTED_PROXIES`) and forwarded alone; `X-Real-IP` and `Forwarded`
+  dropped;
+- `Permissions-Policy`, `X-DNS-Prefetch-Control`, `Cross-Origin-Opener-Policy`
+  on the console, `Server` and `Via` removed; HSTS in production;
+- header, body and idle timeouts in production, and 10 seconds of retries
+  while a container is being replaced instead of a 502;
+- a JSON access log without query strings or `Referer`.
+
+`make caddy-check` validates and format-checks every Caddyfile, and the routing
+test now covers the production file as well.
+
+Checked: the compiled production config puts the staff check before the admin
+routes. Through the dev edge on spare ports against a throwaway API, a sign-in
+sent with forged `X-Forwarded-For`, `X-Real-IP` and `Forwarded` was recorded at
+the real address; an authorization code, a state and a `Referer` token sent to
+it appeared nowhere in the access log; and 20 pages in Chrome loaded signed in
+with the new headers, the hot-reload socket open, and no warning from the
+policy. Docker was not running, so the container stack itself was not started.
+
+## The apps compiled into the binary (18 October 2026)
+
+PocketBase-style: both apps are built to static files (`adapter-static`,
+`ssr = false`), embedded with `go:embed` (`web/embed.go`) and served by the Go
+server, so production runs one binary and no Node.js. The two listeners stay:
+the public one serves the id app beside the provider and account API, the
+admin one the console beside the admin API, so the admin API is still never
+on the public listener.
+
+- The 35 server loads became universal loads: the same API calls, made from
+  the browser on the same origin, with the same redirects. The hooks went: the
+  theme is set before the first paint by `static/theme.js`, the language is
+  chosen from the cookie and `navigator.languages`, and the headers are
+  `internal/webui`'s.
+- `internal/webui.SPA` serves a file when there is one, `index.html` for a
+  route, and a 404 for a missing file (so a stale chunk is not answered with a
+  page). `_app/immutable/` is cached for a year, everything else revalidated.
+- `api.WithPublicUI` / `WithAdminUI` send only GET and HEAD outside the API's
+  prefixes (`/api/`, `/oauth2/`, `/.well-known/` on the public listener) to the
+  app; everything else stays a JSON `not_found`.
+- The CSP moved from a per-request nonce to SvelteKit's hash mode, in a
+  `<meta>` in `index.html`; `frame-ancestors` is sent as a header.
+- The `id` and `console` containers are gone; the API image builds the apps in
+  a Bun stage. `LOGINER_WEB_DEV=true` (set by `make dev`) leaves the apps to
+  Vite.
+
+Checked: `make build` from a copy of the tree with no `node_modules` or builds;
+the binary on spare ports answered the API, both apps at the root and at deep
+routes, a JSON 404 for `/api/does-not-exist`, for an unknown admin path and for
+the admin API on the public port, and the year-long cache on hashed files. In
+Chrome through Caddy, against the binary and again against `make dev`'s Vite:
+the first-administrator setup, the admin sign-in, 17 panel pages and 6 sidebar
+navigations, a reload of a deep route staying signed in, a user created and
+signed in on the id app with the return to the page asked for, the language
+link, and a saved dark theme applied before any of the app's scripts ran — with
+no console error or policy violation. Both session cookies are unchanged:
+HttpOnly, Secure, SameSite=Lax, host-only.
+
+New tests: the SPA handler (15 cases, including directory listings and paths
+that climb out) and the app beside each listener's API (15 cases).
+
+## Plain http on localhost, no Caddy (19 October 2026)
+
+Caddy is gone from every stack, until TLS is added later. Built, the binary
+already serves each app on the listener of the API it calls, so nothing sits
+in front of it: http://localhost:8080 is the id app with the provider and the
+account API, http://localhost:8081 the console with the admin API. Under
+`make dev` each Vite dev server passes its `apiPaths` on to the API, on
+http://localhost:5173 and :5174. `deploy/compose.yaml` publishes the API's
+ports itself, 8081 on the host's loopback only. `Permissions-Policy`, which
+the edge used to add, is now `internal/webui`'s. The routing test reads each
+app's `apiPaths`, and fails when one of them is dropped.
+
+Checked under `make dev`: discovery through :5173 names the http issuer; an
+admin sign-in through :5174 reaches the API from its own origin and is
+refused (403) from another; the admin API is not reachable on the id origin;
+in Chrome both sign-in pages loaded and called their APIs with no console
+error or policy violation. The Docker stack was validated with
+`docker compose config` but not started.

@@ -1,9 +1,9 @@
 import type { UserSessionPage } from '#lib/api/index.js';
 import { SESSIONS_PAGE_SIZE } from '#lib/query/index.js';
-import { apiGet, requirePermission } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { apiGet, requirePermission } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, parent, url }) => {
+export const load: PageLoad = async ({ fetch, parent, url }) => {
 	requirePermission((await parent()).admin, 'users.read');
 
 	const search = url.searchParams.get('search')?.trim() ?? '';

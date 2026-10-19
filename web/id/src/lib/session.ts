@@ -1,15 +1,9 @@
-import { error, redirect, type Cookies } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { ApiError, account, type User } from '#lib/api/index.js';
-import { COOKIES } from '#lib/brand.js';
 
-export async function currentUser(
-	cookies: Cookies,
-	fetch: typeof globalThis.fetch
-): Promise<User | null> {
-	// No cookie, no session: no need to ask. The cookie is the API's, set on
-	// this app's origin through the proxy, so the renderer can see it.
-	if (!cookies.get(COOKIES.session)) return null;
-
+/** Who is signed in, asked of the API: the session cookie is HttpOnly, so
+ *  only the answer to /account/me can say whether there is one. */
+export async function currentUser(fetch: typeof globalThis.fetch): Promise<User | null> {
 	try {
 		return (await account.me(fetch)).user;
 	} catch (err) {
@@ -19,12 +13,8 @@ export async function currentUser(
 	}
 }
 
-export async function requireUser(
-	cookies: Cookies,
-	fetch: typeof globalThis.fetch,
-	url: URL
-): Promise<User> {
-	const user = await currentUser(cookies, fetch);
+export async function requireUser(fetch: typeof globalThis.fetch, url: URL): Promise<User> {
+	const user = await currentUser(fetch);
 
 	if (!user) {
 		redirect(303, `/login?next=${encodeURIComponent(url.pathname + url.search)}`);

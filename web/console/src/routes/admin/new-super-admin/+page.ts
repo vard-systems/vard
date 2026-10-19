@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
-import { setupRequired } from '#lib/server/api.js';
-import type { PageServerLoad } from './$types';
+import { setupRequired } from '#lib/api/load.js';
+import type { PageLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch }) => {
+export const load: PageLoad = async ({ fetch }) => {
 	if (!(await setupRequired(fetch))) {
 		redirect(307, resolve('admin/login'));
 	}

@@ -25,13 +25,6 @@ type Schema struct {
 	Of          *Schema
 }
 
-func (s *Schema) resolved() *Schema {
-	if s != nil && s.Of != nil {
-		return s.Of
-	}
-	return s
-}
-
 type Property struct {
 	Name        string
 	Schema      *Schema

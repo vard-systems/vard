@@ -28,8 +28,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
 	let response: Response;
 	try {
-		// The admin API is on this app's own origin: the dev server's proxy,
-		// or the reverse proxy in production, routes /api/v1/admin to it.
+		// The admin API is on this app's own origin: the binary serves both,
+		// and under `make dev` Vite passes /api/v1/admin on to it.
 		response = await fetcher(`/api/v1${path}`, {
 			method,
 			credentials: 'same-origin',

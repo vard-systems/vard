@@ -75,7 +75,7 @@ export function draftOf(flow: FlowDraft): FlowDraft {
 	};
 }
 
-export const PROOF_STEPS: LoginStep[] = ['password', 'social'];
+const PROOF_STEPS: LoginStep[] = ['password', 'social'];
 
 export const MAX_SESSION_HOURS = 24 * 90;
 

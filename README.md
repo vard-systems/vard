@@ -1,13 +1,12 @@
 # Loginer
 
 An OAuth 2.0 authorization server and OpenID Connect provider written in Go,
-with three web apps:
+with two web apps:
 
-| App            | What it is                                         |
-| -------------- | -------------------------------------------------- |
-| `web/id`       | Hosted sign-in pages and each user's own account   |
-| `web/console`  | The admin panel                                    |
-| `web/docs`     | Documentation for developers integrating with it   |
+| App           | What it is                                       |
+| ------------- | ------------------------------------------------ |
+| `web/id`      | Hosted sign-in pages and each user's own account |
+| `web/console` | The admin panel                                  |
 
 **Features:** authorization code with PKCE, refresh token rotation with reuse
 detection, client credentials, userinfo, logout, revocation, introspection,
@@ -22,16 +21,20 @@ Requirements: Go 1.27+, PostgreSQL 14+, Redis 6.2+ (optional but recommended),
 [Bun](https://bun.sh) and Node.js 24+.
 
 ```sh
-make setup    # creates .env with a secret key, the database, and installs dependencies
-make dev      # starts the API and all three apps
+make setup    # .env with a secret key, the database, dependencies
+make dev      # starts the API and both apps, with hot reload
 ```
 
-| What    | URL                                 |
-| ------- | ----------------------------------- |
-| id      | http://localhost:5173               |
-| console | http://localhost:5174/admin/login   |
-| docs    | http://localhost:5175               |
-| API     | `:8080` public, `:8081` admin       |
+Everything is plain http on localhost. Each app is on its own origin together
+with the API paths it calls: under `make dev` the Vite dev server passes those
+paths on to the API; otherwise the binary serves the app on the API's own
+listener.
+
+| What    | `make dev`                        | `make run`, `make deploy-local`   |
+| ------- | --------------------------------- | --------------------------------- |
+| id      | http://localhost:5173             | http://localhost:8080             |
+| console | http://localhost:5174/admin/login | http://localhost:8081/admin/login |
+| API     | `:8080` public, `:8081` admin     | the same ports as the apps        |
 
 Open the console and create the first administrator. Run `make` to see every
 target.
@@ -41,44 +44,49 @@ target.
 Every setting is an environment variable, read from `.env` (real environment
 variables win). `.env.example` documents all of them. The ones that matter most:
 
-| Variable                     | Purpose                                                                 |
-| ---------------------------- | ----------------------------------------------------------------------- |
-| `LOGINER_SECRET_KEY`         | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
-| `LOGINER_DB_DSN`             | PostgreSQL connection string.                                           |
-| `LOGINER_ISSUER`             | Public URL of the provider (the id app's origin).                       |
-| `LOGINER_ADMIN_URL`          | The console's URL; only this origin may change things via the admin API. |
-| `LOGINER_REDIS_HOST`         | Redis for caching, sessions and shared rate limits. Empty runs without. |
-| `LOGINER_TRUSTED_PROXIES`    | Proxies whose `X-Forwarded-For` is believed. **Must be set behind a proxy.** |
-| `LOGINER_RATE_LIMIT`         | Attempts per minute per address on password and email endpoints.        |
-| `LOGINER_ADMIN_MFA`          | `required` or `optional`, seeded on first start.                        |
+| Variable                  | Purpose                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `LOGINER_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
+| `LOGINER_DB_DSN`          | PostgreSQL connection string.                                                            |
+| `LOGINER_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
+| `LOGINER_ADMIN_URL`       | The console's URL; only this origin may change things via the admin API.                 |
+| `LOGINER_REDIS_HOST`      | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
+| `LOGINER_TRUSTED_PROXIES` | Proxies whose `X-Forwarded-For` is believed. **Must be set behind a proxy.**             |
+| `LOGINER_RATE_LIMIT`      | Attempts per minute per address on password and email endpoints.                         |
+| `LOGINER_ADMIN_MFA`       | `required` or `optional`, seeded on first start.                                         |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.
 
 ## Deploying
 
-`deploy/` holds a production stack: Postgres, Redis, the API, both apps, and
-Caddy in front with automatic TLS. Only Caddy publishes ports. The production
-`deploy/Caddyfile` is not in the repository: the server provides its own, and
-`compose.yaml` mounts it from there. `deploy/Caddyfile.local` shows the routing
-it needs.
+The server is one binary with both apps compiled in, PocketBase-style: the
+id app is served on the public listener beside the provider, the console on
+the admin listener beside the admin API, and no Node.js runs in production.
+`make build` builds the apps and then `bin/loginer`; it applies its
+migrations on start.
+
+`deploy/` holds a production stack: Postgres, Redis and that server, over
+plain http. The API publishes `8080` (id app and provider) and `8081` (console
+and admin API) — the latter on the host's loopback only, so it is reached over
+an SSH tunnel. There is no TLS yet: put a proxy in front for https, and list
+it in `TRUSTED_PROXIES`.
 
 ```sh
-cp deploy/.env.example deploy/.env   # URLs, secret key, database and Redis passwords, SMTP
-# put the server's Caddyfile at deploy/Caddyfile
+cp deploy/.env.example deploy/.env   # URLs, secrets, SMTP
 make deploy-up
 ```
 
-To try the exact same stack on one machine (served on `https://id.localhost`
-and `https://admin-id.localhost`):
+To try the same stack on one machine (served on `http://localhost:8080` and
+`http://localhost:8081`):
 
 ```sh
 make deploy-local         # generates deploy/.env, builds and starts everything
 make deploy-local-down    # stops it and drops its data
 ```
 
-A single binary is also fine: `make build` produces `bin/loginer`, which applies
-its migrations on start.
+Without Docker, run `bin/loginer` directly, or behind a TLS proxy that sends
+each host to its listener.
 
 ### Before going live
 
@@ -113,7 +121,8 @@ its migrations on start.
 ```sh
 make check              # gofmt, go vet, Go unit tests
 make test-integration   # tests against a real Postgres and Redis (throwaway databases)
-make web-check          # lint and type-check the three apps
+make web-check          # lint and type-check the two apps
+make web-test           # the apps' unit tests
 make bench              # Go micro-benchmarks
 make docs               # regenerate the API reference after changing handlers
 ```

@@ -674,10 +674,6 @@ export const categoryLabels: Record<Category, string> = {
 	other: 'Other'
 };
 
-export function categoryOf(action: string): Category {
-	return actions[action]?.category ?? 'other';
-}
-
 export function actionsIn(category: Category): string[] {
 	return Object.entries(actions)
 		.filter(([, action]) => action.category === category)
