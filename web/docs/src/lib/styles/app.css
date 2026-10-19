@@ -1,8 +1,0 @@
-/* Everything the docs load, in order. */
-@import '@fontsource/jetbrains-mono/400.css';
-@import '@fontsource/jetbrains-mono/500.css';
-@import '@fontsource/jetbrains-mono/600.css';
-@import './fonts.css';
-@import './tokens.css';
-@import './base.css';
-@import './prose.css';

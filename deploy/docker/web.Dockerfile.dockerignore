@@ -1,9 +1,0 @@
-*
-!i18n
-!web
-web/*/node_modules
-web/*/build
-web/*/.svelte-kit
-web/*/.env
-web/*/.env.*
-!web/*/.env.example
