@@ -2,16 +2,15 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import type { ComponentType } from 'svelte';
 	import { Dialog } from '@ark-ui/svelte/dialog';
 	import { Portal } from '@ark-ui/svelte/portal';
 	import {
-		RiBookOpenLine,
 		RiCornerDownLeftLine,
 		RiExternalLinkLine,
 		RiGithubFill,
-		RiSearchLine
-	} from 'svelte-remixicon';
+		RiSearchLine,
+		type IconData
+	} from '#lib/icons.js';
 	import type { Admin } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import { Icon, IconButton, Kbd } from '#lib/components/ui/index.js';
@@ -21,7 +20,7 @@
 		id: string;
 		label: string;
 		group: string;
-		icon: ComponentType;
+		icon: IconData;
 		href: string;
 		external?: boolean;
 	};
@@ -43,14 +42,6 @@
 				href: resolve(item.route)
 			}))
 		),
-		{
-			id: 'docs',
-			label: 'Documentation',
-			group: 'Help',
-			icon: RiBookOpenLine,
-			href: BRAND.docsUrl,
-			external: true
-		},
 		{
 			id: 'github',
 			label: 'GitHub',
@@ -148,7 +139,7 @@
 
 		if (event.key === 'Enter') {
 			event.preventDefault();
-			run(matches[active]);
+			void run(matches[active]);
 		}
 	}
 

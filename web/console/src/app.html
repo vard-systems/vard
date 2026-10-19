@@ -1,19 +1,13 @@
 <!doctype html>
-<!-- The placeholder on the html tag below is replaced in hooks.server.ts with
-     the reader's saved theme, so the page arrives already dark or light. Do
-     not repeat that token anywhere above this line: only its first occurrence
-     is substituted. -->
-<html lang="__LANG__" __THEME__>
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
-		<!-- The icon is named here rather than imported by the app, so it is
-		     in the first byte of every page. A path that answers with
-		     something other than a page has no head to name it in, and the
-		     browser asks for /favicon.ico instead — which is a route of its
-		     own, leading back to this same file. -->
+		<!-- Named here rather than imported by the app, so the icon is in the
+		     first byte of every page. -->
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+		<script src="%sveltekit.assets%/theme.js"></script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

@@ -1,8 +1,9 @@
-# Production: Postgres, Redis, the API, the id and console apps, and Caddy in
-# front. Only Caddy publishes ports. See the repository README.
+# Production: Postgres, Redis, the API, and the two apps as Node servers in
+# front of it, over plain http. Only the apps publish ports: each renders its
+# pages and passes the API's paths on. See the repository README.
 #
 #   cp deploy/.env.example deploy/.env    # fill it in
-#   make deploy-up
+#   make docker-up
 
 name: loginer
 
@@ -17,41 +18,18 @@ x-hardened: &hardened
   logging: *logging
   security_opt: ["no-new-privileges:true"]
 
-# The two renderers. They answer on 3000 and reach the API inside the network;
-# nothing outside the network reaches them.
+# What both apps share. They start once the API answers. Their healthcheck
+# asks for a static file, so it says the server is up without rendering a
+# page, and filling the API's log, every few seconds.
 x-web: &web
   <<: *hardened
   depends_on:
     api: { condition: service_healthy }
   healthcheck:
-    # Any answer at all means the Node server is up. Whether the API behind it
-    # is healthy is the API's own check to fail, not this one. The header goes
-    # with it because ADDRESS_HEADER below makes it required — the check then
-    # takes the same path a reader's request does.
-    test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/',{redirect:'manual',headers:{'x-forwarded-for':'127.0.0.1'}}).then(()=>process.exit(0),()=>process.exit(1))"]
+    test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/favicon.svg"]
     interval: 5s
     timeout: 3s
-    retries: 12
-
-# What both renderers are told regardless of which app they are. A service's
-# own environment replaces this key rather than adding to it, so each one
-# merges this map in explicitly.
-x-web-env: &webenv
-  # adapter-node reads the caller's address from this header instead of the
-  # socket, which is Caddy. Without it every request the renderer makes on a
-  # reader's behalf reaches the API as Caddy's own address.
-  #
-  # It is then required: adapter-node raises on a request that arrives without
-  # it, and the page answers 503. Caddy's reverse_proxy always sets it, and
-  # neither renderer publishes a port, so nothing else reaches them — but that
-  # is why. Do not put anything in front of these that does not forward it.
-  ADDRESS_HEADER: x-forwarded-for
-  XFF_DEPTH: "1"
-  # And its public address from these, which Caddy sets from the request it
-  # was sent (overwriting any a caller sent itself). adapter-node has no
-  # ORIGIN any more; this keeps one image right for whatever domain it serves.
-  PROTOCOL_HEADER: x-forwarded-proto
-  HOST_HEADER: x-forwarded-host
+    retries: 24
 
 services:
   postgres:
@@ -78,26 +56,43 @@ services:
     image: redis:8-alpine
     # A password, because what is in here decides who is signed in: a
     # session put here is believed. Anything else on the network that was
-    # taken over — a page renderer, the proxy — could otherwise write one.
-    command: ["sh", "-c", "exec redis-server --save '' --appendonly no --maxmemory 256mb --maxmemory-policy volatile-lru --requirepass \"$$REDIS_PASSWORD\""]
+    # taken over — the proxy, say — could otherwise write one.
+    command:
+      [
+        "sh",
+        "-c",
+        'exec redis-server --save '''' --appendonly no --maxmemory 256mb --maxmemory-policy volatile-lru --requirepass "$$REDIS_PASSWORD"',
+      ]
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in deploy/.env}
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      test:
+        [
+          "CMD-SHELL",
+          'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep -q PONG',
+        ]
       interval: 2s
       retries: 30
     networks: [internal]
 
   api:
     <<: *hardened
-    build: { context: .., dockerfile: deploy/docker/api.Dockerfile, args: { VERSION: "${VERSION:-dev}" } }
+    build:
+      {
+        context: ..,
+        dockerfile: deploy/docker/api.Dockerfile,
+        args: { VERSION: "${VERSION:-dev}" },
+      }
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     healthcheck:
-      # Both listeners, because Caddy routes to both and either one failing to
-      # come up is a broken deployment.
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz && wget -qO- http://127.0.0.1:8081/healthz"]
+      # Both listeners: either one failing to come up is a broken deployment.
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8080/healthz && wget -qO- http://127.0.0.1:8081/healthz",
+        ]
       interval: 5s
       timeout: 3s
       retries: 24
@@ -119,10 +114,10 @@ services:
       # After the first start the setting lives in the database.
       LOGINER_ADMIN_MFA: ${LOGINER_ADMIN_MFA:-required}
       LOGINER_RATE_LIMIT: ${LOGINER_RATE_LIMIT:-20}
-      # Only the three containers that forward a caller's address, by their
-      # fixed addresses below — not the whole subnet, which is also Postgres
-      # and Redis.
-      LOGINER_TRUSTED_PROXIES: 172.30.0.2/32,172.30.0.3/32,172.30.0.4/32
+      # Only the two apps forward a caller's address, from their fixed
+      # addresses below — not the whole subnet, which is also Postgres and
+      # Redis.
+      LOGINER_TRUSTED_PROXIES: 172.30.0.2/32,172.30.0.3/32
       LOGINER_SMTP_HOST: ${LOGINER_SMTP_HOST:-}
       LOGINER_SMTP_PORT: ${LOGINER_SMTP_PORT:-587}
       LOGINER_SMTP_USERNAME: ${LOGINER_SMTP_USERNAME:-}
@@ -130,62 +125,49 @@ services:
       LOGINER_SMTP_FROM: ${LOGINER_SMTP_FROM:-}
     networks: [internal]
 
+  # The users' site: the sign-in pages, with the provider and the account API
+  # passed on to the public listener.
   id:
     <<: *web
     build:
-      context: ..
-      dockerfile: deploy/docker/web.Dockerfile
-      args: { APP: web/id }
+      {
+        context: ..,
+        dockerfile: deploy/docker/web.Dockerfile,
+        args: { APP: web/id },
+      }
     environment:
-      <<: *webenv
       API_URL: http://api:8080
+    ports: ["8080:3000"]
     networks:
-      internal: { ipv4_address: 172.30.0.3 }
+      internal: { ipv4_address: 172.30.0.2 }
 
+  # The staff site: the panel, with the admin API passed on to the admin
+  # listener. Published on this machine's loopback only, so the panel and the
+  # admin API are not on the network; reach it over an SSH tunnel
+  # (ssh -L 8081:localhost:8081 server).
   console:
     <<: *web
     build:
-      context: ..
-      dockerfile: deploy/docker/web.Dockerfile
-      args: { APP: web/console }
+      {
+        context: ..,
+        dockerfile: deploy/docker/web.Dockerfile,
+        args: { APP: web/console },
+      }
     environment:
-      <<: *webenv
       API_URL: http://api:8081
+    ports: ["127.0.0.1:8081:3000"]
     networks:
-      internal: { ipv4_address: 172.30.0.4 }
-
-  caddy:
-    <<: *hardened
-    image: caddy:2-alpine
-    depends_on:
-      id: { condition: service_healthy }
-      console: { condition: service_healthy }
-    ports: ["80:80", "443:443", "443:443/udp"]
-    volumes:
-      # The server's own, not in the repository. Without create_host_path a
-      # missing one becomes an empty directory, which Caddy cannot read and
-      # which stays in the way of the real file.
-      - type: bind
-        source: ./Caddyfile
-        target: /etc/caddy/Caddyfile
-        read_only: true
-        bind: { create_host_path: false }
-      - caddy:/data
-      - caddy-config:/config
-    networks:
-      internal: { ipv4_address: 172.30.0.2 }
+      internal: { ipv4_address: 172.30.0.3 }
 
 networks:
   internal:
     ipam:
       config:
-        # The forwarders get .2 to .4 by name above; everything else is handed
-        # an address out of the upper half, so a dynamic one can never land on
+        # The apps get .2 and .3 by name above; everything else is handed an
+        # address out of the upper half, so a dynamic one can never land on
         # an address the API trusts.
         - subnet: 172.30.0.0/24
           ip_range: 172.30.0.128/25
 
 volumes:
   postgres:
-  caddy:
-  caddy-config:

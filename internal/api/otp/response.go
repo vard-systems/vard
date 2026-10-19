@@ -32,7 +32,6 @@ type limits struct {
 	MaxResendSecond int `json:"max_resend_seconds"`
 }
 
-// response is what both endpoints answer with.
 type response struct {
 	OTP    settingsResponse `json:"otp"`
 	Limits limits           `json:"limits"`

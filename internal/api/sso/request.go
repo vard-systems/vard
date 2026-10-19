@@ -3,7 +3,7 @@ package sso
 import (
 	"net/http"
 
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 )
 
 // targetType is what a connection is called in the activity log.
@@ -59,7 +59,6 @@ type connectionRequest struct {
 	RoleMappings *[]roleMapping `json:"role_mappings" validate:"omitnil,max=100"`
 }
 
-// roleMapping is one group given one role.
 type roleMapping struct {
 	Group  string `json:"group"`
 	RoleID string `json:"role_id"`

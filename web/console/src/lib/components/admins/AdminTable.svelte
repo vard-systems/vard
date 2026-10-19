@@ -6,7 +6,7 @@
 		RiText,
 		RiTimeLine,
 		RiToggleLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { AdminRecord, AdminStatus } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
 	import { formatDateTime } from '#lib/utils/format.js';

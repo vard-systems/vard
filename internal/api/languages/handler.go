@@ -1,3 +1,5 @@
+// Package languages manages the languages the sign-in pages are offered in, and
+// their translations.
 package languages
 
 import (
@@ -10,10 +12,10 @@ import (
 	"github.com/google/uuid"
 
 	"loginer/i18n"
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
-	"loginer/internal/api/validate"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
+	"loginer/internal/api/kit/validate"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
@@ -24,7 +26,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }

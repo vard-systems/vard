@@ -9,7 +9,6 @@ const groupModules = import.meta.glob('../../../../../i18n/id/en/*.json', {
 	import: 'default'
 });
 
-export const base: Messages = Object.assign(
-	{},
-	...Object.values(groupModules).map((file) => flatten(file) ?? {})
+export const base: Messages = Object.fromEntries(
+	Object.values(groupModules).flatMap((file) => Object.entries(flatten(file) ?? {}))
 );

@@ -8,10 +8,10 @@ import (
 
 // Every connection either server takes has to have a deadline on each part of
 // it. Without one a caller holds a connection, and the goroutine serving it,
-// for as long as it cares to — which is why this checks the listener rather
+// for as long as it cares to — which is why this checks the server rather
 // than trusting the four fields to stay where they were put.
-func TestListenerBoundsEveryPartOfAConnection(t *testing.T) {
-	server := listener(":8080", http.NewServeMux())
+func TestAServerBoundsEveryPartOfAConnection(t *testing.T) {
+	server := newServer(":8080", http.NewServeMux())
 
 	timeouts := []struct {
 		name  string

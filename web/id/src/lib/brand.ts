@@ -11,7 +11,7 @@ export const BRAND = {
 
 export const COOKIES = {
 	/** The user's session at the server. Set by the API, HttpOnly: this app
-	    never reads it, it only passes it on from a server load. */
+	    never reads it; the browser sends it with every API call. */
 	session: `${BRAND.slug}_user_session`,
 
 	theme: `${BRAND.slug}-account-theme`,
@@ -19,4 +19,4 @@ export const COOKIES = {
 	language: `${BRAND.slug}-account-language`
 } as const;
 
-export const LANGUAGE_DEPENDENCY = `${BRAND.slug}:language`;
+export const LANGUAGE_DEPENDENCY = `${BRAND.slug}:language` as const;

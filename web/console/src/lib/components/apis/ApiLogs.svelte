@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { RiRefreshLine } from 'svelte-remixicon';
+	import { RiRefreshLine } from '#lib/icons.js';
 	import type { API, APILogEntry } from '#lib/api/index.js';
 	import { Alert, Badge, IconButton, Note } from '#lib/components/ui/index.js';
 	import { apiLogsOptions } from '#lib/query/index.js';

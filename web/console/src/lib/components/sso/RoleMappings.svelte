@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiAddLine, RiDeleteBinLine } from 'svelte-remixicon';
+	import { RiAddLine, RiDeleteBinLine } from '#lib/icons.js';
 	import type { Role, SSORoleMapping } from '#lib/api/index.js';
 	import { Button, Icon, IconButton, Input, Note, Select } from '#lib/components/ui/index.js';
 	import { resolve } from '$app/paths';
@@ -56,7 +56,7 @@
 	{:else if roles.length === 0 && !readOnly}
 		<Note>
 			There are no roles yet, so there is nothing to map a group to.
-			<a href={resolve('admin/dashboard/roles')}>Create one on the Roles page</a>
+			<a href={resolve('/(panel)/roles')}>Create one on the Roles page</a>
 		</Note>
 	{:else if !readOnly}
 		<div>

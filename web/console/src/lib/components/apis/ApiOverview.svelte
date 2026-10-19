@@ -6,7 +6,7 @@
 		RiLockLine,
 		RiShieldUserLine,
 		RiTimerLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { API } from '#lib/api/index.js';
 	import { CodeBlock, FormSection, Icon, Input } from '#lib/components/ui/index.js';
 	import { lifetimeLabel } from './scopes';

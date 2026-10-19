@@ -9,7 +9,7 @@
 		RiRefreshLine,
 		RiServerLine,
 		RiSettings3Line
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import {
 		messageOf,
 		ssoApi,

@@ -1,8 +1,11 @@
+// Command loginer runs the server: the provider and account API on one listener,
+// the admin API on the other, until it is told to stop.
 package main
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -24,10 +27,9 @@ import (
 	"loginer/internal/store"
 )
 
-var (
-	version = "dev"
-	commit  = "unknown"
-)
+// version is set at build time (-ldflags "-X main.version=…", from
+// `git describe`, which names the commit too).
+var version = "dev"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -45,7 +47,7 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
-	log.Info(brand.Name+" starting", "version", version, "commit", commit)
+	log.Info(brand.Name+" starting", "version", version)
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -143,9 +145,9 @@ func run(log *slog.Logger) error {
 	go st.KeepSwept(ctx, cfg.AuditRetention, log)
 	go shared.KeepSettling(ctx)
 
-	return serve(ctx, log, []*http.Server{
-		listener(cfg.Addr, public),
-		listener(cfg.AdminAddr, admin),
+	return serve(ctx, log, map[string]*http.Server{
+		"public": newServer(cfg.Addr, public),
+		"admin":  newServer(cfg.AdminAddr, admin),
 	})
 }
 
@@ -173,7 +175,7 @@ const (
 	idleTimeout       = 2 * time.Minute
 )
 
-func listener(addr string, handler http.Handler) *http.Server {
+func newServer(addr string, handler http.Handler) *http.Server {
 	return &http.Server{
 		Addr:              addr,
 		Handler:           handler,
@@ -186,15 +188,16 @@ func listener(addr string, handler http.Handler) *http.Server {
 
 const shutdownGrace = 15 * time.Second
 
-func serve(ctx context.Context, log *slog.Logger, servers []*http.Server) error {
+// serve runs every server until ctx ends or one of them fails, then gives the
+// requests under way shutdownGrace to finish.
+func serve(ctx context.Context, log *slog.Logger, servers map[string]*http.Server) error {
 	failed := make(chan error, len(servers))
-	for i, server := range servers {
-		name := []string{"public", "admin"}[i]
+	for name, server := range servers {
 		log.Info("server listening", "server", name, "addr", server.Addr)
 
 		go func() {
 			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				failed <- err
+				failed <- fmt.Errorf("the %s server: %w", name, err)
 			}
 		}()
 	}

@@ -1,13 +1,13 @@
 <script lang="ts">
+	import type { IconData } from '#lib/icons.js';
 	import { resolve } from '$app/paths';
-	import type { ComponentType } from 'svelte';
 	import { Icon, Tooltip } from '#lib/components/ui/index.js';
 	import type { Section } from './sections';
 
 	type Props = {
 		route: Section;
 		label: string;
-		icon: ComponentType;
+		icon: IconData;
 		current: boolean;
 		collapsed: boolean;
 	};

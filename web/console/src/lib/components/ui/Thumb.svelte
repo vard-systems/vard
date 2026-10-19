@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
+	import type { IconData } from '#lib/icons.js';
 	import Icon from './Icon.svelte';
 
 	type Props = {
 		src?: string;
-		icon?: ComponentType;
+		icon?: IconData;
 		text?: string;
 		size?: 'xs' | 'sm' | 'md';
 		shape?: 'square' | 'circle';

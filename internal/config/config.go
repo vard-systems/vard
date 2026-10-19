@@ -1,3 +1,5 @@
+// Package config reads the server's settings from the environment and .env, and
+// refuses ones that cannot work.
 package config
 
 import (
@@ -148,8 +150,8 @@ func Load() (Config, error) {
 	v.SetDefault(env("ADMIN_MFA"), "optional")
 	v.SetDefault(env("KEY_ROTATION_DAYS"), 90)
 	v.SetDefault(env("AUDIT_RETENTION_DAYS"), 365)
-	v.SetDefault(env("ISSUER"), "http://localhost:5173")
-	v.SetDefault(env("ADMIN_URL"), "http://localhost:5174")
+	v.SetDefault(env("ISSUER"), "http://localhost:8080")
+	v.SetDefault(env("ADMIN_URL"), "http://localhost:8081")
 	v.SetDefault(env("SMTP_PORT"), 587)
 	v.SetDefault(env("SMTP_FROM"), brand.Name+" <no-reply@localhost>")
 	v.SetDefault(env("DB_DRIVER"), "postgres")

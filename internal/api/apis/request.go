@@ -11,7 +11,6 @@ import (
 // maxLogEntries caps how many log entries one request returns.
 const maxLogEntries = 100
 
-// targetType is what these records are called in the activity log.
 const targetType = "api"
 
 // maxScopes caps how many scopes one API may have.
@@ -36,7 +35,6 @@ type apiRequest struct {
 	Scopes []scopeRequest `json:"scopes" validate:"dive"`
 }
 
-// scopeRequest is one scope of an API.
 type scopeRequest struct {
 	ID          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`

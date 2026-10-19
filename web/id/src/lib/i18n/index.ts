@@ -17,7 +17,7 @@ let activeLocale: string | undefined;
 function initialize() {
 	if (initialized) return;
 
-	init({
+	void init({
 		fallbackLocale: BASE,
 		initialLocale: BASE,
 		handleMissingMessage: () => undefined

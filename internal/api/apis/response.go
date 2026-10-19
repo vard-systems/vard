@@ -10,7 +10,6 @@ import (
 	"loginer/internal/store"
 )
 
-// scopeResponse is one scope of an API.
 type scopeResponse struct {
 	ID          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`

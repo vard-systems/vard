@@ -32,7 +32,6 @@ type logResponse struct {
 	UserAgent string `json:"user_agent"`
 }
 
-// overviewResponse is the dashboard.
 type overviewResponse struct {
 	// Days is the range everything below was counted over.
 	Days      int                `json:"days"`

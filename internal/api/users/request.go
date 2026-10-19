@@ -6,14 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/query"
+	"loginer/internal/api/kit/query"
 	"loginer/internal/store"
 )
 
-// targetType is what these records are called in the activity log.
 const targetType = "user"
 
-// maxPageSize caps how many users one request can ask for.
 const maxPageSize = 200
 
 // maxApplications caps how many applications a user's roles are reported for.

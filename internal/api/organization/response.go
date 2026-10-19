@@ -20,7 +20,6 @@ type organizationResponse struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// response is what both endpoints answer with.
 type response struct {
 	Organization organizationResponse `json:"organization"`
 }

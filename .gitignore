@@ -16,7 +16,7 @@ go.work.sum
 *.pem
 *.key
 
-# Logs (scripts/start.sh writes .logs/)
+# Logs (scripts/dev.sh writes .logs/)
 /.logs/
 *.log
 
@@ -31,6 +31,3 @@ go.work.sum
 *.swp
 .DS_Store
 
-# The production Caddyfile is the server's: it is put in deploy/ there, beside
-# compose.yaml, which mounts it. Caddyfile.local stays, for make deploy-local.
-/deploy/Caddyfile

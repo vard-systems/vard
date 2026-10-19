@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiGlobalLine, RiShieldUserLine } from 'svelte-remixicon';
+	import { RiGlobalLine, RiShieldUserLine } from '#lib/icons.js';
 	import type { Application, Role } from '#lib/api/index.js';
 	import { Badge, Icon, SearchInput } from '#lib/components/ui/index.js';
 	import Choice from './Choice.svelte';

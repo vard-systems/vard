@@ -297,8 +297,8 @@
 }
 
 /* Dialog. Every dialog is these parts, and by default a card in the middle
-   of the window over a dimmed page: a question (ConfirmDialog), a short form
-   (Modal), the command palette. Each of those says only how wide it is and,
+   of the window over a dimmed page: a question (ConfirmDialog), the command
+   palette. Each of those says only how wide it is and,
    for the palette, where it sits.
 
    A record, or anything else with a long form, opts into the full-window

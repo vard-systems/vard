@@ -1,3 +1,5 @@
+// Package applications manages OAuth applications: their settings, secrets and
+// API access, and a preview of the tokens they would get.
 package applications
 
 import (
@@ -11,9 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
 	"loginer/internal/brand"
 	"loginer/internal/model"
 	"loginer/internal/store"
@@ -56,7 +58,6 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, newPageResponse(apps, counts, total, query))
 }
 
-// Get returns one application.
 func (h *Handler) Get(c *gin.Context) {
 	app, ok := h.find(c, model.PermApplicationsRead)
 	if !ok {

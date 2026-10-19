@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAddLine, RiCloseLine, RiGlobalLine, RiShieldUserLine } from 'svelte-remixicon';
+	import { RiAddLine, RiCloseLine, RiGlobalLine, RiShieldUserLine } from '#lib/icons.js';
 	import { rolesApi, type Admin, type API, type Application, type Role } from '#lib/api/index.js';
 	import {
 		Badge,

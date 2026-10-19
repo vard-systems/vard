@@ -4,14 +4,14 @@ import {
 	RiGoogleFill,
 	RiKey2Line,
 	RiShieldKeyholeLine,
-	RiVkFill
-} from 'svelte-remixicon';
-import type { ComponentType } from 'svelte';
+	RiVkFill,
+	type IconData
+} from '#lib/icons.js';
 
 import type { SocialKind, SocialProvider, SocialSpec } from '#lib/api/index.js';
 import type { SelectOption } from '#lib/components/ui/index.js';
 
-const marks: Record<SocialKind, ComponentType> = {
+const marks: Record<SocialKind, IconData> = {
 	google: RiGoogleFill,
 	apple: RiAppleFill,
 	facebook: RiFacebookCircleFill,
@@ -21,7 +21,7 @@ const marks: Record<SocialKind, ComponentType> = {
 	oauth2: RiKey2Line
 };
 
-export function markFor(kind: SocialKind): ComponentType {
+export function markFor(kind: SocialKind): IconData {
 	return marks[kind] ?? RiKey2Line;
 }
 

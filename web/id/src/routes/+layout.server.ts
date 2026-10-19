@@ -22,6 +22,8 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 	);
 
 	if (asked !== undefined) {
+		// Readable by the page's script too, which writes it when the reader
+		// picks another language (#lib/i18n/switch.js).
 		cookies.set(COOKIES.language, language, {
 			path: '/',
 			httpOnly: false,

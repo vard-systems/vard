@@ -1,70 +1,106 @@
 # Loginer — run `make` for the list of targets.
 
-SHELL   := bash
-APPS    := console id docs
+SHELL         := bash
+.SHELLFLAGS   := -eu -o pipefail -c
+.DEFAULT_GOAL := help
+.DELETE_ON_ERROR:
+MAKEFLAGS     += --no-print-directory
+
+APPS    := console id
 # Not ./...: that walks into web/*/node_modules.
 PKGS    := ./cmd/... ./internal/... ./migrations/... ./i18n/...
+GO_DIRS := cmd internal migrations i18n
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMPOSE := docker compose -f deploy/compose.yaml
-# The same stack on one machine: .localhost hostnames, Caddy's own CA. An
-# explicit -f means compose picks up no override on its own, so it is named.
-COMPOSE_LOCAL := $(COMPOSE) -f deploy/compose.local.yaml
 
-.DEFAULT_GOAL := help
-.PHONY: help setup full-start dev run build test bench test-integration check docs docs-check \
+# $(call each-app,command): run the command in every app, stopping at the
+# first that fails.
+each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)); done
+
+.PHONY: help setup deps tidy dev run build build-api build-web generate \
+	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \
 	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
-	web-check web-test web-build deploy-build deploy-up deploy-down deploy-logs \
-	deploy-local deploy-local-down deploy-local-logs clean
+	docker-up docker-local docker-down docker-reset docker-logs docker-build docker-ps docker-config \
+	clean
 
 help: ## Show this help
-	@awk -F ':.*## ' '/^## / {printf "\n\033[1m%s\033[0m\n", substr($$0, 4)} /^[a-z -]+:.*## / {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk -F ':.*## ' '/^## / {printf "\n\033[1m%s\033[0m\n", substr($$0, 4)} /^[a-z -]+:.*## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 ## Setup
 
-setup: ## Prepare a fresh checkout: .env, database, dependencies
+setup: ## Prepare a fresh checkout: .env, the database, dependencies
 	@scripts/setup.sh
+
+deps: ## Install the Go modules and both apps' packages
+	go mod download
+	@$(call each-app,bun install --frozen-lockfile)
+
+tidy: ## Tidy go.mod and go.sum
+	go mod tidy
 
 ## Run
 
-dev full-start: ## Start the API and all web apps, with hot reload
-	@scripts/start.sh
+dev: ## Start the API and both apps with hot reload — http://localhost:5173, :5174
+	@scripts/dev.sh
 
-run: ## Start only the API
+run: ## Start only the API — :8080 public, :8081 admin
 	go run ./cmd/loginer
 
-build: ## Build the API into bin/loginer
+## Build
+
+build: build-api build-web ## Build the API and both apps
+
+build-api: ## Build the API into bin/loginer
 	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o bin/loginer ./cmd/loginer
+
+build-web: ## Build both apps into web/*/build (run each with `node build`)
+	@$(call each-app,bun install --frozen-lockfile && bun run build)
+
+generate: ## Rewrite the console's generated files: theme tokens, fonts, icons
+	cd web/console && bun run theme && bun run icons
+
+clean: ## Remove build output and logs
+	rm -rf bin .logs $(foreach app,$(APPS),web/$(app)/build web/$(app)/.svelte-kit)
 
 ## Quality
 
-check: ## Format, vet and test the Go code
-	go fmt $(PKGS) && go vet $(PKGS) && go test $(PKGS)
+fmt: ## Format every Go and app file in place
+	gofmt -w $(GO_DIRS)
+	@$(call each-app,bun run format)
 
-test: ## Run the Go tests
+lint: lint-go lint-web ## Check formatting, vet, staticcheck, lint and type-check, changing nothing
+
+lint-go: ## Lint the Go code only
+	@unformatted="$$(gofmt -l $(GO_DIRS))"; [[ -z $$unformatted ]] || { echo "not formatted (make fmt):"; echo "$$unformatted"; exit 1; }
+	go vet $(PKGS)
+	go tool staticcheck $(PKGS)
+
+lint-web: ## Lint and type-check the apps only
+	@$(call each-app,bun run lint && bun run check)
+
+test: test-go test-web ## Run the Go and app unit tests
+
+test-go: ## Run the Go unit tests only
 	go test $(PKGS)
 
-bench: ## Run the Go micro-benchmarks
-	go test -run '^$$' -bench . -benchmem ./internal/jose/ ./internal/model/ ./internal/api/ratelimit/
+test-web: ## Run the apps' unit tests only
+	@$(call each-app,bun run test)
 
-test-integration: ## Run the tests that need Postgres and Redis (throwaway databases and key prefixes)
-	@. scripts/lib.sh && load_env && LOGINER_TEST_DB_DSN="$${DB_URL:-$$LOGINER_DB_DSN}" \
+test-integration: ## Run the TestLive… tests against Postgres and Redis (throwaway databases)
+	@. scripts/lib.sh && load_env && \
+		LOGINER_TEST_DB_DSN="$${DB_URL:-$$LOGINER_DB_DSN}" \
 		LOGINER_TEST_REDIS="$${LOGINER_TEST_REDIS:-$${LOGINER_REDIS_HOST:+$$LOGINER_REDIS_HOST:$${LOGINER_REDIS_PORT:-6379}}}" \
 		go test -count=1 -run Live ./internal/...
 
-docs: ## Write the API reference (OpenAPI and web/docs pages) from the Go source
-	go run ./cmd/apidoc
+bench: ## Run the Go benchmarks
+	go test -run '^$$' -bench . -benchmem $(PKGS)
 
-docs-check: ## Fail if the API reference is behind the Go source
-	go run ./cmd/apidoc -check
+vuln: ## Report known vulnerabilities in the Go code and its modules
+	go tool govulncheck ./...
 
-web-check: ## Lint and type-check the web apps
-	@for app in $(APPS); do echo "==> $$app"; (cd web/$$app && bun run lint && bun run check) || exit 1; done
+check: lint test ## Lint and unit-test everything: the check before a change is done
 
-web-test: ## Run the console and id unit tests
-	@for app in console id; do echo "==> $$app"; (cd web/$$app && bunx vitest --run --project server) || exit 1; done
-
-web-build: ## Build the web apps
-	@for app in $(APPS); do echo "==> $$app"; (cd web/$$app && bun run build) || exit 1; done
+ci: check test-integration docker-config ## Everything a CI run would do
 
 ## Database
 
@@ -74,42 +110,45 @@ migrate-up: ## Apply pending migrations
 migrate-down: ## Roll back the newest migration
 	go run ./cmd/migrate down
 
-migrate-status: ## Show applied migrations
+migrate-status: ## Show which migrations have run
 	go run ./cmd/migrate status
 
 migrate-new: ## Create a migration — make migrate-new name=add_x
-	@test -n "$(name)" || { echo "usage: make migrate-new name=add_x"; exit 1; }
+	@[[ -n "$(name)" ]] || { echo "usage: make migrate-new name=add_x"; exit 1; }
 	go run ./cmd/migrate new $(name)
 
-db-create db-reset db-psql: ## Create, reset or open the database in .env
-	@scripts/db.sh $(@:db-%=%)
+db-create: ## Create the database in .env if it is missing
+	@scripts/db.sh create
 
-## Deploy
+db-reset: ## Empty the database in .env and migrate it afresh (asks first)
+	@scripts/db.sh reset
 
-deploy-build: ## Build the production images
-	VERSION=$(VERSION) $(COMPOSE) build
+db-psql: ## Open psql on the database in .env
+	@scripts/db.sh psql
 
-deploy-up: deploy/Caddyfile ## Start the production stack in the background
-	VERSION=$(VERSION) $(COMPOSE) up -d --build
+## Docker (deploy/compose.yaml)
 
-# Not in the repository: the server provides its own (see the README).
-deploy/Caddyfile:
-	@echo "deploy/Caddyfile is missing: put this server's Caddyfile there first" >&2; exit 1
+docker-up: ## Build and start the stack in the background, as deploy/.env says
+	VERSION=$(VERSION) $(COMPOSE) up -d --build --wait
 
-deploy-down: ## Stop the production stack
+docker-local: ## Start the stack on this machine — http://localhost:8080, :8081 (writes deploy/.env)
+	@VERSION=$(VERSION) scripts/docker-local.sh
+
+docker-down: ## Stop the stack, keeping its data
 	$(COMPOSE) down
 
-deploy-logs: ## Follow the API's logs in the production stack
-	$(COMPOSE) logs -f api
+docker-reset: ## Stop the stack and delete its data
+	$(COMPOSE) down -v
 
-deploy-local: ## Start the whole stack on this machine — https://id.localhost
-	@VERSION=$(VERSION) scripts/deploy-local.sh
+docker-logs: ## Follow the logs — every service, or one: make docker-logs service=api
+	$(COMPOSE) logs -f $(service)
 
-deploy-local-down: ## Stop the local stack and drop its database
-	$(COMPOSE_LOCAL) down -v
+docker-build: ## Build the images
+	VERSION=$(VERSION) $(COMPOSE) build
 
-deploy-local-logs: ## Follow the API's logs in the local stack
-	$(COMPOSE_LOCAL) logs -f api
+docker-ps: ## Show the stack's containers and their health
+	$(COMPOSE) ps
 
-clean: ## Remove build output and logs
-	rm -rf bin .logs $(foreach app,$(APPS),web/$(app)/build web/$(app)/.svelte-kit)
+docker-config: ## Validate deploy/compose.yaml, with placeholders for what deploy/.env would say
+	@PUBLIC_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 LOGINER_SECRET_KEY=x \
+		POSTGRES_PASSWORD=x REDIS_PASSWORD=x $(COMPOSE) config -q && echo "deploy/compose.yaml is valid"

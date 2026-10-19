@@ -1,3 +1,5 @@
+// Package auth signs administrators in: passwords, sessions, two-factor codes,
+// and what each administrator may do.
 package auth
 
 import (

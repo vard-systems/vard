@@ -1,3 +1,4 @@
+// Package otp manages the settings for one-time codes sent by email.
 package otp
 
 import (
@@ -6,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/store"
 )
 
@@ -17,7 +18,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }

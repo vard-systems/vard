@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiCodeBoxLine, RiShieldCheckLine } from 'svelte-remixicon';
+	import { RiCodeBoxLine, RiShieldCheckLine } from '#lib/icons.js';
 	import { applicationsApi, type APIAccess } from '#lib/api/index.js';
 	import { Alert, Badge, Checkbox, Icon, Note, Switch, notify } from '#lib/components/ui/index.js';
 	import { keys, applicationAccessOptions } from '#lib/query/index.js';
@@ -83,8 +83,8 @@
 			<p>
 				Register an API on the
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a href={resolve('/admin/(panel)/dashboard/apis')}>APIs page</a>, then allow this
-				application to use it here.
+				<a href={resolve('/(panel)/apis')}>APIs page</a>, then allow this application to use it
+				here.
 			</p>
 		</div>
 	</div>

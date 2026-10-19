@@ -5,7 +5,7 @@
 		RiLinksLine,
 		RiLockLine,
 		RiShieldCheckLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { API } from '#lib/api/index.js';
 	import { Badge, DataTable, type Column } from '#lib/components/ui/index.js';
 

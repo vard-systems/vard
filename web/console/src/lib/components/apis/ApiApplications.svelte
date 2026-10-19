@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAppsLine } from 'svelte-remixicon';
+	import { RiAppsLine } from '#lib/icons.js';
 	import { applicationsApi, type Admin, type API, type APIApplication } from '#lib/api/index.js';
 	import {
 		Alert,
@@ -104,8 +104,8 @@
 			<p>
 				Register one on the
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a href={resolve('/admin/(panel)/dashboard/applications')}>Applications page</a>, then allow
-				it to use this API here.
+				<a href={resolve('/(panel)/applications')}>Applications page</a>, then allow it to use this
+				API here.
 			</p>
 		</div>
 	</div>

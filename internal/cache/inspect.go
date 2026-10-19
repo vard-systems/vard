@@ -38,7 +38,6 @@ var Groups = map[string][]string{
 	SessionDatabase: {Admins, Clients, AdminSecurity, Grants},
 }
 
-// Key is one key, described.
 type Key struct {
 	Name     string
 	Kind     string

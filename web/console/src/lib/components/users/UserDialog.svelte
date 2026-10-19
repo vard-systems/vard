@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
-	import { RiComputerLine, RiMailLine, RiShieldUserLine, RiUserLine } from 'svelte-remixicon';
+	import { RiComputerLine, RiMailLine, RiShieldUserLine, RiUserLine } from '#lib/icons.js';
 	import {
 		usersApi,
 		type Admin,
@@ -151,9 +151,10 @@
 				const stored = record?.data?.[field.name];
 
 				if (field.type === 'bool') return [field.name, stored === true];
-				if (field.type === 'date') return [field.name, stored ? String(stored).slice(0, 10) : ''];
+				const text = typeof stored === 'string' || typeof stored === 'number' ? String(stored) : '';
+				if (field.type === 'date') return [field.name, text.slice(0, 10)];
 
-				return [field.name, stored == null ? '' : String(stored)];
+				return [field.name, text];
 			})
 		);
 	}
@@ -403,7 +404,7 @@
 		{#if current}
 			<LinkButton
 				variant="ghost"
-				href={`${resolve('/admin/(panel)/dashboard/sessions')}?${new URLSearchParams({ user: current.id, email: current.email })}`}
+				href={`${resolve('/(panel)/sessions')}?${new URLSearchParams({ user: current.id, email: current.email })}`}
 			>
 				<Icon icon={RiComputerLine} />
 				Sessions

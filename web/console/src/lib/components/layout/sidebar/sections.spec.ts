@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { isCurrentSection, type Section } from './sections';
 
 describe('isCurrentSection', () => {
-	const dashboard = '/admin/(panel)/dashboard';
-	const users = '/admin/(panel)/dashboard/users';
-	const apis = '/admin/(panel)/dashboard/apis';
+	const dashboard = '/(panel)';
+	const users = '/(panel)/users';
+	const apis = '/(panel)/apis';
 
 	const tests: { name: string; route: Section; id: string | null; want: boolean }[] = [
 		{
@@ -17,7 +17,7 @@ describe('isCurrentSection', () => {
 		{
 			name: 'a page under it, by its own route',
 			route: users,
-			id: '/admin/(panel)/dashboard/users/[id]',
+			id: '/(panel)/users/[id]',
 			want: true
 		},
 		{
@@ -29,7 +29,7 @@ describe('isCurrentSection', () => {
 		{
 			name: 'a page whose id starts with the same letters',
 			route: apis,
-			id: '/admin/(panel)/dashboard/apis-extra',
+			id: '/(panel)/apis-extra',
 			want: false
 		},
 		{
@@ -53,7 +53,7 @@ describe('isCurrentSection', () => {
 		{
 			name: 'a path rather than a route id, which is not what this compares',
 			route: users,
-			id: '/admin/dashboard/users',
+			id: '/users',
 			want: false
 		}
 	];

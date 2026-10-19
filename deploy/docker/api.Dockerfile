@@ -1,6 +1,7 @@
-# The Loginer API. Build context: the repository root.
+# The Loginer API server.
+# Build context: the repository root.
 #
-#   docker build -f deploy/docker/api.Dockerfile -t loginer-api .
+#   docker build -f deploy/docker/api.Dockerfile -t loginer .
 
 FROM golang:1.27-alpine AS build
 WORKDIR /src
@@ -24,6 +25,6 @@ COPY --from=build /out/loginer ./loginer
 RUN mkdir migrations
 USER loginer
 ENV GIN_MODE=release LOGINER_ADDR=:8080 LOGINER_ADMIN_ADDR=:8081
-# 8080 public, 8081 admin: neither is published; Caddy reaches them.
+# 8080 public, 8081 admin: neither is published; the apps reach them.
 EXPOSE 8080 8081
 ENTRYPOINT ["/app/loginer"]

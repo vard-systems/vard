@@ -1,3 +1,5 @@
+// Package mfa lets an administrator set up, confirm and turn off their
+// authenticator, and make new recovery codes.
 package mfa
 
 import (
@@ -7,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
 	"loginer/internal/auth"
 )
 
@@ -17,7 +19,6 @@ type Handler struct {
 	log  *slog.Logger
 }
 
-// New returns a Handler.
 func New(service *auth.Service, log *slog.Logger) *Handler {
 	return &Handler{auth: service, log: log}
 }
@@ -89,7 +90,6 @@ func (h *Handler) Disable(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// RecoveryCodes replaces the recovery codes.
 func (h *Handler) RecoveryCodes(c *gin.Context) {
 	var req codeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

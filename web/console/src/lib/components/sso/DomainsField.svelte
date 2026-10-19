@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiAddLine, RiCloseLine } from 'svelte-remixicon';
+	import { RiAddLine, RiCloseLine } from '#lib/icons.js';
 	import { Button, Icon, Input } from '#lib/components/ui/index.js';
 
 	type Props = {

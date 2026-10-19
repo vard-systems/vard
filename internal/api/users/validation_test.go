@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 )
 
 // TestUserRequestValidate covers the one column a user record has of its own.

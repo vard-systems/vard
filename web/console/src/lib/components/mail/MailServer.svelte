@@ -8,7 +8,7 @@
 		RiMailSendLine,
 		RiServerLine,
 		RiUserLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import { mailApi, type MailEncryption, type MailResponse } from '#lib/api/index.js';
 	import {
 		Button,

@@ -11,7 +11,7 @@
 		RiPhoneLine,
 		RiShieldCheckLine,
 		RiTimeLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import { organizationApi, type Organization, type OrganizationSettings } from '#lib/api/index.js';
 	import {
 		Alert,

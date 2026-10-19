@@ -32,7 +32,7 @@ export function roleMappingsOptions(userId: string) {
 	});
 }
 
-export const USER_SEARCH_LIMIT = 6;
+const USER_SEARCH_LIMIT = 6;
 
 export function userSearchOptions(term: string) {
 	return queryOptions({

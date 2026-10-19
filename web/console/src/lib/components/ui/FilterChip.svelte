@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { RiCloseLine } from 'svelte-remixicon';
+	import { RiCloseLine } from '#lib/icons.js';
 	import Icon from './Icon.svelte';
 
 	type Props = {

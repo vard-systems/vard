@@ -7,7 +7,7 @@
 		RiText,
 		RiToggleLine,
 		RiShapesLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import type { Application } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable, Icon } from '#lib/components/ui/index.js';
 	import { ADMIN_CLI, types } from './applications';
@@ -31,7 +31,7 @@
 	];
 
 	function roles(application: Application): string {
-		return `${resolve('/admin/(panel)/dashboard/roles')}?application=${application.id}`;
+		return `${resolve('/(panel)/roles')}?application=${application.id}`;
 	}
 </script>
 

@@ -4,9 +4,9 @@ import { COOKIES } from '#lib/brand.js';
 
 export type Theme = 'light' | 'dark';
 
-/** The theme is kept in a cookie rather than localStorage so the server can
- *  read it and send the page already themed. The attribute below is what the
- *  stylesheet keys off. */
+/** The theme is kept in a cookie, which static/theme.js reads before the
+ *  first paint so the page is never drawn in the wrong one. The attribute
+ *  below is what the stylesheet keys off. */
 const COOKIE = COOKIES.theme;
 const ATTRIBUTE = 'data-theme';
 const ONE_YEAR = 60 * 60 * 24 * 365;

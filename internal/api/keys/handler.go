@@ -1,3 +1,4 @@
+// Package keys lists the token signing keys and rotates them on demand.
 package keys
 
 import (
@@ -6,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/oidc"
 )
 
@@ -17,7 +18,6 @@ type Handler struct {
 	log      *slog.Logger
 }
 
-// New returns a Handler.
 func New(provider *oidc.Service, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{provider: provider, audit: recorder, log: log}
 }

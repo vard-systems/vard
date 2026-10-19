@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
 	import { DatePicker as ArkDatePicker } from '@ark-ui/svelte/date-picker';
 	import { Portal } from '@ark-ui/svelte/portal';
 	import {
 		RiArrowLeftSLine,
 		RiArrowRightSLine,
 		RiCalendarLine,
-		RiCloseLine
-	} from 'svelte-remixicon';
+		RiCloseLine,
+		type IconData
+	} from '#lib/icons.js';
 	import { formatDay, parseDay, timeZone, toDate, toIso } from './date';
 	import FieldText from './FieldText.svelte';
 	import Icon from './Icon.svelte';
@@ -17,7 +17,7 @@
 		value: string;
 		min?: string;
 		max?: string;
-		icon?: ComponentType;
+		icon?: IconData;
 		hint?: string;
 		error?: string;
 		required?: boolean;

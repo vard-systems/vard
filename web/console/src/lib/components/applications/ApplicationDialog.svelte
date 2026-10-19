@@ -7,7 +7,7 @@
 		RiRefreshLine,
 		RiSettings3Line,
 		RiShieldCheckLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import {
 		applicationsApi,
 		type Admin,
@@ -229,9 +229,7 @@
 	}
 
 	const rolesHref = $derived(
-		current
-			? `${resolve('/admin/(panel)/dashboard/roles')}?tab=application&application=${current.id}`
-			: ''
+		current ? `${resolve('/(panel)/roles')}?tab=application&application=${current.id}` : ''
 	);
 
 	const offeredGrants = $derived(

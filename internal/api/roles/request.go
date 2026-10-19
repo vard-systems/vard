@@ -6,11 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/query"
+	"loginer/internal/api/kit/query"
 	"loginer/internal/store"
 )
 
-// targetType is what these records are called in the activity log.
 const targetType = "user_role"
 
 // maxPageSize is high because the panel loads every visible role at once as

@@ -9,8 +9,8 @@ import (
 	"loginer/internal/cache"
 )
 
-// targetType is what these rows are called in the activity log. The target
-// is the database, by name; the key or group is in the metadata.
+// In the activity log the target is the database, by name; the key or
+// group is in the metadata.
 const targetType = "cache"
 
 // writeRequest is the body of the endpoint that replaces a cached value.

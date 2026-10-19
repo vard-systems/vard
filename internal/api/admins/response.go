@@ -84,7 +84,6 @@ func newAdminResponse(admin model.Admin) adminResponse {
 	}
 }
 
-// pageResponse is a page of administrators.
 type pageResponse struct {
 	Admins []adminResponse `json:"admins"`
 	Total  int64           `json:"total"`

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiLinksLine } from 'svelte-remixicon';
+	import { RiLinksLine } from '#lib/icons.js';
 	import { apisApi, type SigningAlgorithm } from '#lib/api/index.js';
 	import {
 		Button,
@@ -83,7 +83,7 @@
 			notify.success(`${result.api.name} created`);
 			await queryClient.invalidateQueries({ queryKey: keys.apis.all });
 			open = false;
-			await goto(resolve('/admin/(panel)/dashboard/apis/[id]', { id: result.api.id }));
+			await goto(resolve('/(panel)/apis/[id]', { id: result.api.id }));
 		},
 		onError: (err: unknown) => {
 			notify.error(err, 'Could not create this API');

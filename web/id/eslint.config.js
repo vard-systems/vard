@@ -24,6 +24,19 @@ export default defineConfig(
 		}
 	},
 	{
+		// The type-aware checks: what the compiler cannot say on its own.
+		// A promise nobody waits on fails silently, and a deprecated API
+		// is one a release will take away.
+		files: ['**/*.ts', '**/*.svelte'],
+		ignores: ['*.config.ts'],
+		languageOptions: { parserOptions: { projectService: true } },
+		rules: {
+			'@typescript-eslint/no-deprecated': 'error',
+			'@typescript-eslint/no-floating-promises': 'error',
+			'@typescript-eslint/no-misused-promises': 'error'
+		}
+	},
+	{
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
 		languageOptions: {
 			parserOptions: {
@@ -32,10 +45,5 @@ export default defineConfig(
 				parser: ts.parser
 			}
 		}
-	},
-	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
 	}
 );

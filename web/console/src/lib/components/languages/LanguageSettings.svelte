@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { RiAddLine } from 'svelte-remixicon';
+	import { RiAddLine } from '#lib/icons.js';
 	import type { Language, LanguageList, LocaleApp } from '#lib/api/index.js';
 	import { Button, Icon, SearchInput, ShowMore, Toolbar } from '#lib/components/ui/index.js';
 	import { firstPage, languagesOptions, LIST_PAGE_SIZE } from '#lib/query/index.js';

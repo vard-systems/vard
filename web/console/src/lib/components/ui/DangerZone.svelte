@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { RiDeleteBinLine } from 'svelte-remixicon';
+	import { RiDeleteBinLine } from '#lib/icons.js';
 	import Button from './Button.svelte';
 	import Icon from './Icon.svelte';
 	import Note from './Note.svelte';

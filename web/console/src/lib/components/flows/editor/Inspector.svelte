@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { RiDeleteBinLine } from 'svelte-remixicon';
+	import { RiDeleteBinLine } from '#lib/icons.js';
 	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 	import { countOf } from '#lib/utils/format.js';
 	import {
@@ -223,7 +223,7 @@
 			{:else if step === 'social'}
 				<Note>
 					Shows a button for each provider turned on at
-					<a href={resolve('/admin/(panel)/dashboard/social')}>Social</a>
+					<a href={resolve('/(panel)/social')}>Social</a>
 				</Note>
 			{/if}
 

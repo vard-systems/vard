@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiArrowDownSLine } from 'svelte-remixicon';
+	import { RiArrowDownSLine } from '#lib/icons.js';
 	import { Icon } from '#lib/components/ui/index.js';
 	import SidebarLink from './SidebarLink.svelte';
 	import type { Section, SidebarGroup } from './sections';

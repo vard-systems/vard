@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiShieldKeyholeLine } from 'svelte-remixicon';
+	import { RiShieldKeyholeLine } from '#lib/icons.js';
 	import {
 		adminsApi,
 		type AdminPermission,

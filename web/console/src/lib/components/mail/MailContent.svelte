@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiFileTextLine, RiRestartLine, RiTranslate2 } from 'svelte-remixicon';
+	import { RiFileTextLine, RiRestartLine, RiTranslate2 } from '#lib/icons.js';
 	import {
 		mailApi,
 		type MailContent,
@@ -145,8 +145,7 @@
 
 			{#snippet action()}
 				{#if written(spec)}
-					<Button size="sm" variant="subtle" onclick={() => revert(spec)}>
-						<RiRestartLine size="15" />
+					<Button size="sm" variant="subtle" icon={RiRestartLine} onclick={() => revert(spec)}>
 						Use the shipped text
 					</Button>
 				{/if}

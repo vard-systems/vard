@@ -40,10 +40,7 @@ go mod download
 scripts/db.sh create
 go run ./cmd/migrate up
 
-for app in console id docs; do
-	echo "==> web/$app"
-	(cd "web/$app" && bun install --frozen-lockfile)
-	[[ ! -f web/$app/.env.example || -f web/$app/.env ]] || cp "web/$app/.env.example" "web/$app/.env"
-done
+# The apps' dependencies.
+for app in console id; do (cd "web/$app" && bun install --frozen-lockfile); done
 
 echo "Ready. Start everything with: make dev"

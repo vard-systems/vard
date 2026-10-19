@@ -1,12 +1,6 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import {
-		RiCloseLine,
-		RiMenuLine,
-		RiSidebarFoldLine,
-		RiSidebarUnfoldLine
-	} from 'svelte-remixicon';
+	import { RiCloseLine, RiMenuLine, RiSidebarFoldLine, RiSidebarUnfoldLine } from '#lib/icons.js';
 	import type { Admin, OrganizationBrand } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import { IconButton, ThemeToggle, Thumb } from '#lib/components/ui/index.js';
@@ -22,26 +16,22 @@
 
 	const shell = useShell();
 
-	const besideSidebar = $derived(page.route.id?.startsWith('/admin/(panel)/dashboard') ?? false);
-
 	const name = $derived(organization.name.trim() || BRAND.name);
 </script>
 
-<header class:mini={shell.collapsed} class:dashboard={besideSidebar}>
-	{#if besideSidebar}
-		<div class="menu-control">
-			<IconButton
-				icon={shell.menuOpen ? RiCloseLine : RiMenuLine}
-				label={shell.menuOpen ? 'Close the menu' : 'Open the menu'}
-				size="sm"
-				placement="right"
-				onclick={() => shell.setMenu(!shell.menuOpen)}
-			/>
-		</div>
-	{/if}
+<header class:mini={shell.collapsed}>
+	<div class="menu-control">
+		<IconButton
+			icon={shell.menuOpen ? RiCloseLine : RiMenuLine}
+			label={shell.menuOpen ? 'Close the menu' : 'Open the menu'}
+			size="sm"
+			placement="right"
+			onclick={() => shell.setMenu(!shell.menuOpen)}
+		/>
+	</div>
 
 	<div class="brand-column">
-		<a class="brand" href={resolve('admin/dashboard')} aria-label="{name} Console">
+		<a class="brand" href={resolve('/(panel)')} aria-label="{name} Console">
 			<Thumb
 				src={organization.logo_url}
 				text={initials(name)}
@@ -55,16 +45,14 @@
 		</a>
 	</div>
 
-	{#if besideSidebar}
-		<div class="fold-control">
-			<IconButton
-				icon={shell.collapsed ? RiSidebarUnfoldLine : RiSidebarFoldLine}
-				label={shell.collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
-				size="sm"
-				onclick={shell.toggle}
-			/>
-		</div>
-	{/if}
+	<div class="fold-control">
+		<IconButton
+			icon={shell.collapsed ? RiSidebarUnfoldLine : RiSidebarFoldLine}
+			label={shell.collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
+			size="sm"
+			onclick={shell.toggle}
+		/>
+	</div>
 
 	<div class="end">
 		<CommandPalette />
@@ -100,12 +88,7 @@
 		width: var(--sidebar-width);
 		min-width: 0;
 		overflow: hidden;
-		border-right: 1px solid transparent;
-		transition: border-color var(--speed);
-	}
-
-	.dashboard .brand-column {
-		border-right-color: var(--color-border);
+		border-right: 1px solid var(--color-border);
 		background: var(--nav-surface);
 	}
 
@@ -170,8 +153,7 @@
 			display: none;
 		}
 
-		.brand-column,
-		.dashboard .brand-column {
+		.brand-column {
 			width: auto;
 			flex-shrink: 1;
 			border-right-color: transparent;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { RiDownload2Line, RiErrorWarningLine, RiUpload2Line } from 'svelte-remixicon';
+	import { RiDownload2Line, RiErrorWarningLine, RiUpload2Line } from '#lib/icons.js';
 	import type { LocaleApp } from '#lib/api/index.js';
 	import { countOf } from '#lib/utils/format.js';
 	import { Alert, Button, Icon, SearchInput, Switch, notify } from '#lib/components/ui/index.js';

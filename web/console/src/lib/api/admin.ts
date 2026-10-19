@@ -45,6 +45,7 @@ import type {
 	FieldRules,
 	AdminSecurity,
 	Organization,
+	OrganizationBrand,
 	OrganizationInput,
 	OTPResponse,
 	OTPSettingsInput,
@@ -71,7 +72,7 @@ import type {
 	UserRecord
 } from './types';
 
-export function logQuery(filter: LogFilter, extra: Record<string, string> = {}): string {
+function logQuery(filter: LogFilter, extra: Record<string, string> = {}): string {
 	const params = new URLSearchParams();
 
 	if (filter.q) params.set('q', filter.q);
@@ -117,7 +118,11 @@ export const adminApi = {
 
 	logout: () => api.post<{ status: string }>('/admin/auth/logout'),
 
-	profileSessions: () => api.get<{ sessions: AdminSession[] }>('/admin/sessions'),
+	me: (fetcher?: Fetch) =>
+		api.get<{ admin: Admin; organization: OrganizationBrand }>('/admin/me', fetcher),
+
+	profileSessions: (fetcher?: Fetch) =>
+		api.get<{ sessions: AdminSession[] | null }>('/admin/sessions', fetcher),
 
 	endSession: (id: string) => api.delete<void>(`/admin/sessions/${encodeURIComponent(id)}`),
 

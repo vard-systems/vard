@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { RiErrorWarningLine, RiInformationLine, RiCheckboxCircleLine } from 'svelte-remixicon';
+	import { RiErrorWarningLine, RiInformationLine, RiCheckboxCircleLine } from '#lib/icons.js';
 	import type { ColorPalette } from './control';
 	import Icon from './Icon.svelte';
 

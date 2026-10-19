@@ -1,3 +1,5 @@
+// Package adminroles manages the roles that grant administrators their
+// permissions, and lists the permissions there are.
 package adminroles
 
 import (
@@ -8,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/model"
 	"loginer/internal/store"
 )
@@ -20,7 +22,6 @@ type Handler struct {
 	log   *slog.Logger
 }
 
-// New returns a Handler.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }
@@ -66,7 +67,7 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	if err := h.store.CreateAdminRole(c.Request.Context(), role); err != nil {
-		h.respondWrite(c, err, "creating admin role failed")
+		respond.Taken(c, h.log, err, roleNameTaken, "creating admin role failed")
 		return
 	}
 
@@ -95,7 +96,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if err := h.store.SaveAdminRole(c.Request.Context(), role); err != nil {
-		h.respondWrite(c, err, "updating admin role failed")
+		respond.Taken(c, h.log, err, roleNameTaken, "updating admin role failed")
 		return
 	}
 
@@ -153,13 +154,4 @@ func (h *Handler) findEditable(c *gin.Context) (*model.AdminRole, bool) {
 	}
 
 	return role, true
-}
-
-func (h *Handler) respondWrite(c *gin.Context, err error, note string) {
-	if errors.Is(err, store.ErrDuplicate) {
-		respond.Fail(c, roleNameTaken)
-		return
-	}
-
-	respond.Failure(c, h.log, err, note)
 }

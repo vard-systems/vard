@@ -7,7 +7,7 @@
 		RiGlobalLine,
 		RiNodeTree,
 		RiShieldUserLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import {
 		usersApi,
 		type Admin,

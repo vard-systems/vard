@@ -1,6 +1,5 @@
 package fields
 
-// targetType is what these rows are called in the activity log.
 const targetType = "user_field"
 
 // rulesRequest is a field's rules; name and type cannot change.

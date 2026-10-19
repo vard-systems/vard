@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiArrowGoBackLine } from 'svelte-remixicon';
+	import { RiArrowGoBackLine } from '#lib/icons.js';
 	import { languagesApi, type Language, type ShippedLanguage } from '#lib/api/index.js';
 	import {
 		Button,

@@ -66,7 +66,7 @@
 	}
 
 	onMount(() => {
-		if (!replacing) begin();
+		if (!replacing) void begin();
 	});
 </script>
 
@@ -77,7 +77,7 @@
 		<form
 			onsubmit={(event) => {
 				event.preventDefault();
-				begin(currentCode);
+				void begin(currentCode);
 			}}
 		>
 			<p class="text">

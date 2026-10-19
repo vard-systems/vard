@@ -1,6 +1,6 @@
 <script lang="ts" generics="Row extends { id: string }">
 	import type { Snippet } from 'svelte';
-	import { RiArrowRightLine, RiInbox2Line } from 'svelte-remixicon';
+	import { RiArrowRightLine, RiInbox2Line } from '#lib/icons.js';
 	import Checkbox from './Checkbox.svelte';
 	import Icon from './Icon.svelte';
 	import IconButton from './IconButton.svelte';

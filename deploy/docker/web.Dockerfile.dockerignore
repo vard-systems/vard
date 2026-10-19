@@ -6,4 +6,3 @@ web/*/build
 web/*/.svelte-kit
 web/*/.env
 web/*/.env.*
-!web/*/.env.example

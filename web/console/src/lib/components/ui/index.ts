@@ -1,6 +1,5 @@
 export { default as Button } from './Button.svelte';
 export { default as IconButton } from './IconButton.svelte';
-export { default as IconLink } from './IconLink.svelte';
 export { default as CopyButton } from './CopyButton.svelte';
 export { default as LinkButton } from './LinkButton.svelte';
 export type { ColorPalette, ControlProps, Size, Variant } from './control';
@@ -29,7 +28,6 @@ export { default as Badge } from './Badge.svelte';
 export { default as Card } from './Card.svelte';
 export { default as DangerZone } from './DangerZone.svelte';
 export { default as FullscreenDialog } from './FullscreenDialog.svelte';
-export { default as Modal } from './Modal.svelte';
 export { default as ConfirmDialog } from './ConfirmDialog.svelte';
 export { default as DropdownMenu } from './DropdownMenu.svelte';
 export { default as MenuGroup } from './MenuGroup.svelte';

@@ -1,18 +1,18 @@
 <script lang="ts" module>
-	import type { ComponentType } from 'svelte';
 	import type { Node } from '@xyflow/svelte';
 
 	export type EndNodeData = {
 		kind: 'start' | 'end';
 		label: string;
 		detail: string;
-		icon: ComponentType;
+		icon: IconData;
 	};
 
 	export type EndNodeType = Node<EndNodeData, 'end'>;
 </script>
 
 <script lang="ts">
+	import type { IconData } from '#lib/icons.js';
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
 	import { Icon } from '#lib/components/ui/index.js';
 

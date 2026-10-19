@@ -20,35 +20,34 @@ import (
 
 	"loginer/internal/api/account"
 	"loginer/internal/api/activity"
+	"loginer/internal/api/adminauth"
 	"loginer/internal/api/adminroles"
 	"loginer/internal/api/admins"
 	"loginer/internal/api/apis"
 	"loginer/internal/api/applications"
-	"loginer/internal/api/audit"
-	apiauth "loginer/internal/api/auth"
 	"loginer/internal/api/caching"
-	"loginer/internal/api/cors"
-	"loginer/internal/api/csrf"
 	"loginer/internal/api/fields"
 	"loginer/internal/api/flows"
 	"loginer/internal/api/keys"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/cors"
+	"loginer/internal/api/kit/csrf"
+	"loginer/internal/api/kit/middleware"
+	"loginer/internal/api/kit/ratelimit"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
 	"loginer/internal/api/languages"
-	adminmail "loginer/internal/api/mail"
+	"loginer/internal/api/mailsettings"
 	"loginer/internal/api/mfa"
-	"loginer/internal/api/middleware"
 	"loginer/internal/api/oauth"
 	"loginer/internal/api/organization"
 	"loginer/internal/api/otp"
-	"loginer/internal/api/ratelimit"
-	"loginer/internal/api/reference"
-	"loginer/internal/api/respond"
 	"loginer/internal/api/roles"
-	"loginer/internal/api/session"
-	"loginer/internal/api/sessions"
 	"loginer/internal/api/setup"
 	"loginer/internal/api/social"
 	"loginer/internal/api/sso"
 	"loginer/internal/api/users"
+	"loginer/internal/api/usersessions"
 	"loginer/internal/auth"
 	"loginer/internal/brand"
 	"loginer/internal/cache"
@@ -70,18 +69,12 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 		return nil, err
 	}
 
-	document, err := reference.NewPublic(cfg.Issuer)
-	if err != nil {
-		return nil, err
-	}
-
 	registerPublicRoutes(r, publicHandlers{
-		oauth:     oauth.New(provider, log, cfg.SecureUserCookies),
-		account:   account.New(provider, log, cfg.SecureUserCookies),
-		reference: document,
-		limit:     ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "public").Middleware(),
-		tokens:    ratelimit.New(cfg.RateLimit*tokenLimitMultiple).Shared(shared.SessionDB(), "token").Middleware(),
-		csrf:      csrf.New(allowed(cfg.AccountURL, cfg.CORSOrigins)),
+		oauth:   oauth.New(provider, log, cfg.SecureUserCookies),
+		account: account.New(provider, log, cfg.SecureUserCookies),
+		limit:   ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "public").Middleware(),
+		tokens:  ratelimit.New(cfg.RateLimit*tokenLimitMultiple).Shared(shared.SessionDB(), "token").Middleware(),
+		csrf:    csrf.New(allowed(cfg.AccountURL, cfg.CORSOrigins)),
 	})
 
 	return r, nil
@@ -98,20 +91,15 @@ func NewAdmin(cfg config.Config, st *store.Store, log *slog.Logger, provider *oi
 		return nil, err
 	}
 
-	document, err := reference.NewAdmin(config.Origin(cfg.AdminURL))
-	if err != nil {
-		return nil, err
-	}
-
 	service := auth.New(st, sealer, log, adminIssuer(cfg.AdminURL))
 	recorder := audit.New(st, log)
 
 	registerAdminRoutes(r, service, provider, log, adminHandlers{
-		auth:         apiauth.New(service, st, recorder, log, cfg.SecureAdminCookies),
+		auth:         adminauth.New(service, st, recorder, log, cfg.SecureAdminCookies),
 		mfa:          mfa.New(service, log),
 		setup:        setup.New(st, log),
 		users:        users.New(st, recorder, log),
-		sessions:     sessions.New(st, recorder, log),
+		userSessions: usersessions.New(st, recorder, log),
 		fields:       fields.New(st, recorder, log),
 		roles:        roles.New(st, recorder, log),
 		admins:       admins.New(st, service, recorder, log),
@@ -122,13 +110,12 @@ func NewAdmin(cfg config.Config, st *store.Store, log *slog.Logger, provider *oi
 		sso:          sso.New(st, sealer, provider, recorder, log, cfg.Issuer),
 		flows:        flows.New(st, recorder, log),
 		languages:    languages.New(st, recorder, log),
-		mail:         adminmail.New(st, sealer, recorder, log),
+		mail:         mailsettings.New(st, sealer, recorder, log),
 		otp:          otp.New(st, recorder, log),
 		apis:         apis.New(st, recorder, log, cfg.Issuer),
 		activity:     activity.New(st, log),
 		keys:         keys.New(provider, recorder, log),
 		caching:      caching.New(shared, recorder, log),
-		reference:    document,
 		limit:        ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "admin").Middleware(),
 		csrf:         csrf.New(allowed(cfg.AdminURL, cfg.CORSOrigins)),
 	})
@@ -162,20 +149,19 @@ func allowed(appURL string, extra []string) []string {
 }
 
 type publicHandlers struct {
-	oauth     *oauth.Handler
-	account   *account.Handler
-	reference *reference.Handler
-	limit     gin.HandlerFunc
-	tokens    gin.HandlerFunc
-	csrf      gin.HandlerFunc
+	oauth   *oauth.Handler
+	account *account.Handler
+	limit   gin.HandlerFunc
+	tokens  gin.HandlerFunc
+	csrf    gin.HandlerFunc
 }
 
 type adminHandlers struct {
-	auth         *apiauth.Handler
+	auth         *adminauth.Handler
 	mfa          *mfa.Handler
 	setup        *setup.Handler
 	users        *users.Handler
-	sessions     *sessions.Handler
+	userSessions *usersessions.Handler
 	fields       *fields.Handler
 	roles        *roles.Handler
 	admins       *admins.Handler
@@ -187,12 +173,11 @@ type adminHandlers struct {
 	sso          *sso.Handler
 	flows        *flows.Handler
 	languages    *languages.Handler
-	mail         *adminmail.Handler
+	mail         *mailsettings.Handler
 	otp          *otp.Handler
 	activity     *activity.Handler
 	keys         *keys.Handler
 	caching      *caching.Handler
-	reference    *reference.Handler
 	limit        gin.HandlerFunc
 	csrf         gin.HandlerFunc
 }
@@ -215,8 +200,6 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 	r.POST(oidc.PathLogout, h.oauth.Logout)
 	r.POST(oidc.PathRevoke, h.tokens, h.oauth.Revoke)
 	r.POST(oidc.PathIntrospect, h.tokens, h.oauth.Introspect)
-
-	r.GET("/.well-known/openapi.json", h.reference.Document)
 
 	// Social sign-in. The callback also answers POST and sits outside CSRF
 	// because Apple posts its answer from its own form.
@@ -304,8 +287,6 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 			signedIn.DELETE("/sessions/:id", h.auth.EndSession)
 			signedIn.DELETE("/sessions", h.auth.EndOtherSessions)
 
-			signedIn.GET("/openapi.json", h.reference.Document)
-
 			// Everything below is guarded by the administrator's permissions;
 			// the panel hiding a control is not the check. These routes also
 			// accept an admin API access token whose scopes stand in for roles;
@@ -324,15 +305,15 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 			readUsers.GET("/users/:id/roles", h.users.Roles)
 			readUsers.GET("/users/:id/role-mappings", h.users.RoleMappings)
 			readUsers.GET("/user-fields", h.fields.List)
-			readUsers.GET("/user-sessions", h.sessions.List)
+			readUsers.GET("/user-sessions", h.userSessions.List)
 
 			writeUsers := managed.Group("", session.Can(model.PermUsersWrite))
 			writeUsers.POST("/users", h.users.Create)
 			writeUsers.PATCH("/users/:id", h.users.Update)
 			writeUsers.DELETE("/users/:id", h.users.Delete)
 			writeUsers.DELETE("/users/:id/social-accounts/:identity", h.users.Disconnect)
-			writeUsers.DELETE("/users/:id/sessions", h.sessions.SignOutUser)
-			writeUsers.DELETE("/user-sessions/:id", h.sessions.End)
+			writeUsers.DELETE("/users/:id/sessions", h.userSessions.SignOutUser)
+			writeUsers.DELETE("/user-sessions/:id", h.userSessions.End)
 
 			writeFields := managed.Group("", session.Can(model.PermUserFieldsWrite))
 			writeFields.POST("/user-fields", h.fields.Create)

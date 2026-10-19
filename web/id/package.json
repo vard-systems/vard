@@ -13,7 +13,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "vitest --run"
 	},
 	"dependencies": {
 		"svelte-i18n": "^4.0.1"

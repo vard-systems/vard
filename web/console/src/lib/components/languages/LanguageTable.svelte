@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiGlobalLine, RiHashtag, RiToggleLine, RiTranslate2 } from 'svelte-remixicon';
+	import { RiGlobalLine, RiHashtag, RiToggleLine, RiTranslate2 } from '#lib/icons.js';
 	import type { Language, LocaleApp } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable, Tag, Tooltip } from '#lib/components/ui/index.js';
 

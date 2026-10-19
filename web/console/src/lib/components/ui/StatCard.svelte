@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
-	import { RiArrowRightSLine } from 'svelte-remixicon';
+	import { RiArrowRightSLine, type IconData } from '#lib/icons.js';
 	import Icon from './Icon.svelte';
 	import type { ColorPalette } from './control';
 
 	type Props = {
 		label: string;
 		value: number;
-		icon: ComponentType;
+		icon: IconData;
 		note?: string;
 		tone?: ColorPalette;
 		href?: string;

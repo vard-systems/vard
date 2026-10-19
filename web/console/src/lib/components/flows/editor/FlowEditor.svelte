@@ -8,7 +8,7 @@
 		RiDownload2Line,
 		RiFileCopyLine,
 		RiArrowGoBackLine
-	} from 'svelte-remixicon';
+	} from '#lib/icons.js';
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { flowsApi, type LoginFlow, type LoginStep, type LoginStepSpec } from '#lib/api/index.js';
 	import {
@@ -147,7 +147,7 @@
 
 			if (creating) {
 				leaving = true;
-				await goto(resolve('/admin/(panel)/dashboard/flows/[id]', { id: result.flow.id }));
+				await goto(resolve('/(panel)/flows/[id]', { id: result.flow.id }));
 			}
 		});
 
@@ -164,7 +164,7 @@
 			notify.success(`${result.flow.name} created`);
 
 			leaving = true;
-			await goto(resolve('/admin/(panel)/dashboard/flows/[id]', { id: result.flow.id }));
+			await goto(resolve('/(panel)/flows/[id]', { id: result.flow.id }));
 		});
 
 	const remove_ = () =>
@@ -174,7 +174,7 @@
 			notify.success(`${flow!.name} deleted`);
 
 			leaving = true;
-			await goto(resolve('/admin/(panel)/dashboard/flows'));
+			await goto(resolve('/(panel)/flows'));
 		});
 
 	function discard() {
@@ -188,7 +188,7 @@
 	<PageHeader
 		crumbs={[
 			'Dashboard',
-			{ label: 'Login flows', href: resolve('/admin/(panel)/dashboard/flows') },
+			{ label: 'Login flows', href: resolve('/(panel)/flows') },
 			draft.name || 'Untitled flow'
 		]}
 	>

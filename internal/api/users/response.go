@@ -86,7 +86,6 @@ type appRef struct {
 	ClientID string    `json:"client_id"`
 }
 
-// roleRef names a role.
 type roleRef struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`

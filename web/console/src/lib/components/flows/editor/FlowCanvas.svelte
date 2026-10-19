@@ -8,7 +8,7 @@
 		type Edge,
 		type Node
 	} from '@xyflow/svelte';
-	import { RiFlagLine, RiLoginCircleLine } from 'svelte-remixicon';
+	import { RiFlagLine, RiLoginCircleLine } from '#lib/icons.js';
 	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 	import { describe, labelFor, markFor, specFor } from '../steps';
 	import EndNode, { type EndNodeData } from './EndNode.svelte';
@@ -184,7 +184,7 @@
 	$effect(() => {
 		const now = steps.length;
 		if (count !== 0 && now !== count) {
-			setTimeout(() => fitView({ padding: 0.2, maxZoom: 1, duration: 250 }), 30);
+			setTimeout(() => void fitView({ padding: 0.2, maxZoom: 1, duration: 250 }), 30);
 		}
 		count = now;
 	});
@@ -212,7 +212,7 @@
 		fitView
 		fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
 		oninit={() => {
-			if (!fitted) fitView({ padding: 0.2, maxZoom: 1 });
+			if (!fitted) void fitView({ padding: 0.2, maxZoom: 1 });
 			fitted = true;
 		}}
 		onnodeclick={({ node }) => onSelect(node.id)}

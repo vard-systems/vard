@@ -1,7 +1,6 @@
 export {
 	activityApi,
 	adminApi,
-	logQuery,
 	adminsApi,
 	mfaApi,
 	apisApi,

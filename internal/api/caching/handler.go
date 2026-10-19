@@ -1,3 +1,5 @@
+// Package caching lets a super admin look into Redis: its databases, groups and
+// keys, and clear or edit what the server wrote there.
 package caching
 
 import (
@@ -8,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/audit"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/audit"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/cache"
 )
 

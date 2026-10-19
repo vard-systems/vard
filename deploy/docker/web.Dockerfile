@@ -9,9 +9,9 @@
 # tree inside the image — /src/web/id — so that relative import still points
 # at /src/i18n.
 #
-# Runtime settings: API_URL (the API inside the network), PROTOCOL_HEADER and
-# HOST_HEADER (how it learns its public address), ADDRESS_HEADER (who is
-# calling), PORT (3000).
+# Runtime settings: API_URL (the API inside the network) and PORT (3000).
+# Nothing sits in front of it yet, so the address it is reached at and the
+# caller's address come from the connection itself.
 
 ARG APP=web/id
 

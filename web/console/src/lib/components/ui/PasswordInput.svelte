@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { PasswordInput } from '@ark-ui/svelte/password-input';
-	import { RiEyeLine, RiEyeOffLine } from 'svelte-remixicon';
+	import { RiEyeLine, RiEyeOffLine } from '#lib/icons.js';
 	import FieldText from './FieldText.svelte';
 	import Icon from './Icon.svelte';
 

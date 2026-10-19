@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
-	import { RiGitBranchLine, RiHashtag, RiShieldKeyholeLine, RiTimerLine } from 'svelte-remixicon';
+	import { RiGitBranchLine, RiHashtag, RiShieldKeyholeLine, RiTimerLine } from '#lib/icons.js';
 	import { otpApi, type OTPResponse, type OTPSettingsInput } from '#lib/api/index.js';
 	import {
 		Alert,
@@ -112,7 +112,7 @@
 		<Alert tone="warning">
 			No login flow asks for an emailed code yet, so nothing reads these. Add the
 			<strong>Emailed code</strong> step to a flow on the
-			<a href={resolve('/admin/(panel)/dashboard/flows')}>Login flows</a> page.
+			<a href={resolve('/(panel)/flows')}>Login flows</a> page.
 		</Alert>
 	{/if}
 

@@ -1,28 +1,12 @@
 import { fileURLToPath } from 'node:url';
-import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 
-// The API is reached on this app's own origin, as in production, where the
-// reverse proxy routes these paths to it. Same origin means the session cookie
-// belongs to this app's host — so the server-side renderer can read it — and
-// the browser needs no CORS. API_URL is where the API really listens.
-const { API_URL = 'http://localhost:8080' } = loadEnv(
-	process.env.NODE_ENV ?? 'development',
-	process.cwd(),
-	''
-);
-
-const api = { target: API_URL, xfwd: true };
-const proxy = {
-	'/api/v1/account': api,
-	'/oauth2': api,
-	'/.well-known': api
-};
-
 export default defineConfig({
-	// id 5173, console 5174 — in both modes of scripts/start.sh.
+	// id 5173, console 5174. Under `make dev` the browser opens these: the dev
+	// server renders the pages, and src/hooks.server.ts passes the API's paths
+	// on to the API, as the built server does in production.
 	//
 	// The translations are read from i18n/ at the top of the repository,
 	// which is outside this app, so the dev server is told it may serve that
@@ -30,7 +14,6 @@ export default defineConfig({
 	server: {
 		port: 5173,
 		strictPort: true,
-		proxy,
 		fs: { allow: [fileURLToPath(new URL('../../i18n', import.meta.url))] }
 	},
 
@@ -42,23 +25,35 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// adapter-node builds a Node server, run behind the reverse proxy that
-			// routes the API paths to the API (Caddy, in deploy/).
-			adapter: adapter()
+			// A Node server (`node build`) that renders each page before sending
+			// it, title and all, and passes the API's paths on (hooks.server.ts).
+			adapter: adapter(),
+
+			// Every script is the app's own: the ones SvelteKit writes into a
+			// page carry a fresh nonce, the rest are files from 'self', so an
+			// injected <script> does not run. Styles stay inline-able (Svelte's
+			// transitions and component style attributes need it); images may be
+			// logos and avatars on any https address an administrator gave. The
+			// policy is sent as a header, so it can forbid framing too.
+			csp: {
+				mode: 'auto',
+				directives: {
+					'default-src': ['self'],
+					'script-src': ['self'],
+					'style-src': ['self', 'unsafe-inline'],
+					'img-src': ['self', 'data:', 'https:'],
+					'font-src': ['self'],
+					'connect-src': ['self'],
+					'object-src': ['none'],
+					'base-uri': ['self'],
+					'frame-ancestors': ['none']
+				}
+			}
 		})
 	],
 	test: {
 		expect: { requireAssertions: true },
-		projects: [
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'server',
-					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
-				}
-			}
-		]
+		environment: 'node',
+		include: ['src/**/*.{test,spec}.{js,ts}']
 	}
 });

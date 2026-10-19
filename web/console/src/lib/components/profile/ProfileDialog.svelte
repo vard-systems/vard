@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiSettings3Line, RiUserLine } from 'svelte-remixicon';
+	import { RiSettings3Line, RiUserLine } from '#lib/icons.js';
 	import type { Admin } from '#lib/api/index.js';
 	import { FullscreenDialog, Tabs, Tag, Thumb } from '#lib/components/ui/index.js';
 	import { initials } from '#lib/utils/format.js';

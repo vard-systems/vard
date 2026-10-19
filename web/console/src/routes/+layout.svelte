@@ -10,8 +10,7 @@
 
 	let { children }: LayoutProps = $props();
 
-	// One cache for this visitor, built here so that rendering on the server
-	// gives each request its own.
+	// One cache for this visitor, for as long as the tab is open.
 	const queryClient = createQueryClient();
 
 	// After a deploy, a tab that was already open still runs the old code;
@@ -21,10 +20,6 @@
 	});
 </script>
 
-<!-- No <title> here on purpose. A title in this layout is only applied once
-     the app has booted, so it lands between the one the browser already has
-     and the one the page sets, which shows as a second flicker. The default
-     lives in app.html instead, where it is in the very first byte. -->
 <NavigationProgress />
 
 <QueryClientProvider client={queryClient}>

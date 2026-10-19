@@ -59,7 +59,6 @@ type listResponse struct {
 	Shipped []shippedResponse `json:"shipped"`
 }
 
-// response is what the single-language endpoints answer with.
 type response struct {
 	Language languageResponse `json:"language"`
 }

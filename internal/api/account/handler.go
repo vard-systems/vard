@@ -1,3 +1,6 @@
+// Package account is the API the sign-in pages call: signing in and up, codes,
+// password resets, and each user's own profile, sessions and connected
+// applications.
 package account
 
 import (
@@ -9,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/respond"
-	"loginer/internal/api/session"
-	"loginer/internal/api/validate"
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/session"
+	"loginer/internal/api/kit/validate"
 	"loginer/internal/brand"
 	"loginer/internal/model"
 	"loginer/internal/oidc"

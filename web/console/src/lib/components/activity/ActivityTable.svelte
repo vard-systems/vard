@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RiFileList3Line, RiMapPinLine, RiPulseLine, RiTimeLine } from 'svelte-remixicon';
+	import { RiFileList3Line, RiMapPinLine, RiPulseLine, RiTimeLine } from '#lib/icons.js';
 	import type { LogEntry } from '#lib/api/index.js';
 	import { DataTable, Tag, type Column } from '#lib/components/ui/index.js';
 	import { describeUserAgent, formatDateTime, formatRelative } from '#lib/utils/format.js';

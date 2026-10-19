@@ -1,5 +1,4 @@
 import type { RouteId } from '$app/types';
-import type { ComponentType } from 'svelte';
 import {
 	RiAdminLine,
 	RiAppsLine,
@@ -16,20 +15,18 @@ import {
 	RiPulseLine,
 	RiShareLine,
 	RiShieldKeyholeLine,
-	RiShieldUserLine
-} from 'svelte-remixicon';
+	RiShieldUserLine,
+	type IconData
+} from '#lib/icons.js';
 import type { Admin } from '#lib/api/index.js';
 import { can, canAnywhere } from '#lib/permissions.js';
 
-export type Section = Extract<
-	Exclude<RouteId, `${string}[${string}`>,
-	`/admin/(panel)/dashboard${string}`
->;
+export type Section = Extract<Exclude<RouteId, `${string}[${string}`>, `/(panel)${string}`>;
 
 export type SidebarItem = {
 	route: Section;
 	label: string;
-	icon: ComponentType;
+	icon: IconData;
 	allowed?: (admin: Admin) => boolean;
 };
 
@@ -47,13 +44,13 @@ const groups: SidebarGroup[] = [
 		label: 'Overview',
 		items: [
 			{
-				route: '/admin/(panel)/dashboard',
+				route: '/(panel)',
 				label: 'Activity',
 				icon: RiPulseLine,
 				allowed: (admin) => can(admin, 'activity.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/logs',
+				route: '/(panel)/logs',
 				label: 'Logs',
 				icon: RiFileList3Line,
 				allowed: (admin) => can(admin, 'activity.read')
@@ -65,13 +62,13 @@ const groups: SidebarGroup[] = [
 		label: 'Applications',
 		items: [
 			{
-				route: '/admin/(panel)/dashboard/applications',
+				route: '/(panel)/applications',
 				label: 'Applications',
 				icon: RiAppsLine,
 				allowed: (admin) => canAnywhere(admin, 'applications.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/apis',
+				route: '/(panel)/apis',
 				label: 'APIs',
 				icon: RiCodeBoxLine,
 				allowed: (admin) => can(admin, 'apis.read')
@@ -83,25 +80,25 @@ const groups: SidebarGroup[] = [
 		label: 'Authentication',
 		items: [
 			{
-				route: '/admin/(panel)/dashboard/flows',
+				route: '/(panel)/flows',
 				label: 'Login flows',
 				icon: RiGitBranchLine,
 				allowed: (admin) => can(admin, 'login_flows.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/social',
+				route: '/(panel)/social',
 				label: 'Social sign-in',
 				icon: RiShareLine,
 				allowed: (admin) => can(admin, 'social.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/sso',
+				route: '/(panel)/sso',
 				label: 'SSO integrations',
 				icon: RiLinksLine,
 				allowed: (admin) => can(admin, 'sso.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/otp',
+				route: '/(panel)/otp',
 				label: 'One-time codes',
 				icon: RiKeyLine,
 				allowed: (admin) => admin.is_super_admin
@@ -113,19 +110,19 @@ const groups: SidebarGroup[] = [
 		label: 'User management',
 		items: [
 			{
-				route: '/admin/(panel)/dashboard/users',
+				route: '/(panel)/users',
 				label: 'Users',
 				icon: RiGroupLine,
 				allowed: (admin) => can(admin, 'users.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/sessions',
+				route: '/(panel)/sessions',
 				label: 'Sessions',
 				icon: RiComputerLine,
 				allowed: (admin) => can(admin, 'users.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/roles',
+				route: '/(panel)/roles',
 				label: 'Roles',
 				icon: RiShieldUserLine,
 				allowed: (admin) =>
@@ -138,13 +135,13 @@ const groups: SidebarGroup[] = [
 		label: 'Administration',
 		items: [
 			{
-				route: '/admin/(panel)/dashboard/admins',
+				route: '/(panel)/admins',
 				label: 'Administrators',
 				icon: RiAdminLine,
 				allowed: (admin) => admin.is_super_admin
 			},
 			{
-				route: '/admin/(panel)/dashboard/admin-roles',
+				route: '/(panel)/admin-roles',
 				label: 'Admin roles',
 				icon: RiShieldKeyholeLine,
 				allowed: (admin) => admin.is_super_admin
@@ -156,19 +153,19 @@ const groups: SidebarGroup[] = [
 		label: 'Settings',
 		items: [
 			{
-				route: '/admin/(panel)/dashboard/settings',
+				route: '/(panel)/settings',
 				label: 'General',
 				icon: RiBuildingLine,
 				allowed: (admin) => can(admin, 'organization.read') || can(admin, 'languages.read')
 			},
 			{
-				route: '/admin/(panel)/dashboard/mail',
+				route: '/(panel)/mail',
 				label: 'Mail',
 				icon: RiMailLine,
 				allowed: (admin) => admin.is_super_admin
 			},
 			{
-				route: '/admin/(panel)/dashboard/cache',
+				route: '/(panel)/cache',
 				label: 'Cache',
 				icon: RiDatabase2Line,
 				allowed: (admin) => admin.is_super_admin
@@ -183,9 +180,7 @@ const groups: SidebarGroup[] = [
  * match pages below them.
  */
 export function isCurrentSection(route: Section, id: string | null | undefined): boolean {
-	return route === '/admin/(panel)/dashboard'
-		? id === route
-		: id === route || Boolean(id?.startsWith(`${route}/`));
+	return route === '/(panel)' ? id === route : id === route || Boolean(id?.startsWith(`${route}/`));
 }
 
 export function visibleGroups(admin: Admin | undefined): SidebarGroup[] {

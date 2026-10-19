@@ -1,4 +1,4 @@
-import type { ComponentType } from 'svelte';
+import type { IconData } from '#lib/icons.js';
 
 export type Size = 'sm' | 'md' | 'lg';
 
@@ -12,5 +12,5 @@ export type ControlProps = {
 	colorPalette?: ColorPalette;
 	loading?: boolean;
 	disabled?: boolean;
-	icon?: ComponentType;
+	icon?: IconData;
 };

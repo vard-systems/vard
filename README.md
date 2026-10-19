@@ -1,13 +1,12 @@
 # Loginer
 
 An OAuth 2.0 authorization server and OpenID Connect provider written in Go,
-with three web apps:
+with two web apps:
 
-| App            | What it is                                         |
-| -------------- | -------------------------------------------------- |
-| `web/id`       | Hosted sign-in pages and each user's own account   |
-| `web/console`  | The admin panel                                    |
-| `web/docs`     | Documentation for developers integrating with it   |
+| App           | What it is                                       |
+| ------------- | ------------------------------------------------ |
+| `web/id`      | Hosted sign-in pages and each user's own account |
+| `web/console` | The admin panel                                  |
 
 **Features:** authorization code with PKCE, refresh token rotation with reuse
 detection, client credentials, userinfo, logout, revocation, introspection,
@@ -22,16 +21,19 @@ Requirements: Go 1.27+, PostgreSQL 14+, Redis 6.2+ (optional but recommended),
 [Bun](https://bun.sh) and Node.js 24+.
 
 ```sh
-make setup    # creates .env with a secret key, the database, and installs dependencies
-make dev      # starts the API and all three apps
+make setup    # .env with a secret key, the database, dependencies
+make dev      # starts the API and both apps, with hot reload
 ```
 
-| What    | URL                                 |
-| ------- | ----------------------------------- |
-| id      | http://localhost:5173               |
-| console | http://localhost:5174/admin/login   |
-| docs    | http://localhost:5175               |
-| API     | `:8080` public, `:8081` admin       |
+Everything is plain http on localhost. Each app is a SvelteKit server that
+renders its pages and passes the API paths it calls on to the API, so each
+app is one origin and the browser never talks to the API directly.
+
+| What    | `make dev`                    | `make docker-local`             |
+| ------- | ----------------------------- | ------------------------------- |
+| id      | http://localhost:5173         | http://localhost:8080           |
+| console | http://localhost:5174/login   | http://localhost:8081/login     |
+| API     | `:8080` public, `:8081` admin | inside the stack, not published |
 
 Open the console and create the first administrator. Run `make` to see every
 target.
@@ -41,44 +43,47 @@ target.
 Every setting is an environment variable, read from `.env` (real environment
 variables win). `.env.example` documents all of them. The ones that matter most:
 
-| Variable                     | Purpose                                                                 |
-| ---------------------------- | ----------------------------------------------------------------------- |
-| `LOGINER_SECRET_KEY`         | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
-| `LOGINER_DB_DSN`             | PostgreSQL connection string.                                           |
-| `LOGINER_ISSUER`             | Public URL of the provider (the id app's origin).                       |
-| `LOGINER_ADMIN_URL`          | The console's URL; only this origin may change things via the admin API. |
-| `LOGINER_REDIS_HOST`         | Redis for caching, sessions and shared rate limits. Empty runs without. |
-| `LOGINER_TRUSTED_PROXIES`    | Proxies whose `X-Forwarded-For` is believed. **Must be set behind a proxy.** |
-| `LOGINER_RATE_LIMIT`         | Attempts per minute per address on password and email endpoints.        |
-| `LOGINER_ADMIN_MFA`          | `required` or `optional`, seeded on first start.                        |
+| Variable                  | Purpose                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `LOGINER_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
+| `LOGINER_DB_DSN`          | PostgreSQL connection string.                                                            |
+| `LOGINER_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
+| `LOGINER_ADMIN_URL`       | The console's URL; only this origin may change things via the admin API.                 |
+| `LOGINER_REDIS_HOST`      | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
+| `LOGINER_TRUSTED_PROXIES` | Who may say who the caller is: the apps' servers, and nothing else.                      |
+| `LOGINER_RATE_LIMIT`      | Attempts per minute per address on password and email endpoints.                         |
+| `LOGINER_ADMIN_MFA`       | `required` or `optional`, seeded on first start.                                         |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.
 
 ## Deploying
 
-`deploy/` holds a production stack: Postgres, Redis, the API, both apps, and
-Caddy in front with automatic TLS. Only Caddy publishes ports. The production
-`deploy/Caddyfile` is not in the repository: the server provides its own, and
-`compose.yaml` mounts it from there. `deploy/Caddyfile.local` shows the routing
-it needs.
+The API is one binary (`make build-api` → `bin/loginer`); it applies its
+migrations on start. Each app is a Node server (`make build-web`, then `node build`
+in its directory, with `API_URL` pointing at its listener).
+
+`deploy/` holds a production stack: Postgres, Redis, the API and the two apps,
+over plain http. Only the apps publish ports: the id app on `8080`, the
+console on `8081` on the host's loopback only, so it is reached over an SSH
+tunnel. The API is not published. There is no TLS yet: put a proxy in front
+of the apps for https.
 
 ```sh
-cp deploy/.env.example deploy/.env   # URLs, secret key, database and Redis passwords, SMTP
-# put the server's Caddyfile at deploy/Caddyfile
-make deploy-up
+cp deploy/.env.example deploy/.env   # URLs, secrets, SMTP
+make docker-up
 ```
 
-To try the exact same stack on one machine (served on `https://id.localhost`
-and `https://admin-id.localhost`):
+To try the same stack on one machine (served on `http://localhost:8080` and
+`http://localhost:8081`):
 
 ```sh
-make deploy-local         # generates deploy/.env, builds and starts everything
-make deploy-local-down    # stops it and drops its data
+make docker-local    # generates deploy/.env, builds and starts everything
+make docker-reset    # stops it and drops its data
 ```
 
-A single binary is also fine: `make build` produces `bin/loginer`, which applies
-its migrations on start.
+Without Docker, run `bin/loginer` and the two `node build` servers, with the
+API's `LOGINER_TRUSTED_PROXIES` set to the apps' addresses.
 
 ### Before going live
 
@@ -87,8 +92,9 @@ its migrations on start.
 - [ ] `LOGINER_SECRET_KEY` is stored in a secret manager.
 - [ ] SMTP is configured, or reset emails only reach the log.
 - [ ] Postgres is backed up.
-- [ ] Only the reverse proxy publishes a port.
-- [ ] `LOGINER_TRUSTED_PROXIES` names your proxies, and nothing else.
+- [ ] A TLS proxy is in front of the apps, and only it publishes a port.
+- [ ] The apps' Node servers read the caller from that proxy (`ADDRESS_HEADER`,
+      `XFF_DEPTH`), and the API trusts only the apps (`LOGINER_TRUSTED_PROXIES`).
 - [ ] `LOGINER_ADMIN_MFA=required`, and at least two super admins exist.
 - [ ] Applications register `https` redirect URIs.
 
@@ -111,23 +117,41 @@ its migrations on start.
 ## Development
 
 ```sh
-make check              # gofmt, go vet, Go unit tests
+make check              # lint (formatting, vet, staticcheck, both apps) and every unit test
+make fmt                # format everything in place
 make test-integration   # tests against a real Postgres and Redis (throwaway databases)
-make web-check          # lint and type-check the three apps
-make bench              # Go micro-benchmarks
-make docs               # regenerate the API reference after changing handlers
+make ci                 # all of the above, and the Docker stack's config
+make bench              # Go benchmarks
+make vuln               # known vulnerabilities in the Go code and its modules
 ```
 
 [`CLAUDE.md`](CLAUDE.md) is the contributor guide: where things live, how each
-kind of change is made, and the security invariants every change keeps. What was tested before this release, and what was fixed, is in
-[`TESTING.md`](TESTING.md).
+kind of change is made, and the security invariants every change keeps.
+
+## Project layout
+
+```
+cmd/loginer, cmd/migrate   the server, and the migration runner
+internal/                  the Go code: api (HTTP handlers), oidc (the provider),
+                           store (every query), model (the schema), and the rest
+migrations/                the schema and every change to it, in order
+i18n/                      the sign-in pages' translations, the API's messages
+web/id, web/console        the two SvelteKit apps
+deploy/                    the Docker stack
+scripts/                   what the Makefile runs
+```
 
 ## Third-party assets
 
-The console bundles three typefaces. Google Sans Code and Poppins are under
-the SIL Open Font License 1.1 (see `OFL.txt` beside each). **Chirp is X's
-proprietary typeface and is not open source**: replace it, or confirm you have
-a licence, before distributing the console publicly.
+- The sign-in pages bundle Roboto and Roboto Mono, and the console Google Sans
+  Code and Poppins, all under the SIL Open Font License 1.1 (the licence is
+  beside each font).
+- The console's icons are [Remix Icon](https://remixicon.com), under the
+  Apache License 2.0; `make generate` copies the ones it uses from the
+  `remixicon` package.
+- **The console also bundles Chirp, X's proprietary typeface, which is not open
+  source**: replace it, or confirm you have a licence, before distributing the
+  console publicly.
 
 ## License
 

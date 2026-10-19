@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { ComponentType, Snippet } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { Dialog } from '@ark-ui/svelte/dialog';
 	import { Portal } from '@ark-ui/svelte/portal';
 	import {
 		RiAlertLine,
 		RiErrorWarningLine,
 		RiInformationLine,
-		RiQuestionLine
-	} from 'svelte-remixicon';
+		RiQuestionLine,
+		type IconData
+	} from '#lib/icons.js';
 	import Button from './Button.svelte';
 	import Icon from './Icon.svelte';
 
@@ -18,7 +19,7 @@
 		title: string;
 		description?: string;
 		tone?: Tone;
-		icon?: ComponentType;
+		icon?: IconData;
 		confirmLabel: string;
 		cancelLabel?: string;
 		busy?: boolean;
@@ -39,7 +40,7 @@
 		children
 	}: Props = $props();
 
-	const icons: Record<Tone, ComponentType> = {
+	const icons: Record<Tone, IconData> = {
 		danger: RiErrorWarningLine,
 		warning: RiAlertLine,
 		info: RiInformationLine,

@@ -6,12 +6,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/model"
 	"loginer/internal/oidc"
 )
 
-// The problems these endpoints answer with that are their own.
 var (
 	passwordTooShort = respond.Define(http.StatusBadRequest, "password_too_short", respond.Public)
 	noSSOConnection  = respond.Define(http.StatusNotFound, "no_sso_connection", respond.Public)

@@ -11,7 +11,6 @@ type loginRequest struct {
 	Remember bool `json:"remember"`
 }
 
-// registerRequest is the body of POST /account/register.
 type registerRequest struct {
 	Request     string `json:"request" validate:"required,max=64"`
 	Email       string `json:"email" validate:"required,email,max=255"`
@@ -29,7 +28,6 @@ type codeRequest struct {
 	Code   string `json:"code" validate:"required,max=16"`
 }
 
-// resendRequest is the body of POST /account/login/code/resend.
 type resendRequest struct {
 	Handle string `json:"handle" validate:"required,max=64"`
 }
@@ -39,7 +37,6 @@ type discoverRequest struct {
 	Email string `json:"email" validate:"required,email,max=255"`
 }
 
-// forgotRequest is the body of POST /account/forgot-password.
 type forgotRequest struct {
 	Request string `json:"request" validate:"max=64"`
 	Email   string `json:"email" validate:"required,email,max=255"`
@@ -59,7 +56,6 @@ type resetRequest struct {
 	Password string `json:"password" validate:"required,max=72"`
 }
 
-// profileRequest is the body of PATCH /account/me.
 type profileRequest struct {
 	FirstName string `json:"first_name" validate:"max=100"`
 	LastName  string `json:"last_name" validate:"max=100"`
@@ -73,7 +69,6 @@ type emailRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required,max=128"`
 }
 
-// passwordRequest is the body of POST /account/password.
 type passwordRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required,max=128"`
 	NewPassword     string `json:"new_password" validate:"required,max=72"`

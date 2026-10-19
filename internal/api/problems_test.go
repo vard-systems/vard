@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"loginer/i18n"
-	"loginer/internal/api/respond"
+	"loginer/internal/api/kit/respond"
 	"loginer/internal/oidc"
 )
 

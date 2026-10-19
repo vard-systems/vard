@@ -14,7 +14,6 @@ const (
 
 	EnvPrefix = "LOGINER_"
 
-	DocsURL   = "https://loginer.org/docs"
 	GitHubURL = "https://github.com/loginer/loginer"
 )
 

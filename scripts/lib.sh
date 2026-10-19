@@ -12,18 +12,45 @@ die() { echo "error: $*" >&2; exit 1; }
 # need <command> <hint>
 need() { command -v "$1" >/dev/null || die "$1 is missing — $2"; }
 
-# load_env exports .env, the file the server reads. Variables already set win.
+# load_env exports .env the way the server reads it (viper's dotenv parser),
+# so a script and the server never see two different values: variables
+# already in the environment (and not empty) win, and otherwise the last line
+# for a name does.
+#
+# The line is cut at its first "=" by hand. `IFS='=' read` would drop a lone
+# trailing "=", which every base64 LOGINER_SECRET_KEY ends with: the scripts
+# then ran the server with a different key from the one `make run` reads.
+# internal/config's tests hold this function to the server's reading.
 load_env() {
 	[[ -f .env ]] || return 0
-	local key value
-	while IFS='=' read -r key value || [[ -n $key ]]; do
-		[[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ && -z ${!key+x} ]] || continue
-		# A .env saved with Windows line endings ends every value with a
-		# carriage return. It has to go before the quotes, or the closing one
-		# is no longer last — and a DSN carrying it fails to parse with a
-		# message about sslmode, which sends you looking in the wrong file.
-		value="${value%$'\r'}"
-		value="${value%\"}"
-		export "$key=${value#\"}"
+	local line key value inherited=" "
+	local pattern='^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=[[:space:]]*(.*)$'
+	local double='^"(.*)"[[:space:]]*(#.*)?$' single="^'(.*)'[[:space:]]*(#.*)?$"
+
+	# What the environment held before .env: that is what wins.
+	while IFS= read -r line || [[ -n $line ]]; do
+		[[ $line =~ $pattern ]] || continue
+		key="${BASH_REMATCH[2]}"
+		[[ -n ${!key:-} ]] && inherited+="$key "
+	done <.env
+
+	while IFS= read -r line || [[ -n $line ]]; do
+		# A .env saved with Windows line endings ends every line with a
+		# carriage return; a DSN carrying it fails to parse with a message
+		# about sslmode, which sends you looking in the wrong file.
+		line="${line%$'\r'}"
+		[[ $line =~ $pattern ]] || continue
+		key="${BASH_REMATCH[2]}" value="${BASH_REMATCH[3]}"
+		[[ $inherited == *" $key "* ]] && continue
+
+		if [[ $value =~ $double || $value =~ $single ]]; then
+			value="${BASH_REMATCH[1]}"
+		else
+			# Unquoted: a comment starts at " #"; trailing spaces go.
+			value="${value%%[[:space:]]#*}"
+			value="${value%"${value##*[![:space:]]}"}"
+		fi
+
+		export "$key=$value"
 	done <.env
 }
