@@ -97,3 +97,36 @@ func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
 		})
 	}
 }
+
+// After a provider sign-in the browser is sent to `next`, which arrives as a
+// query parameter anyone can write: it may only ever name a page of the
+// account app, never another site, by any of the spellings browsers accept.
+func TestAccountLandingStaysOnTheAccountApp(t *testing.T) {
+	s := &Service{accountURL: "https://id.example"}
+
+	tests := []struct {
+		name string
+		next string
+		want string
+	}{
+		{name: "a page of the app", next: "/sessions", want: "https://id.example/sessions"},
+		{name: "a page with a query", next: "/sessions?tab=all", want: "https://id.example/sessions?tab=all"},
+		{name: "nothing", next: "", want: "https://id.example/"},
+		{name: "a relative path", next: "sessions", want: "https://id.example/"},
+		{name: "another site, protocol-relative", next: "//evil.example", want: "https://id.example/"},
+		{name: "another site, with a backslash", next: `/\evil.example`, want: "https://id.example/"},
+		{name: "another site, absolute", next: "https://evil.example/", want: "https://id.example/"},
+		{name: "a script address", next: "javascript:alert(1)", want: "https://id.example/"},
+		{name: "a tab browsers would strip", next: "/\t/evil.example", want: "https://id.example/"},
+		{name: "a newline browsers would strip", next: "/\n/evil.example", want: "https://id.example/"},
+		{name: "a delete character", next: "/\x7f/evil.example", want: "https://id.example/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s.accountLanding(tt.next); got != tt.want {
+				t.Errorf("accountLanding(%q) = %q, want %q", tt.next, got, tt.want)
+			}
+		})
+	}
+}

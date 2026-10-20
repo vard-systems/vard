@@ -46,8 +46,17 @@ func (s *Store) EnsureOTPSettings(ctx context.Context) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Create(&settings).Error), cache.OTPSettings)
 }
 
-func (s *Store) SaveOTPSettings(ctx context.Context, settings *model.OTPSettings) error {
-	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Save(settings).Error), cache.OTPSettings)
+// UpdateOTPSettings changes the settings through updateSettings: OTPSettings
+// may answer from the cache, which must never be written back.
+func (s *Store) UpdateOTPSettings(ctx context.Context, change func(*model.OTPSettings) (bool, error)) (*model.OTPSettings, error) {
+	settings, err := updateSettings(ctx, s, model.DefaultOTPSettings, change)
+	if err != nil {
+		return nil, err
+	}
+
+	s.forget(ctx, cache.OTPSettings)
+
+	return settings, nil
 }
 
 func (s *Store) CreateLoginCode(ctx context.Context, code *model.LoginCode) error {

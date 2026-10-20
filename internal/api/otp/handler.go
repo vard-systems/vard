@@ -9,6 +9,7 @@ import (
 
 	"loginer/internal/api/kit/audit"
 	"loginer/internal/api/kit/respond"
+	"loginer/internal/model"
 	"loginer/internal/store"
 )
 
@@ -45,21 +46,20 @@ func (h *Handler) Get(c *gin.Context) {
 func (h *Handler) Update(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	settings, err := h.store.OTPSettings(ctx)
-	if err != nil {
-		respond.Failure(c, h.log, err, "loading the one-time code settings failed")
-		return
-	}
-
 	var req settingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respond.Fail(c, respond.InvalidBody)
 		return
 	}
 
-	changed, err := req.applyTo(settings)
+	var changed []string
+	settings, err := h.store.UpdateOTPSettings(ctx, func(settings *model.OTPSettings) (bool, error) {
+		var err error
+		changed, err = req.applyTo(settings)
+		return len(changed) > 0, err
+	})
 	if err != nil {
-		respond.Failure(c, h.log, err, "validating the one-time code settings failed")
+		respond.Failure(c, h.log, err, "updating the one-time code settings failed")
 		return
 	}
 
@@ -71,11 +71,6 @@ func (h *Handler) Update(c *gin.Context) {
 
 	if len(changed) == 0 {
 		c.JSON(http.StatusOK, newResponse(*settings, flows))
-		return
-	}
-
-	if err := h.store.SaveOTPSettings(ctx, settings); err != nil {
-		respond.Failure(c, h.log, err, "updating the one-time code settings failed")
 		return
 	}
 

@@ -74,10 +74,11 @@ func apiPaths(t *testing.T, source string) []string {
 	return paths
 }
 
-// anyPrefix matches as isApiPath does: the request path starts with one.
+// anyPrefix matches as isApiPath does: the request path is one, or starts
+// with one followed by a slash.
 func anyPrefix(prefixes []string, path string) bool {
 	for _, prefix := range prefixes {
-		if strings.HasPrefix(path, prefix) {
+		if path == prefix || strings.HasPrefix(path, prefix+"/") {
 			return true
 		}
 	}

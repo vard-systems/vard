@@ -78,7 +78,7 @@ func (s *Service) VerifySignIn(ctx context.Context, token, code string, req Requ
 		return nil, err
 	}
 
-	if err := s.store.PassSessionMFA(ctx, session.ID, time.Now().Add(SessionLifetime)); err != nil {
+	if err := s.store.PassSessionMFA(ctx, session.ID, s.now().Add(SessionLifetime)); err != nil {
 		return nil, err
 	}
 
@@ -148,7 +148,7 @@ func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, co
 		return nil, err
 	}
 
-	now := time.Now()
+	now := s.now()
 	step, ok := totp.Verify(secret, code, now, 0)
 	if !ok {
 		return nil, ErrInvalidCode
@@ -221,7 +221,7 @@ func (s *Service) DisableTOTP(ctx context.Context, admin *model.Admin, token, co
 		return err
 	}
 
-	if err := s.store.RemoveMFA(ctx, admin.ID, &session.ID, time.Now()); err != nil {
+	if err := s.store.RemoveMFA(ctx, admin.ID, &session.ID, s.now()); err != nil {
 		return err
 	}
 
@@ -256,11 +256,11 @@ func (s *Service) RegenerateRecoveryCodes(ctx context.Context, admin *model.Admi
 }
 
 func (s *Service) ResetMFA(ctx context.Context, target *model.Admin) error {
-	return s.store.RemoveMFA(ctx, target.ID, nil, time.Now())
+	return s.store.RemoveMFA(ctx, target.ID, nil, s.now())
 }
 
 func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.MFA, code string, req Request) (string, error) {
-	now := time.Now()
+	now := s.now()
 
 	// Reserved before comparing, so parallel guesses are bounded by the
 	// lockout.

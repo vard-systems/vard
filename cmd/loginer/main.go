@@ -124,7 +124,7 @@ func run(log *slog.Logger) error {
 
 	// Load or create signing keys before serving, so a wrong LOGINER_SECRET_KEY
 	// stops startup here.
-	provider, err := oidc.New(context.Background(), cfg, st, mailer, log)
+	provider, err := oidc.New(context.Background(), cfg, st, sealer, mailer, log)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	admin, err := api.NewAdmin(cfg, st, log, provider, shared)
+	admin, err := api.NewAdmin(cfg, st, sealer, log, provider, shared)
 	if err != nil {
 		return err
 	}

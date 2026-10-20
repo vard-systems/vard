@@ -16,7 +16,7 @@ go.work.sum
 *.pem
 *.key
 
-# Logs (scripts/dev.sh writes .logs/)
+# Logs (scripts/start.sh writes .logs/)
 /.logs/
 *.log
 

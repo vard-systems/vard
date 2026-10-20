@@ -4,11 +4,7 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -48,10 +44,14 @@ type Service struct {
 	log    *slog.Logger
 
 	issuer string
+
+	// now is the clock every lifetime, lockout and expiry is measured by, so
+	// a test can move it instead of waiting.
+	now func() time.Time
 }
 
 func New(st *store.Store, sealer *jose.Sealer, log *slog.Logger, issuer string) *Service {
-	return &Service{store: st, sealer: sealer, log: log, issuer: issuer}
+	return &Service{store: st, sealer: sealer, log: log, issuer: issuer, now: time.Now}
 }
 
 // MFARequired reports whether every administrator must use a second factor.
@@ -87,7 +87,7 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 
 	// The attempt is reserved before comparing, so parallel guesses cannot pass
 	// a lock, and a locked account takes as long to refuse as a wrong password.
-	now := time.Now()
+	now := s.now()
 	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, model.MaxFailedLogins, model.LockoutDuration)
 	if err != nil {
 		return "", nil, StateNone, err
@@ -129,15 +129,15 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 		}
 	}
 
-	token, err := newToken()
+	token, hash, err := model.NewSecret()
 	if err != nil {
 		return "", nil, StateNone, err
 	}
 
 	session := model.AdminSession{
 		AdminID:     admin.ID,
-		TokenHash:   hashToken(token),
-		ExpiresAt:   time.Now().Add(lifetime),
+		TokenHash:   hash,
+		ExpiresAt:   s.now().Add(lifetime),
 		IsMFAPassed: state == StateSignedIn,
 		UserAgent:   model.Truncate(req.UserAgent, 255),
 		IP:          model.Truncate(req.IP, 45),
@@ -156,7 +156,7 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 }
 
 func (s *Service) signedIn(ctx context.Context, admin *model.Admin, req Request, method string) error {
-	if err := s.store.MarkAdminSignedIn(ctx, admin, time.Now(), req.IP); err != nil {
+	if err := s.store.MarkAdminSignedIn(ctx, admin, s.now(), req.IP); err != nil {
 		return err
 	}
 
@@ -170,7 +170,7 @@ func (s *Service) Session(ctx context.Context, token string) (*model.Admin, *mod
 		return nil, nil, StateNone, ErrNoSession
 	}
 
-	session, err := s.store.AdminSessionByTokenHash(ctx, hashToken(token))
+	session, err := s.store.AdminSessionByTokenHash(ctx, model.HashSecret(token))
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		return nil, nil, StateNone, ErrNoSession
@@ -178,7 +178,7 @@ func (s *Service) Session(ctx context.Context, token string) (*model.Admin, *mod
 		return nil, nil, StateNone, err
 	}
 
-	now := time.Now()
+	now := s.now()
 	if session.RevokedAt != nil || !now.Before(session.ExpiresAt) {
 		return nil, nil, StateNone, ErrNoSession
 	}
@@ -224,7 +224,7 @@ func (s *Service) Logout(ctx context.Context, token string, req Request) error {
 		return nil
 	}
 
-	session, err := s.store.AdminSessionByTokenHash(ctx, hashToken(token))
+	session, err := s.store.AdminSessionByTokenHash(ctx, model.HashSecret(token))
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		return nil
@@ -232,7 +232,7 @@ func (s *Service) Logout(ctx context.Context, token string, req Request) error {
 		return err
 	}
 
-	if err := s.store.RevokeAdminSession(ctx, session, time.Now()); err != nil {
+	if err := s.store.RevokeAdminSession(ctx, session, s.now()); err != nil {
 		return err
 	}
 
@@ -278,19 +278,4 @@ func (s *Service) recordWith(ctx context.Context, adminID *uuid.UUID, actor, act
 	if err := s.store.WriteAudit(ctx, &entry); err != nil {
 		s.log.Error("writing the activity log failed", "error", err, "action", action)
 	}
-}
-
-func newToken() (string, error) {
-	var b [32]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return "", fmt.Errorf("generate session token: %w", err)
-	}
-	return hex.EncodeToString(b[:]), nil
-}
-
-// hashToken is what gets stored. SHA-256 is right here, unlike for passwords:
-// the token is long and random, so it cannot be guessed by brute force.
-func hashToken(token string) string {
-	sum := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(sum[:])
 }

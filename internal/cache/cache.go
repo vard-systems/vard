@@ -54,6 +54,13 @@ const (
 	Grants        = "grants"
 )
 
+// Groups is every group, by the database it is kept in. A new group is
+// listed here.
+var Groups = map[string][]string{
+	CacheDatabase:   {Languages, Organization, LoginFlows, SocialButtons, SSOButtons, OTPSettings},
+	SessionDatabase: {Admins, Clients, AdminSecurity, Grants},
+}
+
 type Redis struct {
 	Cache    *Cache
 	Sessions *Cache

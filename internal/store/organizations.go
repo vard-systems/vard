@@ -14,7 +14,7 @@ func (s *Store) Organization(ctx context.Context) (*model.Organization, error) {
 		return &organization, nil
 	}
 
-	loaded, err := s.OrganizationForUpdate(ctx)
+	loaded, err := s.loadOrganization(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -24,9 +24,8 @@ func (s *Store) Organization(ctx context.Context) (*model.Organization, error) {
 	return loaded, nil
 }
 
-// OrganizationForUpdate reads the database, never the cache, so a stale cached
-// copy is never written back over the row.
-func (s *Store) OrganizationForUpdate(ctx context.Context) (*model.Organization, error) {
+// loadOrganization reads the database, creating the row on first use.
+func (s *Store) loadOrganization(ctx context.Context) (*model.Organization, error) {
 	var organization model.Organization
 
 	err := translate(s.db.WithContext(ctx).Order("created_at").First(&organization).Error)
@@ -47,18 +46,15 @@ func (s *Store) OrganizationForUpdate(ctx context.Context) (*model.Organization,
 	return &organization, nil
 }
 
-// SaveOrganization updates the existing row only; unlike GORM's Save it never
-// inserts a second one, answering ErrNotFound instead.
-func (s *Store) SaveOrganization(ctx context.Context, organization *model.Organization) error {
-	result := s.db.WithContext(ctx).Model(organization).Select("*").Omit("created_at").Updates(organization)
-	if err := translate(result.Error); err != nil {
-		return err
-	}
-	if result.RowsAffected == 0 {
-		return ErrNotFound
+// UpdateOrganization changes the organisation through updateSettings, so the
+// row changed is the stored one, never a cached copy.
+func (s *Store) UpdateOrganization(ctx context.Context, change func(*model.Organization) (bool, error)) (*model.Organization, error) {
+	organization, err := updateSettings(ctx, s, model.DefaultOrganization, change)
+	if err != nil {
+		return nil, err
 	}
 
 	s.forget(ctx, cache.Organization)
 
-	return nil
+	return organization, nil
 }

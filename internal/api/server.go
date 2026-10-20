@@ -80,13 +80,8 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 	return r, nil
 }
 
-func NewAdmin(cfg config.Config, st *store.Store, log *slog.Logger, provider *oidc.Service, shared *cache.Redis) (*gin.Engine, error) {
+func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog.Logger, provider *oidc.Service, shared *cache.Redis) (*gin.Engine, error) {
 	r, err := engine(cfg, log)
-	if err != nil {
-		return nil, err
-	}
-
-	sealer, err := jose.NewSealer(cfg.SecretKey)
 	if err != nil {
 		return nil, err
 	}
@@ -276,181 +271,178 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 		setup.POST("/totp/confirm", h.limit, h.mfa.Confirm)
 
 		signedIn := v1.Group("/admin", session.Require(service))
-		{
-			signedIn.GET("/me", h.auth.Me)
-			signedIn.PATCH("/me", h.limit, h.auth.UpdateMe)
-			signedIn.POST("/me/password", h.limit, h.auth.ChangePassword)
+		signedIn.GET("/me", h.auth.Me)
+		signedIn.PATCH("/me", h.limit, h.auth.UpdateMe)
+		signedIn.POST("/me/password", h.limit, h.auth.ChangePassword)
 
-			signedIn.DELETE("/mfa/totp", h.limit, h.mfa.Disable)
-			signedIn.POST("/mfa/recovery-codes", h.limit, h.mfa.RecoveryCodes)
-			signedIn.GET("/sessions", h.auth.Sessions)
-			signedIn.DELETE("/sessions/:id", h.auth.EndSession)
-			signedIn.DELETE("/sessions", h.auth.EndOtherSessions)
+		signedIn.DELETE("/mfa/totp", h.limit, h.mfa.Disable)
+		signedIn.POST("/mfa/recovery-codes", h.limit, h.mfa.RecoveryCodes)
+		signedIn.GET("/sessions", h.auth.Sessions)
+		signedIn.DELETE("/sessions/:id", h.auth.EndSession)
+		signedIn.DELETE("/sessions", h.auth.EndOtherSessions)
 
-			// Everything below is guarded by the administrator's permissions;
-			// the panel hiding a control is not the check. These routes also
-			// accept an admin API access token whose scopes stand in for roles;
-			// routes about the signed-in person, and super-admin routes, stay
-			// session-only.
-			managed := v1.Group("/admin", session.RequireAny(service, provider, log))
+		// Everything below is guarded by the administrator's permissions;
+		// the panel hiding a control is not the check. These routes also
+		// accept an admin API access token whose scopes stand in for roles;
+		// routes about the signed-in person, and super-admin routes, stay
+		// session-only.
+		managed := v1.Group("/admin", session.RequireAny(service, provider, log))
 
-			activity := managed.Group("", session.Can(model.PermActivityRead))
-			activity.GET("/overview", h.activity.Overview)
-			activity.GET("/logs", h.activity.Logs)
-			activity.GET("/logs/export", h.activity.Export)
+		activity := managed.Group("", session.Can(model.PermActivityRead))
+		activity.GET("/overview", h.activity.Overview)
+		activity.GET("/logs", h.activity.Logs)
+		activity.GET("/logs/export", h.activity.Export)
 
-			readUsers := managed.Group("", session.Can(model.PermUsersRead))
-			readUsers.GET("/users", h.users.List)
-			readUsers.GET("/users/:id", h.users.Get)
-			readUsers.GET("/users/:id/roles", h.users.Roles)
-			readUsers.GET("/users/:id/role-mappings", h.users.RoleMappings)
-			readUsers.GET("/user-fields", h.fields.List)
-			readUsers.GET("/user-sessions", h.userSessions.List)
+		readUsers := managed.Group("", session.Can(model.PermUsersRead))
+		readUsers.GET("/users", h.users.List)
+		readUsers.GET("/users/:id", h.users.Get)
+		readUsers.GET("/users/:id/roles", h.users.Roles)
+		readUsers.GET("/users/:id/role-mappings", h.users.RoleMappings)
+		readUsers.GET("/user-fields", h.fields.List)
+		readUsers.GET("/user-sessions", h.userSessions.List)
 
-			writeUsers := managed.Group("", session.Can(model.PermUsersWrite))
-			writeUsers.POST("/users", h.users.Create)
-			writeUsers.PATCH("/users/:id", h.users.Update)
-			writeUsers.DELETE("/users/:id", h.users.Delete)
-			writeUsers.DELETE("/users/:id/social-accounts/:identity", h.users.Disconnect)
-			writeUsers.DELETE("/users/:id/sessions", h.userSessions.SignOutUser)
-			writeUsers.DELETE("/user-sessions/:id", h.userSessions.End)
+		writeUsers := managed.Group("", session.Can(model.PermUsersWrite))
+		writeUsers.POST("/users", h.users.Create)
+		writeUsers.PATCH("/users/:id", h.users.Update)
+		writeUsers.DELETE("/users/:id", h.users.Delete)
+		writeUsers.DELETE("/users/:id/social-accounts/:identity", h.users.Disconnect)
+		writeUsers.DELETE("/users/:id/sessions", h.userSessions.SignOutUser)
+		writeUsers.DELETE("/user-sessions/:id", h.userSessions.End)
 
-			writeFields := managed.Group("", session.Can(model.PermUserFieldsWrite))
-			writeFields.POST("/user-fields", h.fields.Create)
-			writeFields.PATCH("/user-fields/:id", h.fields.Update)
-			writeFields.DELETE("/user-fields/:id", h.fields.Delete)
+		writeFields := managed.Group("", session.Can(model.PermUserFieldsWrite))
+		writeFields.POST("/user-fields", h.fields.Create)
+		writeFields.PATCH("/user-fields/:id", h.fields.Update)
+		writeFields.DELETE("/user-fields/:id", h.fields.Delete)
 
-			managed.GET("/organization", session.Can(model.PermOrganizationRead), h.organization.Get)
-			signedIn.PATCH("/organization", session.Can(model.PermOrganizationWrite), h.organization.Update)
+		managed.GET("/organization", session.Can(model.PermOrganizationRead), h.organization.Get)
+		managed.PATCH("/organization", session.Can(model.PermOrganizationWrite), h.organization.Update)
 
-			readSocial := managed.Group("", session.Can(model.PermSocialRead))
-			readSocial.GET("/social-providers", h.social.List)
-			readSocial.GET("/social-providers/:id", h.social.Get)
+		readSocial := managed.Group("", session.Can(model.PermSocialRead))
+		readSocial.GET("/social-providers", h.social.List)
+		readSocial.GET("/social-providers/:id", h.social.Get)
 
-			// Reading a secret back takes the permission that could replace
-			// it, and is recorded like a change.
-			writeSocial := managed.Group("", session.Can(model.PermSocialWrite))
-			writeSocial.GET("/social-providers/:id/secret", h.social.Secret)
-			writeSocial.POST("/social-providers", h.social.Create)
-			writeSocial.PATCH("/social-providers/:id", h.social.Update)
-			writeSocial.DELETE("/social-providers/:id", h.social.Delete)
+		// Reading a secret back takes the permission that could replace
+		// it, and is recorded like a change.
+		writeSocial := managed.Group("", session.Can(model.PermSocialWrite))
+		writeSocial.GET("/social-providers/:id/secret", h.social.Secret)
+		writeSocial.POST("/social-providers", h.social.Create)
+		writeSocial.PATCH("/social-providers/:id", h.social.Update)
+		writeSocial.DELETE("/social-providers/:id", h.social.Delete)
 
-			readSSO := managed.Group("", session.Can(model.PermSSORead))
-			readSSO.GET("/sso-connections", h.sso.List)
-			readSSO.GET("/sso-connections/:id", h.sso.Get)
+		readSSO := managed.Group("", session.Can(model.PermSSORead))
+		readSSO.GET("/sso-connections", h.sso.List)
+		readSSO.GET("/sso-connections/:id", h.sso.Get)
 
-			writeSSO := managed.Group("", session.Can(model.PermSSOWrite))
-			writeSSO.POST("/sso-connections", h.sso.Create)
-			writeSSO.POST("/sso-connections/test", h.sso.Test)
-			writeSSO.PATCH("/sso-connections/:id", h.sso.Update)
-			writeSSO.DELETE("/sso-connections/:id", h.sso.Delete)
-			writeSSO.POST("/sso-connections/:id/refresh-metadata", h.sso.RefreshMetadata)
+		writeSSO := managed.Group("", session.Can(model.PermSSOWrite))
+		writeSSO.POST("/sso-connections", h.sso.Create)
+		writeSSO.POST("/sso-connections/test", h.sso.Test)
+		writeSSO.PATCH("/sso-connections/:id", h.sso.Update)
+		writeSSO.DELETE("/sso-connections/:id", h.sso.Delete)
+		writeSSO.POST("/sso-connections/:id/refresh-metadata", h.sso.RefreshMetadata)
 
-			readFlows := managed.Group("", session.Can(model.PermLoginFlowsRead))
-			readFlows.GET("/login-flows", h.flows.List)
-			readFlows.GET("/login-flows/:id", h.flows.Get)
+		readFlows := managed.Group("", session.Can(model.PermLoginFlowsRead))
+		readFlows.GET("/login-flows", h.flows.List)
+		readFlows.GET("/login-flows/:id", h.flows.Get)
 
-			writeFlows := managed.Group("", session.Can(model.PermLoginFlowsWrite))
-			writeFlows.POST("/login-flows", h.flows.Create)
-			writeFlows.PATCH("/login-flows/:id", h.flows.Update)
-			writeFlows.DELETE("/login-flows/:id", h.flows.Delete)
+		writeFlows := managed.Group("", session.Can(model.PermLoginFlowsWrite))
+		writeFlows.POST("/login-flows", h.flows.Create)
+		writeFlows.PATCH("/login-flows/:id", h.flows.Update)
+		writeFlows.DELETE("/login-flows/:id", h.flows.Delete)
 
-			readLanguages := managed.Group("", session.Can(model.PermLanguagesRead))
-			readLanguages.GET("/languages", h.languages.List)
-			readLanguages.GET("/languages/:code/translations/:app", h.languages.Translation)
+		readLanguages := managed.Group("", session.Can(model.PermLanguagesRead))
+		readLanguages.GET("/languages", h.languages.List)
+		readLanguages.GET("/languages/:code/translations/:app", h.languages.Translation)
 
-			writeLanguages := managed.Group("", session.Can(model.PermLanguagesWrite))
-			writeLanguages.POST("/languages", h.languages.Create)
-			writeLanguages.PATCH("/languages/:code", h.languages.Update)
-			writeLanguages.DELETE("/languages/:code", h.languages.Delete)
-			writeLanguages.PUT("/languages/:code/translations/:app", h.languages.SaveTranslation)
+		writeLanguages := managed.Group("", session.Can(model.PermLanguagesWrite))
+		writeLanguages.POST("/languages", h.languages.Create)
+		writeLanguages.PATCH("/languages/:code", h.languages.Update)
+		writeLanguages.DELETE("/languages/:code", h.languages.Delete)
+		writeLanguages.PUT("/languages/:code/translations/:app", h.languages.SaveTranslation)
 
-			// Applications and their roles. Routes only check the administrator
-			// reaches some application; each handler checks the one requested.
-			apps := managed.Group("", session.CanAnywhere(model.PermApplicationsRead))
-			apps.GET("/applications", h.applications.List)
-			apps.GET("/applications/:id", h.applications.Get)
-			apps.PATCH("/applications/:id", h.applications.Update)
-			apps.POST("/applications/:id/secret", h.applications.RotateSecret)
+		// Applications and their roles. Routes only check the administrator
+		// reaches some application; each handler checks the one requested.
+		apps := managed.Group("", session.CanAnywhere(model.PermApplicationsRead))
+		apps.GET("/applications", h.applications.List)
+		apps.GET("/applications/:id", h.applications.Get)
+		apps.PATCH("/applications/:id", h.applications.Update)
+		apps.POST("/applications/:id/secret", h.applications.RotateSecret)
+		apps.GET("/applications/:id/apis", h.applications.APIAccess)
+		apps.PUT("/applications/:id/apis/:api", h.applications.AuthorizeAPI)
+		apps.DELETE("/applications/:id/apis/:api", h.applications.RevokeAPI)
+		apps.POST("/applications/:id/token-preview", h.applications.TokenPreview)
 
-			// User roles, global and per application. Handlers narrow to the
-			// scopes the administrator reaches and check writes against the
-			// role's scope.
-			roles := managed.Group("", session.CanAnywhere(model.PermUsersRead, model.PermApplicationsRead))
-			roles.GET("/user-roles", h.roles.List)
-			roles.GET("/user-roles/:id", h.roles.Get)
+		registerApps := managed.Group("", session.Can(model.PermApplicationsWrite))
+		registerApps.POST("/applications", h.applications.Create)
+		registerApps.DELETE("/applications/:id", h.applications.Delete)
 
-			writeRoles := managed.Group("", session.CanAnywhere(model.PermUserRolesWrite))
-			writeRoles.POST("/user-roles", h.roles.Create)
-			writeRoles.PATCH("/user-roles/:id", h.roles.Update)
-			writeRoles.DELETE("/user-roles/:id", h.roles.Delete)
+		// User roles, global and per application. Handlers narrow to the
+		// scopes the administrator reaches and check writes against the
+		// role's scope.
+		roles := managed.Group("", session.CanAnywhere(model.PermUsersRead, model.PermApplicationsRead))
+		roles.GET("/user-roles", h.roles.List)
+		roles.GET("/user-roles/:id", h.roles.Get)
 
-			assign := managed.Group("", session.CanAnywhere(model.PermRoleAssignmentsWrite))
-			assign.POST("/users/:id/role-mappings", h.users.AssignRoles)
-			assign.DELETE("/users/:id/role-mappings/:role", h.users.UnassignRole)
+		writeRoles := managed.Group("", session.CanAnywhere(model.PermUserRolesWrite))
+		writeRoles.POST("/user-roles", h.roles.Create)
+		writeRoles.PATCH("/user-roles/:id", h.roles.Update)
+		writeRoles.DELETE("/user-roles/:id", h.roles.Delete)
 
-			apps.GET("/applications/:id/apis", h.applications.APIAccess)
-			apps.PUT("/applications/:id/apis/:api", h.applications.AuthorizeAPI)
-			apps.DELETE("/applications/:id/apis/:api", h.applications.RevokeAPI)
-			apps.POST("/applications/:id/token-preview", h.applications.TokenPreview)
+		assign := managed.Group("", session.CanAnywhere(model.PermRoleAssignmentsWrite))
+		assign.POST("/users/:id/role-mappings", h.users.AssignRoles)
+		assign.DELETE("/users/:id/role-mappings/:role", h.users.UnassignRole)
 
-			readAPIs := managed.Group("", session.CanAnywhere(model.PermAPIsRead, model.PermApplicationsWrite))
-			readAPIs.GET("/apis", h.apis.List)
-			readAPIs.GET("/apis/:id", h.apis.Get)
-			readAPIs.GET("/apis/:id/applications", h.apis.Applications)
+		readAPIs := managed.Group("", session.CanAnywhere(model.PermAPIsRead, model.PermApplicationsWrite))
+		readAPIs.GET("/apis", h.apis.List)
+		readAPIs.GET("/apis/:id", h.apis.Get)
+		readAPIs.GET("/apis/:id/applications", h.apis.Applications)
 
-			// An API's log names every application, visible or not, so it needs
-			// apis.read itself.
-			managed.GET("/apis/:id/logs", session.Can(model.PermAPIsRead), h.apis.Logs)
+		// An API's log names every application, visible or not, so it needs
+		// apis.read itself.
+		managed.GET("/apis/:id/logs", session.Can(model.PermAPIsRead), h.apis.Logs)
 
-			writeAPIs := managed.Group("", session.Can(model.PermAPIsWrite))
-			writeAPIs.POST("/apis", h.apis.Create)
-			writeAPIs.PATCH("/apis/:id", h.apis.Update)
-			writeAPIs.DELETE("/apis/:id", h.apis.Delete)
+		writeAPIs := managed.Group("", session.Can(model.PermAPIsWrite))
+		writeAPIs.POST("/apis", h.apis.Create)
+		writeAPIs.PATCH("/apis/:id", h.apis.Update)
+		writeAPIs.DELETE("/apis/:id", h.apis.Delete)
 
-			registerApps := managed.Group("", session.Can(model.PermApplicationsWrite))
-			registerApps.POST("/applications", h.applications.Create)
-			registerApps.DELETE("/applications/:id", h.applications.Delete)
+		// The administrators themselves, and their roles: a super
+		// admin's alone, whatever other roles grant.
+		super := signedIn.Group("", session.RequireSuperAdmin())
+		super.GET("/security", h.admins.Security)
+		super.PATCH("/security", h.admins.UpdateSecurity)
 
-			// The administrators themselves, and their roles: a super
-			// admin's alone, whatever other roles grant.
-			super := signedIn.Group("", session.RequireSuperAdmin())
-			super.GET("/security", h.admins.Security)
-			super.PATCH("/security", h.admins.UpdateSecurity)
+		super.GET("/admins", h.admins.List)
+		super.POST("/admins", h.admins.Create)
+		super.GET("/admins/:id", h.admins.Get)
+		super.PATCH("/admins/:id", h.admins.Update)
+		super.DELETE("/admins/:id", h.admins.Delete)
+		super.DELETE("/admins/:id/mfa", h.admins.ResetMFA)
 
-			super.GET("/admins", h.admins.List)
-			super.POST("/admins", h.admins.Create)
-			super.GET("/admins/:id", h.admins.Get)
-			super.PATCH("/admins/:id", h.admins.Update)
-			super.DELETE("/admins/:id", h.admins.Delete)
-			super.DELETE("/admins/:id/mfa", h.admins.ResetMFA)
+		super.GET("/mail", h.mail.Get)
+		super.PATCH("/mail", h.mail.Update)
+		super.POST("/mail/test", h.limit, h.mail.Test)
+		super.GET("/mail/content", h.mail.Content)
+		super.PUT("/mail/content/:code", h.mail.SaveContent)
 
-			super.GET("/mail", h.mail.Get)
-			super.PATCH("/mail", h.mail.Update)
-			super.POST("/mail/test", h.limit, h.mail.Test)
-			super.GET("/mail/content", h.mail.Content)
-			super.PUT("/mail/content/:code", h.mail.SaveContent)
+		super.GET("/otp", h.otp.Get)
+		super.PATCH("/otp", h.otp.Update)
 
-			super.GET("/otp", h.otp.Get)
-			super.PATCH("/otp", h.otp.Update)
+		super.GET("/signing-keys", h.keys.List)
+		super.POST("/signing-keys/rotate", h.limit, h.keys.Rotate)
 
-			super.GET("/signing-keys", h.keys.List)
-			super.POST("/signing-keys/rotate", h.limit, h.keys.Rotate)
+		super.GET("/cache", h.caching.Overview)
+		super.GET("/cache/:database/keys", h.caching.Keys)
+		super.GET("/cache/:database/key", h.caching.Key)
+		super.PUT("/cache/:database/key", h.caching.UpdateKey)
+		super.DELETE("/cache/:database/key", h.caching.DeleteKey)
+		super.POST("/cache/:database/groups/:group/clear", h.caching.ClearGroup)
+		super.DELETE("/cache/:database", h.caching.Flush)
 
-			super.GET("/cache", h.caching.Overview)
-			super.GET("/cache/:database/keys", h.caching.Keys)
-			super.GET("/cache/:database/key", h.caching.Key)
-			super.PUT("/cache/:database/key", h.caching.UpdateKey)
-			super.DELETE("/cache/:database/key", h.caching.DeleteKey)
-			super.POST("/cache/:database/groups/:group/clear", h.caching.ClearGroup)
-			super.DELETE("/cache/:database", h.caching.Flush)
-
-			super.GET("/admin-permissions", h.adminRoles.Permissions)
-			super.GET("/admin-roles", h.adminRoles.List)
-			super.POST("/admin-roles", h.adminRoles.Create)
-			super.PATCH("/admin-roles/:id", h.adminRoles.Update)
-			super.DELETE("/admin-roles/:id", h.adminRoles.Delete)
-		}
+		super.GET("/admin-permissions", h.adminRoles.Permissions)
+		super.GET("/admin-roles", h.adminRoles.List)
+		super.POST("/admin-roles", h.adminRoles.Create)
+		super.PATCH("/admin-roles/:id", h.adminRoles.Update)
+		super.DELETE("/admin-roles/:id", h.adminRoles.Delete)
 	}
 
 	r.NoRoute(notFound)

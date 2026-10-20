@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -56,7 +55,7 @@ func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, sessio
 		return err
 	}
 
-	_, err := s.store.RevokeOtherAdminSessionsFor(ctx, admin.ID, session, time.Now())
+	_, err := s.store.RevokeOtherAdminSessionsFor(ctx, admin.ID, session, s.now())
 	return err
 }
 
@@ -75,7 +74,7 @@ func (s *Service) withPassword(ctx context.Context, admin *model.Admin) error {
 // guess is counted before comparing, like a sign-in, so a session left open
 // cannot be used to find the password; a locked account is refused outright.
 func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, password string) error {
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, time.Now(), model.MaxFailedLogins, model.LockoutDuration)
+	allowed, err := s.store.ReserveAdminLogin(ctx, admin, s.now(), model.MaxFailedLogins, model.LockoutDuration)
 	if err != nil {
 		return err
 	}

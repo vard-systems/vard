@@ -14,13 +14,13 @@ import (
 	"loginer/internal/store"
 )
 
-var ErrWrongPassword = problem("wrong_password", "the current password is wrong")
+var ErrWrongPassword = problem("wrong_password")
 
-var ErrNotYours = problem("not_yours", "not the user's")
+var ErrNotYours = problem("not_yours")
 
-var ErrPasswordUnchanged = problem("password_unchanged", "the new password is the current one")
+var ErrPasswordUnchanged = problem("password_unchanged")
 
-var ErrCurrentSession = problem("current_session", "that is the session in use")
+var ErrCurrentSession = problem("current_session")
 
 type Profile struct {
 	FirstName string
@@ -209,6 +209,54 @@ func (s *Service) DisconnectApplication(ctx context.Context, session *Session, c
 	}
 
 	s.record(ctx, session.User, session.User.Email, "user.application_disconnected", client, map[string]any{"application": app.Name})
+
+	return nil
+}
+
+// RequestEmailChange emails a link to the new address; the account moves only
+// when it is used. It answers the same whether or not the address is taken, so
+// it cannot be used to discover accounts.
+//
+// A new address plus a password reset is the whole account, so it takes the
+// current password, and a browser session: an application's access token
+// may not move the account away from its owner.
+func (s *Service) RequestEmailChange(ctx context.Context, session *Session, email, password string, client Client) error {
+	flow, err := s.flowFor(ctx, "")
+	if err != nil {
+		return err
+	}
+	if !flow.AllowEmailChange || !session.InBrowser() {
+		return ErrEmailChangeNotOffered
+	}
+
+	// An account on an SSO-only domain cannot move to another address here;
+	// that plus a password reset would bypass SSO.
+	if err := s.ssoRequiredFor(ctx, session.User.Email); err != nil {
+		return err
+	}
+
+	if err := s.checkCurrentPassword(ctx, session.User, password, client); err != nil {
+		return err
+	}
+
+	email = model.NormalizeEmail(email)
+	if email == "" || email == session.User.Email {
+		return nil
+	}
+
+	if _, err := s.store.UserByEmail(ctx, email); err == nil {
+		s.record(ctx, session.User, email, "user.email_change_requested", client, map[string]any{"sent": false})
+
+		return nil
+	} else if !errors.Is(err, store.ErrNotFound) {
+		return err
+	}
+
+	if err := s.mailVerification(ctx, session.User, email, "", client); err != nil {
+		return err
+	}
+
+	s.record(ctx, session.User, email, "user.email_change_requested", client, map[string]any{"sent": true})
 
 	return nil
 }

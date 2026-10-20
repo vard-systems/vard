@@ -27,6 +27,8 @@ type oidcDiscovery struct {
 	ScopesSupported       []string `json:"scopes_supported"`
 }
 
+// ssoCache holds what identity providers publish about themselves, for an
+// hour, so a sign-in does not fetch their discovery document and keys again.
 type ssoCache struct {
 	mu        sync.Mutex
 	discovery map[string]cached[*oidcDiscovery]
@@ -40,20 +42,22 @@ type cached[T any] struct {
 
 const ssoCacheLifetime = time.Hour
 
-var ssoMemory = &ssoCache{
-	discovery: map[string]cached[*oidcDiscovery]{},
-	keys:      map[string]cached[map[string]jose.Key]{},
+func newSSOCache() *ssoCache {
+	return &ssoCache{
+		discovery: map[string]cached[*oidcDiscovery]{},
+		keys:      map[string]cached[map[string]jose.Key]{},
+	}
 }
 
 func (s *Service) Discover(ctx context.Context, issuer string) (*oidcDiscovery, error) {
 	issuer = strings.TrimRight(issuer, "/")
 
-	ssoMemory.mu.Lock()
-	if hit, ok := ssoMemory.discovery[issuer]; ok && s.now().Sub(hit.fetched) < ssoCacheLifetime {
-		ssoMemory.mu.Unlock()
+	s.ssoCache.mu.Lock()
+	if hit, ok := s.ssoCache.discovery[issuer]; ok && s.now().Sub(hit.fetched) < ssoCacheLifetime {
+		s.ssoCache.mu.Unlock()
 		return hit.value, nil
 	}
-	ssoMemory.mu.Unlock()
+	s.ssoCache.mu.Unlock()
 
 	var document oidcDiscovery
 	if err := s.getJSON(ctx, issuer+"/.well-known/openid-configuration", &document); err != nil {
@@ -69,9 +73,9 @@ func (s *Service) Discover(ctx context.Context, issuer string) (*oidcDiscovery, 
 		return nil, fmt.Errorf("the discovery document is missing an endpoint")
 	}
 
-	ssoMemory.mu.Lock()
-	ssoMemory.discovery[issuer] = cached[*oidcDiscovery]{value: &document, fetched: s.now()}
-	ssoMemory.mu.Unlock()
+	s.ssoCache.mu.Lock()
+	s.ssoCache.discovery[issuer] = cached[*oidcDiscovery]{value: &document, fetched: s.now()}
+	s.ssoCache.mu.Unlock()
 
 	return &document, nil
 }
@@ -162,7 +166,7 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 
 	if claimFirst(claims, connection.Attribute("email")) == "" && document.UserInfoEndpoint != "" && token.AccessToken != "" {
 		if extra, err := s.oidcUserInfo(ctx, document.UserInfoEndpoint, token.AccessToken); err == nil &&
-			stringClaim(extra, "sub") == stringClaim(claims, "sub") {
+			claimString(extra, "sub") == claimString(claims, "sub") {
 			for name, value := range extra {
 				if _, has := claims[name]; !has {
 					claims[name] = value
@@ -179,7 +183,7 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 	}
 
 	return &ssoPerson{
-		Subject:   stringClaim(claims, "sub"),
+		Subject:   claimString(claims, "sub"),
 		Email:     email,
 		FirstName: claimFirst(claims, connection.Attribute("first_name")),
 		LastName:  claimFirst(claims, connection.Attribute("last_name")),
@@ -235,15 +239,15 @@ func (s *Service) verifyIDToken(
 	now := s.now()
 
 	switch {
-	case stringClaim(claims, "iss") != document.Issuer:
-		return nil, fmt.Errorf("issued by %q", stringClaim(claims, "iss"))
+	case claimString(claims, "iss") != document.Issuer:
+		return nil, fmt.Errorf("issued by %q", claimString(claims, "iss"))
 	case !audienceHas(claims["aud"], connection.ClientID):
 		return nil, fmt.Errorf("for another client")
-	case stringClaim(claims, "nonce") != login.Nonce:
+	case claimString(claims, "nonce") != login.Nonce:
 		return nil, fmt.Errorf("for another sign-in")
 	}
 
-	if azp := stringClaim(claims, "azp"); azp != "" && azp != connection.ClientID {
+	if azp := claimString(claims, "azp"); azp != "" && azp != connection.ClientID {
 		return nil, fmt.Errorf("authorised for another client")
 	}
 
@@ -259,12 +263,12 @@ func (s *Service) verifyIDToken(
 }
 
 func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool) (map[string]jose.Key, error) {
-	ssoMemory.mu.Lock()
-	if hit, ok := ssoMemory.keys[jwksURI]; ok && !refresh && s.now().Sub(hit.fetched) < ssoCacheLifetime {
-		ssoMemory.mu.Unlock()
+	s.ssoCache.mu.Lock()
+	if hit, ok := s.ssoCache.keys[jwksURI]; ok && !refresh && s.now().Sub(hit.fetched) < ssoCacheLifetime {
+		s.ssoCache.mu.Unlock()
 		return hit.value, nil
 	}
-	ssoMemory.mu.Unlock()
+	s.ssoCache.mu.Unlock()
 
 	var set struct {
 		Keys []jose.JWK `json:"keys"`
@@ -289,9 +293,9 @@ func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool
 		return nil, fmt.Errorf("the provider publishes no key this server can verify with")
 	}
 
-	ssoMemory.mu.Lock()
-	ssoMemory.keys[jwksURI] = cached[map[string]jose.Key]{value: keys, fetched: s.now()}
-	ssoMemory.mu.Unlock()
+	s.ssoCache.mu.Lock()
+	s.ssoCache.keys[jwksURI] = cached[map[string]jose.Key]{value: keys, fetched: s.now()}
+	s.ssoCache.mu.Unlock()
 
 	return keys, nil
 }

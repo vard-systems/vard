@@ -33,11 +33,6 @@ var (
 	ErrNotEditable   = errors.New("only a cached value in the cache database can be edited")
 )
 
-var Groups = map[string][]string{
-	CacheDatabase:   {Languages, Organization, LoginFlows, SocialButtons, SSOButtons, OTPSettings},
-	SessionDatabase: {Admins, Clients, AdminSecurity, Grants},
-}
-
 type Key struct {
 	Name     string
 	Kind     string

@@ -22,8 +22,9 @@ import (
 // cannot read it.
 const Cookie = brand.AdminSessionCookie
 
+// Where Require and RequireAny leave the caller in the gin context.
 const (
-	key        = "admin"
+	adminKey   = "admin"
 	sessionKey = "session_id"
 )
 
@@ -63,7 +64,7 @@ func Require(service *auth.Service) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(key, user)
+		c.Set(adminKey, user)
 		c.Set(sessionKey, current.ID)
 
 		c.Next()
@@ -98,7 +99,7 @@ func RequireAny(service *auth.Service, provider *oidc.Service, log *slog.Logger)
 			return
 		}
 
-		c.Set(key, model.ServiceAdmin(*caller.Application, caller.Permissions))
+		c.Set(adminKey, model.ServiceAdmin(*caller.Application, caller.Permissions))
 		c.Next()
 	}
 }
@@ -136,7 +137,7 @@ func RequireSetup(service *auth.Service) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(key, user)
+		c.Set(adminKey, user)
 
 		c.Next()
 	}
@@ -229,8 +230,9 @@ func RequireSuperAdmin() gin.HandlerFunc {
 	}
 }
 
-// ID returns the session the request came with. Like Admin, it is only valid
-// behind Require.
+// ID returns the session the request came with. It is only valid behind
+// Require: RequireAny also admits admin API tokens, which have no session, and
+// for those it is uuid.Nil.
 func ID(c *gin.Context) uuid.UUID {
 	id, _ := c.Get(sessionKey)
 	current, _ := id.(uuid.UUID)
@@ -238,11 +240,12 @@ func ID(c *gin.Context) uuid.UUID {
 	return current
 }
 
-// Admin returns the administrator making the request. It is only valid behind
-// Require, which is the only thing that sets it.
+// Admin returns the administrator making the request: the signed-in one, or
+// the stand-in for an admin API token. It is only valid behind Require or
+// RequireAny, which set it.
 func Admin(c *gin.Context) *model.Admin {
-	user, _ := c.Get(key)
-	admin, _ := user.(*model.Admin)
+	value, _ := c.Get(adminKey)
+	admin, _ := value.(*model.Admin)
 
 	return admin
 }

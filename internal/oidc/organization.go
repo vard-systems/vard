@@ -19,7 +19,7 @@ type PublicOrganization struct {
 	Timezone string `json:"timezone"`
 }
 
-func PublicOrg(organization *model.Organization) PublicOrganization {
+func publicOrganization(organization *model.Organization) PublicOrganization {
 	return PublicOrganization{
 		Name:         organization.Name,
 		LogoURL:      organization.LogoURL,
@@ -37,5 +37,5 @@ func (s *Service) Organization(ctx context.Context) (PublicOrganization, error) 
 		return PublicOrganization{}, err
 	}
 
-	return PublicOrg(organization), nil
+	return publicOrganization(organization), nil
 }
