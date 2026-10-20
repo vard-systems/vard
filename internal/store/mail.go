@@ -38,6 +38,6 @@ func (s *Store) EnsureMailSettings(ctx context.Context, settings model.MailSetti
 	return translate(s.db.WithContext(ctx).Create(&settings).Error)
 }
 
-func (s *Store) SaveMailSettings(ctx context.Context, settings *model.MailSettings) error {
-	return translate(s.db.WithContext(ctx).Save(settings).Error)
+func (s *Store) UpdateMailSettings(ctx context.Context, change func(*model.MailSettings) (bool, error)) (*model.MailSettings, error) {
+	return updateSettings(ctx, s, model.DefaultMailSettings, change)
 }

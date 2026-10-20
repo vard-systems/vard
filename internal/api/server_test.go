@@ -34,7 +34,7 @@ func testEngine(origins ...string) *gin.Engine {
 func testAdminEngine() *gin.Engine {
 	cfg := config.Config{AdminURL: "http://localhost:5173"}
 
-	r, err := NewAdmin(cfg, nil, slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	r, err := NewAdmin(cfg, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 	if err != nil {
 		panic(err)
 	}

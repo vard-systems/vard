@@ -17,7 +17,7 @@ COMPOSE := docker compose -f deploy/compose.yaml
 # first that fails.
 each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)); done
 
-.PHONY: help setup deps tidy dev run build build-api build-web generate \
+.PHONY: help setup deps tidy dev start run build build-api build-web generate \
 	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \
 	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
 	docker-up docker-local docker-down docker-reset docker-logs docker-build docker-ps docker-config \
@@ -41,7 +41,10 @@ tidy: ## Tidy go.mod and go.sum
 ## Run
 
 dev: ## Start the API and both apps with hot reload — http://localhost:5173, :5174
-	@scripts/dev.sh
+	@scripts/start.sh dev
+
+start: ## Start the API and both apps from production builds — `make start env=dev` for hot reload
+	@scripts/start.sh $(or $(env),prod)
 
 run: ## Start only the API — :8080 public, :8081 admin
 	go run ./cmd/loginer
@@ -96,7 +99,7 @@ bench: ## Run the Go benchmarks
 	go test -run '^$$' -bench . -benchmem $(PKGS)
 
 vuln: ## Report known vulnerabilities in the Go code and its modules
-	go tool govulncheck ./...
+	go tool govulncheck $(PKGS)
 
 check: lint test ## Lint and unit-test everything: the check before a change is done
 

@@ -1,0 +1,69 @@
+# What `make ci` runs on a laptop, run on every push and pull request.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: make deps
+      - run: make check
+
+  integration:
+    name: integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: loginer
+          POSTGRES_PASSWORD: loginer
+          POSTGRES_DB: loginer
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U loginer" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # The TestLive… tests create and drop a database of their own on this
+      # server, so the user has to be allowed to create databases.
+      LOGINER_DB_DSN: postgres://loginer:loginer@localhost:5432/loginer?sslmode=disable
+      LOGINER_TEST_REDIS: localhost:6379
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: make test-integration
+
+  deploy:
+    name: compose file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: make docker-config

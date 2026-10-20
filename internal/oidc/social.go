@@ -249,14 +249,14 @@ func (s *Service) exchangeSocialCode(ctx context.Context, provider *model.Social
 	}
 
 	token := &socialToken{
-		AccessToken: stringClaim(answer, "access_token"),
-		IDToken:     stringClaim(answer, "id_token"),
+		AccessToken: claimString(answer, "access_token"),
+		IDToken:     claimString(answer, "id_token"),
 		Raw:         answer,
 	}
 
 	if token.AccessToken == "" && token.IDToken == "" {
 		s.log.Error("a social provider gave no token",
-			"provider", provider.Slug, "error", stringClaim(answer, "error"))
+			"provider", provider.Slug, "error", claimString(answer, "error"))
 		return nil, ErrSocialUpstream
 	}
 
@@ -347,7 +347,7 @@ func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProv
 	}
 
 	if identity.Email == "" && spec.EmailInTokenResponse {
-		identity.Email = stringClaim(token.Raw, "email")
+		identity.Email = claimString(token.Raw, "email")
 	}
 	identity.EmailVerified = spec.AssumeEmailVerified || claimBool(claims, spec.Claims.EmailVerified)
 
@@ -395,9 +395,9 @@ func (s *Service) idTokenClaims(provider *model.SocialProvider, idToken string) 
 
 	// Kinds with a known provider must name its issuer; per-installation kinds
 	// have none to check.
-	if want := provider.Spec().IDTokenIssuer; want != "" && stringClaim(claims, "iss") != want {
+	if want := provider.Spec().IDTokenIssuer; want != "" && claimString(claims, "iss") != want {
 		s.log.Error("a social provider's id_token named another issuer",
-			"provider", provider.Slug, "issuer", stringClaim(claims, "iss"), "want", want)
+			"provider", provider.Slug, "issuer", claimString(claims, "iss"), "want", want)
 		return nil, ErrSocialUpstream
 	}
 
@@ -718,10 +718,6 @@ func claimAt(claims map[string]any, path string) any {
 	return current
 }
 
-func stringClaim(claims map[string]any, name string) string {
-	return claimString(claims, name)
-}
-
 func numberClaim(value any) (float64, bool) {
 	switch number := value.(type) {
 	case float64:
@@ -816,7 +812,7 @@ func (s *Service) SocialErrorPage(err error) string {
 
 	description, ok := i18n.Text(i18n.ID, "error."+reason.Code)
 	if !ok {
-		description = reason.message
+		description = reason.Code
 	}
 
 	return withQuery(s.accountURL+PageError, url.Values{

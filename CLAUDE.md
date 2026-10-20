@@ -20,20 +20,21 @@ overview for people; update it when a change makes a sentence in it untrue.
 
 ## Commands
 
-| What                             | Command                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------- |
-| Run everything (hot reload)      | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/` |
-| Run only the API                 | `make run`                                                                |
-| Lint and unit-test everything    | `make check` (`lint` + `test`; each also as `-go` / `-web`)               |
-| Format everything                | `make fmt` (`lint` only reports, never rewrites)                          |
-| Go: tests against Postgres       | `make test-integration` (every `TestLive…`, throwaway DBs)                |
-| Everything CI would run          | `make ci` (`check`, `test-integration`, `docker-config`)                  |
-| Build                            | `make build` (`build-api` → `bin/loginer`, `build-web` → `node build`)    |
-| Console's generated files        | `make generate` (theme tokens, fonts, icons)                              |
-| Migrations                       | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status` |
-| Benchmarks, vulnerabilities      | `make bench`, `make vuln`                                                 |
-| Production stack on this machine | `make docker-local` → http://localhost:8080, http://localhost:8081        |
-| Everything else                  | `make` lists every target                                                 |
+| What                               | Command                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| Run everything (hot reload)        | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/`              |
+| Run everything (production builds) | `make start` — the API and both apps built, on the same ports; `env=dev` is `make dev` |
+| Run only the API                   | `make run`                                                                             |
+| Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                            |
+| Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                       |
+| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs)                             |
+| Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                               |
+| Build                              | `make build` (`build-api` → `bin/loginer`, `build-web` → `node build`)                 |
+| Console's generated files          | `make generate` (theme tokens, fonts, icons)                                           |
+| Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`              |
+| Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                              |
+| Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                     |
+| Everything else                    | `make` lists every target                                                              |
 
 Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 (the app in a browser on spare ports), `/endpoint` (add an admin endpoint),
@@ -50,7 +51,9 @@ internal/model           one file per table; every model listed in model.All
 internal/store           every query in the project, one file per subject
 internal/cache           Redis: the cache and session databases, rate-limit counts
 internal/auth            signing administrators in, and what they may do
-internal/oidc            the provider: authorize, tokens, userinfo, logout, social, SSO
+internal/oidc            the provider (authorize, tokens, userinfo, logout, social,
+                         SSO) and how users sign themselves in: session.go,
+                         register.go, reset.go, verify.go, account.go
 internal/jose            JWT signing and verifying, and Sealer (secrets at rest)
 internal/mail, totp      sending email; time-based one-time codes
 internal/database        the Postgres connection and the migration runner
@@ -70,7 +73,7 @@ web/<app>/src/hooks.server.ts  the app's server: API paths passed on
 web/console/src/lib/     api/, query/, components/ui/, components/<feature>/,
                          icons.ts and styles/tokens.css (generated: make generate)
 web/console/scripts/     theme.ts and icons.ts, the generators
-scripts/                 what the Makefile runs: setup, dev, docker-local, db;
+scripts/                 what the Makefile runs: setup, start, docker-local, db;
                          lib.sh (load_env) is shared by all of them
 deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles
 ```
@@ -267,8 +270,8 @@ component.
 - **The browser opens the apps' ports, never the API's.** The API's URLs
   (issuer, admin URL) are the apps', and a path the API answers reaches it
   only if it is in that app's `API_PATHS`.
-- **The dev URLs are fixed by `scripts/dev.sh`**, which exports
-  `LOGINER_ISSUER`, `LOGINER_ACCOUNT_URL`, `LOGINER_ADMIN_URL`,
+- **The local URLs are fixed by `scripts/start.sh`** (`make dev`, `make start`),
+  which exports `LOGINER_ISSUER`, `LOGINER_ACCOUNT_URL`, `LOGINER_ADMIN_URL`,
   and `LOGINER_TRUSTED_PROXIES` over whatever `.env` says.
 - **The API trusts the apps' servers and nobody else** to say who the
   caller is: loopback under `make dev`, the two containers' fixed addresses

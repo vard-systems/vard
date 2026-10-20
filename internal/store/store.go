@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	"loginer/internal/cache"
@@ -95,13 +96,20 @@ func translate(err error) error {
 		return nil
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		return ErrNotFound
-	case strings.Contains(strings.ToLower(err.Error()), "duplicate"):
-		// Wrapped so errors.Is still matches and DuplicateField can read the
-		// column.
-		return fmt.Errorf("%w: %s", ErrDuplicate, err)
+	case isUniqueViolation(err):
+		return fmt.Errorf("%w: %w", ErrDuplicate, err)
 	default:
 		return err
 	}
+}
+
+// uniqueViolation is the SQLSTATE of a clash with a unique index. The code,
+// not the message, is read: the message is in the server's lc_messages.
+const uniqueViolation = "23505"
+
+func isUniqueViolation(err error) bool {
+	pgErr, ok := errors.AsType[*pgconn.PgError](err)
+	return ok && pgErr.Code == uniqueViolation
 }
 
 // likeEscaper escapes what LIKE treats specially, so a search for "50%" or

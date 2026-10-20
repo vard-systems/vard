@@ -1,20 +1,26 @@
 #!/usr/bin/env bash
 #
-# Run the whole stack: the Loginer API, and the id and console apps as Vite
-# dev servers with hot reload. Each renders its pages and passes its API
-# paths on to the API (src/hooks.server.ts), so the browser talks to one
-# origin per app:
+# Run the whole stack: the Loginer API and the id and console apps. Each app
+# renders its pages and passes its API paths on to the API
+# (src/hooks.server.ts), so the browser talks to one origin per app:
 #
 #   http://localhost:5173  the sign-in pages, the provider, the account API
 #   http://localhost:5174  the panel and the admin API
 #
-# The production stack, with the apps built, runs with `make docker-local`.
+#   scripts/start.sh dev   the apps as Vite dev servers, with hot reload
+#   scripts/start.sh prod  the API and the apps built, and run as they are
+#                          deployed: bin/loginer and `node build`
+#
+# The production stack in containers runs with `make docker-local`.
 #
 # The API logs to this terminal; the apps log to .logs/<name>.log.
 # Ctrl-C stops everything.
 
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+mode="${1:-dev}"
+[[ $mode == dev || $mode == prod ]] || die "usage: scripts/start.sh dev|prod"
 
 need go "https://go.dev/dl"
 need node "https://nodejs.org"
@@ -67,18 +73,36 @@ ready() {
 	done
 }
 
-echo "==> building"
-go build -o bin/loginer ./cmd/loginer
+echo "==> building ($mode)"
+if [[ $mode == prod ]]; then
+	go build -trimpath -o bin/loginer ./cmd/loginer
+	for app in "${apps[@]}"; do
+		read -r name _ <<<"$app"
+		(cd "web/$name" && bun run build) >"$logs/$name.log" 2>&1 || {
+			tail -n 20 "$logs/$name.log"
+			die "web/$name did not build — .logs/$name.log"
+		}
+	done
+else
+	go build -o bin/loginer ./cmd/loginer
+fi
 
 for app in "${apps[@]}"; do
 	read -r name port api <<<"$app"
-	(cd "web/$name" && API_URL=$api exec node_modules/.bin/vite dev) >"$logs/$name.log" 2>&1 &
+	if [[ $mode == prod ]]; then
+		# adapter-node's server, on loopback like the dev server. ORIGIN is
+		# the address the browser uses, which it cannot tell from plain http.
+		(cd "web/$name" && NODE_ENV=production HOST=127.0.0.1 PORT=$port \
+			ORIGIN=http://localhost:$port API_URL=$api exec node build) >>"$logs/$name.log" 2>&1 &
+	else
+		(cd "web/$name" && API_URL=$api exec node_modules/.bin/vite dev) >"$logs/$name.log" 2>&1 &
+	fi
 	pids+=($!)
 	ready "$name" "http://localhost:$port" $! &
 	pids+=($!)
 done
 
-echo "==> Loginer — open http://localhost:5174/login — logs in .logs/"
+echo "==> Loginer ($mode) — open http://localhost:5174/login — logs in .logs/"
 bin/loginer &
 pids+=($!)
 wait $!

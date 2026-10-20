@@ -44,31 +44,25 @@ func (h *Handler) Get(c *gin.Context) {
 // Update changes the settings; omitted fields stay, including the password
 // unless a new one is typed.
 func (h *Handler) Update(c *gin.Context) {
-	settings, err := h.store.MailSettings(c.Request.Context())
-	if err != nil {
-		respond.Failure(c, h.log, err, "loading the mail settings failed")
-		return
-	}
-
 	var req settingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respond.Fail(c, respond.InvalidBody)
 		return
 	}
 
-	changed, err := req.applyTo(settings, h.sealer)
+	var changed []string
+	settings, err := h.store.UpdateMailSettings(c.Request.Context(), func(settings *model.MailSettings) (bool, error) {
+		var err error
+		changed, err = req.applyTo(settings, h.sealer)
+		return len(changed) > 0, err
+	})
 	if err != nil {
-		respond.Failure(c, h.log, err, "validating the mail settings failed")
+		respond.Failure(c, h.log, err, "updating the mail settings failed")
 		return
 	}
 
 	if len(changed) == 0 {
 		c.JSON(http.StatusOK, newResponse(*settings))
-		return
-	}
-
-	if err := h.store.SaveMailSettings(c.Request.Context(), settings); err != nil {
-		respond.Failure(c, h.log, err, "updating the mail settings failed")
 		return
 	}
 

@@ -23,6 +23,7 @@ Requirements: Go 1.27+, PostgreSQL 14+, Redis 6.2+ (optional but recommended),
 ```sh
 make setup    # .env with a secret key, the database, dependencies
 make dev      # starts the API and both apps, with hot reload
+make start    # the same from production builds (`make start env=dev` is `make dev`)
 ```
 
 Everything is plain http on localhost. Each app is a SvelteKit server that
@@ -124,6 +125,9 @@ make ci                 # all of the above, and the Docker stack's config
 make bench              # Go benchmarks
 make vuln               # known vulnerabilities in the Go code and its modules
 ```
+
+`.github/workflows/ci.yml` runs what `make ci` does on every push to `main`
+and every pull request.
 
 [`CLAUDE.md`](CLAUDE.md) is the contributor guide: where things live, how each
 kind of change is made, and the security invariants every change keeps.

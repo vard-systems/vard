@@ -1,6 +1,10 @@
 // Package oidc is the OAuth 2.0 authorization server and OpenID Connect
-// provider. It knows nothing of HTTP: handlers in internal/api call it, and
-// what a token carries is decided by model.EvaluateToken alone.
+// provider, and everything users do to sign themselves in: passwords,
+// registration, resets, email verification, social sign-in and SSO, and their
+// own account. Administrators sign in through internal/auth instead.
+//
+// It knows nothing of HTTP: handlers in internal/api call it, and what a token
+// carries is decided by model.EvaluateToken alone.
 package oidc
 
 import (
@@ -45,18 +49,14 @@ type Service struct {
 	issuer     string
 	accountURL string
 
-	sealer *jose.Sealer
-	social *http.Client
+	sealer   *jose.Sealer
+	social   *http.Client
+	ssoCache *ssoCache
 
 	now func() time.Time
 }
 
-func New(ctx context.Context, cfg config.Config, st *store.Store, mailer mail.Sender, log *slog.Logger) (*Service, error) {
-	sealer, err := jose.NewSealer(cfg.SecretKey)
-	if err != nil {
-		return nil, err
-	}
-
+func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.Sealer, mailer mail.Sender, log *slog.Logger) (*Service, error) {
 	keys, err := loadKeys(ctx, st, sealer, cfg.KeyRotation, log)
 	if err != nil {
 		return nil, err
@@ -71,6 +71,7 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, mailer mail.Se
 		accountURL: cfg.AccountURL,
 		sealer:     sealer,
 		social:     newFederationClient(socialTimeout, onLoopback(cfg.Issuer)),
+		ssoCache:   newSSOCache(),
 		now:        time.Now,
 	}, nil
 }

@@ -40,16 +40,16 @@ const (
 const SSOLoginLifetime = 15 * time.Minute
 
 var (
-	ErrSSOUnknown = problem("sso_unknown", "the connection is not available")
+	ErrSSOUnknown = problem("sso_unknown")
 	// ErrSSOExpired is a sign-in that took too long, came back twice, or was
 	// never started here — which is also what an IdP-initiated one is.
-	ErrSSOExpired        = problem("sso_expired", "the single sign-on expired or was used")
-	ErrSSOUpstream       = problem("sso_upstream", "the identity provider did not complete the sign-in")
-	ErrSSONoEmail        = problem("sso_no_email", "the identity provider gave no usable address")
-	ErrSSODomainMismatch = problem("sso_domain_mismatch", "the address is outside the connection's domains")
-	ErrSSOLinkRefused    = problem("sso_link_refused", "the address has an account the connection does not link")
-	ErrSSONoAccount      = problem("sso_no_account", "the connection does not create accounts")
-	ErrSSORequired       = problem("sso_required", "the address has to sign in through single sign-on")
+	ErrSSOExpired        = problem("sso_expired")
+	ErrSSOUpstream       = problem("sso_upstream")
+	ErrSSONoEmail        = problem("sso_no_email")
+	ErrSSODomainMismatch = problem("sso_domain_mismatch")
+	ErrSSOLinkRefused    = problem("sso_link_refused")
+	ErrSSONoAccount      = problem("sso_no_account")
+	ErrSSORequired       = problem("sso_required")
 )
 
 type SSORequired struct {
@@ -544,7 +544,7 @@ func (s *Service) SSOErrorPage(err error) string {
 
 	description, ok := i18n.Text(i18n.ID, "error."+reason.Code)
 	if !ok {
-		description = reason.message
+		description = reason.Code
 	}
 
 	return withQuery(s.accountURL+PageError, url.Values{

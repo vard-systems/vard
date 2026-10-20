@@ -19,7 +19,7 @@ func serve(guard gin.HandlerFunc, admin *model.Admin) int {
 	r := gin.New()
 	r.GET("/", func(c *gin.Context) {
 		if admin != nil {
-			c.Set(key, admin)
+			c.Set(adminKey, admin)
 		}
 		c.Next()
 	}, guard, func(c *gin.Context) {
@@ -92,7 +92,7 @@ func scopedTo(app uuid.UUID, role model.AdminRole) *model.Admin {
 func as(admin *model.Admin) *gin.Context {
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	if admin != nil {
-		c.Set(key, admin)
+		c.Set(adminKey, admin)
 	}
 
 	return c

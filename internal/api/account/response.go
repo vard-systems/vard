@@ -61,7 +61,7 @@ type requestResponse struct {
 
 func newRequestResponse(pending *oidc.PendingRequest) requestResponse {
 	return requestResponse{
-		Application: oidc.Public(pending.Application),
+		Application: oidc.NewPublicApplication(pending.Application),
 		LoginHint:   pending.LoginHint,
 		ExpiresAt:   pending.ExpiresAt,
 	}

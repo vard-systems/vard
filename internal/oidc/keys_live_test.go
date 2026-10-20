@@ -2,64 +2,19 @@ package oidc
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"io"
-	"log/slog"
-	"net/url"
-	"os"
-	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
-	"loginer/internal/brand"
-	"loginer/internal/config"
-	"loginer/internal/database"
+	"loginer/internal/database/databasetest"
 	"loginer/internal/jose"
 	"loginer/internal/store"
 )
 
-// testStore makes a throwaway database, migrated, and a store on it. It needs
-// LOGINER_TEST_DB_DSN, like the API's live tests, and is skipped without it.
+// testStore is a store on a throwaway database of its own.
 func testStore(t *testing.T) *store.Store {
 	t.Helper()
 
-	dsn := os.Getenv("LOGINER_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("LOGINER_TEST_DB_DSN is not set")
-	}
-
-	server, err := database.Open(config.DB{Driver: "postgres", DSN: dsn, TimeZone: "UTC"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = database.Close(server) })
-
-	var b [6]byte
-	_, _ = rand.Read(b[:])
-	name := brand.Slug + "_keys_" + hex.EncodeToString(b[:])
-	if err := server.Exec("CREATE DATABASE " + name).Error; err != nil {
-		t.Fatal(err)
-	}
-
-	parsed, _ := url.Parse(dsn)
-	parsed.Path = "/" + name
-	_, file, _, _ := runtime.Caller(0)
-	cfg := config.DB{Driver: "postgres", DSN: parsed.String(), TimeZone: "UTC", MigrateDir: filepath.Join(filepath.Dir(file), "..", "..", "migrations")}
-
-	db, err := database.Open(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		_ = database.Close(db)
-		_ = server.Exec("DROP DATABASE IF EXISTS " + name + " WITH (FORCE)").Error
-	})
-
-	if err := database.Migrate(db, cfg, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
-		t.Fatal(err)
-	}
+	db, _ := databasetest.Open(t)
 
 	return store.New(db)
 }

@@ -19,8 +19,9 @@ const HOP_BY_HOP = [
 	'upgrade'
 ];
 
+/** Whole segments only: `/oauth2` takes `/oauth2/token`, not a page at `/oauth2-help`. */
 export function isApiPath(pathname: string): boolean {
-	return API_PATHS.some((path) => pathname.startsWith(path));
+	return API_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 /**

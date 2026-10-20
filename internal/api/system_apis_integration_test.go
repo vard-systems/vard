@@ -88,38 +88,19 @@ func (f *oauthFixture) bearer(method, target, token string, body any) (int, map[
 	return res.StatusCode, out
 }
 
-func TestLiveAdminCLIManagesUsers(t *testing.T) {
-	f := newOAuthFixture(t)
-	admin := f.s.url
-
-	// admin-cli is there from the start, and needs a secret an administrator
-	// takes before it can do anything.
-	var list struct {
-		Applications []struct {
-			ID       string `json:"id"`
-			ClientID string `json:"client_id"`
-		} `json:"applications"`
-	}
-	f.super.must(http.StatusOK, http.MethodGet, "/applications?search="+model.AdminCLIClientID, nil, &list)
-	cliID := ""
-	for _, app := range list.Applications {
-		if app.ClientID == model.AdminCLIClientID {
-			cliID = app.ID
-		}
-	}
-	if cliID == "" {
-		t.Fatal("admin-cli was not made at startup")
-	}
+// adminCLITokens gives admin-cli the secret an administrator has to give it
+// before it can do anything, and returns how to ask for a client credentials
+// token for the admin API with it.
+func (f *oauthFixture) adminCLITokens(cliID string) func() string {
+	t := f.s.t
+	t.Helper()
 
 	var rotated struct {
 		ClientSecret string `json:"client_secret"`
 	}
 	f.super.must(http.StatusOK, http.MethodPost, "/applications/"+cliID+"/secret", nil, &rotated)
 
-	apiID, scopes := f.systemAPI(model.SystemAdminAPI)
-	f.allow(cliID, apiID, scopes, model.PermUsersRead)
-
-	adminToken := func() string {
+	return func() string {
 		t.Helper()
 		tokens := f.token("/oauth2/token", model.AdminCLIClientID, rotated.ClientSecret, url.Values{
 			"grant_type": {"client_credentials"}, "audience": {brand.AdminAPIIdentifier},
@@ -129,6 +110,16 @@ func TestLiveAdminCLIManagesUsers(t *testing.T) {
 		}
 		return tokens.str("access_token")
 	}
+}
+
+func TestLiveAdminCLIManagesUsers(t *testing.T) {
+	f := newOAuthFixture(t)
+	admin := f.s.url
+
+	cliID := f.adminCLI()
+	adminToken := f.adminCLITokens(cliID)
+	apiID, scopes := f.systemAPI(model.SystemAdminAPI)
+	f.allow(cliID, apiID, scopes, model.PermUsersRead)
 
 	// Asking for no scope gets every scope it is allowed: they are defaults.
 	token := adminToken()
@@ -217,6 +208,43 @@ func TestLiveAdminCLIManagesUsers(t *testing.T) {
 	}
 	if status := f.super.do(http.MethodDelete, "/apis/"+apiID, nil, nil); status != http.StatusConflict {
 		t.Errorf("delete the admin API = %d, want 409", status)
+	}
+}
+
+// The organisation's settings are managed like any other setting a role may
+// hold: a token with organization.write changes them, one without it does not,
+// and the activity log names the token's application as the one who did.
+func TestLiveAdminCLIChangesTheOrganization(t *testing.T) {
+	f := newOAuthFixture(t)
+	admin := f.s.url
+
+	cliID := f.adminCLI()
+	adminToken := f.adminCLITokens(cliID)
+	apiID, scopes := f.systemAPI(model.SystemAdminAPI)
+	change := map[string]any{"support_email": "help@acme.example.com"}
+
+	f.allow(cliID, apiID, scopes, model.PermOrganizationRead)
+	if status, body := f.bearer(http.MethodPatch, admin+"/organization", adminToken(), change); status != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("change the organization with organization.read = %d %v, want 403 forbidden", status, body)
+	}
+
+	f.allow(cliID, apiID, scopes, model.PermOrganizationRead, model.PermOrganizationWrite)
+	status, body := f.bearer(http.MethodPatch, admin+"/organization", adminToken(), change)
+	if status != http.StatusOK {
+		t.Fatalf("change the organization with organization.write = %d %v", status, body)
+	}
+	if organization, _ := body["organization"].(map[string]any); organization["support_email"] != "help@acme.example.com" {
+		t.Errorf("after the change = %v, want the new support address", body)
+	}
+
+	var logs struct {
+		Logs []struct {
+			Actor string `json:"actor"`
+		} `json:"logs"`
+	}
+	f.super.must(http.StatusOK, http.MethodGet, "/logs?action=organization.updated", nil, &logs)
+	if len(logs.Logs) == 0 || logs.Logs[0].Actor != model.AdminCLIClientID {
+		t.Errorf("the log of the change = %+v, want admin-cli as the actor", logs.Logs)
 	}
 }
 
