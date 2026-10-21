@@ -81,9 +81,10 @@ func single(c *gin.Context, name string) string {
 }
 
 func writeSignInState(c *gin.Context, value string, maxAge int, secure bool) {
-	// Apple and SAML providers post their answer cross-site, which only
-	// SameSite=None cookies survive, and None requires Secure. Over plain http
-	// (development) it stays Lax.
+	// Apple posts its answer cross-site, which only SameSite=None cookies
+	// survive, and None requires Secure. Over plain http (development) it
+	// stays Lax. (SAML does not need it: its ACS holds the post and reads
+	// this cookie on the GET it redirects to.)
 	sameSite := http.SameSiteLaxMode
 	if secure {
 		sameSite = http.SameSiteNoneMode

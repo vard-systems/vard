@@ -203,11 +203,12 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 	r.POST(oidc.PathSocialCallback, h.oauth.SocialCallback)
 
 	// Enterprise SSO. The SAML ACS takes the provider's posted form, so it is
-	// outside CSRF; start and ACS are rate limited because anyone can call
-	// them.
+	// outside CSRF, and the browser then comes back to it with a GET; start
+	// and ACS are rate limited because anyone can call them.
 	r.GET(oidc.PathSSOStart, h.limit, h.oauth.SSOStart)
 	r.GET(oidc.PathSSOCallback, h.oauth.SSOCallback)
 	r.POST(oidc.PathSSOACS, h.limit, h.oauth.SSOAssertion)
+	r.GET(oidc.PathSSOACS, h.limit, h.oauth.SSOAssertionReturn)
 	r.GET(oidc.PathSSOMetadata, h.oauth.SSOMetadata)
 
 	// Everything under /api/v1 is called by the id app with the user's

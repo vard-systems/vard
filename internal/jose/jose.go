@@ -125,6 +125,19 @@ func sign(key Key, input []byte) ([]byte, error) {
 // downgrade the check. Claims (issuer, expiry, audience) are the caller's to
 // check.
 func Verify(token string, lookup func(kid string) (Key, bool), claims any) (Header, error) {
+	return VerifyAmong(token, func(header Header) []Key {
+		if key, ok := lookup(header.KeyID); ok {
+			return []Key{key}
+		}
+		return nil
+	}, claims)
+}
+
+// VerifyAmong is Verify for another issuer's published keys, where a token
+// without a kid may have been signed by any of them: it is accepted if one
+// of the candidates of the header's algorithm verifies it. Trying several is
+// no weaker than one, since each is a key the issuer published.
+func VerifyAmong(token string, candidates func(Header) []Key, claims any) (Header, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return Header{}, ErrInvalid
@@ -140,17 +153,19 @@ func Verify(token string, lookup func(kid string) (Key, bool), claims any) (Head
 		return Header{}, ErrInvalid
 	}
 
-	key, ok := lookup(header.KeyID)
-	if !ok || key.Algorithm != header.Algorithm {
-		return Header{}, ErrInvalid
-	}
-
 	signature, err := b64.DecodeString(parts[2])
 	if err != nil {
 		return Header{}, ErrInvalid
 	}
 
-	if !verify(key, []byte(parts[0]+"."+parts[1]), signature) {
+	verified := false
+	for _, key := range candidates(header) {
+		if key.Algorithm == header.Algorithm && verify(key, []byte(parts[0]+"."+parts[1]), signature) {
+			verified = true
+			break
+		}
+	}
+	if !verified {
 		return Header{}, ErrInvalid
 	}
 

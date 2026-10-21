@@ -103,6 +103,43 @@ func TestVerifyRefusesTampering(t *testing.T) {
 	}
 }
 
+func TestVerifyAmongPublishedKeys(t *testing.T) {
+	signer := testKey(t, RS256, "")
+	published := []Key{testKey(t, RS256, ""), signer, testKey(t, ES256, "")}
+
+	token, err := Sign(signer, "JWT", map[string]any{"sub": "alice"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The same RSA key published for PS256 must not verify an RS256 token.
+	relabelled := signer
+	relabelled.Algorithm = PS256
+
+	cases := map[string]struct {
+		keys []Key
+		ok   bool
+	}{
+		"one of several verifies": {published, true},
+		"none of them signed it":  {[]Key{published[0], published[2]}, false},
+		"only under another alg":  {[]Key{relabelled}, false},
+		"no candidates":           {nil, false},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			var claims map[string]any
+			_, err := VerifyAmong(token, func(Header) []Key { return tc.keys }, &claims)
+			if (err == nil) != tc.ok {
+				t.Fatalf("VerifyAmong = %v, want ok %v", err, tc.ok)
+			}
+			if tc.ok && claims["sub"] != "alice" {
+				t.Errorf("claims = %v", claims)
+			}
+		})
+	}
+}
+
 func TestPublicJWKMatchesTheKey(t *testing.T) {
 	rsaKey := testKey(t, PS256, "r")
 	jwk, err := rsaKey.Public()

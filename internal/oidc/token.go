@@ -526,6 +526,26 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 			return inactive, nil
 		}
 
+		// A user turned off or deleted since is no longer vouched for, as
+		// userinfo and the refresh grant already say; a service token's
+		// subject is the client itself.
+		if claims.Subject != claims.ClientID {
+			id, err := uuid.Parse(claims.Subject)
+			if err != nil {
+				return inactive, nil
+			}
+			user, err := s.store.User(ctx, id)
+			if errors.Is(err, store.ErrNotFound) {
+				return inactive, nil
+			}
+			if err != nil {
+				return nil, err
+			}
+			if !user.IsActive {
+				return inactive, nil
+			}
+		}
+
 		out := map[string]any{"active": true, "token_type": "Bearer"}
 		maps.Copy(out, raw)
 		return out, nil

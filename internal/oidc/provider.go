@@ -39,6 +39,7 @@ const (
 	PageVerify    = "/verify-email"
 	PageError     = "/error"
 	PageLoggedOut = "/logged-out"
+	PageLogout    = "/logout"
 )
 
 type Service struct {

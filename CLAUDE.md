@@ -123,6 +123,24 @@ code near it, and add a test when adding a case.
   and sign-in failures give one answer, so timing and wording reveal nothing.
 - **Browsers are held to exact origin lists** (`api/kit/cors`, `api/kit/csrf`): no
   wildcards, no suffix matching. State-changing requests must be JSON.
+  `web/id` turns SvelteKit's own CSRF check off (`csrf.trustedOrigins: ['*']`)
+  because the provider takes form posts from other origins and from none
+  (token endpoint, SAML ACS, Apple); so it never gets a form action or a
+  `+server` route (`TestTheIDAppLetsTheProviderTakeFormPosts`).
+- **A logout without `id_token_hint` asks first.** Anyone can link to
+  `/oauth2/logout`, so a hint-less one from a signed-in browser goes to the
+  `/logout` confirmation page, and only its JSON call to
+  `/api/v1/account/logout` (`Confirmed`) signs out.
+- **A SAML response signs in only the browser that started it, once.** The
+  ACS POST comes cross-site without cookies, so it only holds the response
+  on the sign-in its `RelayState` names (never the state cookie's value) and
+  answers 303; the GET that follows brings the state cookie and does every
+  check. Only the HTTP-POST binding (a `SAMLart` would make the library fetch
+  from the metadata outside `newFederationClient`), no SHA-1 signatures, no
+  RSA-1_5 key transport, a bearer confirmation, and each assertion ID once
+  (`saml_assertions`).
+- **An SSO connection signs in only addresses it may**: its own domains, or —
+  without domains — any address at a domain no other connection holds.
 - **Nothing internal reaches a browser.** Every answer is a defined problem;
   anything else goes through `respond.Failure`, which logs it and answers 500.
   The request log records the path, never the query string.

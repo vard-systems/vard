@@ -174,13 +174,40 @@ func (h *Handler) SSOCallback(c *gin.Context) {
 	h.ssoFinished(c, result, err)
 }
 
-// SSOAssertion is the assertion consumer service a SAML provider posts its
-// response to.
-func (h *Handler) SSOAssertion(c *gin.Context) {
-	binding := session.SignInState(c)
-	session.ClearSignInState(c, h.secure)
+// samlResponseLimit is the most a provider's POST may be. An assertion with
+// many groups and certificates is tens of kilobytes.
+const samlResponseLimit = 1 << 20
 
-	result, err := h.provider.CompleteSSOAssertion(c.Request.Context(), c.Param("slug"), c.Request, binding, client(c))
+// SSOAssertion is the assertion consumer service a SAML provider posts its
+// response to. It only holds the response and sends the browser on with 303
+// (so the next request is a GET) to SSOAssertionReturn, on this origin, where
+// the browser's state cookie arrives even over plain http: a SameSite=Lax
+// cookie is sent on a top-level GET, never on another site's POST. The
+// cookie is left alone here, for that request to read.
+func (h *Handler) SSOAssertion(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, samlResponseLimit)
+
+	location, err := h.provider.HoldSSOAssertion(c.Request.Context(), c.Param("slug"), c.Request)
+	if err != nil {
+		h.ssoFailed(c, err, "holding a SAML response failed")
+		return
+	}
+
+	c.Header("Cache-Control", "no-store")
+	c.Redirect(http.StatusSeeOther, location)
+}
+
+// SSOAssertionReturn finishes a SAML sign-in with the response SSOAssertion
+// held for this browser's own sign-in.
+func (h *Handler) SSOAssertionReturn(c *gin.Context) {
+	result, err := h.provider.CompleteSSOAssertion(c.Request.Context(), c.Param("slug"), session.SignInState(c), client(c))
+
+	// Anyone can link a browser here before its provider has answered; that
+	// must not cost it the sign-in under way. Once one was used, the cookie goes.
+	if !errors.Is(err, oidc.ErrSSOExpired) {
+		session.ClearSignInState(c, h.secure)
+	}
+
 	h.ssoFinished(c, result, err)
 }
 

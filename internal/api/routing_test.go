@@ -1,7 +1,9 @@
 package api
 
 import (
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -38,6 +40,35 @@ func TestEveryRouteIsReachableThroughItsApp(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// The provider takes form posts from other origins and from none: a backend
+// redeeming a code, an SPA at the token endpoint, a SAML or Apple answer. A
+// built SvelteKit app refuses those before its hooks run, so the id app turns
+// that check off — which is safe only while the app has no form action or
+// endpoint of its own for the check to protect.
+func TestTheIDAppLetsTheProviderTakeFormPosts(t *testing.T) {
+	config := read(t, "../../web/id/vite.config.ts")
+	if !regexp.MustCompile(`csrf:\s*\{\s*trustedOrigins:\s*\['\*'\]\s*\}`).MatchString(config) {
+		t.Error("web/id/vite.config.ts does not set csrf: { trustedOrigins: ['*'] }; the token endpoint answers 403 through the built app")
+	}
+
+	err := filepath.WalkDir("../../web/id/src/routes", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		name := entry.Name()
+		switch {
+		case strings.HasPrefix(name, "+server."):
+			t.Errorf("%s: an endpoint of the id app's own, with SvelteKit's CSRF check off", path)
+		case strings.HasPrefix(name, "+page.server.") && strings.Contains(read(t, path), "actions"):
+			t.Errorf("%s: a form action, with SvelteKit's CSRF check off", path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

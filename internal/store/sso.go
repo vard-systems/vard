@@ -196,3 +196,48 @@ func (s *Store) TakeSSOLogin(ctx context.Context, stateHash string, now time.Tim
 
 	return &login, nil
 }
+
+// HoldSAMLResponse keeps a provider's answer on the sign-in its relay handle
+// names, once: a second answer to the same sign-in is refused.
+func (s *Store) HoldSAMLResponse(ctx context.Context, connectionID uuid.UUID, relayHash, sealed string, now time.Time) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.SSOLogin{}).
+		Where("relay_hash = ? AND relay_hash <> '' AND connection_id = ? AND expires_at > ? AND saml_response = ''",
+			relayHash, connectionID, now).
+		Update("saml_response", sealed)
+	if result.Error != nil {
+		return translate(result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// TakeHeldSAMLLogin uses up the sign-in a state belongs to, only once its
+// provider's answer is held: a browser sent here early leaves its sign-in
+// alone.
+func (s *Store) TakeHeldSAMLLogin(ctx context.Context, stateHash string, now time.Time) (*model.SSOLogin, error) {
+	var login model.SSOLogin
+
+	err := s.db.WithContext(ctx).
+		Clauses(clause.Returning{}).
+		Where("state_hash = ? AND expires_at > ? AND saml_response <> ''", stateHash, now).
+		Delete(&login).Error
+	if err != nil {
+		return nil, translate(err)
+	}
+
+	if login.ID == uuid.Nil {
+		return nil, ErrNotFound
+	}
+
+	return &login, nil
+}
+
+// UseSAMLAssertion records an assertion as used, or answers ErrDuplicate if it
+// already was.
+func (s *Store) UseSAMLAssertion(ctx context.Context, hash string, expires time.Time) error {
+	return translate(s.db.WithContext(ctx).Create(&model.SAMLAssertion{Hash: hash, ExpiresAt: expires}).Error)
+}

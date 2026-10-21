@@ -20,7 +20,9 @@ import (
 
 	"github.com/crewjam/saml"
 	"github.com/crewjam/saml/logger"
+	dsig "github.com/russellhaering/goxmldsig"
 
+	"loginer/internal/brand"
 	"loginer/internal/jose"
 )
 
@@ -38,6 +40,8 @@ type fakeOIDC struct {
 	key    jose.Key
 	// forger signs with a key the provider does not publish, when set.
 	forger *jose.Key
+	// others are keys it publishes beside key, and never signs with.
+	others []jose.Key
 
 	mu     sync.Mutex
 	person map[string]any
@@ -75,8 +79,12 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 		})
 	})
 	mux.HandleFunc("GET /jwks", func(w http.ResponseWriter, _ *http.Request) {
-		public, _ := f.key.Public()
-		_ = json.NewEncoder(w).Encode(map[string]any{"keys": []any{public}})
+		var published []any
+		for _, key := range append([]jose.Key{f.key}, f.others...) {
+			public, _ := key.Public()
+			published = append(published, public)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"keys": published})
 	})
 	mux.HandleFunc("GET /authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
@@ -312,6 +320,11 @@ func TestLiveSSOWithOpenIDConnect(t *testing.T) {
 			want:   "sso_no_email",
 		},
 		{
+			name:   "an address the provider says, as a string, it has not verified",
+			person: map[string]any{"sub": "okta|bea", "email": "bea@acme.test", "email_verified": "false"},
+			want:   "sso_no_email",
+		},
+		{
 			name:   "an id_token signed with a key the provider does not publish",
 			person: map[string]any{"sub": "okta|ada", "email": "ada@acme.test"},
 			forge:  true,
@@ -481,6 +494,8 @@ func newFakeSAML(t *testing.T) *fakeSAML {
 		SSOURL:                  *base.JoinPath("sso"),
 		ServiceProviderProvider: f,
 		SessionProvider:         f,
+		// crewjam's own default is SHA-1, which the ACS refuses.
+		SignatureMethod: dsig.RSASHA256SignatureMethod,
 	}
 
 	mux.HandleFunc("/sso", f.idp.ServeSSO)
@@ -550,7 +565,33 @@ func (f *fakeSAML) signInSAML(t *testing.T, b *browser, slug string) (ssoResult,
 	return b.post(t, b.s.root+"/oauth2/sso/"+slug+"/acs", form), form
 }
 
-// post sends a form as the provider's page would, and returns where it led.
+// providerForm walks a browser to the provider and returns the form the
+// provider's page would post back, without posting it.
+func (f *fakeSAML) providerForm(t *testing.T, b *browser, slug string) url.Values {
+	t.Helper()
+
+	atProvider := b.visit(b.s.root + "/oauth2/sso/" + slug + "/start")
+	res, err := http.Get(atProvider.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+
+	form := url.Values{}
+	for _, match := range formField.FindAllStringSubmatch(string(body), -1) {
+		form.Set(match[1], html.UnescapeString(match[2]))
+	}
+	if form.Get("SAMLResponse") == "" || form.Get("RelayState") == "" {
+		t.Fatalf("the provider answered %d without a response: %.300s", res.StatusCode, body)
+	}
+
+	return form
+}
+
+// post sends a form as the provider's page would, and returns where it led,
+// following a 303 back to this server as a browser does (the SAML ACS holds
+// the post and finishes on the GET).
 func (b *browser) post(t *testing.T, target string, form url.Values) ssoResult {
 	t.Helper()
 
@@ -561,11 +602,35 @@ func (b *browser) post(t *testing.T, target string, form url.Values) ssoResult {
 	res.Body.Close()
 
 	landed, err := url.Parse(res.Header.Get("Location"))
-	if err != nil || res.StatusCode != http.StatusFound {
+	if err != nil || (res.StatusCode != http.StatusFound && res.StatusCode != http.StatusSeeOther) {
 		t.Fatalf("POST %s = %d, want a redirect", target, res.StatusCode)
+	}
+	if res.StatusCode == http.StatusSeeOther {
+		landed = b.visit(landed.String())
 	}
 
 	return ssoResult{landed: landed}
+}
+
+// postAcross sends a form as another site's page would over plain http: the
+// browser's SameSite=Lax cookies stay behind. It returns where it led, for
+// the browser itself to follow.
+func postAcross(t *testing.T, target string, form url.Values) *url.URL {
+	t.Helper()
+
+	noCookies := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	res, err := noCookies.PostForm(target, form)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+
+	landed, err := url.Parse(res.Header.Get("Location"))
+	if err != nil || (res.StatusCode != http.StatusFound && res.StatusCode != http.StatusSeeOther) {
+		t.Fatalf("POST %s = %d, want a redirect", target, res.StatusCode)
+	}
+
+	return landed
 }
 
 func TestLiveSSOWithSAML(t *testing.T) {
@@ -666,6 +731,187 @@ func TestLiveSSOWithSAML(t *testing.T) {
 	relay := atOther.Query().Get("RelayState")
 	if reason, _ := intruder.post(t, sp.ACSURL, url.Values{"SAMLResponse": {form.Get("SAMLResponse")}, "RelayState": {relay}}).failed(); reason != "sso_upstream" {
 		t.Errorf("a response from a provider not in the metadata ended with %q, want sso_upstream", reason)
+	}
+}
+
+// samlConnection makes a SAML connection to a fake provider that signs Hedy
+// in, and returns the provider.
+func samlConnection(t *testing.T, s *liveServer, super *client, slug string) *fakeSAML {
+	t.Helper()
+
+	idp := newFakeSAML(t)
+	super.must(http.StatusCreated, http.MethodPost, "/sso-connections", map[string]any{
+		"protocol": "saml", "name": slug, "slug": slug, "metadata": idp.metadata(t),
+		"domains": []string{slug + ".test"}, "is_enabled": true,
+	}, nil)
+
+	idp.mu.Lock()
+	idp.person = &saml.Session{
+		ID: "session-" + slug, CreateTime: time.Now(), ExpireTime: time.Now().Add(time.Hour),
+		NameID: slug + "-7", UserEmail: "hedy@" + slug + ".test", UserGivenName: "Hedy",
+	}
+	idp.mu.Unlock()
+
+	return idp
+}
+
+// Over plain http the provider's cross-site POST to the ACS carries none of
+// the browser's cookies (SameSite=Lax). The ACS holds it and sends the browser
+// back with a GET, which does carry the state cookie, and the sign-in
+// finishes there — for the browser that started it, and no other.
+func TestLiveSAMLWithoutCrossSiteCookies(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+	idp := samlConnection(t, s, super, "initech")
+	acs := s.root + "/oauth2/sso/initech/acs"
+
+	t.Run("the browser that started signs in", func(t *testing.T) {
+		b := s.browser()
+		form := idp.providerForm(t, b, "initech")
+
+		back := postAcross(t, acs, form)
+		if back.String() != acs {
+			t.Fatalf("the ACS sent the browser to %s, want back to itself", back)
+		}
+		if reason, failed := (ssoResult{landed: b.visit(back.String())}).failed(); failed {
+			t.Fatalf("the sign-in failed: %s", reason)
+		}
+		if email, _, _ := b.me(); email != "hedy@initech.test" {
+			t.Errorf("signed in as %q", email)
+		}
+	})
+
+	t.Run("RelayState is not the browser's state", func(t *testing.T) {
+		b := s.browser()
+		form := idp.providerForm(t, b, "initech")
+		var state string
+		for _, cookie := range b.http.Jar.Cookies(&url.URL{Scheme: "http", Host: strings.TrimPrefix(s.root, "http://"), Path: "/oauth2/"}) {
+			if cookie.Name == brand.SignInStateCookie {
+				state = cookie.Value
+			}
+		}
+		if state == "" || form.Get("RelayState") == state {
+			t.Errorf("RelayState %q is the state cookie %q", form.Get("RelayState"), state)
+		}
+		if len(form.Get("RelayState")) > 80 {
+			t.Errorf("RelayState is %d bytes; the binding allows 80", len(form.Get("RelayState")))
+		}
+	})
+
+	t.Run("another browser cannot finish it", func(t *testing.T) {
+		starter := s.browser()
+		form := idp.providerForm(t, starter, "initech")
+
+		// The attacker's own sign-in, posted from the victim's browser.
+		victim := s.browser()
+		back := postAcross(t, acs, form)
+		if reason, failed := (ssoResult{landed: victim.visit(back.String())}).failed(); !failed || reason != "sso_expired" {
+			t.Errorf("another browser finished a sign-in it never started: %q", reason)
+		}
+		if status := victim.account(http.MethodGet, "/me", nil, nil); status == http.StatusOK {
+			t.Fatal("the other browser was signed in")
+		}
+
+		// Nor did the attempt spend it.
+		if reason, failed := (ssoResult{landed: starter.visit(acs)}).failed(); failed {
+			t.Errorf("the browser that started failed after another tried: %s", reason)
+		}
+	})
+
+	t.Run("coming back early spends nothing", func(t *testing.T) {
+		b := s.browser()
+		form := idp.providerForm(t, b, "initech")
+
+		// Anyone can link a browser to the ACS before its provider answers.
+		if reason, _ := (ssoResult{landed: b.visit(acs)}).failed(); reason != "sso_expired" {
+			t.Errorf("a GET before the provider answered ended with %q", reason)
+		}
+
+		back := postAcross(t, acs, form)
+		if reason, failed := (ssoResult{landed: b.visit(back.String())}).failed(); failed {
+			t.Errorf("the sign-in failed after an early GET: %s", reason)
+		}
+	})
+
+	t.Run("one answer per sign-in", func(t *testing.T) {
+		b := s.browser()
+		form := idp.providerForm(t, b, "initech")
+		postAcross(t, acs, form)
+
+		if again := postAcross(t, acs, form); again.Query().Get("reason") != "sso_expired" {
+			t.Errorf("a second answer to the same sign-in led to %s", again)
+		}
+		if reason, failed := (ssoResult{landed: b.visit(acs)}).failed(); failed {
+			t.Errorf("the first answer was lost: %s", reason)
+		}
+	})
+}
+
+// What the ACS refuses that the SAML library would let through, each logged
+// against the connection with its reason.
+func TestLiveSAMLRefusesWhatTheLibraryWouldTake(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+	idp := samlConnection(t, s, super, "hooli")
+	acs := s.root + "/oauth2/sso/hooli/acs"
+
+	reasons := func() string {
+		var logs struct {
+			Logs []struct {
+				Action string `json:"action"`
+				Detail string `json:"detail"`
+			} `json:"logs"`
+		}
+		super.must(http.StatusOK, http.MethodGet, "/logs?limit=5", nil, &logs)
+		for _, entry := range logs.Logs {
+			if entry.Action == "sso_connection.sign_in_failed" {
+				return entry.Detail
+			}
+		}
+		return ""
+	}
+
+	for _, tt := range []struct {
+		name, reason string
+		form         func(form url.Values)
+		before       func()
+	}{
+		{
+			name:   "an artifact instead of a response",
+			reason: "only the HTTP-POST binding",
+			form: func(form url.Values) {
+				form.Del("SAMLResponse")
+				form.Set("SAMLart", "AAQAAMh48/1oXIM+sDo7Dh2qMp1HM4IF5DaRNmDj6RdUmllwn9jJHyEgIi8=")
+			},
+		},
+		{
+			name:   "a SHA-1 signature",
+			reason: "SHA-1",
+			before: func() {
+				idp.idp.SignatureMethod = dsig.RSASHA1SignatureMethod
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			idp.idp.SignatureMethod = dsig.RSASHA256SignatureMethod
+			if tt.before != nil {
+				tt.before()
+			}
+
+			b := s.browser()
+			form := idp.providerForm(t, b, "hooli")
+			if tt.form != nil {
+				tt.form(form)
+			}
+
+			result := b.post(t, acs, form)
+			if reason, failed := result.failed(); !failed || reason != "sso_upstream" {
+				t.Errorf("ended with %q, want sso_upstream", reason)
+			}
+			if got := reasons(); !strings.Contains(got, tt.reason) {
+				t.Errorf("logged %q, want it to say %q", got, tt.reason)
+			}
+		})
 	}
 }
 
@@ -784,6 +1030,107 @@ func TestLiveSSOWithoutDomains(t *testing.T) {
 	s.browser().account(http.MethodGet, "/sso", nil, &buttons)
 	if len(buttons.Connections) != 1 || buttons.Connections[0].Slug != "partners" || buttons.Available {
 		t.Errorf("the sign-in page's SSO = %+v, want the button and no discovery", buttons)
+	}
+}
+
+// kid is optional in a JWS. A provider that publishes several keys and names
+// none of them still signs people in, by whichever of its keys verifies; a key
+// it does not publish, or a kid naming another of its keys, still does not.
+func TestLiveSSOWithoutKeyIDs(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+	idp := newFakeOIDC(t)
+
+	key := func(id string) jose.Key {
+		private, err := jose.Generate(jose.RS256)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return jose.Key{ID: id, Algorithm: jose.RS256, Private: private}
+	}
+	idp.others = []jose.Key{key(""), key("")}
+	idp.key.ID = ""
+
+	super.must(http.StatusCreated, http.MethodPost, "/sso-connections", map[string]any{
+		"protocol": "oidc", "name": "Keyless", "issuer": idp.server.URL,
+		"client_id": fakeClientID, "client_secret": fakeClientSecret,
+		"domains": []string{"keyless.test"}, "show_on_login": true, "is_enabled": true,
+	}, nil)
+
+	named := idp.key
+	named.ID = "someone-else"
+
+	for _, tt := range []struct {
+		name   string
+		forger *jose.Key
+		signs  bool
+	}{
+		{name: "signed by one of several keys, none named", signs: true},
+		{name: "signed by a key it does not publish", forger: new(key(""))},
+		{name: "a kid naming a key it does not publish", forger: &named},
+	} {
+		idp.forger = tt.forger
+		idp.signs(map[string]any{"sub": "keyless|1", "email": "kim@keyless.test", "email_verified": true})
+
+		b := s.browser()
+		reason, failed := idp.signInOIDC(b, "keyless").failed()
+		if failed == tt.signs {
+			t.Errorf("%s: signed in = %v (%s), want %v", tt.name, !failed, reason, tt.signs)
+		}
+	}
+}
+
+// A connection without domains may sign in any address but one another
+// connection holds: a partner's provider asserting somebody at Acme must not
+// become them, past Acme's own connection, whether that is on or off.
+func TestLiveSSOWithoutDomainsLeavesOtherConnectionsDomainsAlone(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+	acme, partner := newFakeOIDC(t), newFakeOIDC(t)
+
+	var owner struct {
+		Connection idOnly `json:"connection"`
+	}
+	super.must(http.StatusCreated, http.MethodPost, "/sso-connections", map[string]any{
+		"protocol": "oidc", "name": "Acme", "issuer": acme.server.URL,
+		"client_id": fakeClientID, "client_secret": fakeClientSecret,
+		"domains": []string{"acme.test"}, "enforce_domains": true, "is_enabled": true,
+	}, &owner)
+	super.must(http.StatusCreated, http.MethodPost, "/sso-connections", map[string]any{
+		"protocol": "oidc", "name": "Partners", "issuer": partner.server.URL,
+		"client_id": fakeClientID, "client_secret": fakeClientSecret,
+		"show_on_login": true, "is_enabled": true, "matching": "link", "create_users": true,
+	}, nil)
+	super.must(http.StatusCreated, http.MethodPost, "/users", map[string]any{
+		"email": "ceo@acme.test", "first_name": "Ceo", "password": "ceo-password-1",
+		"confirm_password": "ceo-password-1", "is_email_verified": true,
+	}, nil)
+
+	tests := []struct {
+		name    string
+		enabled bool
+		email   string
+	}{
+		{"an existing account at a domain another connection enforces", true, "ceo@acme.test"},
+		{"a new address there", true, "new@acme.test"},
+		{"the same, with the owner turned off", false, "ceo@acme.test"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			super.must(http.StatusOK, http.MethodPatch, "/sso-connections/"+owner.Connection.ID, map[string]any{"is_enabled": tt.enabled}, nil)
+			partner.signs(map[string]any{"sub": "partner|" + tt.email, "email": tt.email, "email_verified": true})
+
+			b := s.browser()
+			if reason, failed := partner.signInOIDC(b, "partners").failed(); !failed || reason != "sso_domain_mismatch" {
+				t.Errorf("the sign-in ended with %q (failed %v), want sso_domain_mismatch", reason, failed)
+			}
+		})
+	}
+
+	partner.signs(map[string]any{"sub": "partner|lin", "email": "lin@anywhere.test", "email_verified": true})
+	if reason, failed := partner.signInOIDC(s.browser(), "partners").failed(); failed {
+		t.Errorf("an address nobody holds was refused: %s", reason)
 	}
 }
 

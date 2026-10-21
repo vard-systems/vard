@@ -381,17 +381,38 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "verified"})
 }
 
-// Logout signs the user out of this server in this browser.
+// Logout signs the user out of this server in this browser, and says where to
+// go next: the application's registered post-logout URI when the confirmation
+// page names one, otherwise the signed-out page.
 func (h *Handler) Logout(c *gin.Context) {
-	token := session.UserToken(c)
-
-	if err := h.provider.SignOut(c.Request.Context(), token, client(c)); err != nil {
-		h.log.Error("signing a user out failed", "error", err)
+	var req logoutRequest
+	if c.Request.ContentLength != 0 {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			respond.Fail(c, respond.InvalidBody)
+			return
+		}
+	}
+	if err := validate.Struct(req); err != nil {
+		respond.Failure(c, h.log, err, "validating a logout failed")
+		return
 	}
 
-	session.ClearUser(c, h.secure)
+	location, signedOut, err := h.provider.Logout(c.Request.Context(), oidc.LogoutParams{
+		ClientID:              req.ClientID,
+		PostLogoutRedirectURI: req.PostLogoutRedirectURI,
+		State:                 req.State,
+		Confirmed:             true,
+	}, session.UserToken(c), client(c))
+	if err != nil {
+		h.log.Error("signing a user out failed", "error", err)
+		signedOut = true
+	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "signed out"})
+	if signedOut {
+		session.ClearUser(c, h.secure)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "signed out", "location": location})
 }
 
 const sessionKey = "user_session"

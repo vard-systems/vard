@@ -330,6 +330,14 @@ type SSOLogin struct {
 	Nonce         string `gorm:"size:128;not null;default:''" json:"-"`
 	SAMLRequestID string `gorm:"size:128;not null;default:''" json:"-"`
 
+	// RelayHash names a SAML sign-in to its provider (RelayState). It is not
+	// the browser's state, so the secret that binds the sign-in to this
+	// browser never passes through the provider.
+	RelayHash string `gorm:"size:64;not null;default:'';index" json:"-"`
+	// SAMLResponse is the provider's answer, sealed, held from its cross-site
+	// POST until this browser comes back for it with its state cookie.
+	SAMLResponse string `gorm:"type:text;not null;default:''" json:"-"`
+
 	Request string `gorm:"size:64;not null;default:''" json:"-"`
 	Next    string `gorm:"size:512;not null;default:''" json:"-"`
 
@@ -340,4 +348,19 @@ type SSOLogin struct {
 
 func (SSOLogin) TableName() string {
 	return "sso_logins"
+}
+
+// SAMLAssertion is an assertion already used, kept until it would have
+// expired anyway, so that the same signed assertion signs nobody in twice.
+type SAMLAssertion struct {
+	Base
+
+	// Hash is the SHA-256 of the connection and the assertion's own (signed)
+	// ID.
+	Hash      string    `gorm:"size:64;not null;uniqueIndex" json:"-"`
+	ExpiresAt time.Time `gorm:"not null;index" json:"-"`
+}
+
+func (SAMLAssertion) TableName() string {
+	return "saml_assertions"
 }

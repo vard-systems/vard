@@ -250,16 +250,17 @@ type TargetName struct {
 // targetTables whitelists where each target kind is stored, so nothing from the
 // log reaches query text.
 var targetTables = map[string]struct{ table, name, application string }{
-	"user":           {table: "users", name: "email"},
-	"user_field":     {table: "user_fields", name: "name"},
-	"user_role":      {table: "user_roles", name: "name", application: "application_id"},
-	"application":    {table: "applications", name: "name", application: "id"},
-	"api":            {table: "apis", name: "name"},
-	"admin_user":     {table: "admins", name: "username"},
-	"admin_role":     {table: "admin_roles", name: "name"},
-	"login_flow":     {table: "login_flows", name: "name"},
-	"language":       {table: "languages", name: "name"},
-	"sso_connection": {table: "sso_connections", name: "name"},
+	"user":            {table: "users", name: "email"},
+	"user_field":      {table: "user_fields", name: "name"},
+	"user_role":       {table: "user_roles", name: "name", application: "application_id"},
+	"application":     {table: "applications", name: "name", application: "id"},
+	"api":             {table: "apis", name: "name"},
+	"admin_user":      {table: "admins", name: "username"},
+	"admin_role":      {table: "admin_roles", name: "name"},
+	"login_flow":      {table: "login_flows", name: "name"},
+	"language":        {table: "languages", name: "name"},
+	"sso_connection":  {table: "sso_connections", name: "name"},
+	"social_provider": {table: "social_providers", name: "name"},
 }
 
 func (s *Store) TargetNames(ctx context.Context, targetType string, ids []string) (map[string]TargetName, error) {

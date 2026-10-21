@@ -272,6 +272,8 @@ func maySeeName(c *gin.Context, targetType string, name store.TargetName) bool {
 		return admin.HasPermission(model.PermLanguagesRead)
 	case "sso_connection":
 		return admin.HasPermission(model.PermSSORead)
+	case "social_provider":
+		return admin.HasPermission(model.PermSocialRead)
 	default:
 		return false
 	}

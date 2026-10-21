@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,9 +27,13 @@ import (
 //
 //   - OIDC: PKCE and state bind the code to this sign-in; the id_token's
 //     signature, issuer, audience, expiry and nonce are verified;
-//   - SAML: the response must be signed by the metadata's certificate,
-//     addressed to us, in time, and answer a request we sent (IdP-initiated
-//     responses are refused);
+//   - SAML: the response must be signed by the metadata's certificate (not
+//     with SHA-1), addressed to us, in time, confirm a bearer subject, and
+//     answer a request we sent (IdP-initiated responses are refused); each
+//     assertion is used once. The provider's cross-site POST is only held,
+//     and checked on the browser's GET that follows, where its state cookie
+//     arrives (HoldSSOAssertion, CompleteSSOAssertion); only the HTTP-POST
+//     binding is taken;
 //   - both: the address must be at one of the connection's domains.
 const (
 	PathSSOStart    = "/oauth2/sso/:slug/start"
@@ -154,7 +159,10 @@ func (s *Service) StartSSO(ctx context.Context, slug, request, next, loginHint s
 	case model.SSOProtocolOIDC:
 		location, err = s.startOIDC(ctx, connection, &login, state, loginHint)
 	case model.SSOProtocolSAML:
-		location, err = s.startSAML(connection, &login, state)
+		var relay string
+		if relay, login.RelayHash, err = model.NewSecret(); err == nil {
+			location, err = s.startSAML(connection, &login, relay)
+		}
 	default:
 		err = ErrSSOUnknown
 	}
@@ -196,21 +204,84 @@ func (s *Service) CompleteSSOCallback(ctx context.Context, slug, code, state, bi
 	return s.finishSSO(ctx, connection, login, person, client)
 }
 
-func (s *Service) CompleteSSOAssertion(ctx context.Context, slug string, r *http.Request, binding string, client Client) (*SocialResult, error) {
-	if err := r.ParseForm(); err != nil {
-		return nil, ErrSSOExpired
+// HoldSSOAssertion is the first half of the assertion consumer service: the
+// provider's cross-site POST. It carries no cookie of this browser's (over
+// plain http none survives it), so it decides nothing. It keeps the answer,
+// sealed, on the sign-in its RelayState names, and returns the address the
+// browser is sent on to, on this origin, where CompleteSSOAssertion finishes
+// with the browser's own state cookie.
+//
+// No RelayState is an unsolicited (IdP-initiated) response: refused, whatever
+// it says.
+func (s *Service) HoldSSOAssertion(ctx context.Context, slug string, r *http.Request) (string, error) {
+	connection, err := s.ssoConnection(ctx, slug)
+	if err != nil {
+		return "", err
+	}
+	if connection.Protocol != model.SSOProtocolSAML {
+		return "", ErrSSOExpired
 	}
 
-	// No relay state is an unsolicited response: refused, whatever it says.
-	connection, login, err := s.takeSSOLogin(ctx, slug, r.PostForm.Get("RelayState"), binding)
+	if err := r.ParseForm(); err != nil {
+		return "", ErrSSOExpired
+	}
+	relay := r.PostForm.Get("RelayState")
+	if relay == "" {
+		return "", ErrSSOExpired
+	}
+
+	// Only the HTTP-POST binding is taken. A SAMLart would have this server
+	// resolve an artifact at an address from the metadata; what was sent is
+	// held as it is, and refused once the browser is known.
+	sealed, err := s.sealer.SealBytes([]byte(r.PostForm.Get("SAMLResponse")))
+	if err != nil {
+		return "", err
+	}
+
+	err = s.store.HoldSAMLResponse(ctx, connection.ID, model.HashSecret(relay),
+		base64.RawStdEncoding.EncodeToString(sealed), s.now())
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		return "", ErrSSOExpired
+	case err != nil:
+		return "", err
+	}
+
+	return connection.ACSURL(s.issuer), nil
+}
+
+// CompleteSSOAssertion is the second half: the browser, back on this origin
+// with its state cookie (`binding`), takes the answer held for its own
+// sign-in, which only now is checked and signs anyone in.
+func (s *Service) CompleteSSOAssertion(ctx context.Context, slug, binding string, client Client) (*SocialResult, error) {
+	connection, err := s.ssoConnection(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
-	if connection.Protocol != model.SSOProtocolSAML {
+	if connection.Protocol != model.SSOProtocolSAML || binding == "" {
 		return nil, ErrSSOExpired
 	}
 
-	person, err := s.completeSAML(connection, login, r)
+	login, err := s.store.TakeHeldSAMLLogin(ctx, model.HashSecret(binding), s.now())
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		return nil, ErrSSOExpired
+	case err != nil:
+		return nil, err
+	case login.ConnectionID != connection.ID:
+		return nil, ErrSSOExpired
+	}
+
+	sealed, err := base64.RawStdEncoding.DecodeString(login.SAMLResponse)
+	if err != nil {
+		return nil, err
+	}
+	response, err := s.sealer.OpenBytes(sealed)
+	if err != nil {
+		return nil, err
+	}
+
+	person, err := s.completeSAML(ctx, connection, login, string(response))
 	if err != nil {
 		return nil, s.ssoFailed(ctx, connection, client, err)
 	}
@@ -357,6 +428,20 @@ func (s *Service) signInThroughSSO(
 			strings.Join(connection.Attribute("email"), " or "), strings.Join(person.Sent, ", "))
 	case !connection.OwnsEmail(email):
 		return nil, refused(ErrSSODomainMismatch, "%s is outside the connection's domains", email)
+	}
+
+	// A connection without domains is trusted with any address but the ones
+	// another connection holds, enabled or not: otherwise a partner's
+	// provider could sign in as anybody at a company with SSO of its own.
+	if len(connection.Domains) == 0 {
+		_, domain, _ := strings.Cut(email, "@")
+		taken, err := s.store.SSODomainsTaken(ctx, []string{domain}, connection.ID)
+		if err != nil {
+			return nil, err
+		}
+		if len(taken) > 0 {
+			return nil, refused(ErrSSODomainMismatch, "%s is at a domain another connection holds", email)
+		}
 	}
 
 	var user *model.User

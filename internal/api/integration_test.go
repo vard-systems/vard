@@ -436,6 +436,60 @@ func TestLiveActivityHidesNamesAdministratorsCannotSee(t *testing.T) {
 	}
 }
 
+// A social provider is named in the log, like an SSO connection, for whoever
+// may read social providers, and for nobody else.
+func TestLiveActivityNamesSocialProviders(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+
+	super.must(http.StatusCreated, http.MethodPost, "/social-providers", map[string]any{
+		"kind": "google", "slug": "google", "name": "Google Workspace", "client_id": "id", "client_secret": "secret",
+	}, nil)
+
+	const email, password = "auditor@example.com", "auditor-password-1"
+	var created struct {
+		Role idOnly `json:"role"`
+	}
+	super.must(http.StatusCreated, http.MethodPost, "/admin-roles", map[string]any{
+		"name": "log_reader", "permissions": []string{"activity.read"},
+	}, &created)
+	super.must(http.StatusCreated, http.MethodPost, "/admins", map[string]any{
+		"email": email, "first_name": "Log", "status": "active",
+		"password": password, "confirm_password": password,
+		"assignments": []map[string]any{{"role_id": created.Role.ID}},
+	}, nil)
+	reader := s.client()
+	if status := reader.login(email, password); status != http.StatusOK {
+		t.Fatalf("login = %d", status)
+	}
+
+	tests := []struct {
+		name string
+		who  *client
+		want string
+	}{
+		{"a super admin", super, "Google Workspace"},
+		{"an administrator who cannot read social providers", reader, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got overviewBody
+			tt.who.must(http.StatusOK, http.MethodGet, "/overview", nil, &got)
+
+			for _, event := range got.Activity {
+				if event.Action == "social_provider.created" {
+					if event.Target == nil || event.Target.Name != tt.want {
+						t.Errorf("target = %+v, want named %q", event.Target, tt.want)
+					}
+					return
+				}
+			}
+			t.Error("the provider's creation is not in the activity")
+		})
+	}
+}
+
 // A panel with nothing done this week still answers with lists, not null,
 // which the dashboard counts the length of.
 func TestLiveOverviewListsAreNeverNull(t *testing.T) {

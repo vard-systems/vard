@@ -30,6 +30,7 @@ var expiring = []any{
 	&model.AdminSession{},
 	&model.SocialLogin{},
 	&model.SSOLogin{},
+	&model.SAMLAssertion{},
 }
 
 func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, error) {

@@ -177,6 +177,32 @@ const actions: Record<string, Action> = {
 		tone: 'warning',
 		icon: RiKey2Line
 	},
+	'user.email_change_requested': {
+		label: 'Email change requested',
+		verb: 'asked to change their email address',
+		category: 'users',
+		icon: RiMailSendLine
+	},
+	'user.email_changed': {
+		label: 'Email changed',
+		verb: 'confirmed a new email address',
+		category: 'users',
+		tone: 'success',
+		icon: RiMailLine
+	},
+	'user.email_verification_sent': {
+		label: 'Verification sent',
+		verb: 'was sent a link to verify their email address',
+		category: 'users',
+		icon: RiMailSendLine
+	},
+	'user.email_verified': {
+		label: 'Email verified',
+		verb: 'verified their email address',
+		category: 'users',
+		tone: 'success',
+		icon: RiMailLine
+	},
 	'user.profile_updated': {
 		label: 'Profile updated',
 		verb: 'updated their profile',
@@ -393,6 +419,19 @@ const actions: Record<string, Action> = {
 		tone: 'warning',
 		icon: RiKey2Line
 	},
+	'admin_security.updated': {
+		label: 'Admin security changed',
+		verb: 'changed whether administrators need a second factor',
+		category: 'admins',
+		tone: 'warning',
+		icon: RiLockLine
+	},
+	'organization.updated': {
+		label: 'Organisation updated',
+		verb: 'updated',
+		category: 'other',
+		icon: RiFileList3Line
+	},
 	'admin_role.created': {
 		label: 'Admin role created',
 		verb: 'created admin role',
@@ -483,6 +522,45 @@ const actions: Record<string, Action> = {
 		tone: 'danger',
 		icon: RiShieldKeyholeLine
 	},
+	'social_provider.created': {
+		label: 'Social provider added',
+		verb: 'added social provider',
+		category: 'access',
+		icon: RiShieldKeyholeLine
+	},
+	'social_provider.updated': {
+		label: 'Social provider updated',
+		verb: 'updated social provider',
+		category: 'access',
+		icon: RiShieldKeyholeLine
+	},
+	'social_provider.deleted': {
+		label: 'Social provider removed',
+		verb: 'removed social provider',
+		category: 'access',
+		tone: 'danger',
+		icon: RiShieldKeyholeLine
+	},
+	'social_provider.secret_read': {
+		label: 'Secret read',
+		verb: 'read the client secret of social provider',
+		category: 'access',
+		tone: 'warning',
+		icon: RiKey2Line
+	},
+	'user.identity_connected': {
+		label: 'Account linked',
+		verb: 'linked their account to an identity provider',
+		category: 'users',
+		icon: RiShieldUserLine
+	},
+	'user.identity_disconnected': {
+		label: 'Account unlinked',
+		verb: 'disconnected a social account from',
+		category: 'users',
+		tone: 'warning',
+		icon: RiShieldUserLine
+	},
 	'user.roles_synced': {
 		label: 'Roles synced from SSO',
 		verb: 'had roles synced from their identity provider',
@@ -572,6 +650,8 @@ const unnamed: Record<string, string> = {
 	login_flow: 'a login flow',
 	language: 'a language',
 	sso_connection: 'an SSO connection',
+	social_provider: 'a social provider',
+	organization: 'the organisation settings',
 	mail: 'the mail settings',
 	mail_content: 'the email content',
 	otp: 'the one-time code settings'
@@ -611,6 +691,11 @@ const selfTargeted = new Set([
 	'user.password_reset',
 	'user.password_changed_self',
 	'user.profile_updated',
+	'user.email_change_requested',
+	'user.email_changed',
+	'user.email_verification_sent',
+	'user.email_verified',
+	'user.identity_connected',
 	'user.session_revoked',
 	'user.application_disconnected',
 	'user.login_code_sent',

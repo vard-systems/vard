@@ -32,7 +32,7 @@ type oidcDiscovery struct {
 type ssoCache struct {
 	mu        sync.Mutex
 	discovery map[string]cached[*oidcDiscovery]
-	keys      map[string]cached[map[string]jose.Key]
+	keys      map[string]cached[[]jose.Key]
 }
 
 type cached[T any] struct {
@@ -45,7 +45,7 @@ const ssoCacheLifetime = time.Hour
 func newSSOCache() *ssoCache {
 	return &ssoCache{
 		discovery: map[string]cached[*oidcDiscovery]{},
-		keys:      map[string]cached[map[string]jose.Key]{},
+		keys:      map[string]cached[[]jose.Key]{},
 	}
 }
 
@@ -178,7 +178,7 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 	// A provider that says outright it has not verified the address is not
 	// vouching for it.
 	email := claimFirst(claims, connection.Attribute("email"))
-	if verified, said := claims["email_verified"].(bool); said && !verified && email != "" {
+	if said, verified := emailVerified(claims["email_verified"]); said && !verified && email != "" {
 		return nil, refused(ErrSSONoEmail, "the provider says it has not verified %s (email_verified is false)", email)
 	}
 
@@ -190,6 +190,19 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 		Groups:    claimList(claims, connection.Attribute("groups")),
 		Sent:      slices.Sorted(maps.Keys(claims)),
 	}, nil
+}
+
+// emailVerified reads email_verified as a boolean or, as Cognito and others
+// send it, a string: "false" must not read as unsaid.
+func emailVerified(value any) (said, verified bool) {
+	switch v := value.(type) {
+	case bool:
+		return true, v
+	case string:
+		return true, strings.EqualFold(strings.TrimSpace(v), "true")
+	default:
+		return false, false
+	}
 }
 
 const idTokenLeeway = time.Minute
@@ -212,26 +225,28 @@ func (s *Service) verifyIDToken(
 		return nil, err
 	}
 
-	lookup := func(keys map[string]jose.Key) func(string) (jose.Key, bool) {
-		return func(kid string) (jose.Key, bool) {
-			if key, ok := keys[kid]; ok {
-				return key, true
+	// kid is optional in a JWS: a token without one may be signed by any of
+	// the provider's keys of its algorithm, and one with a kid only by that.
+	candidates := func(keys []jose.Key) func(jose.Header) []jose.Key {
+		return func(header jose.Header) []jose.Key {
+			if header.KeyID == "" {
+				return keys
 			}
-			if kid == "" && len(keys) == 1 {
-				for _, key := range keys {
-					return key, true
+			for _, key := range keys {
+				if key.ID == header.KeyID {
+					return []jose.Key{key}
 				}
 			}
-			return jose.Key{}, false
+			return nil
 		}
 	}
 
 	var claims map[string]any
-	if _, err := jose.Verify(idToken, lookup(keys), &claims); err != nil {
+	if _, err := jose.VerifyAmong(idToken, candidates(keys), &claims); err != nil {
 		if keys, err = s.providerKeys(ctx, document.JWKSURI, true); err != nil {
 			return nil, err
 		}
-		if _, err := jose.Verify(idToken, lookup(keys), &claims); err != nil {
+		if _, err := jose.VerifyAmong(idToken, candidates(keys), &claims); err != nil {
 			return nil, fmt.Errorf("signature: %w", err)
 		}
 	}
@@ -262,7 +277,7 @@ func (s *Service) verifyIDToken(
 	return claims, nil
 }
 
-func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool) (map[string]jose.Key, error) {
+func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool) ([]jose.Key, error) {
 	s.ssoCache.mu.Lock()
 	if hit, ok := s.ssoCache.keys[jwksURI]; ok && !refresh && s.now().Sub(hit.fetched) < ssoCacheLifetime {
 		s.ssoCache.mu.Unlock()
@@ -277,7 +292,9 @@ func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool
 		return nil, err
 	}
 
-	keys := map[string]jose.Key{}
+	// A list, not a map by kid: keys published without one must not
+	// overwrite each other.
+	var keys []jose.Key
 	for _, jwk := range set.Keys {
 		if jwk.Use != "" && jwk.Use != "sig" {
 			continue
@@ -285,7 +302,7 @@ func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool
 		// A key of a kind this server cannot verify with is skipped, not an
 		// error: the provider may publish others beside the one it uses.
 		if key, err := jose.ParseJWK(jwk); err == nil {
-			keys[key.ID] = key
+			keys = append(keys, key)
 		}
 	}
 
@@ -294,7 +311,7 @@ func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool
 	}
 
 	s.ssoCache.mu.Lock()
-	s.ssoCache.keys[jwksURI] = cached[map[string]jose.Key]{value: keys, fetched: s.now()}
+	s.ssoCache.keys[jwksURI] = cached[[]jose.Key]{value: keys, fetched: s.now()}
 	s.ssoCache.mu.Unlock()
 
 	return keys, nil

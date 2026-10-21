@@ -74,5 +74,6 @@ func All() []any {
 		&SSOConnection{},
 		&SSOIdentity{},
 		&SSOLogin{},
+		&SAMLAssertion{},
 	}
 }

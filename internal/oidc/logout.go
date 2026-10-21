@@ -2,7 +2,6 @@ package oidc
 
 import (
 	"context"
-
 	"errors"
 	"net/url"
 	"slices"
@@ -17,10 +16,18 @@ type LogoutParams struct {
 	ClientID              string
 	PostLogoutRedirectURI string
 	State                 string
+	// Confirmed is set by the confirmation page's own call, never read from
+	// the logout request: a hint-less logout signs out only once the user
+	// has said yes.
+	Confirmed bool
 }
 
 // Logout ends this browser's session and returns where to send it: the
 // application's registered post-logout URI, or the signed-out page.
+//
+// A request without id_token_hint, from a browser that is signed in, signs
+// nobody out: it goes to the confirmation page instead (RP-Initiated Logout
+// §2), since nothing says the application sent it.
 //
 // `signedOut` is false when the request was refused or its id_token_hint names
 // someone else. The cookie is cleared only when true, because this is a GET
@@ -71,6 +78,20 @@ func (s *Service) Logout(ctx context.Context, p LogoutParams, sessionToken strin
 		}
 		if !slices.Contains(app.PostLogoutRedirectURIs, p.PostLogoutRedirectURI) {
 			return s.errorPage(ErrInvalidRequest, "post_logout_redirect_uri is not registered for this application"), false, nil
+		}
+	}
+
+	if p.IDTokenHint == "" && !p.Confirmed {
+		session, err := s.SessionFor(ctx, sessionToken)
+		if err != nil {
+			return "", false, err
+		}
+		if session != nil {
+			values := url.Values{"post_logout_redirect_uri": {p.PostLogoutRedirectURI}, "state": {p.State}}
+			if app != nil {
+				values.Set("client_id", app.ClientID)
+			}
+			return withQuery(s.accountURL+PageLogout, values), false, nil
 		}
 	}
 

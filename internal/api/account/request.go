@@ -73,3 +73,11 @@ type passwordRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required,max=128"`
 	NewPassword     string `json:"new_password" validate:"required,max=72"`
 }
+
+// logoutRequest is the body of POST /account/logout, all of it optional: the
+// confirmation page passes on what the application's logout request named.
+type logoutRequest struct {
+	ClientID              string `json:"client_id" validate:"max=255"`
+	PostLogoutRedirectURI string `json:"post_logout_redirect_uri" validate:"max=2048"`
+	State                 string `json:"state" validate:"max=512"`
+}

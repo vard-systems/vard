@@ -680,6 +680,71 @@ func TestLiveOAuthLogoutLeavesOtherPeoplesSessionsAlone(t *testing.T) {
 	}
 }
 
+// A logout without id_token_hint could come from any page that links to it,
+// so it asks the reader first (RP-Initiated Logout §2). Only the confirmation
+// page's own JSON call, which another site cannot make, signs them out.
+func TestLiveOAuthLogoutWithoutAHintAsksFirst(t *testing.T) {
+	f := newOAuthFixture(t)
+	b := f.s.browser()
+
+	verifier, challenge := pkce(t)
+	if tokens := f.exchange(f.signIn(b, challenge).Query().Get("code"), verifier); tokens.status != http.StatusOK {
+		t.Fatalf("exchange = %d %v", tokens.status, tokens.body)
+	}
+
+	signedIn := func() bool {
+		return b.account(http.MethodGet, "/me", nil, nil) == http.StatusOK
+	}
+
+	logout := url.Values{"client_id": {f.clientID}, "post_logout_redirect_uri": {shopLoggedIn}, "state": {"bye"}}
+
+	for name, landed := range map[string]*url.URL{
+		"a link":        b.visit(f.s.root + "/oauth2/logout?" + logout.Encode()),
+		"a posted form": b.post(t, f.s.root+"/oauth2/logout", logout).landed,
+	} {
+		if !strings.HasPrefix(landed.String(), testAccountURL+"/logout?") {
+			t.Errorf("%s led to %s, want the confirmation page", name, landed)
+		}
+		for key, want := range logout {
+			if got := landed.Query().Get(key); got != want[0] {
+				t.Errorf("%s: the confirmation page was given %s=%q, want %q", name, key, got, want[0])
+			}
+		}
+		if !signedIn() {
+			t.Fatalf("%s signed the reader out without asking", name)
+		}
+	}
+
+	// The confirmation is checked like the request: an address the
+	// application did not register goes to the error page, still signed in.
+	var answer struct {
+		Location string `json:"location"`
+	}
+	b.account(http.MethodPost, "/logout", map[string]string{
+		"client_id": f.clientID, "post_logout_redirect_uri": "https://evil.example.com",
+	}, &answer)
+	if !strings.HasPrefix(answer.Location, testAccountURL+"/error") {
+		t.Errorf("an unregistered address confirmed led to %s", answer.Location)
+	}
+	if !signedIn() {
+		t.Fatal("a refused confirmation signed the reader out")
+	}
+
+	if status := b.account(http.MethodPost, "/logout", map[string]string{
+		"client_id": f.clientID, "post_logout_redirect_uri": shopLoggedIn, "state": "bye",
+	}, &answer); status != http.StatusOK || answer.Location != shopLoggedIn+"?state=bye" {
+		t.Errorf("confirming = %d, location %s", status, answer.Location)
+	}
+	if signedIn() {
+		t.Fatal("confirming left the reader signed in")
+	}
+
+	// Nobody to ask: a browser that is not signed in goes straight on.
+	if landed := b.visit(f.s.root + "/oauth2/logout?" + logout.Encode()); landed.String() != shopLoggedIn+"?state=bye" {
+		t.Errorf("a signed-out browser was sent to %s", landed)
+	}
+}
+
 func TestLiveOAuthRefusesUntrustedRequests(t *testing.T) {
 	f := newOAuthFixture(t)
 	b := f.s.browser()
@@ -819,6 +884,43 @@ func TestLiveOAuthClientCredentialsRevokeAndIntrospect(t *testing.T) {
 
 	if after := f.token("/oauth2/token", f.clientID, f.clientSecret, url.Values{"grant_type": {"refresh_token"}, "refresh_token": {web.str("refresh_token")}}); after.str("error") != "invalid_grant" {
 		t.Errorf("refresh after revoke = %d %v", after.status, after.body)
+	}
+}
+
+// An API that introspects is told what userinfo and the refresh grant already
+// say: a user turned off or deleted since the token was issued is not active.
+func TestLiveOAuthIntrospectionForgetsUsersWhoAreGone(t *testing.T) {
+	tests := []struct {
+		name   string
+		remove func(f *oauthFixture)
+	}{
+		{"a user turned off", func(f *oauthFixture) {
+			f.super.must(http.StatusOK, http.MethodPatch, "/users/"+f.userID, map[string]any{
+				"email": adaEmail, "first_name": "Ada", "last_name": "Lovelace", "is_active": false,
+			}, nil)
+		}},
+		{"a user deleted", func(f *oauthFixture) {
+			f.super.must(http.StatusNoContent, http.MethodDelete, "/users/"+f.userID, nil, nil)
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newOAuthFixture(t)
+			verifier, challenge := pkce(t)
+			web := f.exchange(f.signIn(f.s.browser(), challenge).Query().Get("code"), verifier)
+
+			if before := f.token("/oauth2/introspect", f.clientID, f.clientSecret, url.Values{"token": {web.str("access_token")}}); before.body["active"] != true {
+				t.Fatalf("introspect before = %v", before.body)
+			}
+
+			tt.remove(f)
+
+			after := f.token("/oauth2/introspect", f.clientID, f.clientSecret, url.Values{"token": {web.str("access_token")}})
+			if after.body["active"] != false || len(after.body) != 1 {
+				t.Errorf("introspect after = %v, want only active=false", after.body)
+			}
+		})
 	}
 }
 

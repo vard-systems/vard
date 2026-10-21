@@ -178,7 +178,10 @@ export const signIn = {
 	verifyEmail: (body: { token: string }) =>
 		request<{ status: string }>('/account/verify-email', { method: 'POST', body }),
 
-	logout: () => request<{ status: string }>('/account/logout', { method: 'POST' })
+	/** Signs this browser out. The confirmation page passes on what the
+	    application's logout named; `location` is where the server says to go. */
+	logout: (body?: { client_id: string; post_logout_redirect_uri: string; state: string }) =>
+		request<{ status: string; location: string }>('/account/logout', { method: 'POST', body })
 };
 
 export const account = {

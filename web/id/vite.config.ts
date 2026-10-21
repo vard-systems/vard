@@ -29,6 +29,16 @@ export default defineConfig({
 			// it, title and all, and passes the API's paths on (hooks.server.ts).
 			adapter: adapter(),
 
+			// SvelteKit's own CSRF check refuses, in a built app, every form post
+			// from another origin or from none, before hooks.server.ts runs. Those
+			// are exactly what the provider takes: a backend redeeming a code, an
+			// SPA calling the token endpoint, a SAML or Apple answer posted from
+			// the provider's page. The API guards what a cookie can change
+			// itself (internal/api/kit/csrf), and this app has no form action or
+			// endpoint of its own for the check to protect; internal/api's
+			// routing test holds it to that.
+			csrf: { trustedOrigins: ['*'] },
+
 			// Every script is the app's own: the ones SvelteKit writes into a
 			// page carry a fresh nonce, the rest are files from 'self', so an
 			// injected <script> does not run. Styles stay inline-able (Svelte's
