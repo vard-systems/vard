@@ -20,7 +20,7 @@ export type SidebarGroup = {
 	items: SidebarItem[];
 };
 
-const groups: SidebarGroup[] = [
+export const groups: SidebarGroup[] = [
 	{
 		id: 'overview',
 		label: 'Overview',
@@ -161,6 +161,11 @@ const groups: SidebarGroup[] = [
  * since SvelteKit 2 and never match the pathname). Activity matches only exactly; others also
  * match pages below them.
  */
+/** The current page's icon is drawn filled: the `-fill` twin of its `-line` icon. */
+export function currentIcon(icon: IconName): IconName {
+	return icon.replace(/-line$/, '-fill');
+}
+
 export function isCurrentSection(route: Section, id: string | null | undefined): boolean {
 	return route === '/(panel)' ? id === route : id === route || Boolean(id?.startsWith(`${route}/`));
 }

@@ -2,7 +2,7 @@
 	import type { IconName } from '#lib/components/ui/index.js';
 	import { resolve } from '$app/paths';
 	import { Tooltip } from '#lib/components/ui/index.js';
-	import type { Section } from './sections';
+	import { currentIcon, type Section } from './sections';
 
 	type Props = {
 		route: Section;
@@ -13,6 +13,8 @@
 	};
 
 	let { route, label, icon, current, collapsed }: Props = $props();
+
+	const glyph = $derived(current ? currentIcon(icon) : icon);
 </script>
 
 <Tooltip {label} placement="right" disabled={!collapsed}>
@@ -25,7 +27,7 @@
 			class:collapsed
 			aria-current={current ? 'page' : undefined}
 		>
-			<span class="icon"><i class={icon} style:font-size="18px" aria-hidden="true"></i></span>
+			<span class="icon"><i class={glyph} style:font-size="18px" aria-hidden="true"></i></span>
 			<span class="label">{label}</span>
 		</a>
 	{/snippet}
@@ -83,10 +85,11 @@
 		outline-offset: -2px;
 	}
 
+	/* The page you are on is told by a solid background and a filled icon, not
+	   by a heavier weight, so its label keeps the width of every other. */
 	.row.current {
 		background: var(--nav-current);
 		color: var(--nav-current-text);
-		font-weight: 600;
 	}
 
 	.row.current .icon {
