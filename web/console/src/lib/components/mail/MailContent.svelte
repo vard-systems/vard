@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiFileTextLine, RiRestartLine, RiTranslate2 } from '#lib/icons.js';
 	import {
 		mailApi,
 		type MailContent,
@@ -117,7 +116,7 @@
 	<FormSection
 		title="Language"
 		description="An email goes out in the reader's language. A field left empty falls back to the English this release ships, which is what its placeholder shows."
-		icon={RiTranslate2}
+		icon="ri-translate-2"
 	>
 		{#snippet meta()}
 			{#if language && !language.offered}
@@ -134,7 +133,7 @@
 	</FormSection>
 
 	{#each content.messages as spec (spec.kind)}
-		<FormSection title={spec.label} description={spec.description} icon={RiFileTextLine}>
+		<FormSection title={spec.label} description={spec.description} icon="ri-file-text-line">
 			{#snippet meta()}
 				{#if written(spec)}
 					<Tag tone="info" small>Written</Tag>
@@ -145,7 +144,7 @@
 
 			{#snippet action()}
 				{#if written(spec)}
-					<Button size="sm" variant="subtle" icon={RiRestartLine} onclick={() => revert(spec)}>
+					<Button size="sm" variant="subtle" icon="ri-restart-line" onclick={() => revert(spec)}>
 						Use the shipped text
 					</Button>
 				{/if}

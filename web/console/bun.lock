@@ -9,6 +9,7 @@
         "@tanstack/svelte-query": "^6.3.2",
         "@xyflow/svelte": "^1.7.0",
         "qrcode": "^1.5.4",
+        "remixicon": "4.8.0",
         "shiki": "^4.5.0",
       },
       "devDependencies": {
@@ -24,7 +25,6 @@
         "globals": "^17.13.0",
         "prettier": "^3.9.10",
         "prettier-plugin-svelte": "^4.1.1",
-        "remixicon": "^4.9.1",
         "svelte": "^5.57.2",
         "svelte-check": "^4.7.6",
         "typescript": "^6.0.3",
@@ -675,7 +675,7 @@
 
     "regex-utilities": ["regex-utilities@2.3.0", "", {}, "sha512-8VhliFJAWRaUiVvREIiW2NXXTmHs4vMNnSzuJVhscgmGav3g9VDxLrQndI3dZZVVdp0ZO/5v0xmX516/7M9cng=="],
 
-    "remixicon": ["remixicon@4.9.1", "", {}, "sha512-36gLSoujkabnCFZFDyP17VNh9piuBA/rsXUb4auSJWLGsHVXtmxLj/EM5FjaEAGnk8oIAj1Azob/DZ2N+90lAQ=="],
+    "remixicon": ["remixicon@4.8.0", "", {}, "sha512-8qTM/bWkmsAWitvcL9XrVPVdqHRrdmnNp4zCFBdmIHBygxfHWwoK6NzitbiMyRzjcXKBMlS/ab5M65/ZlxJTVA=="],
 
     "require-directory": ["require-directory@2.1.1", "", {}, "sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q=="],
 

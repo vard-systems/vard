@@ -3,7 +3,6 @@
 	import type { PublicLanguage } from '#lib/api/index.js';
 	import { useTranslator } from '#lib/i18n/index.js';
 	import { switchLanguage } from '#lib/i18n/switch.js';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		languages: PublicLanguage[];
@@ -81,9 +80,11 @@
 			aria-label="{t('shell.language')}: {shown?.native_name ?? current}"
 			aria-busy={switching || undefined}
 		>
-			<Icon name="globe" size="1.0625rem" />
+			<i class="ri-global-line" style:font-size="17px" aria-hidden="true"></i>
 			<span class="current" lang={current}>{shown?.native_name ?? current}</span>
-			<span class="chevron"><Icon name="chevron" size="1rem" /></span>
+			<span class="chevron"
+				><i class="ri-arrow-down-s-line" style:font-size="16px" aria-hidden="true"></i></span
+			>
 		</summary>
 
 		<!-- eslint-disable svelte/no-navigation-without-resolve -->
@@ -104,7 +105,7 @@
 							{/if}
 						</span>
 						{#if language.code === current}
-							<Icon name="check" size="1rem" />
+							<i class="ri-check-line" style:font-size="16px" aria-hidden="true"></i>
 						{/if}
 					</a>
 				</li>

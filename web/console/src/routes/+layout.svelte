@@ -5,6 +5,7 @@
 	import NavigationProgress from '#lib/components/layout/NavigationProgress.svelte';
 	import { Toaster } from '#lib/components/ui/index.js';
 	import { createQueryClient } from '#lib/query/index.js';
+	import 'remixicon/fonts/remixicon.css';
 	import '#lib/styles/app.css';
 	import type { LayoutProps } from './$types';
 

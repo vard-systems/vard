@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiCodeBoxLine, RiShieldCheckLine } from '#lib/icons.js';
 	import { applicationsApi, type APIAccess } from '#lib/api/index.js';
-	import { Alert, Badge, Checkbox, Icon, Note, Switch, notify } from '#lib/components/ui/index.js';
+	import { Alert, Badge, Checkbox, Note, Switch, notify } from '#lib/components/ui/index.js';
 	import { keys, applicationAccessOptions } from '#lib/query/index.js';
 
 	type Props = {
@@ -77,7 +76,7 @@
 	<Alert>Could not load the APIs.</Alert>
 {:else if access.data.length === 0}
 	<div class="empty">
-		<Icon icon={RiCodeBoxLine} size="1.25rem" />
+		<i class="ri-code-box-line" style:font-size="20px" aria-hidden="true"></i>
 		<div>
 			<strong>No APIs yet</strong>
 			<p>
@@ -106,7 +105,7 @@
 
 					{#if api.enforce_roles}
 						<span class="enforced" title="A user's token gets only the scopes their roles grant">
-							<Icon icon={RiShieldCheckLine} size="0.875rem" />
+							<i class="ri-shield-check-line" style:font-size="14px" aria-hidden="true"></i>
 							Role-based
 						</span>
 					{/if}

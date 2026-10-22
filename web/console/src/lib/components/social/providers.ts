@@ -1,28 +1,20 @@
-import {
-	RiAppleFill,
-	RiFacebookCircleFill,
-	RiGoogleFill,
-	RiKey2Line,
-	RiShieldKeyholeLine,
-	RiVkFill,
-	type IconData
-} from '#lib/icons.js';
+import type { IconName } from '#lib/components/ui/index.js';
 
 import type { SocialKind, SocialProvider, SocialSpec } from '#lib/api/index.js';
 import type { SelectOption } from '#lib/components/ui/index.js';
 
-const marks: Record<SocialKind, IconData> = {
-	google: RiGoogleFill,
-	apple: RiAppleFill,
-	facebook: RiFacebookCircleFill,
-	yandex: RiKey2Line,
-	vk: RiVkFill,
-	oidc: RiShieldKeyholeLine,
-	oauth2: RiKey2Line
+const marks: Record<SocialKind, IconName> = {
+	google: 'ri-google-fill',
+	apple: 'ri-apple-fill',
+	facebook: 'ri-facebook-circle-fill',
+	yandex: 'ri-key-2-line',
+	vk: 'ri-vk-fill',
+	oidc: 'ri-shield-keyhole-line',
+	oauth2: 'ri-key-2-line'
 };
 
-export function markFor(kind: SocialKind): IconData {
-	return marks[kind] ?? RiKey2Line;
+export function markFor(kind: SocialKind): IconName {
+	return marks[kind] ?? 'ri-key-2-line';
 }
 
 export function kindOptions(kinds: SocialSpec[]): SelectOption<SocialKind>[] {

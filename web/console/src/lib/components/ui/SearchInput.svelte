@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { RiSearchLine } from '#lib/icons.js';
 	import type { Size } from './control';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		value: string;
@@ -31,7 +29,7 @@
 </script>
 
 {#snippet field()}
-	<Icon icon={RiSearchLine} />
+	<i class="ri-search-line" aria-hidden="true"></i>
 	<input
 		id={id ?? uid}
 		{name}

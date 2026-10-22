@@ -1,13 +1,6 @@
 <script lang="ts">
-	import {
-		RiAppsLine,
-		RiCodeBoxLine,
-		RiLinksLine,
-		RiLockLine,
-		RiShieldCheckLine
-	} from '#lib/icons.js';
 	import type { API } from '#lib/api/index.js';
-	import { Badge, DataTable, type Column } from '#lib/components/ui/index.js';
+	import { Badge, CellText, DataTable, type Column } from '#lib/components/ui/index.js';
 
 	type Props = {
 		apis: API[];
@@ -19,11 +12,11 @@
 	let { apis, onOpen, selected, onSelect }: Props = $props();
 
 	const columns: Column[] = [
-		{ key: 'name', label: 'API', icon: RiCodeBoxLine, min: '12rem' },
-		{ key: 'identifier', label: 'Identifier', icon: RiLinksLine, min: '16rem' },
-		{ key: 'scopes', label: 'Scopes', icon: RiLockLine, min: '16rem' },
-		{ key: 'access', label: 'Role-based access', icon: RiShieldCheckLine, min: '10rem' },
-		{ key: 'applications', label: 'Applications', icon: RiAppsLine, min: '8rem', align: 'end' }
+		{ key: 'name', label: 'API', min: '14rem', grow: true },
+		{ key: 'identifier', label: 'Identifier', min: '16rem' },
+		{ key: 'scopes', label: 'Scopes', min: '16rem' },
+		{ key: 'access', label: 'Role-based access', min: '10rem' },
+		{ key: 'applications', label: 'Applications', min: '8rem', align: 'end' }
 	];
 
 	const SHOWN = 3;
@@ -40,15 +33,11 @@
 >
 	{#snippet row(api)}
 		<td>
-			<span class="name">
-				{api.name}
+			<CellText title={api.name} detail={api.description || undefined}>
 				{#if api.system}
 					<Badge>Built-in</Badge>
 				{/if}
-			</span>
-			{#if api.description}
-				<span class="muted">{api.description}</span>
-			{/if}
+			</CellText>
 		</td>
 
 		<td><code>{api.identifier}</code></td>
@@ -77,11 +66,6 @@
 </DataTable>
 
 <style>
-	.name {
-		margin-right: var(--space-2);
-		font-weight: 600;
-	}
-
 	.muted {
 		color: var(--color-text-hint);
 		font-size: var(--text-sm);

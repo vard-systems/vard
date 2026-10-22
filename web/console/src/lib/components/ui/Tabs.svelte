@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import type { Snippet } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import Icon from './Icon.svelte';
 
 	type Tab = {
 		value: string;
 		label: string;
-		icon?: IconData;
+		icon?: IconName;
 		count?: number;
 		disabled?: boolean;
 	};
@@ -66,7 +65,7 @@
 				onkeydown={(event) => keydown(event, index)}
 			>
 				{#if tab.icon}
-					<Icon icon={tab.icon} />
+					<i class={tab.icon} aria-hidden="true"></i>
 				{/if}
 				{tab.label}
 				{#if tab.count !== undefined}

@@ -1,12 +1,11 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import { Portal } from '@ark-ui/svelte/portal';
 	import { Tooltip } from '@ark-ui/svelte/tooltip';
 	import type { ControlProps, Size } from './control';
-	import Icon from './Icon.svelte';
 
 	type Props = Omit<ControlProps, 'icon'> & {
-		icon: IconData;
+		icon: IconName;
 		label: string;
 		placement?: 'top' | 'bottom' | 'left' | 'right';
 		onclick?: () => void;
@@ -24,7 +23,7 @@
 		onclick
 	}: Props = $props();
 
-	const glyph: Record<Size, string> = { sm: '1rem', md: '1.125rem', lg: '1.25rem' };
+	const glyph: Record<Size, number> = { sm: 16, md: 18, lg: 20 };
 </script>
 
 <!-- The trigger is the button itself rather than a wrapper around one: a
@@ -49,7 +48,7 @@
 		{#if loading}
 			<span class="spinner" aria-hidden="true"></span>
 		{:else}
-			<Icon {icon} size={glyph[size]} />
+			<i class={icon} style:font-size="{glyph[size]}px" aria-hidden="true"></i>
 		{/if}
 	</Tooltip.Trigger>
 

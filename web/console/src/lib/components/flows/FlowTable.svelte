@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiAppsLine, RiGitBranchLine, RiListOrdered2, RiToggleLine } from '#lib/icons.js';
 	import type { LoginFlow, LoginStepSpec } from '#lib/api/index.js';
-	import { Badge, type Column, DataTable, Icon, Tag, Tooltip } from '#lib/components/ui/index.js';
+	import { Badge, type Column, DataTable, Tag, Tooltip } from '#lib/components/ui/index.js';
 	import { describe, labelFor, markFor, specFor } from './steps';
 
 	type Props = {
@@ -14,10 +13,10 @@
 	let { flows, kinds, onOpen, empty }: Props = $props();
 
 	const columns: Column[] = $derived([
-		{ key: 'flow', label: 'Flow', icon: RiGitBranchLine, min: '14rem' },
-		{ key: 'steps', label: 'Steps', icon: RiListOrdered2, min: '18rem' },
-		{ key: 'applications', label: 'Applications', icon: RiAppsLine, min: '9rem' },
-		{ key: 'status', label: 'Status', icon: RiToggleLine, min: '10rem' }
+		{ key: 'flow', label: 'Flow', min: '14rem' },
+		{ key: 'steps', label: 'Steps', min: '18rem', grow: true },
+		{ key: 'applications', label: 'Applications', min: '9rem' },
+		{ key: 'status', label: 'Status', min: '10rem' }
 	]);
 </script>
 
@@ -33,6 +32,7 @@
 		<td>
 			<span class="steps">
 				{#each flow.steps as step (step)}
+					{@const mark = markFor(step)}
 					{@const spec = specFor(step, kinds)}
 					<Tooltip
 						label={spec?.implemented === false
@@ -41,7 +41,7 @@
 					>
 						{#snippet children(trigger)}
 							<span class="step" class:planned={spec?.implemented === false} {...trigger()}>
-								<Icon icon={markFor(step)} size="0.85rem" />
+								<i class={mark} style:font-size="14px" aria-hidden="true"></i>
 								{labelFor(step, kinds)}
 							</span>
 						{/snippet}

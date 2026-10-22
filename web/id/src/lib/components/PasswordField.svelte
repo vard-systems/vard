@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { useTranslator } from '#lib/i18n/index.js';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		label: string;
@@ -60,7 +59,10 @@
 			aria-pressed={visible}
 			{disabled}
 		>
-			<Icon name={visible ? 'eyeOff' : 'eye'} />
+			{#if visible}<i class="ri-eye-off-line" aria-hidden="true"></i>{:else}<i
+					class="ri-eye-line"
+					aria-hidden="true"
+				></i>{/if}
 		</button>
 	</div>
 

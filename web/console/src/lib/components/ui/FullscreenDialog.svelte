@@ -2,7 +2,6 @@
 	import type { Snippet } from 'svelte';
 	import { Dialog } from '@ark-ui/svelte/dialog';
 	import { Portal } from '@ark-ui/svelte/portal';
-	import { RiCloseLine } from '#lib/icons.js';
 	import Code from './Code.svelte';
 	import IconButton from './IconButton.svelte';
 
@@ -49,7 +48,7 @@
 				>
 					<header class="bar">
 						<IconButton
-							icon={RiCloseLine}
+							icon="ri-close-line"
 							label="Close"
 							size="sm"
 							placement="bottom"

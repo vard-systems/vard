@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiAddLine, RiDeleteBinLine, RiRefreshLine } from '#lib/icons.js';
 	import {
 		createInfiniteQuery,
 		createMutation,
@@ -20,7 +19,6 @@
 		Button,
 		ConfirmDialog,
 		FilterChip,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -127,7 +125,7 @@
 <PageHeader crumbs={['Dashboard', 'Administrators']} count={total}>
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -137,7 +135,7 @@
 
 	{#snippet actions()}
 		<Button onclick={() => openAdmin(null)}>
-			<Icon icon={RiAddLine} />
+			<i class="ri-add-line" aria-hidden="true"></i>
 			New administrator
 		</Button>
 	{/snippet}
@@ -187,7 +185,7 @@
 
 <SelectionBar count={chosen.length} onReset={reset}>
 	<Button colorPalette="danger" size="sm" onclick={() => (confirmingDelete = true)} disabled={busy}>
-		<Icon icon={RiDeleteBinLine} />
+		<i class="ri-delete-bin-line" aria-hidden="true"></i>
 		Delete
 	</Button>
 </SelectionBar>

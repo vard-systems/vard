@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { RiAddLine, RiCloseLine } from '#lib/icons.js';
-	import { Button, Icon, Input } from '#lib/components/ui/index.js';
+	import { Button, Input } from '#lib/components/ui/index.js';
 
 	type Props = {
 		domains: string[];
@@ -44,7 +43,7 @@
 					<span>{domain}</span>
 					{#if !readOnly}
 						<button type="button" aria-label="Remove {domain}" onclick={() => remove(domain)}>
-							<Icon icon={RiCloseLine} size="0.9rem" />
+							<i class="ri-close-line" style:font-size="14px" aria-hidden="true"></i>
 						</button>
 					{/if}
 				</li>
@@ -64,7 +63,7 @@
 				spellcheck={false}
 			/>
 			<Button variant="subtle" onclick={add} disabled={typed.trim() === ''}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				Add
 			</Button>
 		</div>

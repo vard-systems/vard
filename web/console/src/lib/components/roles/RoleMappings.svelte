@@ -1,29 +1,13 @@
 <script lang="ts">
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import {
-		RiAddLine,
-		RiArrowLeftLine,
-		RiCloseLine,
-		RiGlobalLine,
-		RiNodeTree,
-		RiShieldUserLine
-	} from '#lib/icons.js';
-	import {
 		usersApi,
 		type Admin,
 		type Application,
 		type Role,
 		type RoleMapping
 	} from '#lib/api/index.js';
-	import {
-		Alert,
-		Button,
-		Icon,
-		IconButton,
-		Switch,
-		Tooltip,
-		notify
-	} from '#lib/components/ui/index.js';
+	import { Alert, Button, IconButton, Switch, Tooltip, notify } from '#lib/components/ui/index.js';
 	import { canAnywhere } from '#lib/permissions.js';
 	import { keys, roleMappingsOptions } from '#lib/query/index.js';
 	import { countOf } from '#lib/utils/format.js';
@@ -189,7 +173,7 @@
 
 		{#if mayAssign}
 			<Button size="sm" onclick={openAssign} disabled={busy}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				Assign roles
 			</Button>
 		{/if}
@@ -208,7 +192,7 @@
 		<Alert>Could not load this user's roles.</Alert>
 	{:else if held.length === 0}
 		<div class="empty">
-			<Icon icon={RiShieldUserLine} size="1.25rem" />
+			<i class="ri-shield-user-line" style:font-size="20px" aria-hidden="true"></i>
 			<div>
 				<strong>No roles yet</strong>
 				<p>Roles decide what this user may do in your applications.</p>
@@ -219,7 +203,12 @@
 			{#each rows as row (row.key)}
 				<div class="row">
 					<div class="scope" title={row.clientId}>
-						<Icon icon={row.key === 'global' ? RiGlobalLine : RiShieldUserLine} size="0.9375rem" />
+						{#if row.key === 'global'}<i
+								class="ri-global-line"
+								style:font-size="15px"
+								aria-hidden="true"
+							></i>{:else}<i class="ri-shield-user-line" style:font-size="15px" aria-hidden="true"
+							></i>{/if}
 						<span>{row.name}</span>
 					</div>
 
@@ -237,7 +226,7 @@
 											class:leaving={removing === role.id}
 										>
 											{#if role.composite}
-												<Icon icon={RiNodeTree} size="0.8125rem" />
+												<i class="ri-node-tree" style:font-size="13px" aria-hidden="true"></i>
 											{/if}
 											{role.name}
 											{#if removable}
@@ -248,7 +237,7 @@
 													onclick={() => remove(role)}
 													disabled={busy}
 												>
-													<Icon icon={RiCloseLine} size="0.875rem" />
+													<i class="ri-close-line" style:font-size="14px" aria-hidden="true"></i>
 												</button>
 											{/if}
 										</span>
@@ -271,13 +260,16 @@
 			{#if inherited.length > 0}
 				<span><span class="swatch inherited"></span>Inherited — comes with a composite role</span>
 			{/if}
-			<span><Icon icon={RiNodeTree} size="0.8125rem" />Composite — includes other roles</span>
+			<span
+				><i class="ri-node-tree" style:font-size="13px" aria-hidden="true"></i>Composite — includes
+				other roles</span
+			>
 		</div>
 	{/if}
 {:else}
 	<div class="assign-head">
 		<IconButton
-			icon={RiArrowLeftLine}
+			icon="ri-arrow-left-line"
 			label="Back to the user's roles"
 			size="sm"
 			onclick={() => (mode = 'held')}

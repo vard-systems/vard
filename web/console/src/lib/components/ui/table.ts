@@ -1,9 +1,8 @@
-import type { IconData } from '#lib/icons.js';
-
 export type Column = {
 	key: string;
 	label?: string;
-	icon?: IconData;
 	min?: string;
 	align?: 'start' | 'end';
+	/** Takes the width the other columns leave, rather than sharing it out. */
+	grow?: boolean;
 };

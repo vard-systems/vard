@@ -30,7 +30,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs)                             |
 | Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                               |
 | Build                              | `make build` (`build-api` → `bin/loginer`, `build-web` → `node build`)                 |
-| Console's generated files          | `make generate` (theme tokens, fonts, icons)                                           |
+| Console's generated files          | `make generate` (theme tokens, fonts)                                                  |
 | Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`              |
 | Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                              |
 | Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                     |
@@ -71,8 +71,8 @@ i18n/                    translations: id/<locale>/ for the sign-in pages,
 web/<app>/src/hooks.server.ts  the app's server: API paths passed on
                          (lib/server/api.ts), page headers (lib/server/headers.ts)
 web/console/src/lib/     api/, query/, components/ui/, components/<feature>/,
-                         icons.ts and styles/tokens.css (generated: make generate)
-web/console/scripts/     theme.ts and icons.ts, the generators
+                         styles/tokens.css (generated: make generate)
+web/console/scripts/     theme.ts, the generator
 scripts/                 what the Makefile runs: setup, start, docker-local, db;
                          lib.sh (load_env) is shared by all of them
 deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles
@@ -240,11 +240,17 @@ colour, a height or a hover state itself.
 decides; `bun run theme` writes `lib/styles/tokens.css` and `fonts.css` (never
 edit those by hand).
 
-**An icon in the panel.** Import it from `#lib/icons.js` by its Remix Icon
-name (`add-line` → `RiAddLine`) and pass it to a component's `icon` prop or to
-`<Icon icon={…} />`; then `bun run icons` writes its path into
-`lib/icons.ts` (never edit that by hand). An icon is data (`IconData`), not a
-component.
+**An icon** (both apps). The Remix Icon font, as PocketBase uses it: the root
+layout loads `remixicon/fonts/remixicon.css`, and an icon is its class on an
+`<i>` — `<i class="ri-add-line" aria-hidden="true"></i>` (an icon that means
+something on its own takes `role="img"` and an `aria-label` instead). Names are
+on remixicon.com. Passed as a value an icon is that class, a string typed
+`IconName` (`icon="ri-add-line"`, drawn `<i class={icon} …></i>`). Its size is
+its font size: 16px in the panel and 18px on the sign-in pages (`base.css`);
+any other is `style:font-size`. `icons.spec.ts` fails on a class the font
+lacks. `remixicon` stays pinned at 4.8.0, the last Apache-2.0 release: from
+4.9.0 its licence forbids using an icon as a logo, which the sign-in pages'
+shield mark does.
 
 ## Conventions
 

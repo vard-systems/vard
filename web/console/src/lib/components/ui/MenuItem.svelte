@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { Menu } from '@ark-ui/svelte/menu';
-	import { RiExternalLinkLine, type IconData } from '#lib/icons.js';
-	import Icon from './Icon.svelte';
+	import type { IconName } from './icon';
 
 	type Props = {
 		value: string;
-		icon: IconData;
+		icon: IconName;
 		label: string;
 		description?: string;
 		href?: string;
@@ -17,12 +16,14 @@
 </script>
 
 {#snippet content()}
-	<Icon {icon} />
+	<i class={icon} aria-hidden="true"></i>
 	<span class="text">
 		{label}
 		{#if description}<small>{description}</small>{/if}
 	</span>
-	{#if href}<span class="external"><Icon icon={RiExternalLinkLine} size="0.875rem" /></span>{/if}
+	{#if href}<span class="external"
+			><i class="ri-external-link-line" style:font-size="14px" aria-hidden="true"></i></span
+		>{/if}
 {/snippet}
 
 {#if href}

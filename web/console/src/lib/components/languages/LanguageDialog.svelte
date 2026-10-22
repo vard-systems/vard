@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiSettings3Line, RiTranslate2 } from '#lib/icons.js';
 	import { languagesApi, type Language, type LocaleApp } from '#lib/api/index.js';
 	import {
 		Button,
@@ -85,11 +84,11 @@
 	}
 
 	const tabs = $derived([
-		{ value: 'settings', label: 'Settings', icon: RiSettings3Line },
+		{ value: 'settings', label: 'Settings', icon: 'ri-settings-3-line' },
 		...apps.map((app) => ({
 			value: app,
 			label: appName(app),
-			icon: RiTranslate2,
+			icon: 'ri-translate-2',
 			count: (language?.missing[app] ?? 0) > 0 ? language?.missing[app] : undefined
 		}))
 	]);

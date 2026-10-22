@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { RiKey2Line, RiShareLine, RiShieldUserLine } from '#lib/icons.js';
 	import type { Application, SocialKind, UserField, UserRecord } from '#lib/api/index.js';
-	import { Badge, Code, type Column, DataTable, Icon, Tooltip } from '#lib/components/ui/index.js';
+	import { Badge, Code, type Column, DataTable, Tooltip } from '#lib/components/ui/index.js';
 	import { markFor as providerMark } from '#lib/components/social/providers.js';
 	import FieldValue from './FieldValue.svelte';
 	import { valueOf } from './fields';
-	import { fieldIcons, idIcon } from './fieldIcons';
 
 	type Props = {
 		users: UserRecord[];
@@ -21,15 +19,15 @@
 	const appNames = $derived(new Map(applications.map((app) => [app.id, app.name])));
 
 	const columns = $derived<Column[]>([
-		{ key: 'id', label: 'ID', icon: idIcon, min: '10rem' },
+		{ key: 'id', label: 'ID', min: '10rem' },
 		...fields.map((field) => ({
 			key: field.name,
 			label: field.label || field.name,
-			icon: fieldIcons[field.type],
-			min: field.type === 'email' ? '13rem' : field.type === 'bool' ? '8rem' : '9rem'
+			min: field.type === 'email' ? '13rem' : field.type === 'bool' ? '8rem' : '9rem',
+			grow: field.type === 'email'
 		})),
-		{ key: 'roles', label: 'Roles', icon: RiShieldUserLine, min: '10rem' },
-		{ key: 'signs_in_with', label: 'Signs in with', icon: RiShareLine, min: '9rem' }
+		{ key: 'roles', label: 'Roles', min: '10rem' },
+		{ key: 'signs_in_with', label: 'Signs in with', min: '9rem' }
 	]);
 
 	function markFor(kind: SocialKind) {
@@ -75,10 +73,11 @@
 		<td>
 			<span class="ways">
 				{#each user.social_accounts ?? [] as account (account.id)}
+					{@const mark = markFor(account.kind)}
 					<Tooltip label="{account.provider} · {account.email || 'no address'}">
 						{#snippet children(trigger)}
 							<span class="way" {...trigger()}>
-								<Icon icon={markFor(account.kind)} size="1rem" />
+								<i class={mark} aria-hidden="true"></i>
 							</span>
 						{/snippet}
 					</Tooltip>
@@ -87,7 +86,9 @@
 				{#if user.has_password}
 					<Tooltip label="Signs in with a password">
 						{#snippet children(trigger)}
-							<span class="way" {...trigger()}><Icon icon={RiKey2Line} size="1rem" /></span>
+							<span class="way" {...trigger()}
+								><i class="ri-key-2-line" aria-hidden="true"></i></span
+							>
 						{/snippet}
 					</Tooltip>
 				{/if}

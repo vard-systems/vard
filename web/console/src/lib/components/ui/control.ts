@@ -1,4 +1,4 @@
-import type { IconData } from '#lib/icons.js';
+import type { IconName } from './icon';
 
 export type Size = 'sm' | 'md' | 'lg';
 
@@ -12,5 +12,5 @@ export type ControlProps = {
 	colorPalette?: ColorPalette;
 	loading?: boolean;
 	disabled?: boolean;
-	icon?: IconData;
+	icon?: IconName;
 };

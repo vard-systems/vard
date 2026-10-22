@@ -2,7 +2,6 @@
 	import type { Snippet } from 'svelte';
 	import type { HTMLAnchorAttributes } from 'svelte/elements';
 	import type { ControlProps } from './control';
-	import Icon from './Icon.svelte';
 
 	type Props = HTMLAnchorAttributes &
 		Omit<ControlProps, 'loading'> & {
@@ -34,7 +33,7 @@
 	{...rest}
 >
 	{#if icon}
-		<Icon {icon} />
+		<i class={icon} aria-hidden="true"></i>
 	{/if}
 
 	{@render children()}

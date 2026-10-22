@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import type { Snippet } from 'svelte';
-	import Icon from './Icon.svelte';
 
 	type Props = {
-		icon?: IconData;
+		icon?: IconName;
 		lead?: Snippet;
 		label: string;
 		description?: string;
@@ -15,7 +14,7 @@
 </script>
 
 <div class="info">
-	{#if lead}{@render lead()}{:else if icon}<Icon {icon} />{/if}
+	{#if lead}{@render lead()}{:else if icon}<i class={icon} aria-hidden="true"></i>{/if}
 	<span class="text">
 		<span class="label" title={label}>{label}</span>
 		{#if description}<small>{description}</small>{/if}
@@ -35,7 +34,7 @@
 		line-height: 1.3;
 	}
 
-	.info > :global(svg) {
+	.info > :global(i) {
 		flex: none;
 		color: var(--color-text-hint);
 	}

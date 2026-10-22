@@ -59,8 +59,8 @@ build-api: ## Build the API into bin/loginer
 build-web: ## Build both apps into web/*/build (run each with `node build`)
 	@$(call each-app,bun install --frozen-lockfile && bun run build)
 
-generate: ## Rewrite the console's generated files: theme tokens, fonts, icons
-	cd web/console && bun run theme && bun run icons
+generate: ## Rewrite the console's generated files: theme tokens and fonts
+	cd web/console && bun run theme
 
 clean: ## Remove build output and logs
 	rm -rf bin .logs $(foreach app,$(APPS),web/$(app)/build web/$(app)/.svelte-kit)

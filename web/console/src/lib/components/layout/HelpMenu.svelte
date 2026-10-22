@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { RiGithubFill, RiKeyboardLine, RiQuestionLine } from '#lib/icons.js';
 	import { BRAND } from '#lib/brand.js';
 	import {
 		DropdownMenu,
-		Icon,
 		Kbd,
 		MenuGroup,
 		MenuInfo,
@@ -13,12 +11,13 @@
 </script>
 
 <DropdownMenu label="Help and resources">
-	{#snippet trigger()}<Icon icon={RiQuestionLine} size="1.125rem" />{/snippet}
+	{#snippet trigger()}<i class="ri-question-line" style:font-size="18px" aria-hidden="true"
+		></i>{/snippet}
 
 	<MenuGroup label="Resources">
 		<MenuItem
 			value="github"
-			icon={RiGithubFill}
+			icon="ri-github-fill"
 			label="GitHub"
 			description="Source, issues and releases"
 			href={BRAND.githubUrl}
@@ -27,7 +26,7 @@
 
 	<MenuSeparator />
 
-	<MenuInfo icon={RiKeyboardLine} label="Search the panel">
+	<MenuInfo icon="ri-keyboard-line" label="Search the panel">
 		{#snippet end()}<Kbd>/</Kbd>{/snippet}
 	</MenuInfo>
 </DropdownMenu>

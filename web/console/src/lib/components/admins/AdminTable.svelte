@@ -1,12 +1,4 @@
 <script lang="ts">
-	import {
-		RiKey2Line,
-		RiMailLine,
-		RiShieldKeyholeLine,
-		RiText,
-		RiTimeLine,
-		RiToggleLine
-	} from '#lib/icons.js';
 	import type { AdminRecord, AdminStatus } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
 	import { formatDateTime } from '#lib/utils/format.js';
@@ -22,13 +14,13 @@
 	let { admins, self, onOpen, selected, onSelect }: Props = $props();
 
 	const columns: Column[] = [
-		{ key: 'id', label: 'ID', icon: RiKey2Line, min: '10rem' },
-		{ key: 'email', label: 'Email', icon: RiMailLine, min: '14rem' },
-		{ key: 'name', label: 'Name', icon: RiText, min: '10rem' },
-		{ key: 'status', label: 'Status', icon: RiToggleLine, min: '8rem' },
-		{ key: 'mfa', label: 'Two-factor', icon: RiShieldKeyholeLine, min: '8rem' },
-		{ key: 'roles', label: 'Roles', icon: RiShieldKeyholeLine, min: '12rem' },
-		{ key: 'last_login_at', label: 'Last sign-in', icon: RiTimeLine, min: '11rem' }
+		{ key: 'id', label: 'ID', min: '10rem' },
+		{ key: 'email', label: 'Email', min: '14rem', grow: true },
+		{ key: 'name', label: 'Name', min: '10rem' },
+		{ key: 'status', label: 'Status', min: '8rem' },
+		{ key: 'mfa', label: 'Two-factor', min: '8rem' },
+		{ key: 'roles', label: 'Roles', min: '12rem' },
+		{ key: 'last_login_at', label: 'Last sign-in', min: '11rem' }
 	];
 
 	const tones: Record<AdminStatus, 'success' | 'danger' | 'neutral'> = {

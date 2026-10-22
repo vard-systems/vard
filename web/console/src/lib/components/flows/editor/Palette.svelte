@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiDraggable } from '#lib/icons.js';
 	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
-	import { Icon, Note } from '#lib/components/ui/index.js';
+	import { Note } from '#lib/components/ui/index.js';
 	import { describe, labelFor, markFor } from '../steps';
 
 	type Props = {
@@ -32,6 +31,7 @@
 		<h3>{group.label}</h3>
 		<ul>
 			{#each group.kinds as kind (kind.step)}
+				{@const mark = markFor(kind.step)}
 				{@const used = steps.includes(kind.step)}
 				<li>
 					<button
@@ -48,13 +48,13 @@
 						}}
 						onclick={() => onAdd(kind.step)}
 					>
-						<span class="mark"><Icon icon={markFor(kind.step)} size="1rem" /></span>
+						<span class="mark"><i class={mark} aria-hidden="true"></i></span>
 						<span class="text">
 							<span class="label">{labelFor(kind.step, kinds)}</span>
 							<span class="description">{describe(kind.step, kinds)}</span>
 						</span>
 						{#if editable && !used}
-							<span class="grip"><Icon icon={RiDraggable} size="1rem" /></span>
+							<span class="grip"><i class="ri-draggable" aria-hidden="true"></i></span>
 						{/if}
 					</button>
 				</li>

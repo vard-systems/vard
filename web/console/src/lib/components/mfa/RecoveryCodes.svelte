@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiCheckLine, RiFileCopyLine } from '#lib/icons.js';
 	import { Alert, Button, Checkbox } from '#lib/components/ui/index.js';
 
 	type Props = {
@@ -33,7 +32,7 @@
 	</ol>
 
 	<div class="actions">
-		<Button variant="subtle" icon={copied ? RiCheckLine : RiFileCopyLine} onclick={copy}>
+		<Button variant="subtle" icon={copied ? 'ri-check-line' : 'ri-file-copy-line'} onclick={copy}>
 			{copied ? 'Copied' : 'Copy all'}
 		</Button>
 	</div>

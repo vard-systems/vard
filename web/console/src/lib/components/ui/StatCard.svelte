@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { RiArrowRightSLine, type IconData } from '#lib/icons.js';
-	import Icon from './Icon.svelte';
+	import type { IconName } from './icon';
 	import type { ColorPalette } from './control';
 
 	type Props = {
 		label: string;
 		value: number;
-		icon: IconData;
+		icon: IconName;
 		note?: string;
 		tone?: ColorPalette;
 		href?: string;
@@ -17,10 +16,12 @@
 
 <svelte:element this={href ? 'a' : 'div'} class="stat" class:link={href} {href} data-tone={tone}>
 	<span class="head">
-		<Icon {icon} size="0.9375rem" />
+		<i class={icon} style:font-size="15px" aria-hidden="true"></i>
 		<span class="label">{label}</span>
 		{#if href}
-			<span class="go" aria-hidden="true"><Icon icon={RiArrowRightSLine} size="0.8125rem" /></span>
+			<span class="go" aria-hidden="true"
+				><i class="ri-arrow-right-s-line" style:font-size="13px" aria-hidden="true"></i></span
+			>
 		{/if}
 	</span>
 

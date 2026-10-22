@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { Checkbox } from '@ark-ui/svelte/checkbox';
-	import { RiCheckLine, RiSubtractLine } from '#lib/icons.js';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		checked: boolean | 'indeterminate';
@@ -25,10 +23,10 @@
 >
 	<Checkbox.Control>
 		<Checkbox.Indicator>
-			<Icon icon={RiCheckLine} size="0.875rem" />
+			<i class="ri-check-line" style:font-size="14px" aria-hidden="true"></i>
 		</Checkbox.Indicator>
 		<Checkbox.Indicator indeterminate>
-			<Icon icon={RiSubtractLine} size="0.875rem" />
+			<i class="ri-subtract-line" style:font-size="14px" aria-hidden="true"></i>
 		</Checkbox.Indicator>
 	</Checkbox.Control>
 

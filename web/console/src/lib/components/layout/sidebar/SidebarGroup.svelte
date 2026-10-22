@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { RiArrowDownSLine } from '#lib/icons.js';
-	import { Icon } from '#lib/components/ui/index.js';
+	import {} from '#lib/components/ui/index.js';
 	import SidebarLink from './SidebarLink.svelte';
 	import type { Section, SidebarGroup } from './sections';
 
@@ -41,7 +40,7 @@
 					<span class="dot" aria-label="Holds the page you are on"></span>
 				{/if}
 				<span class="chevron" class:closed={!open} aria-hidden="true">
-					<Icon icon={RiArrowDownSLine} size="0.875rem" />
+					<i class="ri-arrow-down-s-line" style:font-size="14px" aria-hidden="true"></i>
 				</span>
 			</button>
 		</h2>

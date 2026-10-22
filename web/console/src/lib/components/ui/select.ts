@@ -1,9 +1,9 @@
-import type { IconData } from '#lib/icons.js';
+import type { IconName } from './icon';
 
 export type SelectOption<Value extends string = string> = {
 	value: Value;
 	label?: string;
 	description?: string;
-	icon?: IconData;
+	icon?: IconName;
 	disabled?: boolean;
 };

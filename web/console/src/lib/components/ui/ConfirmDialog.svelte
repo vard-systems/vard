@@ -2,15 +2,8 @@
 	import type { Snippet } from 'svelte';
 	import { Dialog } from '@ark-ui/svelte/dialog';
 	import { Portal } from '@ark-ui/svelte/portal';
-	import {
-		RiAlertLine,
-		RiErrorWarningLine,
-		RiInformationLine,
-		RiQuestionLine,
-		type IconData
-	} from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import Button from './Button.svelte';
-	import Icon from './Icon.svelte';
 
 	type Tone = 'danger' | 'warning' | 'info' | 'neutral';
 
@@ -19,7 +12,7 @@
 		title: string;
 		description?: string;
 		tone?: Tone;
-		icon?: IconData;
+		icon?: IconName;
 		confirmLabel: string;
 		cancelLabel?: string;
 		busy?: boolean;
@@ -40,16 +33,18 @@
 		children
 	}: Props = $props();
 
-	const icons: Record<Tone, IconData> = {
-		danger: RiErrorWarningLine,
-		warning: RiAlertLine,
-		info: RiInformationLine,
-		neutral: RiQuestionLine
+	const icons: Record<Tone, IconName> = {
+		danger: 'ri-error-warning-line',
+		warning: 'ri-alert-line',
+		info: 'ri-information-line',
+		neutral: 'ri-question-line'
 	};
 
 	/** Focus starts on the way out, not the way in: Enter on a dialog that
 	    has only just appeared should not do the thing it asks about. */
 	let actions = $state<HTMLElement | null>(null);
+
+	const badgeIcon = $derived(icon ?? icons[tone]);
 </script>
 
 <Dialog.Root
@@ -70,7 +65,7 @@
 			<Dialog.Content class="confirm-content" data-palette={tone}>
 				<div class="head">
 					<span class="badge" aria-hidden="true">
-						<Icon icon={icon ?? icons[tone]} size="18" />
+						<i class={badgeIcon} style:font-size="18px" aria-hidden="true"></i>
 					</span>
 
 					<div class="text">

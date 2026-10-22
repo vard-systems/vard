@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiDeleteBinLine, RiTimerLine } from '#lib/icons.js';
 	import { cacheApi, messageOf, type CacheDatabaseName, type CacheKey } from '#lib/api/index.js';
 	import {
 		Alert,
@@ -10,7 +9,6 @@
 		FullscreenDialog,
 		FieldGrid,
 		FormSection,
-		Icon,
 		Input,
 		Note,
 		Tag,
@@ -171,7 +169,7 @@
 			{#if editable}
 				<Input
 					label="Keep for"
-					icon={RiTimerLine}
+					icon="ri-timer-line"
 					bind:value={ttl}
 					inputmode="numeric"
 					suffix="seconds"
@@ -210,7 +208,7 @@
 						onclick={() => (confirmingDelete = true)}
 						disabled={busy}
 					>
-						<Icon icon={RiDeleteBinLine} />
+						<i class="ri-delete-bin-line" aria-hidden="true"></i>
 						Remove
 					</Button>
 				{/if}

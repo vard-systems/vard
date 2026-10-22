@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { BRAND } from '#lib/brand.js';
-	import { Icon, LanguagePicker, ThemeToggle } from '#lib/components/index.js';
+	import { LanguagePicker, ThemeToggle } from '#lib/components/index.js';
 	import { useTranslator } from '#lib/i18n/index.js';
 	import { supportLinks } from '#lib/utils/legal.js';
 	import type { LayoutProps } from './$types';
@@ -37,7 +37,7 @@
 		{/if}
 
 		<p class="secured">
-			<Icon name="shield" size="0.9375rem" />
+			<i class="ri-shield-keyhole-line" style:font-size="15px" aria-hidden="true"></i>
 			<span>{t('shell.secured_by')} <strong>{BRAND.name}</strong></span>
 		</p>
 	</footer>

@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiGroupLine, RiKey2Line, RiShareLine, RiToggleLine } from '#lib/icons.js';
 	import type { SocialProvider, SocialSpec } from '#lib/api/index.js';
-	import { Badge, Code, type Column, DataTable, Icon, Tag } from '#lib/components/ui/index.js';
+	import { Badge, Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
 	import { hostOf, markFor, missingFrom } from './providers';
 
 	type Props = {
@@ -16,10 +15,10 @@
 	let { providers, kinds, onOpen, empty, selected, onSelect }: Props = $props();
 
 	const columns: Column[] = [
-		{ key: 'provider', label: 'Provider', icon: RiShareLine, min: '13rem' },
-		{ key: 'client_id', label: 'Client ID', icon: RiKey2Line, min: '16rem' },
-		{ key: 'accounts', label: 'Accounts', icon: RiGroupLine, min: '8rem' },
-		{ key: 'status', label: 'Status', icon: RiToggleLine, min: '11rem' }
+		{ key: 'provider', label: 'Provider', min: '13rem', grow: true },
+		{ key: 'client_id', label: 'Client ID', min: '16rem' },
+		{ key: 'accounts', label: 'Accounts', min: '8rem' },
+		{ key: 'status', label: 'Status', min: '11rem' }
 	];
 
 	function kindOf(provider: SocialProvider): SocialSpec | undefined {
@@ -37,9 +36,10 @@
 	{onSelect}
 >
 	{#snippet row(provider)}
+		{@const mark = markFor(provider.kind)}
 		<td>
 			<span class="provider">
-				<span class="mark"><Icon icon={markFor(provider.kind)} size="1.05rem" /></span>
+				<span class="mark"><i class={mark} style:font-size="17px" aria-hidden="true"></i></span>
 				<span class="names">
 					<strong>{provider.name}</strong>
 					<span class="slug">{provider.slug}</span>

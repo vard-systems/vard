@@ -13,8 +13,7 @@
 
 <script lang="ts">
 	import { BaseEdge, EdgeLabel, getStraightPath, type EdgeProps } from '@xyflow/svelte';
-	import { RiAddLine } from '#lib/icons.js';
-	import { Icon } from '#lib/components/ui/index.js';
+	import {} from '#lib/components/ui/index.js';
 
 	let { id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<InsertEdgeType> = $props();
 
@@ -33,7 +32,7 @@
 			aria-label={data.label}
 			onclick={() => data.onInsert?.(data.index)}
 		>
-			<Icon icon={RiAddLine} size="0.9rem" />
+			<i class="ri-add-line" style:font-size="14px" aria-hidden="true"></i>
 		</button>
 	</EdgeLabel>
 {/if}

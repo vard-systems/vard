@@ -5,16 +5,16 @@
 		kind: 'start' | 'end';
 		label: string;
 		detail: string;
-		icon: IconData;
+		icon: IconName;
 	};
 
 	export type EndNodeType = Node<EndNodeData, 'end'>;
 </script>
 
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from '#lib/components/ui/index.js';
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-	import { Icon } from '#lib/components/ui/index.js';
+	import {} from '#lib/components/ui/index.js';
 
 	let { data, selected }: NodeProps<EndNodeType> = $props();
 </script>
@@ -24,7 +24,7 @@
 		<Handle type="target" position={Position.Top} isConnectable={false} />
 	{/if}
 
-	<Icon icon={data.icon} size="1rem" />
+	<i class={data.icon} aria-hidden="true"></i>
 	<span class="label">{data.label}</span>
 	<span class="detail">{data.detail}</span>
 

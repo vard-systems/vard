@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { RiAddLine, RiBuilding2Line, RiRefreshLine } from '#lib/icons.js';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { SSOConnection } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import {
 		Button,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -75,7 +73,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -86,7 +84,7 @@
 	{#snippet actions()}
 		{#if canWrite}
 			<Button onclick={() => open(null)}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				New connection
 			</Button>
 		{/if}
@@ -95,7 +93,9 @@
 
 {#if list.data.connections.length === 0}
 	<section class="empty">
-		<span class="mark" aria-hidden="true"><Icon icon={RiBuilding2Line} size="1.6rem" /></span>
+		<span class="mark" aria-hidden="true"
+			><i class="ri-building-2-line" style:font-size="26px" aria-hidden="true"></i></span
+		>
 		<div>
 			<h2>No identity providers connected yet</h2>
 			<p>
@@ -105,7 +105,7 @@
 			</p>
 			{#if canWrite}
 				<Button onclick={() => open(null)}>
-					<Icon icon={RiAddLine} />
+					<i class="ri-add-line" aria-hidden="true"></i>
 					New connection
 				</Button>
 			{/if}

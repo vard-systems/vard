@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { RiShieldKeyholeLine } from '#lib/icons.js';
 	import { adminApi, ApiError, setupApi } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import {
 		Alert,
 		Button,
 		Card,
-		Icon,
 		Input,
 		PasswordInput,
 		ThemeToggle
@@ -63,7 +61,12 @@
 			<form onsubmit={create}>
 				<header>
 					<span class="mark">
-						<Icon icon={RiShieldKeyholeLine} size="1.25rem" label={BRAND.name} />
+						<i
+							class="ri-shield-keyhole-line"
+							style:font-size="20px"
+							role="img"
+							aria-label={BRAND.name}
+						></i>
 					</span>
 					<h1>Set up {BRAND.name}</h1>
 					<p class="muted">

@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiGlobalLine, RiShieldUserLine } from '#lib/icons.js';
 	import type { Application, Role } from '#lib/api/index.js';
-	import { Badge, Icon, SearchInput } from '#lib/components/ui/index.js';
+	import { Badge, SearchInput } from '#lib/components/ui/index.js';
 	import Choice from './Choice.svelte';
 	import { byScope } from './roles';
 
@@ -61,7 +60,12 @@
 		{#each groups as group (group.scope)}
 			<div class="group">
 				<div class="heading">
-					<Icon icon={group.scope === null ? RiGlobalLine : RiShieldUserLine} size="0.875rem" />
+					{#if group.scope === null}<i
+							class="ri-global-line"
+							style:font-size="14px"
+							aria-hidden="true"
+						></i>{:else}<i class="ri-shield-user-line" style:font-size="14px" aria-hidden="true"
+						></i>{/if}
 					{group.scope === null ? 'Global roles' : group.name}
 				</div>
 

@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from '#lib/components/ui/index.js';
 	import { resolve } from '$app/paths';
-	import { Icon, Tooltip } from '#lib/components/ui/index.js';
+	import { Tooltip } from '#lib/components/ui/index.js';
 	import type { Section } from './sections';
 
 	type Props = {
 		route: Section;
 		label: string;
-		icon: IconData;
+		icon: IconName;
 		current: boolean;
 		collapsed: boolean;
 	};
@@ -25,7 +25,7 @@
 			class:collapsed
 			aria-current={current ? 'page' : undefined}
 		>
-			<span class="icon"><Icon {icon} size="1.125rem" /></span>
+			<span class="icon"><i class={icon} style:font-size="18px" aria-hidden="true"></i></span>
 			<span class="label">{label}</span>
 		</a>
 	{/snippet}

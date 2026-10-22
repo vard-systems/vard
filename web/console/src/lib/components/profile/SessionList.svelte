@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiComputerLine, RiSmartphoneLine } from '#lib/icons.js';
 	import type { AdminSession } from '#lib/api/index.js';
 	import { Button, List, ListItem, Tag, Thumb } from '#lib/components/ui/index.js';
 	import { describeUserAgent, formatDateTime, formatRelative } from '#lib/utils/format.js';
@@ -35,7 +34,7 @@
 		{#each shown as session (session.id)}
 			<ListItem title={describeUserAgent(session.user_agent)}>
 				{#snippet lead()}
-					<Thumb icon={mobile(session.user_agent) ? RiSmartphoneLine : RiComputerLine} />
+					<Thumb icon={mobile(session.user_agent) ? 'ri-smartphone-line' : 'ri-computer-line'} />
 				{/snippet}
 
 				<span class="meta">

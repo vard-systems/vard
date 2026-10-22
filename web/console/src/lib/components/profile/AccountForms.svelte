@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
-	import { RiImageLine, RiLockPasswordLine, RiUserLine } from '#lib/icons.js';
 	import { adminApi, type Admin } from '#lib/api/index.js';
 	import {
 		Button,
@@ -96,7 +95,7 @@
 </script>
 
 <div class="sections">
-	<Panel title="Profile" icon={RiUserLine}>
+	<Panel title="Profile" icon="ri-user-line">
 		<form class="form" onsubmit={saveProfile}>
 			<FieldGrid>
 				<Input label="First name" bind:value={firstName} autocomplete="given-name" required />
@@ -114,7 +113,7 @@
 				<Thumb src={preview} text={monogram} size="md" shape="circle" tone="accent" />
 				<Input
 					label="Avatar URL"
-					icon={RiImageLine}
+					icon="ri-image-line"
 					bind:value={avatarUrl}
 					type="url"
 					maxlength={512}
@@ -146,7 +145,7 @@
 		</form>
 	</Panel>
 
-	<Panel title="Password" icon={RiLockPasswordLine}>
+	<Panel title="Password" icon="ri-lock-password-line">
 		<form class="form" onsubmit={changePassword}>
 			<PasswordInput label="Current password" bind:value={currentPassword} required />
 			<FieldGrid>

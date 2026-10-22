@@ -6,7 +6,7 @@
 		step: LoginStep;
 		label: string;
 		description: string;
-		icon: IconData;
+		icon: IconName;
 		fixed: boolean;
 		planned: boolean;
 		summary: string[];
@@ -21,8 +21,8 @@
 
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-	import { RiCloseLine, RiLock2Line, type IconData } from '#lib/icons.js';
-	import { Icon } from '#lib/components/ui/index.js';
+	import type { IconName } from '#lib/components/ui/index.js';
+	import {} from '#lib/components/ui/index.js';
 
 	let { data, selected }: NodeProps<StepNodeType> = $props();
 </script>
@@ -30,13 +30,15 @@
 <div class="card" class:selected class:planned={data.planned}>
 	<Handle type="target" position={Position.Top} isConnectable={false} />
 
-	<span class="mark"><Icon icon={data.icon} size="1.1rem" /></span>
+	<span class="mark"><i class={data.icon} style:font-size="18px" aria-hidden="true"></i></span>
 
 	<div class="body">
 		<span class="title">
 			{data.label}
 			{#if data.fixed}
-				<span class="fixed" title={data.fixedLabel}><Icon icon={RiLock2Line} size="0.8rem" /></span>
+				<span class="fixed" title={data.fixedLabel}
+					><i class="ri-lock-2-line" style:font-size="13px" aria-hidden="true"></i></span
+				>
 			{/if}
 		</span>
 		<span class="description">{data.description}</span>
@@ -62,7 +64,7 @@
 				data.onRemove?.();
 			}}
 		>
-			<Icon icon={RiCloseLine} size="0.95rem" />
+			<i class="ri-close-line" style:font-size="15px" aria-hidden="true"></i>
 		</button>
 	{/if}
 

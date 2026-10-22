@@ -3,16 +3,8 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { createQuery } from '@tanstack/svelte-query';
-	import {
-		RiAppsLine,
-		RiDashboardLine,
-		RiFileListLine,
-		RiLockLine,
-		RiSettings3Line,
-		RiShieldCheckLine
-	} from '#lib/icons.js';
 	import { BRAND } from '#lib/brand.js';
-	import { Badge, CopyButton, Icon, Note, PageHeader, Tabs } from '#lib/components/ui/index.js';
+	import { Badge, CopyButton, Note, PageHeader, Tabs } from '#lib/components/ui/index.js';
 	import { can } from '#lib/permissions.js';
 	import { apiOptions } from '#lib/query/index.js';
 	import ApiApplications from '#lib/components/apis/ApiApplications.svelte';
@@ -44,22 +36,22 @@
 	}
 
 	const tabs = $derived([
-		{ value: 'overview', label: 'Overview', icon: RiDashboardLine },
-		{ value: 'settings', label: 'Settings', icon: RiSettings3Line },
+		{ value: 'overview', label: 'Overview', icon: 'ri-dashboard-line' },
+		{ value: 'settings', label: 'Settings', icon: 'ri-settings-3-line' },
 		{
 			value: 'scopes',
 			label: 'Scopes',
-			icon: RiLockLine,
+			icon: 'ri-lock-line',
 			count: api.scopes.length
 		},
 
 		{
 			value: 'applications',
 			label: 'Applications',
-			icon: RiAppsLine,
+			icon: 'ri-apps-line',
 			count: api.application_count
 		},
-		{ value: 'logs', label: 'Logs', icon: RiFileListLine }
+		{ value: 'logs', label: 'Logs', icon: 'ri-file-list-line' }
 	]);
 </script>
 
@@ -71,7 +63,7 @@
 			{#snippet meta()}
 				{#if api.enforce_roles}
 					<Badge tone="success">
-						<Icon icon={RiShieldCheckLine} size="0.75rem" />
+						<i class="ri-shield-check-line" style:font-size="12px" aria-hidden="true"></i>
 						Role-based access
 					</Badge>
 				{/if}
@@ -133,7 +125,7 @@
 		gap: var(--space-1);
 	}
 
-	.heading :global(.meta svg) {
+	.heading :global(.meta i) {
 		margin-right: 2px;
 		vertical-align: -1px;
 	}

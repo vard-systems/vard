@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { RiErrorWarningLine, RiInformationLine, RiCheckboxCircleLine } from '#lib/icons.js';
 	import type { ColorPalette } from './control';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		tone?: Exclude<ColorPalette, 'neutral'>;
@@ -12,17 +10,19 @@
 	let { tone = 'danger', children }: Props = $props();
 
 	const icons = {
-		danger: RiErrorWarningLine,
-		warning: RiErrorWarningLine,
-		info: RiInformationLine,
-		success: RiCheckboxCircleLine
+		danger: 'ri-error-warning-line',
+		warning: 'ri-error-warning-line',
+		info: 'ri-information-line',
+		success: 'ri-checkbox-circle-line'
 	};
+
+	const toneIcon = $derived(icons[tone]);
 </script>
 
 <!-- An error is announced as soon as it appears; a notice is just read in its
      place. -->
 <p class="alert {tone}" role={tone === 'danger' ? 'alert' : 'status'}>
-	<Icon icon={icons[tone]} size="1.0625rem" />
+	<i class={toneIcon} style:font-size="17px" aria-hidden="true"></i>
 	<span>{@render children()}</span>
 </p>
 
@@ -38,7 +38,7 @@
 		line-height: 1.5;
 	}
 
-	.alert :global(svg) {
+	.alert :global(i) {
 		flex-shrink: 0;
 		margin-top: 2px;
 	}
@@ -53,7 +53,7 @@
 		color: var(--color-text);
 	}
 
-	.warning :global(svg) {
+	.warning :global(i) {
 		color: var(--color-warning);
 	}
 
@@ -62,7 +62,7 @@
 		color: var(--color-text);
 	}
 
-	.info :global(svg) {
+	.info :global(i) {
 		color: var(--color-info);
 	}
 
@@ -71,7 +71,7 @@
 		color: var(--color-text);
 	}
 
-	.success :global(svg) {
+	.success :global(i) {
 		color: var(--color-success);
 	}
 </style>

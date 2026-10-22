@@ -4,23 +4,17 @@
 	import { resolve } from '$app/paths';
 	import { Dialog } from '@ark-ui/svelte/dialog';
 	import { Portal } from '@ark-ui/svelte/portal';
-	import {
-		RiCornerDownLeftLine,
-		RiExternalLinkLine,
-		RiGithubFill,
-		RiSearchLine,
-		type IconData
-	} from '#lib/icons.js';
+	import type { IconName } from '#lib/components/ui/index.js';
 	import type { Admin } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
-	import { Icon, IconButton, Kbd } from '#lib/components/ui/index.js';
+	import { IconButton, Kbd } from '#lib/components/ui/index.js';
 	import { visibleGroups } from './sidebar/sections';
 
 	type Command = {
 		id: string;
 		label: string;
 		group: string;
-		icon: IconData;
+		icon: IconName;
 		href: string;
 		external?: boolean;
 	};
@@ -46,7 +40,7 @@
 			id: 'github',
 			label: 'GitHub',
 			group: 'Help',
-			icon: RiGithubFill,
+			icon: 'ri-github-fill',
 			href: BRAND.githubUrl,
 			external: true
 		}
@@ -168,7 +162,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<IconButton icon={RiSearchLine} label="Search (press /)" size="sm" onclick={show} />
+<IconButton icon="ri-search-line" label="Search (press /)" size="sm" onclick={show} />
 
 <Dialog.Root bind:open lazyMount unmountOnExit>
 	<Portal>
@@ -176,7 +170,7 @@
 		<Dialog.Positioner class="palette-positioner">
 			<Dialog.Content class="palette-content" aria-label="Search…">
 				<div class="field">
-					<Icon icon={RiSearchLine} size="1.125rem" />
+					<i class="ri-search-line" style:font-size="18px" aria-hidden="true"></i>
 					<!-- svelte-ignore a11y_autofocus -->
 					<input
 						id="command-palette-search"
@@ -222,13 +216,14 @@
 									onclick={() => run(item.command)}
 									onmousemove={() => (active = item.index)}
 								>
-									<Icon icon={item.command.icon} />
+									<i class={item.command.icon} aria-hidden="true"></i>
 									<span class="label">{item.command.label}</span>
 
 									{#if item.command.external}
-										<Icon icon={RiExternalLinkLine} size="0.875rem" />
+										<i class="ri-external-link-line" style:font-size="14px" aria-hidden="true"></i>
 									{:else if item.index === active}
-										<Icon icon={RiCornerDownLeftLine} size="0.875rem" />
+										<i class="ri-corner-down-left-line" style:font-size="14px" aria-hidden="true"
+										></i>
 									{/if}
 								</button>
 							{/each}
@@ -334,7 +329,7 @@
 		white-space: nowrap;
 	}
 
-	.row :global(svg:last-child) {
+	.row :global(i:last-child) {
 		color: var(--color-text-hint);
 	}
 

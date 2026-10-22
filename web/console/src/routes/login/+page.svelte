@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { RiShieldKeyholeLine } from '#lib/icons.js';
 	import { adminApi, ApiError } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import {
 		Alert,
 		Button,
 		Card,
-		Icon,
 		Input,
 		PasswordInput,
 		ThemeToggle
@@ -96,7 +94,12 @@
 				<form onsubmit={verify}>
 					<header>
 						<span class="mark">
-							<Icon icon={RiShieldKeyholeLine} size="1.25rem" label={BRAND.name} />
+							<i
+								class="ri-shield-keyhole-line"
+								style:font-size="20px"
+								role="img"
+								aria-label={BRAND.name}
+							></i>
 						</span>
 						<h1>Two-factor sign-in</h1>
 						<p class="muted">
@@ -145,7 +148,12 @@
 				<form onsubmit={signIn}>
 					<header>
 						<span class="mark">
-							<Icon icon={RiShieldKeyholeLine} size="1.25rem" label={BRAND.name} />
+							<i
+								class="ri-shield-keyhole-line"
+								style:font-size="20px"
+								role="img"
+								aria-label={BRAND.name}
+							></i>
 						</span>
 						<h1>{BRAND.name}</h1>
 						<p class="muted">Sign in to the admin panel</p>

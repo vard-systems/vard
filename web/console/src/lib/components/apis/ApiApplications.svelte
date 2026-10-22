@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAppsLine } from '#lib/icons.js';
 	import { applicationsApi, type Admin, type API, type APIApplication } from '#lib/api/index.js';
 	import {
 		Alert,
 		Badge,
 		Checkbox,
-		Icon,
 		Note,
 		SearchInput,
 		Switch,
@@ -98,7 +96,7 @@
 	<Alert>Could not load the applications.</Alert>
 {:else if applications.data.length === 0}
 	<div class="empty">
-		<Icon icon={RiAppsLine} size="1.25rem" />
+		<i class="ri-apps-line" style:font-size="20px" aria-hidden="true"></i>
 		<div>
 			<strong>No applications to authorise</strong>
 			<p>
@@ -134,7 +132,7 @@
 			{@const kind = types[app.type]}
 			<section class:authorized={app.authorized} class:busy={saving === app.id}>
 				<header>
-					<span class="kind" title={kind.label}><Icon icon={kind.icon} size="1rem" /></span>
+					<span class="kind" title={kind.label}><i class={kind.icon} aria-hidden="true"></i></span>
 
 					<div class="identity">
 						<span class="name">

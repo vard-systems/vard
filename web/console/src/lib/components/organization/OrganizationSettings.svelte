@@ -1,17 +1,6 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import {
-		RiBuildingLine,
-		RiCustomerService2Line,
-		RiFileTextLine,
-		RiGlobalLine,
-		RiImageLine,
-		RiMailLine,
-		RiPhoneLine,
-		RiShieldCheckLine,
-		RiTimeLine
-	} from '#lib/icons.js';
 	import { organizationApi, type Organization, type OrganizationSettings } from '#lib/api/index.js';
 	import {
 		Alert,
@@ -192,7 +181,7 @@
 		<FormSection
 			title="Identity"
 			description="What the organization is called, and the mark the sign-in pages and this panel's header show."
-			icon={RiBuildingLine}
+			icon="ri-building-line"
 		>
 			<FieldGrid spacing="comfortable">
 				<Input
@@ -214,7 +203,7 @@
 				<div class="full">
 					<Input
 						label="Logo URL"
-						icon={RiImageLine}
+						icon="ri-image-line"
 						bind:value={form.logo_url}
 						maxlength={512}
 						placeholder="https://example.com/logo.svg"
@@ -227,7 +216,7 @@
 		<FormSection
 			title="Region"
 			description="The zone dates are written in on a user's account pages, such as when the account was made."
-			icon={RiGlobalLine}
+			icon="ri-global-line"
 		>
 			{#snippet meta()}
 				{#if offset}<Tag small>{offset}</Tag>{/if}
@@ -235,7 +224,7 @@
 
 			<Select
 				label="Timezone"
-				icon={RiTimeLine}
+				icon="ri-time-line"
 				bind:value={form.timezone}
 				options={timezones}
 				required
@@ -246,7 +235,7 @@
 		<FormSection
 			title="Support"
 			description="Where someone who cannot get in can ask for help."
-			icon={RiCustomerService2Line}
+			icon="ri-customer-service-2-line"
 		>
 			{#snippet meta()}
 				<Tag small>Shown when signing in</Tag>
@@ -255,7 +244,7 @@
 			<FieldGrid spacing="comfortable">
 				<Input
 					label="Support email"
-					icon={RiMailLine}
+					icon="ri-mail-line"
 					bind:value={form.support_email}
 					type="email"
 					maxlength={255}
@@ -264,7 +253,7 @@
 
 				<Input
 					label="Support number"
-					icon={RiPhoneLine}
+					icon="ri-phone-line"
 					bind:value={form.support_phone}
 					maxlength={32}
 					placeholder="+996 555 123456"
@@ -276,7 +265,7 @@
 		<FormSection
 			title="Agreements"
 			description="What users agree to. An application with links of its own shows those instead."
-			icon={RiFileTextLine}
+			icon="ri-file-text-line"
 		>
 			{#snippet meta()}
 				<Tag small>Sign-in pages</Tag>
@@ -285,7 +274,7 @@
 
 			<Input
 				label="Terms of service"
-				icon={RiFileTextLine}
+				icon="ri-file-text-line"
 				bind:value={form.terms_url}
 				maxlength={512}
 				placeholder="https://example.com/terms"
@@ -294,7 +283,7 @@
 
 			<Input
 				label="Privacy policy"
-				icon={RiShieldCheckLine}
+				icon="ri-shield-check-line"
 				bind:value={form.privacy_url}
 				maxlength={512}
 				placeholder="https://example.com/privacy"

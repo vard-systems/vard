@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { RiAddLine, RiCloseLine, RiRefreshLine, RiUpload2Line } from '#lib/icons.js';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { flowsApi, type LoginFlow } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import {
 		Button,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -114,7 +112,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -134,11 +132,14 @@
 				onchange={importFile}
 			/>
 			<Button variant="subtle" loading={importing} onclick={() => file?.click()}>
-				<Icon icon={RiUpload2Line} />
+				<i class="ri-upload-2-line" aria-hidden="true"></i>
 				Import
 			</Button>
 			<Button onclick={() => (choosing = !choosing)}>
-				<Icon icon={choosing ? RiCloseLine : RiAddLine} />
+				{#if choosing}<i class="ri-close-line" aria-hidden="true"></i>{:else}<i
+						class="ri-add-line"
+						aria-hidden="true"
+					></i>{/if}
 				New flow
 			</Button>
 		{/if}
@@ -153,7 +154,9 @@
 				<!-- The path is resolved; only the query is added to it. -->
 				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				<a class="card" href={`${resolve('/(panel)/flows/new')}?template=${template.id}`}>
-					<span class="mark"><Icon icon={template.icon} size="1.2rem" /></span>
+					<span class="mark"
+						><i class={template.icon} style:font-size="19px" aria-hidden="true"></i></span
+					>
 					<strong>{template.name}</strong>
 					<span>{template.hint}</span>
 				</a>

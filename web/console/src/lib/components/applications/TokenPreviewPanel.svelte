@@ -1,13 +1,6 @@
 <script lang="ts">
 	import { createMutation, createQuery } from '@tanstack/svelte-query';
 	import {
-		RiCheckLine,
-		RiCloseLine,
-		RiSearchLine,
-		RiShieldCheckLine,
-		RiUserLine
-	} from '#lib/icons.js';
-	import {
 		applicationsApi,
 		type Admin,
 		type Application,
@@ -17,7 +10,6 @@
 	import {
 		Button,
 		CodeBlock,
-		Icon,
 		IconButton,
 		Note,
 		Select,
@@ -184,10 +176,10 @@
 				<Note>Your roles do not include seeing users.</Note>
 			{:else if user}
 				<div class="picked">
-					<Icon icon={RiUserLine} />
+					<i class="ri-user-line" aria-hidden="true"></i>
 					<span>{user.email}</span>
 					<IconButton
-						icon={RiCloseLine}
+						icon="ri-close-line"
 						label="Choose another user"
 						size="sm"
 						onclick={() => (user = null)}
@@ -196,7 +188,7 @@
 			{:else}
 				<div class="user-search">
 					<label class="search">
-						<Icon icon={RiSearchLine} />
+						<i class="ri-search-line" aria-hidden="true"></i>
 						<input
 							id="token-preview-user-search"
 							name="token-preview-user-search"
@@ -211,7 +203,7 @@
 						{#each users.data ?? [] as found (found.id)}
 							<li>
 								<button type="button" onclick={() => (user = found)}>
-									<Icon icon={RiUserLine} size="0.9375rem" />
+									<i class="ri-user-line" style:font-size="15px" aria-hidden="true"></i>
 									{found.email}
 								</button>
 							</li>
@@ -238,7 +230,7 @@
 						onclick={() => toggle(scope)}
 					>
 						{#if chosen.includes(scope)}
-							<Icon icon={RiCheckLine} size="0.8125rem" />
+							<i class="ri-check-line" style:font-size="13px" aria-hidden="true"></i>
 						{/if}
 						{scope}
 					</button>
@@ -261,7 +253,7 @@
 
 	<div class="run">
 		<Button onclick={run} disabled={!canRun} loading={running}>
-			<Icon icon={RiShieldCheckLine} />
+			<i class="ri-shield-check-line" aria-hidden="true"></i>
 			Evaluate
 		</Button>
 	</div>
@@ -270,7 +262,8 @@
 {#if preview}
 	<div class="result">
 		<div class="verdict" class:issued={preview.issued}>
-			<Icon icon={preview.issued ? RiCheckLine : RiCloseLine} size="1.125rem" />
+			{#if preview.issued}<i class="ri-check-line" style:font-size="18px" aria-hidden="true"
+				></i>{:else}<i class="ri-close-line" style:font-size="18px" aria-hidden="true"></i>{/if}
 			<div>
 				<strong>{preview.issued ? 'A token would be issued' : 'No token would be issued'}</strong>
 				{#if preview.reason}
@@ -288,7 +281,9 @@
 			<ul class="decisions">
 				{#each preview.decisions as decision (decision.scope)}
 					<li class:granted={decision.granted}>
-						<Icon icon={decision.granted ? RiCheckLine : RiCloseLine} size="0.9375rem" />
+						{#if decision.granted}<i class="ri-check-line" style:font-size="15px" aria-hidden="true"
+							></i>{:else}<i class="ri-close-line" style:font-size="15px" aria-hidden="true"
+							></i>{/if}
 						<code>{decision.scope}</code>
 						<span class="kind">
 							{decision.is_default ? 'Default' : decision.kind === 'api' ? 'API' : 'OpenID'}

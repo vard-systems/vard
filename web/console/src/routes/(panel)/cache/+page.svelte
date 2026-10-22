@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiDeleteBin2Line, RiRefreshLine } from '#lib/icons.js';
 	import {
 		createInfiniteQuery,
 		createMutation,
@@ -14,7 +13,6 @@
 		Button,
 		ConfirmDialog,
 		FilterChip,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -121,7 +119,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -132,7 +130,7 @@
 	{#snippet actions()}
 		{#if overview.data.configured}
 			<Button colorPalette="danger" variant="subtle" onclick={() => (flushing = true)}>
-				<Icon icon={RiDeleteBin2Line} />
+				<i class="ri-delete-bin-2-line" aria-hidden="true"></i>
 				Flush {label.toLowerCase()}
 			</Button>
 		{/if}

@@ -1,12 +1,5 @@
 <script lang="ts">
 	import {
-		RiAddLine,
-		RiDeleteBinLine,
-		RiDownloadLine,
-		RiRefreshLine,
-		RiSettings3Line
-	} from '#lib/icons.js';
-	import {
 		createInfiniteQuery,
 		createMutation,
 		createQuery,
@@ -27,7 +20,6 @@
 		Button,
 		ConfirmDialog,
 		FilterChip,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -169,14 +161,14 @@
 	{#snippet secondary()}
 		{#if canEditFields}
 			<IconButton
-				icon={RiSettings3Line}
+				icon="ri-settings-3-line"
 				label="Field settings"
 				onclick={() => (fieldsOpen = true)}
 			/>
 		{/if}
 
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -187,7 +179,7 @@
 	{#snippet actions()}
 		{#if canWrite}
 			<Button onclick={() => openUser(null)}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				New user
 			</Button>
 		{/if}
@@ -238,11 +230,11 @@
 
 <SelectionBar count={chosen.length} onReset={reset}>
 	<Button colorPalette="danger" size="sm" onclick={() => (confirmingDelete = true)} disabled={busy}>
-		<Icon icon={RiDeleteBinLine} />
+		<i class="ri-delete-bin-line" aria-hidden="true"></i>
 		Delete
 	</Button>
 	<Button size="sm" onclick={download} disabled={busy}>
-		<Icon icon={RiDownloadLine} />
+		<i class="ri-download-line" aria-hidden="true"></i>
 		JSON
 	</Button>
 </SelectionBar>

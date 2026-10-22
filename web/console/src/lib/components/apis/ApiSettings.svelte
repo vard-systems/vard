@@ -3,7 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiLinksLine } from '#lib/icons.js';
 	import { apisApi, type API, type SigningAlgorithm } from '#lib/api/index.js';
 	import {
 		Button,
@@ -132,7 +131,7 @@
 
 			<Input
 				label="Identifier"
-				icon={RiLinksLine}
+				icon="ri-links-line"
 				value={api.identifier}
 				readOnly
 				copyable

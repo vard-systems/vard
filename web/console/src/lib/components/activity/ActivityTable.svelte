@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiFileList3Line, RiMapPinLine, RiPulseLine, RiTimeLine } from '#lib/icons.js';
 	import type { LogEntry } from '#lib/api/index.js';
 	import { DataTable, Tag, type Column } from '#lib/components/ui/index.js';
 	import { describeUserAgent, formatDateTime, formatRelative } from '#lib/utils/format.js';
@@ -13,10 +12,10 @@
 	let { events, empty = 'Nothing has happened yet.' }: Props = $props();
 
 	const columns: Column[] = [
-		{ key: 'event', label: 'Event', icon: RiPulseLine, min: '12rem' },
-		{ key: 'what', label: 'What happened', icon: RiFileList3Line, min: '22rem' },
-		{ key: 'from', label: 'From', icon: RiMapPinLine, min: '11rem' },
-		{ key: 'when', label: 'When', icon: RiTimeLine, min: '8rem', align: 'end' }
+		{ key: 'event', label: 'Event', min: '12rem' },
+		{ key: 'what', label: 'What happened', min: '22rem', grow: true },
+		{ key: 'from', label: 'From', min: '11rem' },
+		{ key: 'when', label: 'When', min: '8rem', align: 'end' }
 	];
 </script>
 

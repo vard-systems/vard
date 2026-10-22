@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiCheckLine, RiFileCopyLine } from '#lib/icons.js';
 	import IconButton from './IconButton.svelte';
 
 	type Props = {
@@ -22,7 +21,7 @@
 </script>
 
 <IconButton
-	icon={copied ? RiCheckLine : RiFileCopyLine}
+	icon={copied ? 'ri-check-line' : 'ri-file-copy-line'}
 	label={copied ? 'Copied' : `Copy ${label}`}
 	size="sm"
 	placement="left"

@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { RiMoonLine, RiSunLine } from '#lib/icons.js';
 	import { theme } from '#lib/state/theme.svelte.js';
 	import type { Size } from './control';
-	import Icon from './Icon.svelte';
 	import Tooltip from './Tooltip.svelte';
 
 	type Props = { size?: Size; variant?: 'ghost' | 'subtle' };
@@ -26,8 +24,12 @@
 			aria-label="Switch between the light and dark theme"
 		>
 			<span class="icons" style="--glyph: {glyph[size]}">
-				<span class="moon"><Icon icon={RiMoonLine} size={glyph[size]} /></span>
-				<span class="sun"><Icon icon={RiSunLine} size={glyph[size]} /></span>
+				<span class="moon"
+					><i class="ri-moon-line" style:font-size={glyph[size]} aria-hidden="true"></i></span
+				>
+				<span class="sun"
+					><i class="ri-sun-line" style:font-size={glyph[size]} aria-hidden="true"></i></span
+				>
 			</span>
 		</button>
 	{/snippet}

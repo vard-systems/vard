@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { PasswordInput } from '@ark-ui/svelte/password-input';
-	import { RiEyeLine, RiEyeOffLine } from '#lib/icons.js';
 	import FieldText from './FieldText.svelte';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		label: string;
@@ -31,9 +29,9 @@
 			<PasswordInput.VisibilityTrigger aria-label="Show password">
 				<PasswordInput.Indicator>
 					{#snippet fallback()}
-						<Icon icon={RiEyeLine} size="1.0625rem" />
+						<i class="ri-eye-line" style:font-size="17px" aria-hidden="true"></i>
 					{/snippet}
-					<Icon icon={RiEyeOffLine} size="1.0625rem" />
+					<i class="ri-eye-off-line" style:font-size="17px" aria-hidden="true"></i>
 				</PasswordInput.Indicator>
 			</PasswordInput.VisibilityTrigger>
 		</PasswordInput.Control>

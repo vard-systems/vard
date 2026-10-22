@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiAddLine, RiDeleteBinLine, RiRefreshLine } from '#lib/icons.js';
 	import { createInfiniteQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { applicationsApi, type Application } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
@@ -8,7 +7,6 @@
 	import {
 		Button,
 		ConfirmDialog,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -119,7 +117,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -130,7 +128,7 @@
 	{#snippet actions()}
 		{#if canRegister}
 			<Button onclick={() => openApplication(null)}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				New application
 			</Button>
 		{/if}
@@ -172,7 +170,7 @@
 
 <SelectionBar count={chosen.length} onReset={reset}>
 	<Button colorPalette="danger" size="sm" onclick={() => (confirmingDelete = true)} disabled={busy}>
-		<Icon icon={RiDeleteBinLine} />
+		<i class="ri-delete-bin-line" aria-hidden="true"></i>
 		Delete
 	</Button>
 </SelectionBar>

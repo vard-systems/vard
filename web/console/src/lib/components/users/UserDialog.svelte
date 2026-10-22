@@ -2,7 +2,6 @@
 	import { untrack } from 'svelte';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
-	import { RiComputerLine, RiMailLine, RiShieldUserLine, RiUserLine } from '#lib/icons.js';
 	import {
 		usersApi,
 		type Admin,
@@ -17,7 +16,6 @@
 		FullscreenDialog,
 		FieldGrid,
 		FormSection,
-		Icon,
 		Input,
 		LinkButton,
 		List,
@@ -222,11 +220,11 @@
 	}
 
 	const tabs = $derived([
-		{ value: 'user', label: 'User', icon: RiUserLine },
+		{ value: 'user', label: 'User', icon: 'ri-user-line' },
 		{
 			value: 'roles',
 			label: 'Role mapping',
-			icon: RiShieldUserLine,
+			icon: 'ri-shield-user-line',
 			count: mappings.data?.filter((it) => it.assigned).length,
 			disabled: !editing
 		}
@@ -265,7 +263,7 @@
 					>
 						<Input
 							label="Email"
-							icon={RiMailLine}
+							icon="ri-mail-line"
 							bind:value={email}
 							type="email"
 							autocomplete="off"
@@ -406,7 +404,7 @@
 				variant="ghost"
 				href={`${resolve('/(panel)/sessions')}?${new URLSearchParams({ user: current.id, email: current.email })}`}
 			>
-				<Icon icon={RiComputerLine} />
+				<i class="ri-computer-line" aria-hidden="true"></i>
 				Sessions
 			</LinkButton>
 		{/if}

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiGlobalLine, RiHashtag, RiToggleLine, RiTranslate2 } from '#lib/icons.js';
 	import type { Language, LocaleApp } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable, Tag, Tooltip } from '#lib/components/ui/index.js';
 
@@ -17,15 +16,14 @@
 	const rows = $derived<Row[]>(languages.map((language) => ({ ...language, id: language.code })));
 
 	const columns = $derived<Column[]>([
-		{ key: 'language', label: 'Language', icon: RiGlobalLine, min: '14rem' },
-		{ key: 'code', label: 'Code', icon: RiHashtag, min: '7rem' },
+		{ key: 'language', label: 'Language', min: '14rem', grow: true },
+		{ key: 'code', label: 'Code', min: '7rem' },
 		{
 			key: 'translated',
 			label: 'Translated',
-			icon: RiTranslate2,
 			min: '18rem'
 		},
-		{ key: 'status', label: 'Status', icon: RiToggleLine, min: '11rem' }
+		{ key: 'status', label: 'Status', min: '11rem' }
 	]);
 
 	function appName(app: LocaleApp): string {

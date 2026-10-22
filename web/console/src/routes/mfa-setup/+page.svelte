@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { RiShieldCheckLine } from '#lib/icons.js';
 	import { adminApi } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import TotpSetup from '#lib/components/mfa/TotpSetup.svelte';
-	import { Card, Icon, ThemeToggle } from '#lib/components/ui/index.js';
+	import { Card, ThemeToggle } from '#lib/components/ui/index.js';
 
 	let { data } = $props();
 
@@ -35,7 +34,9 @@
 		<Card padded>
 			<div class="content">
 				<header>
-					<span class="mark"><Icon icon={RiShieldCheckLine} size="1.25rem" /></span>
+					<span class="mark"
+						><i class="ri-shield-check-line" style:font-size="20px" aria-hidden="true"></i></span
+					>
 					<h1>Set up two-factor sign-in</h1>
 					<p class="muted">
 						{data.required

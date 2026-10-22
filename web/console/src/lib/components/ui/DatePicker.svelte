@@ -1,23 +1,16 @@
 <script lang="ts">
 	import { DatePicker as ArkDatePicker } from '@ark-ui/svelte/date-picker';
 	import { Portal } from '@ark-ui/svelte/portal';
-	import {
-		RiArrowLeftSLine,
-		RiArrowRightSLine,
-		RiCalendarLine,
-		RiCloseLine,
-		type IconData
-	} from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import { formatDay, parseDay, timeZone, toDate, toIso } from './date';
 	import FieldText from './FieldText.svelte';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		label: string;
 		value: string;
 		min?: string;
 		max?: string;
-		icon?: IconData;
+		icon?: IconName;
 		hint?: string;
 		error?: string;
 		required?: boolean;
@@ -97,12 +90,12 @@
 
 			{#if canClear}
 				<ArkDatePicker.ClearTrigger aria-label="Clear {label}">
-					<Icon icon={RiCloseLine} />
+					<i class="ri-close-line" aria-hidden="true"></i>
 				</ArkDatePicker.ClearTrigger>
 			{/if}
 
 			<ArkDatePicker.Trigger aria-label="Choose {label}">
-				<Icon icon={RiCalendarLine} />
+				<i class="ri-calendar-line" aria-hidden="true"></i>
 			</ArkDatePicker.Trigger>
 		</ArkDatePicker.Control>
 	</div>
@@ -202,13 +195,13 @@
 {#snippet header()}
 	<ArkDatePicker.ViewControl>
 		<ArkDatePicker.PrevTrigger aria-label="Previous">
-			<Icon icon={RiArrowLeftSLine} />
+			<i class="ri-arrow-left-s-line" aria-hidden="true"></i>
 		</ArkDatePicker.PrevTrigger>
 		<ArkDatePicker.ViewTrigger>
 			<ArkDatePicker.RangeText />
 		</ArkDatePicker.ViewTrigger>
 		<ArkDatePicker.NextTrigger aria-label="Next">
-			<Icon icon={RiArrowRightSLine} />
+			<i class="ri-arrow-right-s-line" aria-hidden="true"></i>
 		</ArkDatePicker.NextTrigger>
 	</ArkDatePicker.ViewControl>
 {/snippet}

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createInfiniteQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiDownload2Line, RiFilterOffLine, RiRefreshLine } from '#lib/icons.js';
 	import { activityApi } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import ActivityTable from '#lib/components/activity/ActivityTable.svelte';
@@ -10,7 +9,6 @@
 		Button,
 		DatePicker,
 		FilterChip,
-		Icon,
 		IconButton,
 		LinkButton,
 		PageHeader,
@@ -79,7 +77,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh"
 			onclick={refresh}
 			loading={refreshing}
@@ -89,7 +87,7 @@
 
 	{#snippet actions()}
 		<LinkButton href={activityApi.exportUrl(data.view.filter)} variant="subtle" download>
-			<Icon icon={RiDownload2Line} />
+			<i class="ri-download-2-line" aria-hidden="true"></i>
 			Export CSV
 		</LinkButton>
 	{/snippet}
@@ -145,7 +143,7 @@
 	{#snippet end()}
 		{#if filtered}
 			<Button variant="ghost" onclick={clear}>
-				<Icon icon={RiFilterOffLine} />
+				<i class="ri-filter-off-line" aria-hidden="true"></i>
 				Clear filters
 			</Button>
 		{/if}

@@ -1,18 +1,10 @@
 <script lang="ts">
-	import {
-		RiAddLine,
-		RiDeleteBinLine,
-		RiEyeLine,
-		RiEyeOffLine,
-		RiRefreshLine
-	} from '#lib/icons.js';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { socialApi, type SocialProvider } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import {
 		Button,
 		ConfirmDialog,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -174,7 +166,7 @@
 <PageHeader crumbs={['Dashboard', 'Social']} count={social.data.providers.length}>
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -185,7 +177,7 @@
 	{#snippet actions()}
 		{#if canWrite}
 			<Button onclick={() => open(null)}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				Add provider
 			</Button>
 		{/if}
@@ -226,15 +218,15 @@
 
 <SelectionBar count={chosen.length} onReset={reset}>
 	<Button size="sm" variant="subtle" onclick={() => run('enable')} disabled={busy}>
-		<Icon icon={RiEyeLine} />
+		<i class="ri-eye-line" aria-hidden="true"></i>
 		Offer
 	</Button>
 	<Button size="sm" variant="subtle" onclick={() => run('disable')} disabled={busy}>
-		<Icon icon={RiEyeOffLine} />
+		<i class="ri-eye-off-line" aria-hidden="true"></i>
 		Turn off
 	</Button>
 	<Button colorPalette="danger" size="sm" onclick={() => (confirmingRemove = true)} disabled={busy}>
-		<Icon icon={RiDeleteBinLine} />
+		<i class="ri-delete-bin-line" aria-hidden="true"></i>
 		Remove
 	</Button>
 </SelectionBar>

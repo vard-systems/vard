@@ -8,7 +8,6 @@
 		type Edge,
 		type Node
 	} from '@xyflow/svelte';
-	import { RiFlagLine, RiLoginCircleLine } from '#lib/icons.js';
 	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 	import { describe, labelFor, markFor, specFor } from '../steps';
 	import EndNode, { type EndNodeData } from './EndNode.svelte';
@@ -74,7 +73,7 @@
 					kind: 'start',
 					label: 'Sign-in starts',
 					detail: startDetail,
-					icon: RiLoginCircleLine
+					icon: 'ri-login-circle-line'
 				} satisfies EndNodeData
 			}
 		];
@@ -115,7 +114,7 @@
 				kind: 'end',
 				label: 'Signed in',
 				detail: endDetail,
-				icon: RiFlagLine
+				icon: 'ri-flag-line'
 			} satisfies EndNodeData
 		});
 

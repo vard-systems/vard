@@ -1,6 +1,4 @@
 <script lang="ts">
-	import Icon from './Icon.svelte';
-
 	type Props = {
 		name?: string;
 		logo?: string;
@@ -24,7 +22,11 @@
 	/>
 {:else}
 	<span class="mark initial" style="--size: {size}px" aria-hidden="true">
-		{#if initial}{initial}{:else}<Icon name="shield" size="{size * 0.45}px" />{/if}
+		{#if initial}{initial}{:else}<i
+				class="ri-shield-keyhole-line"
+				style:font-size="{size * 0.45}px"
+				aria-hidden="true"
+			></i>{/if}
 	</span>
 {/if}
 

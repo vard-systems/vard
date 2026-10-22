@@ -3,7 +3,7 @@
 	import { notify } from '#lib/toast.svelte.js';
 	import { refreshAll } from '$app/navigation';
 	import { account } from '#lib/api/index.js';
-	import { Button, Icon, Panel, PasswordField, TextField } from '#lib/components/index.js';
+	import { Button, Panel, PasswordField, TextField } from '#lib/components/index.js';
 	import { formatDate, initials } from '#lib/utils/format.js';
 	import type { PageProps } from './$types';
 
@@ -94,7 +94,7 @@
 				{user.email}
 				{#if user.email_verified}
 					<span class="badge verified">
-						<Icon name="check" size="0.8rem" />
+						<i class="ri-check-line" style:font-size="13px" aria-hidden="true"></i>
 						{t('profile.verified')}
 					</span>
 				{:else}

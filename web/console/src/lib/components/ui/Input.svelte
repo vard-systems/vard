@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import { Field as ArkField } from '@ark-ui/svelte/field';
 	import CopyButton from './CopyButton.svelte';
@@ -8,7 +8,7 @@
 	type Props = Omit<HTMLInputAttributes, 'value' | 'size'> & {
 		label: string;
 		value: string;
-		icon?: IconData;
+		icon?: IconName;
 		hint?: string;
 		error?: string;
 		required?: boolean;

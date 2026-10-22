@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { RiErrorWarningLine } from '#lib/icons.js';
-	import { CopyButton, Icon } from '#lib/components/ui/index.js';
+	import { CopyButton } from '#lib/components/ui/index.js';
 
 	type Props = {
 		clientId: string;
@@ -21,7 +20,7 @@
      kept, so the panel says so plainly and makes copying it easy. -->
 <div class="panel" role="status" bind:this={panel}>
 	<div class="head">
-		<Icon icon={RiErrorWarningLine} size="1.125rem" />
+		<i class="ri-error-warning-line" style:font-size="18px" aria-hidden="true"></i>
 		<div>
 			<strong>Copy the client secret now</strong>
 			<p>It is shown this once. If it is lost, rotate it and give the application the new one.</p>

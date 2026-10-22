@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAddLine, RiCloseLine, RiGlobalLine, RiShieldUserLine } from '#lib/icons.js';
 	import { rolesApi, type Admin, type API, type Application, type Role } from '#lib/api/index.js';
 	import {
 		Badge,
 		Button,
 		FullscreenDialog,
 		FormSection,
-		Icon,
 		IconButton,
 		Input,
 		SearchInput,
@@ -102,7 +100,7 @@
 						value: 'global',
 						label: 'Global',
 						description: 'The same role in every application',
-						icon: RiGlobalLine
+						icon: 'ri-global-line'
 					}
 				]
 			: []),
@@ -111,7 +109,7 @@
 				value: app.id,
 				label: app.name,
 				description: `Only in ${app.name}`,
-				icon: RiShieldUserLine
+				icon: 'ri-shield-user-line'
 			})
 		)
 	]);
@@ -297,7 +295,7 @@
 						onclick={() => (adding = true)}
 						disabled={scope === undefined}
 					>
-						<Icon icon={RiAddLine} />
+						<i class="ri-add-line" aria-hidden="true"></i>
 						Add roles
 					</Button>
 				{/if}
@@ -338,15 +336,16 @@
 				<ul class="included">
 					{#each direct as other (other.id)}
 						<li>
-							<Icon
-								icon={other.application_id === null ? RiGlobalLine : RiShieldUserLine}
-								size="0.9375rem"
-							/>
+							{#if other.application_id === null}
+								<i class="ri-global-line" style:font-size="15px" aria-hidden="true"></i>
+							{:else}
+								<i class="ri-shield-user-line" style:font-size="15px" aria-hidden="true"></i>
+							{/if}
 							<span class="name">{label(other)}</span>
 							<span class="description">{other.description}</span>
 							{#if editable}
 								<IconButton
-									icon={RiCloseLine}
+									icon="ri-close-line"
 									label="Stop including {other.name}"
 									size="sm"
 									placement="left"
@@ -379,7 +378,7 @@
 				{#snippet action()}
 					{#if editable && !addingScopes}
 						<Button size="sm" variant="subtle" onclick={() => (addingScopes = true)}>
-							<Icon icon={RiAddLine} />
+							<i class="ri-add-line" aria-hidden="true"></i>
 							Add scopes
 						</Button>
 					{/if}
@@ -464,7 +463,7 @@
 													aria-label="Stop granting {scope.name}"
 													onclick={() => (granted = granted.filter((id) => id !== scope.id))}
 												>
-													<Icon icon={RiCloseLine} size="0.8125rem" />
+													<i class="ri-close-line" style:font-size="13px" aria-hidden="true"></i>
 												</button>
 											{/if}
 										</li>

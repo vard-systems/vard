@@ -8,11 +8,9 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "bun run theme:check && bun run icons:check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "bun run theme:check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"theme": "bun scripts/theme.ts",
 		"theme:check": "bun scripts/theme.ts --check",
-		"icons": "bun scripts/icons.ts",
-		"icons:check": "bun scripts/icons.ts --check",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
@@ -32,7 +30,6 @@
 		"globals": "^17.13.0",
 		"prettier": "^3.9.10",
 		"prettier-plugin-svelte": "^4.1.1",
-		"remixicon": "^4.9.1",
 		"svelte": "^5.57.2",
 		"svelte-check": "^4.7.6",
 		"typescript": "^6.0.3",
@@ -45,6 +42,7 @@
 		"@tanstack/svelte-query": "^6.3.2",
 		"@xyflow/svelte": "^1.7.0",
 		"qrcode": "^1.5.4",
+		"remixicon": "4.8.0",
 		"shiki": "^4.5.0"
 	},
 	"imports": {

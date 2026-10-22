@@ -2,7 +2,6 @@
 	import type { SSOConnection } from '#lib/api/index.js';
 	import { useTranslator } from '#lib/i18n/index.js';
 	import { ssoHref } from '#lib/utils/links.js';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		connections: SSOConnection[];
@@ -28,7 +27,7 @@
 				aria-disabled={disabled}
 				data-sveltekit-reload
 			>
-				<Icon name="building" size="1.125rem" />
+				<i class="ri-building-line" aria-hidden="true"></i>
 				<span>{t('login.continue_with', { name: connection.name })}</span>
 			</a>
 			<!-- eslint-enable svelte/no-navigation-without-resolve -->

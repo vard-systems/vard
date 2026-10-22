@@ -5,7 +5,7 @@ export { default as Brand } from './Brand.svelte';
 export { default as Button } from './Button.svelte';
 export { default as Checkbox } from './Checkbox.svelte';
 export { default as CodeForm } from './CodeForm.svelte';
-export { default as Icon, type IconName } from './Icon.svelte';
+export type { IconName } from './icon';
 export { default as LanguagePicker } from './LanguagePicker.svelte';
 export { default as Panel } from './Panel.svelte';
 export { default as PasswordField } from './PasswordField.svelte';

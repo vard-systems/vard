@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiErrorWarningLine, RiLockLine, RiShieldCheckLine } from '#lib/icons.js';
 	import type { Overview } from '#lib/api/index.js';
-	import { Alert, Icon, List, ListItem, Tag } from '#lib/components/ui/index.js';
+	import { Alert, List, ListItem, Tag } from '#lib/components/ui/index.js';
 
 	type Props = {
 		signIns: Overview['sign_ins'];
@@ -21,21 +20,21 @@
 			key: 'success' as const,
 			label: 'Successful',
 			value: signIns.succeeded,
-			icon: RiShieldCheckLine,
+			icon: 'ri-shield-check-line',
 			href: hrefs.succeeded
 		},
 		{
 			key: 'danger' as const,
 			label: 'Wrong password',
 			value: signIns.failed,
-			icon: RiErrorWarningLine,
+			icon: 'ri-error-warning-line',
 			href: hrefs.failed
 		},
 		{
 			key: 'warning' as const,
 			label: 'Blocked account',
 			value: signIns.blocked,
-			icon: RiLockLine,
+			icon: 'ri-lock-line',
 			href: hrefs.blocked
 		}
 	]);
@@ -62,7 +61,8 @@
 <List bordered label="Sign-in attempts">
 	{#each rows as row (row.key)}
 		<ListItem href={row.value > 0 ? row.href : undefined}>
-			{#snippet lead()}<span class="icon"><Icon icon={row.icon} /></span>{/snippet}
+			{#snippet lead()}<span class="icon"><i class={row.icon} aria-hidden="true"></i></span
+				>{/snippet}
 			<span class="name">{row.label}</span>
 			{#snippet end()}
 				<Tag tone={row.value > 0 ? row.key : 'neutral'} dot strong>{row.value.toLocaleString()}</Tag

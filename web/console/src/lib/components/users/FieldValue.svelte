@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { FieldType } from '#lib/api/index.js';
-	import { Badge } from '#lib/components/ui/index.js';
+	import { Tag } from '#lib/components/ui/index.js';
 	import { formatDate } from '#lib/utils/format.js';
 
 	type Props = {
@@ -16,7 +16,7 @@
 {#if empty}
 	<span class="empty">N/A</span>
 {:else if type === 'bool'}
-	<Badge tone={value ? 'success' : 'neutral'}>{value ? 'True' : 'False'}</Badge>
+	<Tag tone={value ? 'success' : 'neutral'} dot>{value ? 'Yes' : 'No'}</Tag>
 {:else if type === 'number'}
 	<span class="mono">{Number(value).toLocaleString()}</span>
 {:else if type === 'date'}

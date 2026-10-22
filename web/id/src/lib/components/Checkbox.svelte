@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		checked: boolean;
@@ -17,7 +16,9 @@
 
 <label class="checkbox" class:disabled>
 	<input id={id ?? `checkbox-${uid}`} {name} type="checkbox" bind:checked {disabled} />
-	<span class="box" aria-hidden="true"><Icon name="check" size="0.875rem" /></span>
+	<span class="box" aria-hidden="true"
+		><i class="ri-check-line" style:font-size="14px" aria-hidden="true"></i></span
+	>
 	<span class="text">{@render children()}</span>
 </label>
 

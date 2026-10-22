@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { RiDownload2Line, RiErrorWarningLine, RiUpload2Line } from '#lib/icons.js';
 	import type { LocaleApp } from '#lib/api/index.js';
 	import { countOf } from '#lib/utils/format.js';
-	import { Alert, Button, Icon, SearchInput, Switch, notify } from '#lib/components/ui/index.js';
+	import { Alert, Button, SearchInput, Switch, notify } from '#lib/components/ui/index.js';
 	import { nest } from './flatten';
 	import { translationOptions } from '#lib/query/index.js';
 	import { download, missingParameters, readTranslationFile } from './translations';
@@ -142,12 +141,12 @@
 						aria-hidden="true"
 					/>
 					<Button size="sm" variant="subtle" onclick={() => fileInput?.click()}>
-						<Icon icon={RiUpload2Line} />
+						<i class="ri-upload-2-line" aria-hidden="true"></i>
 						Import JSON
 					</Button>
 				{/if}
 				<Button size="sm" variant="subtle" onclick={exportFile}>
-					<Icon icon={RiDownload2Line} />
+					<i class="ri-download-2-line" aria-hidden="true"></i>
 					Export JSON
 				</Button>
 			</span>
@@ -181,7 +180,7 @@
 
 							{#if lost.length > 0}
 								<small class="warning">
-									<Icon icon={RiErrorWarningLine} />
+									<i class="ri-error-warning-line" aria-hidden="true"></i>
 									{`Keep ${lost.join(', ')} in the text: it is filled in when the page is shown.`}
 								</small>
 							{/if}

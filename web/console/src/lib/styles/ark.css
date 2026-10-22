@@ -55,9 +55,9 @@
 		color var(--speed-fast);
 }
 
-[data-scope='menu'][data-part='item'] > svg,
-[data-scope='menu'][data-part='option-item'] > svg,
-[data-scope='select'][data-part='item'] > svg {
+[data-scope='menu'][data-part='item'] > i,
+[data-scope='menu'][data-part='option-item'] > i,
+[data-scope='select'][data-part='item'] > i {
 	flex: none;
 	color: var(--palette-fg, var(--color-text-hint));
 }
@@ -549,7 +549,7 @@
 	color: var(--color-brand);
 }
 
-[data-scope='select'][data-part='item'][data-state='checked'] > svg {
+[data-scope='select'][data-part='item'][data-state='checked'] > i {
 	color: var(--color-brand);
 }
 

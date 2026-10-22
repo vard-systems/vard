@@ -1,16 +1,6 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import {
-		RiCheckLine,
-		RiDownload2Line,
-		RiFlaskLine,
-		RiGroupLine,
-		RiLinksLine,
-		RiRefreshLine,
-		RiServerLine,
-		RiSettings3Line
-	} from '#lib/icons.js';
-	import {
 		messageOf,
 		ssoApi,
 		type Role,
@@ -28,7 +18,6 @@
 		FullscreenDialog,
 		FieldGrid,
 		FormSection,
-		Icon,
 		Input,
 		PasswordInput,
 		Select,
@@ -270,10 +259,10 @@
 	}
 
 	const tabs = $derived([
-		{ value: 'connection', label: 'Connection', icon: RiSettings3Line },
-		{ value: 'provider', label: 'Service provider', icon: RiServerLine },
-		{ value: 'signin', label: 'Domains & sign-in', icon: RiLinksLine },
-		{ value: 'users', label: 'Users & roles', icon: RiGroupLine }
+		{ value: 'connection', label: 'Connection', icon: 'ri-settings-3-line' },
+		{ value: 'provider', label: 'Service provider', icon: 'ri-server-line' },
+		{ value: 'signin', label: 'Domains & sign-in', icon: 'ri-links-line' },
+		{ value: 'users', label: 'Users & roles', icon: 'ri-group-line' }
 	]);
 
 	const protocols = $derived([
@@ -320,7 +309,7 @@
 
 {#snippet testButton()}
 	<Button variant="subtle" size="sm" onclick={test} loading={testing} disabled={testing}>
-		<Icon icon={RiFlaskLine} />
+		<i class="ri-flask-line" aria-hidden="true"></i>
 		Test connection
 	</Button>
 {/snippet}
@@ -532,7 +521,7 @@
 											'application/x-pem-file'
 										)}
 								>
-									<Icon icon={RiDownload2Line} />
+									<i class="ri-download-2-line" aria-hidden="true"></i>
 									Download signing certificate
 								</Button>
 							</div>
@@ -570,7 +559,7 @@
 											onclick={() => refresh.mutate()}
 											loading={refresh.isPending}
 										>
-											<Icon icon={RiRefreshLine} />
+											<i class="ri-refresh-line" aria-hidden="true"></i>
 											Refresh metadata
 										</Button>
 									</div>
@@ -680,7 +669,7 @@
 		<Button variant="subtle" onclick={() => (open = false)}>Cancel</Button>
 		{#if canWrite}
 			<Button type="submit" loading={saving} disabled={missing !== null || saving}>
-				<Icon icon={RiCheckLine} />
+				<i class="ri-check-line" aria-hidden="true"></i>
 				{editing ? 'Save changes' : 'Create connection'}
 			</Button>
 		{/if}

@@ -49,11 +49,12 @@ export { default as Tabs } from './Tabs.svelte';
 export { default as Tooltip } from './Tooltip.svelte';
 
 export { default as DataTable } from './DataTable.svelte';
+export { default as CellText } from './CellText.svelte';
 export { default as ShowMore } from './ShowMore.svelte';
 export { default as List } from './List.svelte';
 export { default as ListItem } from './ListItem.svelte';
 export type { Column } from './table';
-export { default as Icon } from './Icon.svelte';
+export type { IconName } from './icon';
 export { default as PageContainer } from './PageContainer.svelte';
 export { default as PageHeader } from './PageHeader.svelte';
 export { default as Toolbar } from './Toolbar.svelte';

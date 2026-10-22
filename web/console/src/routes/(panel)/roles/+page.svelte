@@ -1,13 +1,5 @@
 <script lang="ts">
 	import {
-		RiAddLine,
-		RiDeleteBinLine,
-		RiAppsLine,
-		RiDownloadLine,
-		RiGlobalLine,
-		RiRefreshLine
-	} from '#lib/icons.js';
-	import {
 		createInfiniteQuery,
 		createMutation,
 		createQuery,
@@ -26,7 +18,6 @@
 	import {
 		Button,
 		ConfirmDialog,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -173,7 +164,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -184,7 +175,7 @@
 	{#snippet actions()}
 		{#if canCreate}
 			<Button onclick={() => openRole(null)}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				New role
 			</Button>
 		{/if}
@@ -199,7 +190,7 @@
 		class:on={data.tab === 'global'}
 		onclick={() => setSearchParams({ tab: '', application: '', search: '', default: '' })}
 	>
-		<Icon icon={RiGlobalLine} />
+		<i class="ri-global-line" aria-hidden="true"></i>
 		Global roles
 		<span class="count">{globalCount}</span>
 	</button>
@@ -213,7 +204,7 @@
 			onclick={() =>
 				setSearchParams({ tab: 'application', application: '', search: '', default: '' })}
 		>
-			<Icon icon={RiAppsLine} />
+			<i class="ri-apps-line" aria-hidden="true"></i>
 			Application roles
 			<span class="count">{appCount}</span>
 		</button>
@@ -267,11 +258,11 @@
 
 <SelectionBar count={chosen.length} onReset={reset}>
 	<Button colorPalette="danger" size="sm" onclick={() => (confirmingDelete = true)} disabled={busy}>
-		<Icon icon={RiDeleteBinLine} />
+		<i class="ri-delete-bin-line" aria-hidden="true"></i>
 		Delete
 	</Button>
 	<Button size="sm" onclick={download} disabled={busy}>
-		<Icon icon={RiDownloadLine} />
+		<i class="ri-download-line" aria-hidden="true"></i>
 		JSON
 	</Button>
 </SelectionBar>

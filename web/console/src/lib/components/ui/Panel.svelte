@@ -1,11 +1,10 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import type { Snippet } from 'svelte';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		title: string;
-		icon?: IconData;
+		icon?: IconName;
 		meta?: Snippet;
 		flush?: boolean;
 		children: Snippet;
@@ -16,7 +15,9 @@
 
 <section class="panel">
 	<header>
-		{#if icon}<span class="icon"><Icon {icon} size="1.15rem" /></span>{/if}
+		{#if icon}<span class="icon"
+				><i class={icon} style:font-size="18px" aria-hidden="true"></i></span
+			>{/if}
 		<h2>{title}</h2>
 		{#if meta}<div class="meta">{@render meta()}</div>{/if}
 	</header>

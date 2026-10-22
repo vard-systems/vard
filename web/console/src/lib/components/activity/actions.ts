@@ -1,24 +1,4 @@
-import {
-	RiAdminLine,
-	RiAppsLine,
-	RiCodeBoxLine,
-	RiDatabase2Line,
-	RiErrorWarningLine,
-	RiFileList3Line,
-	RiGitBranchLine,
-	RiKey2Line,
-	RiLockLine,
-	RiLoginBoxLine,
-	RiLogoutBoxRLine,
-	RiMailLine,
-	RiMailSendLine,
-	RiPulseLine,
-	RiShieldKeyholeLine,
-	RiShieldUserLine,
-	RiTranslate2,
-	RiUserLine,
-	type IconData
-} from '#lib/icons.js';
+import type { IconName } from '#lib/components/ui/index.js';
 import type { ActivityEvent } from '#lib/api/index.js';
 
 /**
@@ -36,7 +16,7 @@ type Action = {
 	after?: string;
 	category: Category;
 	tone?: Tone;
-	icon: IconData;
+	icon: IconName;
 };
 
 const actions: Record<string, Action> = {
@@ -45,40 +25,40 @@ const actions: Record<string, Action> = {
 		verb: 'signed in',
 		category: 'access',
 		tone: 'success',
-		icon: RiLoginBoxLine
+		icon: 'ri-login-box-line'
 	},
 	'admin.logout': {
 		label: 'Signed out',
 		verb: 'signed out',
 		category: 'access',
-		icon: RiLogoutBoxRLine
+		icon: 'ri-logout-box-r-line'
 	},
 	'admin.session_ended': {
 		label: 'Session ended',
 		verb: 'signed out one of their other sessions',
 		category: 'access',
-		icon: RiLogoutBoxRLine
+		icon: 'ri-logout-box-r-line'
 	},
 	'admin.sessions_ended': {
 		label: 'Signed out elsewhere',
 		verb: 'signed out of every other session',
 		category: 'access',
 		tone: 'warning',
-		icon: RiLogoutBoxRLine
+		icon: 'ri-logout-box-r-line'
 	},
 	'admin.login_failed': {
 		label: 'Sign-in failed',
 		verb: 'failed to sign in',
 		category: 'access',
 		tone: 'danger',
-		icon: RiErrorWarningLine
+		icon: 'ri-error-warning-line'
 	},
 	'admin.login_blocked': {
 		label: 'Sign-in blocked',
 		verb: 'was blocked from signing in',
 		category: 'access',
 		tone: 'warning',
-		icon: RiLockLine
+		icon: 'ri-lock-line'
 	},
 
 	'admin.mfa_failed': {
@@ -86,48 +66,48 @@ const actions: Record<string, Action> = {
 		verb: 'entered a wrong two-factor code',
 		category: 'access',
 		tone: 'danger',
-		icon: RiErrorWarningLine
+		icon: 'ri-error-warning-line'
 	},
 	'admin.mfa_enabled': {
 		label: 'Two-factor on',
 		verb: 'turned on two-factor sign-in',
 		category: 'access',
 		tone: 'success',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'admin.mfa_replaced': {
 		label: 'Authenticator replaced',
 		verb: 'replaced their authenticator',
 		category: 'access',
 		tone: 'warning',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'admin.mfa_disabled': {
 		label: 'Two-factor off',
 		verb: 'turned off two-factor sign-in',
 		category: 'access',
 		tone: 'warning',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'admin.recovery_codes_regenerated': {
 		label: 'Recovery codes renewed',
 		verb: 'made new recovery codes',
 		category: 'access',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'signing_keys.rotated': {
 		label: 'Signing keys rotated',
 		verb: 'rotated the token signing keys',
 		category: 'admins',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'admin.mfa_reset': {
 		label: 'Two-factor reset',
 		verb: 'reset the two-factor sign-in of',
 		category: 'admins',
 		tone: 'warning',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 
 	'user.login': {
@@ -135,111 +115,111 @@ const actions: Record<string, Action> = {
 		verb: 'signed in to an application',
 		category: 'access',
 		tone: 'success',
-		icon: RiLoginBoxLine
+		icon: 'ri-login-box-line'
 	},
 	'user.logout': {
 		label: 'User signed out',
 		verb: 'signed out',
 		category: 'access',
-		icon: RiLogoutBoxRLine
+		icon: 'ri-logout-box-r-line'
 	},
 	'user.login_failed': {
 		label: 'User sign-in failed',
 		verb: 'failed to sign in to an application',
 		category: 'access',
 		tone: 'danger',
-		icon: RiErrorWarningLine
+		icon: 'ri-error-warning-line'
 	},
 	'user.login_blocked': {
 		label: 'User sign-in blocked',
 		verb: 'was blocked from signing in',
 		category: 'access',
 		tone: 'warning',
-		icon: RiLockLine
+		icon: 'ri-lock-line'
 	},
 	'user.registered': {
 		label: 'User registered',
 		verb: 'created an account',
 		category: 'users',
 		tone: 'success',
-		icon: RiUserLine
+		icon: 'ri-user-line'
 	},
 	'user.password_reset_requested': {
 		label: 'Password reset requested',
 		verb: 'asked to reset their password',
 		category: 'access',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'user.password_changed_self': {
 		label: 'Password changed',
 		verb: 'changed their password',
 		category: 'access',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'user.email_change_requested': {
 		label: 'Email change requested',
 		verb: 'asked to change their email address',
 		category: 'users',
-		icon: RiMailSendLine
+		icon: 'ri-mail-send-line'
 	},
 	'user.email_changed': {
 		label: 'Email changed',
 		verb: 'confirmed a new email address',
 		category: 'users',
 		tone: 'success',
-		icon: RiMailLine
+		icon: 'ri-mail-line'
 	},
 	'user.email_verification_sent': {
 		label: 'Verification sent',
 		verb: 'was sent a link to verify their email address',
 		category: 'users',
-		icon: RiMailSendLine
+		icon: 'ri-mail-send-line'
 	},
 	'user.email_verified': {
 		label: 'Email verified',
 		verb: 'verified their email address',
 		category: 'users',
 		tone: 'success',
-		icon: RiMailLine
+		icon: 'ri-mail-line'
 	},
 	'user.profile_updated': {
 		label: 'Profile updated',
 		verb: 'updated their profile',
 		category: 'users',
-		icon: RiUserLine
+		icon: 'ri-user-line'
 	},
 	'user.session_revoked': {
 		label: 'Device signed out',
 		verb: 'signed out another device',
 		category: 'access',
-		icon: RiLogoutBoxRLine
+		icon: 'ri-logout-box-r-line'
 	},
 	'user.session_ended': {
 		label: 'Session ended',
 		verb: 'signed out a session of',
 		category: 'access',
-		icon: RiLogoutBoxRLine
+		icon: 'ri-logout-box-r-line'
 	},
 	'user.signed_out_everywhere': {
 		label: 'Signed out everywhere',
 		verb: 'signed out everywhere',
 		category: 'access',
 		tone: 'danger',
-		icon: RiLogoutBoxRLine
+		icon: 'ri-logout-box-r-line'
 	},
 	'user.application_disconnected': {
 		label: 'App disconnected',
 		verb: 'disconnected an application',
 		category: 'access',
-		icon: RiAppsLine
+		icon: 'ri-apps-line'
 	},
 	'user.password_reset': {
 		label: 'Password reset',
 		verb: 'reset their password',
 		category: 'access',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 
 	'user.created': {
@@ -247,58 +227,58 @@ const actions: Record<string, Action> = {
 		verb: 'created user',
 		category: 'users',
 		tone: 'success',
-		icon: RiUserLine
+		icon: 'ri-user-line'
 	},
 	'user.updated': {
 		label: 'User updated',
 		verb: 'updated user',
 		category: 'users',
-		icon: RiUserLine
+		icon: 'ri-user-line'
 	},
 	'user.deleted': {
 		label: 'User deleted',
 		verb: 'deleted user',
 		category: 'users',
 		tone: 'danger',
-		icon: RiUserLine
+		icon: 'ri-user-line'
 	},
 	'user.password_changed': {
 		label: 'Password changed',
 		verb: 'changed the password of',
 		category: 'users',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'user.roles_assigned': {
 		label: 'Roles assigned',
 		verb: 'assigned roles to',
 		category: 'roles',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 	'user.role_unassigned': {
 		label: 'Role removed',
 		verb: 'removed a role from',
 		category: 'roles',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 	'user_field.created': {
 		label: 'Field added',
 		verb: 'added the user field',
 		category: 'users',
-		icon: RiFileList3Line
+		icon: 'ri-file-list-3-line'
 	},
 	'user_field.updated': {
 		label: 'Field updated',
 		verb: 'updated the user field',
 		category: 'users',
-		icon: RiFileList3Line
+		icon: 'ri-file-list-3-line'
 	},
 	'user_field.deleted': {
 		label: 'Field removed',
 		verb: 'removed the user field',
 		category: 'users',
 		tone: 'danger',
-		icon: RiFileList3Line
+		icon: 'ri-file-list-3-line'
 	},
 
 	'user_role.created': {
@@ -306,20 +286,20 @@ const actions: Record<string, Action> = {
 		verb: 'created role',
 		category: 'roles',
 		tone: 'success',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 	'user_role.updated': {
 		label: 'Role updated',
 		verb: 'updated role',
 		category: 'roles',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 	'user_role.deleted': {
 		label: 'Role deleted',
 		verb: 'deleted role',
 		category: 'roles',
 		tone: 'danger',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 
 	'application.created': {
@@ -327,27 +307,27 @@ const actions: Record<string, Action> = {
 		verb: 'registered application',
 		category: 'applications',
 		tone: 'success',
-		icon: RiAppsLine
+		icon: 'ri-apps-line'
 	},
 	'application.updated': {
 		label: 'Application updated',
 		verb: 'updated application',
 		category: 'applications',
-		icon: RiAppsLine
+		icon: 'ri-apps-line'
 	},
 	'application.deleted': {
 		label: 'Application deleted',
 		verb: 'deleted application',
 		category: 'applications',
 		tone: 'danger',
-		icon: RiAppsLine
+		icon: 'ri-apps-line'
 	},
 	'application.secret_rotated': {
 		label: 'Secret rotated',
 		verb: 'rotated the client secret of',
 		category: 'applications',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'application.api_authorized': {
 		label: 'API access granted',
@@ -355,14 +335,14 @@ const actions: Record<string, Action> = {
 		after: 'access to an API',
 		category: 'apis',
 		tone: 'success',
-		icon: RiCodeBoxLine
+		icon: 'ri-code-box-line'
 	},
 	'application.api_revoked': {
 		label: 'API access revoked',
 		verb: 'revoked the API access of',
 		category: 'apis',
 		tone: 'danger',
-		icon: RiCodeBoxLine
+		icon: 'ri-code-box-line'
 	},
 
 	'api.created': {
@@ -370,20 +350,20 @@ const actions: Record<string, Action> = {
 		verb: 'registered API',
 		category: 'apis',
 		tone: 'success',
-		icon: RiCodeBoxLine
+		icon: 'ri-code-box-line'
 	},
 	'api.updated': {
 		label: 'API updated',
 		verb: 'updated API',
 		category: 'apis',
-		icon: RiCodeBoxLine
+		icon: 'ri-code-box-line'
 	},
 	'api.deleted': {
 		label: 'API deleted',
 		verb: 'deleted API',
 		category: 'apis',
 		tone: 'danger',
-		icon: RiCodeBoxLine
+		icon: 'ri-code-box-line'
 	},
 
 	'admin.created': {
@@ -391,251 +371,251 @@ const actions: Record<string, Action> = {
 		verb: 'added administrator',
 		category: 'admins',
 		tone: 'success',
-		icon: RiAdminLine
+		icon: 'ri-admin-line'
 	},
 	'admin.updated': {
 		label: 'Administrator updated',
 		verb: 'updated administrator',
 		category: 'admins',
-		icon: RiAdminLine
+		icon: 'ri-admin-line'
 	},
 	'admin.profile_updated': {
 		label: 'Profile updated',
 		verb: 'updated their own profile',
 		category: 'admins',
-		icon: RiAdminLine
+		icon: 'ri-admin-line'
 	},
 	'admin.deleted': {
 		label: 'Administrator removed',
 		verb: 'removed administrator',
 		category: 'admins',
 		tone: 'danger',
-		icon: RiAdminLine
+		icon: 'ri-admin-line'
 	},
 	'admin.password_changed': {
 		label: 'Admin password changed',
 		verb: 'changed the password of administrator',
 		category: 'admins',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'admin_security.updated': {
 		label: 'Admin security changed',
 		verb: 'changed whether administrators need a second factor',
 		category: 'admins',
 		tone: 'warning',
-		icon: RiLockLine
+		icon: 'ri-lock-line'
 	},
 	'organization.updated': {
 		label: 'Organisation updated',
 		verb: 'updated',
 		category: 'other',
-		icon: RiFileList3Line
+		icon: 'ri-file-list-3-line'
 	},
 	'admin_role.created': {
 		label: 'Admin role created',
 		verb: 'created admin role',
 		category: 'admins',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'admin_role.updated': {
 		label: 'Admin role updated',
 		verb: 'updated admin role',
 		category: 'admins',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'admin_role.deleted': {
 		label: 'Admin role deleted',
 		verb: 'deleted admin role',
 		category: 'admins',
 		tone: 'danger',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'cache.entry_updated': {
 		label: 'Cached value edited',
 		verb: 'edited a cached value in the Redis database',
 		category: 'other',
 		tone: 'warning',
-		icon: RiDatabase2Line
+		icon: 'ri-database-2-line'
 	},
 	'cache.entry_deleted': {
 		label: 'Cached key removed',
 		verb: 'removed a cached key from the Redis database',
 		category: 'other',
-		icon: RiDatabase2Line
+		icon: 'ri-database-2-line'
 	},
 	'cache.group_cleared': {
 		label: 'Cache group cleared',
 		verb: 'cleared a cache group in the Redis database',
 		category: 'other',
-		icon: RiDatabase2Line
+		icon: 'ri-database-2-line'
 	},
 	'cache.flushed': {
 		label: 'Redis database flushed',
 		verb: 'flushed the Redis database',
 		category: 'other',
 		tone: 'danger',
-		icon: RiDatabase2Line
+		icon: 'ri-database-2-line'
 	},
 	'login_flow.created': {
 		label: 'Login flow created',
 		verb: 'created login flow',
 		category: 'access',
-		icon: RiGitBranchLine
+		icon: 'ri-git-branch-line'
 	},
 	'login_flow.updated': {
 		label: 'Login flow updated',
 		verb: 'updated login flow',
 		category: 'access',
-		icon: RiGitBranchLine
+		icon: 'ri-git-branch-line'
 	},
 	'login_flow.deleted': {
 		label: 'Login flow deleted',
 		verb: 'deleted login flow',
 		category: 'access',
 		tone: 'danger',
-		icon: RiGitBranchLine
+		icon: 'ri-git-branch-line'
 	},
 	'sso_connection.created': {
 		label: 'SSO connection added',
 		verb: 'added SSO connection',
 		category: 'access',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'sso_connection.updated': {
 		label: 'SSO connection updated',
 		verb: 'updated SSO connection',
 		category: 'access',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'sso_connection.deleted': {
 		label: 'SSO connection removed',
 		verb: 'removed SSO connection',
 		category: 'access',
 		tone: 'danger',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'sso_connection.sign_in_failed': {
 		label: 'SSO sign-in failed',
 		verb: 'could not complete a sign-in through SSO connection',
 		category: 'access',
 		tone: 'danger',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'social_provider.created': {
 		label: 'Social provider added',
 		verb: 'added social provider',
 		category: 'access',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'social_provider.updated': {
 		label: 'Social provider updated',
 		verb: 'updated social provider',
 		category: 'access',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'social_provider.deleted': {
 		label: 'Social provider removed',
 		verb: 'removed social provider',
 		category: 'access',
 		tone: 'danger',
-		icon: RiShieldKeyholeLine
+		icon: 'ri-shield-keyhole-line'
 	},
 	'social_provider.secret_read': {
 		label: 'Secret read',
 		verb: 'read the client secret of social provider',
 		category: 'access',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'user.identity_connected': {
 		label: 'Account linked',
 		verb: 'linked their account to an identity provider',
 		category: 'users',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 	'user.identity_disconnected': {
 		label: 'Account unlinked',
 		verb: 'disconnected a social account from',
 		category: 'users',
 		tone: 'warning',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 	'user.roles_synced': {
 		label: 'Roles synced from SSO',
 		verb: 'had roles synced from their identity provider',
 		category: 'roles',
-		icon: RiShieldUserLine
+		icon: 'ri-shield-user-line'
 	},
 	'language.created': {
 		label: 'Language added',
 		verb: 'added language',
 		category: 'other',
-		icon: RiTranslate2
+		icon: 'ri-translate-2'
 	},
 	'language.updated': {
 		label: 'Language updated',
 		verb: 'updated language',
 		category: 'other',
-		icon: RiTranslate2
+		icon: 'ri-translate-2'
 	},
 	'language.translated': {
 		label: 'Translation saved',
 		verb: 'saved the text of language',
 		category: 'other',
-		icon: RiTranslate2
+		icon: 'ri-translate-2'
 	},
 	'language.deleted': {
 		label: 'Language removed',
 		verb: 'removed language',
 		category: 'other',
 		tone: 'danger',
-		icon: RiTranslate2
+		icon: 'ri-translate-2'
 	},
 	'mail.settings_updated': {
 		label: 'Mail settings changed',
 		verb: 'changed',
 		category: 'other',
-		icon: RiMailLine
+		icon: 'ri-mail-line'
 	},
 	'mail.content_updated': {
 		label: 'Email content changed',
 		verb: 'changed',
 		category: 'other',
-		icon: RiMailLine
+		icon: 'ri-mail-line'
 	},
 	'mail.test_sent': {
 		label: 'Test email sent',
 		verb: 'sent a test email through',
 		category: 'other',
 		tone: 'success',
-		icon: RiMailSendLine
+		icon: 'ri-mail-send-line'
 	},
 	'mail.test_failed': {
 		label: 'Test email failed',
 		verb: 'could not send a test email through',
 		category: 'other',
 		tone: 'warning',
-		icon: RiMailSendLine
+		icon: 'ri-mail-send-line'
 	},
 	'otp.settings_updated': {
 		label: 'One-time codes changed',
 		verb: 'changed',
 		category: 'access',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'user.login_code_sent': {
 		label: 'Code emailed',
 		verb: 'was emailed a one-time code',
 		category: 'access',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	},
 	'user.login_code_failed': {
 		label: 'Wrong code',
 		verb: 'typed a one-time code that was not the one sent',
 		category: 'access',
 		tone: 'warning',
-		icon: RiKey2Line
+		icon: 'ri-key-2-line'
 	}
 };
 
@@ -667,7 +647,7 @@ export type Described = {
 	detail: string;
 	category: Category;
 	tone: Tone;
-	icon: IconData;
+	icon: IconName;
 };
 
 const selfTargeted = new Set([
@@ -724,7 +704,7 @@ export function describe(event: ActivityEvent): Described {
 			detail: event.detail ?? '',
 			category: 'other',
 			tone: 'neutral',
-			icon: RiPulseLine
+			icon: 'ri-pulse-line'
 		};
 	}
 

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { RiCloseLine, RiMenuLine, RiSidebarFoldLine, RiSidebarUnfoldLine } from '#lib/icons.js';
 	import type { Admin, OrganizationBrand } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import { IconButton, ThemeToggle, Thumb } from '#lib/components/ui/index.js';
@@ -22,7 +21,7 @@
 <header class:mini={shell.collapsed}>
 	<div class="menu-control">
 		<IconButton
-			icon={shell.menuOpen ? RiCloseLine : RiMenuLine}
+			icon={shell.menuOpen ? 'ri-close-line' : 'ri-menu-line'}
 			label={shell.menuOpen ? 'Close the menu' : 'Open the menu'}
 			size="sm"
 			placement="right"
@@ -47,7 +46,7 @@
 
 	<div class="fold-control">
 		<IconButton
-			icon={shell.collapsed ? RiSidebarUnfoldLine : RiSidebarFoldLine}
+			icon={shell.collapsed ? 'ri-sidebar-unfold-line' : 'ri-sidebar-fold-line'}
 			label={shell.collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
 			size="sm"
 			onclick={shell.toggle}

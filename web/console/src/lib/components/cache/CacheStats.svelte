@@ -1,12 +1,4 @@
 <script lang="ts">
-	import {
-		RiDatabase2Line,
-		RiFileList3Line,
-		RiHardDrive2Line,
-		RiShieldUserLine,
-		RiSpeedUpLine,
-		RiUserLine
-	} from '#lib/icons.js';
 	import type { CacheDatabase } from '#lib/api/index.js';
 	import { StatCard } from '#lib/components/ui/index.js';
 
@@ -23,7 +15,7 @@
 	<StatCard
 		label="Keys"
 		value={database.keys}
-		icon={RiDatabase2Line}
+		icon="ri-database-2-line"
 		note={`database ${database.number}${database.version ? ` · Redis ${database.version}` : ''}`}
 	/>
 
@@ -31,32 +23,32 @@
 		<StatCard
 			label="Administrators’ sessions"
 			value={database.sessions.admin ?? 0}
-			icon={RiShieldUserLine}
+			icon="ri-shield-user-line"
 		/>
-		<StatCard label="Users’ sessions" value={database.sessions.user ?? 0} icon={RiUserLine} />
+		<StatCard label="Users’ sessions" value={database.sessions.user ?? 0} icon="ri-user-line" />
 		<StatCard
 			label="Rate limits"
 			value={database.kinds.ratelimit ?? 0}
-			icon={RiSpeedUpLine}
+			icon="ri-speed-up-line"
 			note="addresses being counted"
 		/>
 	{:else}
 		<StatCard
 			label="Cached values"
 			value={values}
-			icon={RiFileList3Line}
+			icon="ri-file-list-3-line"
 			note={stale > 0 ? `${stale} stale, left to expire` : 'none stale'}
 		/>
 		<StatCard
 			label="Groups"
 			value={database.groups.length}
-			icon={RiDatabase2Line}
+			icon="ri-database-2-line"
 			note="each cleared as one"
 		/>
 		<StatCard
 			label="Memory, MB"
 			value={megabytes}
-			icon={RiHardDrive2Line}
+			icon="ri-hard-drive-2-line"
 			note="the whole Redis server"
 		/>
 	{/if}

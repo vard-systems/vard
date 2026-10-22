@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createMutation } from '@tanstack/svelte-query';
-	import { RiShieldKeyholeLine } from '#lib/icons.js';
 	import { adminsApi, type AdminSecurity } from '#lib/api/index.js';
 	import {
 		Alert,
@@ -60,7 +59,7 @@
 	}
 </script>
 
-<Panel title="Two-factor sign-in" icon={RiShieldKeyholeLine}>
+<Panel title="Two-factor sign-in" icon="ri-shield-keyhole-line">
 	{#snippet meta()}
 		<Tag tone={without === 0 ? 'info' : 'danger'} small>
 			{current.with_mfa} of {current.administrators}
@@ -84,7 +83,7 @@
 		? `${without} ${without === 1 ? 'administrator has' : 'administrators have'} no authenticator yet. They will be able to do nothing but set one up — including you, if that is you.`
 		: 'Every administrator already has one, so nothing changes for them today. New ones will be asked to set one up before anything else.'}
 	tone="danger"
-	icon={RiShieldKeyholeLine}
+	icon="ri-shield-keyhole-line"
 	confirmLabel="Require it"
 	busy={saving}
 	onConfirm={() => set(true)}

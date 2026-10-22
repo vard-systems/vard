@@ -1,9 +1,10 @@
 <script lang="ts">
-	import Icon from './Icon.svelte';
 </script>
 
 <span class="brand">
-	<span class="mark"><Icon name="shield" size="1rem" /></span>
+	<span class="mark"
+		><i class="ri-shield-keyhole-line" style:font-size="16px" aria-hidden="true"></i></span
+	>
 	<span>Account</span>
 </span>
 

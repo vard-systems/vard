@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAddLine, RiDeleteBinLine, RiPencilLine } from '#lib/icons.js';
 	import { usersApi, type FieldType, type UserField } from '#lib/api/index.js';
 	import {
 		Badge,
 		Button,
 		FullscreenDialog,
 		FormSection,
-		Icon,
 		IconButton,
 		Input,
 		Select,
@@ -182,8 +180,9 @@
 	>
 		<ul class="fields">
 			{#each builtinFields as field (field.name)}
+				{@const fieldIcon = fieldIcons[field.type]}
 				<li class="locked">
-					<Icon icon={fieldIcons[field.type]} />
+					<i class={fieldIcon} aria-hidden="true"></i>
 
 					<span class="name">{field.name}</span>
 					<span class="hint">{field.type}</span>
@@ -204,8 +203,9 @@
 	>
 		<ul class="fields">
 			{#each addedFields as field (field.id)}
+				{@const fieldIcon = fieldIcons[field.type]}
 				<li class:editing={editing?.id === field.id}>
-					<Icon icon={fieldIcons[field.type]} />
+					<i class={fieldIcon} aria-hidden="true"></i>
 
 					<span class="name">{field.name}</span>
 					<span class="hint">{field.type}</span>
@@ -217,7 +217,7 @@
 					</span>
 
 					<IconButton
-						icon={RiPencilLine}
+						icon="ri-pencil-line"
 						label="Edit {field.name}"
 						size="sm"
 						onclick={() => edit(field)}
@@ -225,7 +225,7 @@
 					/>
 
 					<IconButton
-						icon={RiDeleteBinLine}
+						icon="ri-delete-bin-line"
 						label="Remove {field.name}"
 						size="sm"
 						colorPalette="danger"
@@ -307,7 +307,7 @@
 
 				<Button type="submit" disabled={busy || (name.trim() === '' && label.trim() === '')}>
 					{#if !editing}
-						<Icon icon={RiAddLine} />
+						<i class="ri-add-line" aria-hidden="true"></i>
 					{/if}
 					{editing ? 'Save field' : 'Add field'}
 				</Button>

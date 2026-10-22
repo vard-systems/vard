@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiArrowGoBackLine } from '#lib/icons.js';
 	import { languagesApi, type Language, type ShippedLanguage } from '#lib/api/index.js';
 	import {
 		Button,
 		FullscreenDialog,
 		FieldGrid,
 		FormSection,
-		Icon,
 		Input,
 		Select,
 		SwitchField,
@@ -158,7 +156,7 @@
 			<div class="restore">
 				{#each shipped as language (language.code)}
 					<Button size="sm" variant="outline" onclick={() => restore(language)}>
-						<Icon icon={RiArrowGoBackLine} />
+						<i class="ri-arrow-go-back-line" aria-hidden="true"></i>
 						<span lang={language.code}>{language.native_name}</span>
 					</Button>
 				{/each}

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiFileTextLine, RiRefreshLine, RiServerLine } from '#lib/icons.js';
 	import { BRAND } from '#lib/brand.js';
 	import { IconButton, PageContainer, PageHeader, Tabs } from '#lib/components/ui/index.js';
 	import MailContent from '#lib/components/mail/MailContent.svelte';
@@ -18,8 +17,8 @@
 	let tab = $state('server');
 
 	const tabs = [
-		{ value: 'server', label: 'Mail server', icon: RiServerLine },
-		{ value: 'content', label: 'Email content', icon: RiFileTextLine }
+		{ value: 'server', label: 'Mail server', icon: 'ri-server-line' },
+		{ value: 'content', label: 'Email content', icon: 'ri-file-text-line' }
 	];
 
 	function reload() {
@@ -34,7 +33,7 @@
 	description="How this installation sends email — the server it hands a message to, and what each message says. Password resets, address confirmations and one-time codes all go this way."
 >
 	{#snippet secondary()}
-		<IconButton icon={RiRefreshLine} label="Reload these settings" onclick={reload} />
+		<IconButton icon="ri-refresh-line" label="Reload these settings" onclick={reload} />
 	{/snippet}
 </PageHeader>
 

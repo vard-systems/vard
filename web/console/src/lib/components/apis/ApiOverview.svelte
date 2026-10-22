@@ -1,14 +1,6 @@
 <script lang="ts">
-	import {
-		RiAppsLine,
-		RiCheckLine,
-		RiKey2Line,
-		RiLockLine,
-		RiShieldUserLine,
-		RiTimerLine
-	} from '#lib/icons.js';
 	import type { API } from '#lib/api/index.js';
-	import { CodeBlock, FormSection, Icon, Input } from '#lib/components/ui/index.js';
+	import { CodeBlock, FormSection, Input } from '#lib/components/ui/index.js';
 	import { lifetimeLabel } from './scopes';
 
 	type Props = {
@@ -22,28 +14,28 @@
 
 	const stats = $derived([
 		{
-			icon: RiLockLine,
+			icon: 'ri-lock-line',
 			label: 'Scopes',
 			value: String(api.scopes.length),
 			detail: defaults > 0 ? `${defaults} default` : 'None default',
 			tab: 'scopes'
 		},
 		{
-			icon: RiAppsLine,
+			icon: 'ri-apps-line',
 			label: 'Applications',
 			value: String(api.application_count),
 			detail: 'Authorised to request tokens',
 			tab: 'applications'
 		},
 		{
-			icon: RiShieldUserLine,
+			icon: 'ri-shield-user-line',
 			label: 'Roles',
 			value: String(api.role_count),
 			detail: api.enforce_roles ? 'Granting its scopes' : 'Not checked: role-based access off',
 			tab: 'settings'
 		},
 		{
-			icon: RiTimerLine,
+			icon: 'ri-timer-line',
 			label: 'Access tokens',
 			value: lifetimeLabel(api.token_lifetime),
 			detail: `${api.signing_algorithm} · refresh tokens ${api.allow_offline_access ? 'allowed' : 'off'}`,
@@ -77,7 +69,9 @@
 <div class="stats">
 	{#each stats as stat (stat.label)}
 		<button type="button" class="stat" onclick={() => onTab(stat.tab)}>
-			<span class="stat-label"><Icon icon={stat.icon} size="0.875rem" />{stat.label}</span>
+			<span class="stat-label"
+				><i class={stat.icon} style:font-size="14px" aria-hidden="true"></i>{stat.label}</span
+			>
 			<strong>{stat.value}</strong>
 			<small>{stat.detail}</small>
 		</button>
@@ -106,7 +100,7 @@
 			/>
 			<Input
 				label="JWKS URI"
-				icon={RiKey2Line}
+				icon="ri-key-2-line"
 				value={api.jwks_uri}
 				readOnly
 				copyable
@@ -122,26 +116,26 @@
 		>
 			<ol class="checks">
 				<li>
-					<Icon icon={RiCheckLine} size="0.875rem" />
+					<i class="ri-check-line" style:font-size="14px" aria-hidden="true"></i>
 					<span>
 						The signature verifies with a key from the JWKS URI, and <code>alg</code> is
 						<code>{api.signing_algorithm}</code>. Never accept <code>none</code> or HS256.
 					</span>
 				</li>
 				<li>
-					<Icon icon={RiCheckLine} size="0.875rem" />
+					<i class="ri-check-line" style:font-size="14px" aria-hidden="true"></i>
 					<span><code>typ</code> is <code>at+jwt</code>, so an ID token is refused.</span>
 				</li>
 				<li>
-					<Icon icon={RiCheckLine} size="0.875rem" />
+					<i class="ri-check-line" style:font-size="14px" aria-hidden="true"></i>
 					<span><code>iss</code> is the issuer and <code>aud</code> contains the identifier.</span>
 				</li>
 				<li>
-					<Icon icon={RiCheckLine} size="0.875rem" />
+					<i class="ri-check-line" style:font-size="14px" aria-hidden="true"></i>
 					<span><code>exp</code> has not passed, allowing a minute of clock skew at most.</span>
 				</li>
 				<li>
-					<Icon icon={RiCheckLine} size="0.875rem" />
+					<i class="ri-check-line" style:font-size="14px" aria-hidden="true"></i>
 					<span><code>scope</code> contains the scope the endpoint needs.</span>
 				</li>
 			</ol>
@@ -233,7 +227,7 @@
 		line-height: 1.5;
 	}
 
-	.checks li :global(svg) {
+	.checks li :global(i) {
 		flex-shrink: 0;
 		margin-top: 3px;
 		color: var(--color-success);

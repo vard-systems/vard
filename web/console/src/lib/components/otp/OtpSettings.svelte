@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
-	import { RiGitBranchLine, RiHashtag, RiShieldKeyholeLine, RiTimerLine } from '#lib/icons.js';
 	import { otpApi, type OTPResponse, type OTPSettingsInput } from '#lib/api/index.js';
 	import {
 		Alert,
@@ -116,7 +115,7 @@
 		</Alert>
 	{/if}
 
-	<Panel title="The code" icon={RiHashtag}>
+	<Panel title="The code" icon="ri-hashtag">
 		<FieldGrid spacing="comfortable">
 			<Input
 				label="Digits"
@@ -142,7 +141,7 @@
 		{/if}
 	</Panel>
 
-	<Panel title="Timing" icon={RiTimerLine}>
+	<Panel title="Timing" icon="ri-timer-line">
 		<FieldGrid spacing="comfortable">
 			<Input
 				label="Valid for"
@@ -167,7 +166,7 @@
 	</Panel>
 
 	{#if settings.flows.length > 0}
-		<Panel title="Flows that ask for a code" icon={RiGitBranchLine} flush>
+		<Panel title="Flows that ask for a code" icon="ri-git-branch-line" flush>
 			{#snippet meta()}
 				<Tag small>{settings.flows.length}</Tag>
 			{/snippet}
@@ -176,7 +175,7 @@
 				{#each settings.flows as flow (flow.id)}
 					<ListItem title={flow.name} description={flow.slug}>
 						{#snippet lead()}
-							<Thumb icon={RiShieldKeyholeLine} />
+							<Thumb icon="ri-shield-keyhole-line" />
 						{/snippet}
 
 						{#snippet end()}

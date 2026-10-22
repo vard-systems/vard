@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { RiDeleteBinLine } from '#lib/icons.js';
 	import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 	import { countOf } from '#lib/utils/format.js';
 	import {
 		Alert,
 		Button,
 		FormSection,
-		Icon,
 		Input,
 		Note,
 		Select,
@@ -230,7 +228,7 @@
 			{#if removable}
 				<div>
 					<Button variant="subtle" colorPalette="danger" size="sm" onclick={() => onRemove(step)}>
-						<Icon icon={RiDeleteBinLine} />
+						<i class="ri-delete-bin-line" aria-hidden="true"></i>
 						Remove step
 					</Button>
 				</div>

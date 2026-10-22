@@ -1,13 +1,6 @@
 <script lang="ts">
-	import {
-		RiBuilding2Line,
-		RiGlobalLine,
-		RiGroupLine,
-		RiShieldKeyholeLine,
-		RiToggleLine
-	} from '#lib/icons.js';
 	import type { SSOConnection } from '#lib/api/index.js';
-	import { Badge, Code, type Column, DataTable, Icon, Tag } from '#lib/components/ui/index.js';
+	import { Badge, Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
 
 	type Props = {
 		connections: SSOConnection[];
@@ -18,10 +11,10 @@
 	let { connections, onOpen, empty }: Props = $props();
 
 	const columns = $derived<Column[]>([
-		{ key: 'connection', label: 'Connection', icon: RiBuilding2Line, min: '14rem' },
-		{ key: 'domains', label: 'Domains', icon: RiGlobalLine, min: '14rem' },
-		{ key: 'users', label: 'Users', icon: RiGroupLine, min: '7rem' },
-		{ key: 'status', label: 'Status', icon: RiToggleLine, min: '14rem' }
+		{ key: 'connection', label: 'Connection', min: '14rem', grow: true },
+		{ key: 'domains', label: 'Domains', min: '14rem' },
+		{ key: 'users', label: 'Users', min: '7rem' },
+		{ key: 'status', label: 'Status', min: '14rem' }
 	]);
 </script>
 
@@ -29,7 +22,9 @@
 	{#snippet row(connection)}
 		<td>
 			<span class="connection">
-				<span class="mark"><Icon icon={RiShieldKeyholeLine} size="1.05rem" /></span>
+				<span class="mark"
+					><i class="ri-shield-keyhole-line" style:font-size="17px" aria-hidden="true"></i></span
+				>
 				<span class="names">
 					<strong>{connection.name}</strong>
 					<span class="protocol">

@@ -3,7 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiLinksLine } from '#lib/icons.js';
 	import { apisApi, type SigningAlgorithm } from '#lib/api/index.js';
 	import {
 		Button,
@@ -112,7 +111,7 @@
 
 		<Input
 			label="Identifier"
-			icon={RiLinksLine}
+			icon="ri-links-line"
 			bind:value={identifier}
 			placeholder="https://api.example.com"
 			hint="The aud claim of its access tokens. Unique, and it cannot change later: every service validating tokens compares against it. A URL is usual; it does not have to resolve."

@@ -1,7 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { RiCloseLine } from '#lib/icons.js';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		title: string;
@@ -14,7 +12,7 @@
 
 <button type="button" class="chip" {title} onclick={onclear}>
 	<span>{@render children()}</span>
-	<Icon icon={RiCloseLine} />
+	<i class="ri-close-line" aria-hidden="true"></i>
 </button>
 
 <style>

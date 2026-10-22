@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiRefreshLine } from '#lib/icons.js';
 	import { BRAND } from '#lib/brand.js';
 	import { IconButton, PageContainer, PageHeader } from '#lib/components/ui/index.js';
 	import OtpSettings from '#lib/components/otp/OtpSettings.svelte';
@@ -22,7 +21,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Reload these settings"
 			onclick={() => queryClient.invalidateQueries({ queryKey: keys.otp.settings })}
 		/>

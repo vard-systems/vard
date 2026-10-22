@@ -3,7 +3,7 @@
 	import { notify } from '#lib/toast.svelte.js';
 	import { refreshAll } from '$app/navigation';
 	import { account } from '#lib/api/index.js';
-	import { AppMark, Button, Icon, Panel } from '#lib/components/index.js';
+	import { AppMark, Button, Panel } from '#lib/components/index.js';
 	import { formatDate, timeAgo } from '#lib/utils/format.js';
 	import type { PageProps } from './$types';
 
@@ -67,7 +67,7 @@
 					<ul>
 						{#each app.scopes as scope (scope)}
 							<li>
-								<Icon name="check" size="1rem" />
+								<i class="ri-check-line" style:font-size="16px" aria-hidden="true"></i>
 								{scopeKeys[scope] ? t(scopeKeys[scope]) : scope}
 							</li>
 						{/each}
@@ -81,7 +81,7 @@
 						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 						<a href={app.website_url} target="_blank" rel="noopener noreferrer">
 							{t('apps.visit')}
-							<Icon name="external" size="0.8rem" />
+							<i class="ri-external-link-line" style:font-size="13px" aria-hidden="true"></i>
 						</a>
 					{/if}
 				</p>
@@ -151,7 +151,7 @@
 		gap: var(--space-2);
 	}
 
-	li :global(svg) {
+	li :global(i) {
 		color: var(--color-success);
 	}
 

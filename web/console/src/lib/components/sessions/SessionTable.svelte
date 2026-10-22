@@ -1,14 +1,6 @@
 <script lang="ts">
-	import {
-		RiComputerLine,
-		RiGlobalLine,
-		RiLoginBoxLine,
-		RiLogoutBoxRLine,
-		RiTimeLine,
-		RiUserLine
-	} from '#lib/icons.js';
 	import type { UserSessionRecord } from '#lib/api/index.js';
-	import { Button, DataTable, Icon, type Column } from '#lib/components/ui/index.js';
+	import { Button, DataTable, type Column } from '#lib/components/ui/index.js';
 	import { describeUserAgent, formatDateTime, formatRelative } from '#lib/utils/format.js';
 
 	type Props = {
@@ -23,11 +15,11 @@
 	let { sessions, empty, onEnd, onSignOutUser, onUser, ending }: Props = $props();
 
 	const columns: Column[] = $derived([
-		{ key: 'user', label: 'User', icon: RiUserLine, min: '16rem' },
-		{ key: 'device', label: 'Device', icon: RiComputerLine, min: '12rem' },
-		{ key: 'ip', label: 'IP address', icon: RiGlobalLine, min: '8rem' },
-		{ key: 'signed_in', label: 'Signed in', icon: RiLoginBoxLine, min: '9rem' },
-		{ key: 'expires', label: 'Expires', icon: RiTimeLine, min: '11rem' },
+		{ key: 'user', label: 'User', min: '16rem', grow: true },
+		{ key: 'device', label: 'Device', min: '12rem' },
+		{ key: 'ip', label: 'IP address', min: '8rem' },
+		{ key: 'signed_in', label: 'Signed in', min: '9rem' },
+		{ key: 'expires', label: 'Expires', min: '11rem' },
 		...(onEnd ? [{ key: 'actions', label: '', min: '16rem', align: 'end' as const }] : [])
 	]);
 </script>
@@ -76,7 +68,7 @@
 					title={`End every session ${session.user.email} has and revoke their applications' tokens`}
 					onclick={() => onSignOutUser(session)}
 				>
-					<Icon icon={RiLogoutBoxRLine} />
+					<i class="ri-logout-box-r-line" aria-hidden="true"></i>
 					Sign out everywhere
 				</Button>
 			</td>

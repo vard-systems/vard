@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { RiAddLine } from '#lib/icons.js';
 	import type { Language, LanguageList, LocaleApp } from '#lib/api/index.js';
-	import { Button, Icon, SearchInput, ShowMore, Toolbar } from '#lib/components/ui/index.js';
+	import { Button, SearchInput, ShowMore, Toolbar } from '#lib/components/ui/index.js';
 	import { firstPage, languagesOptions, LIST_PAGE_SIZE } from '#lib/query/index.js';
 	import LanguageDialog from './LanguageDialog.svelte';
 	import LanguageTable from './LanguageTable.svelte';
@@ -65,7 +64,7 @@
 
 			{#if canWrite}
 				<Button onclick={() => (creating = true)}>
-					<Icon icon={RiAddLine} />
+					<i class="ri-add-line" aria-hidden="true"></i>
 					New language
 				</Button>
 			{/if}

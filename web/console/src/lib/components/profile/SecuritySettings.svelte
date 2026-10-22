@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { RiComputerLine, RiShieldKeyholeLine } from '#lib/icons.js';
 	import { adminApi, messageOf, mfaApi, type AdminSession } from '#lib/api/index.js';
 	import RecoveryCodes from '#lib/components/mfa/RecoveryCodes.svelte';
 	import TotpSetup from '#lib/components/mfa/TotpSetup.svelte';
@@ -131,7 +130,7 @@
 	{#if mode === 'enrolling' || mode === 'replacing'}
 		<Panel
 			title={mode === 'replacing' ? 'Replace your authenticator' : 'Set up an authenticator'}
-			icon={RiShieldKeyholeLine}
+			icon="ri-shield-keyhole-line"
 		>
 			<TotpSetup
 				replacing={mode === 'replacing'}
@@ -140,13 +139,13 @@
 			/>
 		</Panel>
 	{:else if mode === 'codes'}
-		<Panel title="New recovery codes" icon={RiShieldKeyholeLine}>
+		<Panel title="New recovery codes" icon="ri-shield-keyhole-line">
 			<RecoveryCodes codes={newCodes} onDone={backToReading} />
 		</Panel>
 	{:else}
 		{#if error}<Alert>{error}</Alert>{/if}
 
-		<Panel title="Two-factor sign-in" icon={RiShieldKeyholeLine} flush>
+		<Panel title="Two-factor sign-in" icon="ri-shield-keyhole-line" flush>
 			{#snippet meta()}
 				{#if loading}
 					<Tag>Loading</Tag>
@@ -177,7 +176,7 @@
 						title="Authenticator"
 						description={mfa.confirmed_at ? `Set up ${formatRelative(mfa.confirmed_at)}` : 'Set up'}
 					>
-						{#snippet lead()}<Thumb icon={RiShieldKeyholeLine} />{/snippet}
+						{#snippet lead()}<Thumb icon="ri-shield-keyhole-line" />{/snippet}
 						{#snippet end()}
 							<Button size="sm" variant="subtle" onclick={() => (mode = 'replacing')}>
 								Replace
@@ -253,7 +252,7 @@
 			{/if}
 		</Panel>
 
-		<Panel title="Sessions" icon={RiComputerLine} flush>
+		<Panel title="Sessions" icon="ri-computer-line" flush>
 			{#snippet meta()}
 				{#if loading}
 					<Tag>Loading</Tag>

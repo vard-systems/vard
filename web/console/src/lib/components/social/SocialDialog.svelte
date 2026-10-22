@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiExternalLinkLine } from '#lib/icons.js';
 	import {
 		socialApi,
 		type SocialKind,
@@ -16,7 +15,6 @@
 		FullscreenDialog,
 		FieldGrid,
 		FormSection,
-		Icon,
 		Input,
 		Select,
 		SwitchField,
@@ -240,7 +238,7 @@
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a href={spec.docs} target="_blank" rel="noopener noreferrer">
 					Register this server with {spec.label}
-					<Icon icon={RiExternalLinkLine} size="0.8rem" />
+					<i class="ri-external-link-line" style:font-size="13px" aria-hidden="true"></i>
 				</a>
 			</p>
 		{/if}

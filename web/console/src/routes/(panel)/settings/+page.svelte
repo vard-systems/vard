@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import { RiBuildingLine, RiRefreshLine, RiTranslate2 } from '#lib/icons.js';
 	import { BRAND } from '#lib/brand.js';
 	import { IconButton, PageContainer, PageHeader, Tabs } from '#lib/components/ui/index.js';
 	import LanguageSettings from '#lib/components/languages/LanguageSettings.svelte';
@@ -15,9 +14,9 @@
 
 	const tabs = $derived([
 		...(data.organization
-			? [{ value: 'organization', label: 'Organization', icon: RiBuildingLine }]
+			? [{ value: 'organization', label: 'Organization', icon: 'ri-building-line' }]
 			: []),
-		...(data.languages ? [{ value: 'languages', label: 'Languages', icon: RiTranslate2 }] : [])
+		...(data.languages ? [{ value: 'languages', label: 'Languages', icon: 'ri-translate-2' }] : [])
 	]);
 
 	// svelte-ignore state_referenced_locally
@@ -36,7 +35,7 @@
 	description="Who this installation belongs to, and the languages its sign-in pages speak."
 >
 	{#snippet secondary()}
-		<IconButton icon={RiRefreshLine} label="Reload these settings" onclick={reload} />
+		<IconButton icon="ri-refresh-line" label="Reload these settings" onclick={reload} />
 	{/snippet}
 </PageHeader>
 

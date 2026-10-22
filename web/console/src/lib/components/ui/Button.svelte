@@ -2,7 +2,6 @@
 	import type { Snippet } from 'svelte';
 	import type { HTMLButtonAttributes } from 'svelte/elements';
 	import type { ControlProps } from './control';
-	import Icon from './Icon.svelte';
 
 	type Props = HTMLButtonAttributes &
 		ControlProps & {
@@ -35,7 +34,7 @@
 	{#if loading}
 		<span class="spinner" aria-hidden="true"></span>
 	{:else if icon}
-		<Icon {icon} />
+		<i class={icon} aria-hidden="true"></i>
 	{/if}
 
 	{@render children()}

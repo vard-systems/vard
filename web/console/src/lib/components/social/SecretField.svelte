@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiEyeLine, RiEyeOffLine, RiPencilLine } from '#lib/icons.js';
 	import { ApiError, socialApi } from '#lib/api/index.js';
-	import { Button, CopyButton, Icon, Input, Textarea } from '#lib/components/ui/index.js';
+	import { Button, CopyButton, Input, Textarea } from '#lib/components/ui/index.js';
 
 	type Props = {
 		providerId?: string | null;
@@ -106,18 +105,18 @@
 			{#if showing === 'revealed'}
 				<span class="copy"><CopyButton value={secret} {label} /></span>
 				<Button size="sm" variant="subtle" onclick={hide}>
-					<Icon icon={RiEyeOffLine} />
+					<i class="ri-eye-off-line" aria-hidden="true"></i>
 					Hide
 				</Button>
 			{:else}
 				<Button size="sm" variant="subtle" {loading} disabled={loading} onclick={reveal}>
-					<Icon icon={RiEyeLine} />
+					<i class="ri-eye-line" aria-hidden="true"></i>
 					Reveal
 				</Button>
 			{/if}
 
 			<Button size="sm" variant="subtle" onclick={replace}>
-				<Icon icon={RiPencilLine} />
+				<i class="ri-pencil-line" aria-hidden="true"></i>
 				Replace
 			</Button>
 		</div>

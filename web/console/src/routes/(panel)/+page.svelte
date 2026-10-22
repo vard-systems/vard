@@ -1,18 +1,6 @@
 <script lang="ts">
 	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import {
-		RiAppsLine,
-		RiBarChartBoxLine,
-		RiCodeBoxLine,
-		RiComputerLine,
-		RiFileList3Line,
-		RiGroupLine,
-		RiHistoryLine,
-		RiRefreshLine,
-		RiShieldCheckLine,
-		RiUserStarLine
-	} from '#lib/icons.js';
 	import type { OverviewDays } from '#lib/api/index.js';
 	import { countOf } from '#lib/utils/format.js';
 	import { BRAND } from '#lib/brand.js';
@@ -23,7 +11,6 @@
 	import TopActors from '#lib/components/activity/TopActors.svelte';
 	import SessionList from '#lib/components/profile/SessionList.svelte';
 	import {
-		Icon,
 		IconButton,
 		LinkButton,
 		Note,
@@ -133,7 +120,7 @@
 	>
 		{#snippet secondary()}
 			<IconButton
-				icon={RiRefreshLine}
+				icon="ri-refresh-line"
 				label="Refresh"
 				onclick={refresh}
 				loading={refreshing}
@@ -145,7 +132,7 @@
 			{#if overview}
 				<SegmentedControl label="Range" options={ranges} value={`${data.days}`} onChange={pick} />
 				<LinkButton href={resolve('/(panel)/logs')} variant="subtle">
-					<Icon icon={RiFileList3Line} />
+					<i class="ri-file-list-3-line" aria-hidden="true"></i>
 					Logs
 				</LinkButton>
 			{/if}
@@ -158,7 +145,7 @@
 			<StatCard
 				label="Users"
 				value={counts.users}
-				icon={RiGroupLine}
+				icon="ri-group-line"
 				note={notes.users}
 				href={can(admin, 'users.read') ? resolve('/(panel)/users') : undefined}
 			/>
@@ -166,7 +153,7 @@
 			<StatCard
 				label="Applications"
 				value={counts.applications}
-				icon={RiAppsLine}
+				icon="ri-apps-line"
 				note={notes.applications}
 				href={canAnywhere(admin, 'applications.read')
 					? resolve('/(panel)/applications')
@@ -176,7 +163,7 @@
 			<StatCard
 				label="APIs"
 				value={counts.apis}
-				icon={RiCodeBoxLine}
+				icon="ri-code-box-line"
 				note={notes.apis}
 				href={can(admin, 'apis.read') ? resolve('/(panel)/apis') : undefined}
 			/>
@@ -184,7 +171,7 @@
 			<StatCard
 				label="Active sessions"
 				value={counts.active_sessions}
-				icon={RiComputerLine}
+				icon="ri-computer-line"
 				note={notes.sessions}
 				tone={sessionsTone}
 				href={admin.is_super_admin ? resolve('/(panel)/admins') : undefined}
@@ -192,7 +179,7 @@
 		</div>
 
 		<div class="row">
-			<Panel title="Activity · last {data.days} days" icon={RiBarChartBoxLine}>
+			<Panel title="Activity · last {data.days} days" icon="ri-bar-chart-box-line">
 				{#snippet meta()}
 					<Tag>{countOf(totals.events, 'event')}</Tag>
 					{#if totals.refused > 0}
@@ -202,7 +189,7 @@
 				<ActivityChart daily={overview.daily} href={links.day} />
 			</Panel>
 
-			<Panel title="Sign-ins · last {data.days} days" icon={RiShieldCheckLine}>
+			<Panel title="Sign-ins · last {data.days} days" icon="ri-shield-check-line">
 				<SignInHealth
 					signIns={overview.sign_ins}
 					locked={counts.locked_admins}
@@ -212,7 +199,7 @@
 		</div>
 
 		<div class="row">
-			<Panel title="Recent activity" icon={RiHistoryLine} flush>
+			<Panel title="Recent activity" icon="ri-history-line" flush>
 				{#snippet meta()}
 					<LinkButton href={resolve('/(panel)/logs')} variant="ghost" size="sm">
 						View all
@@ -222,18 +209,18 @@
 			</Panel>
 
 			<div class="side">
-				<Panel title="Most active · last {data.days} days" icon={RiUserStarLine} flush>
+				<Panel title="Most active · last {data.days} days" icon="ri-user-star-line" flush>
 					<TopActors actors={overview.top_actors} href={links.actor} />
 				</Panel>
 
-				<Panel title="Your sessions" icon={RiComputerLine} flush>
+				<Panel title="Your sessions" icon="ri-computer-line" flush>
 					<SessionList sessions={data.sessions} limit={4} />
 				</Panel>
 			</div>
 		</div>
 	{:else}
 		<div class="narrow">
-			<Panel title="Your sessions" icon={RiComputerLine} flush>
+			<Panel title="Your sessions" icon="ri-computer-line" flush>
 				<SessionList sessions={data.sessions} limit={8} />
 			</Panel>
 

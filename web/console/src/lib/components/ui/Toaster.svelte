@@ -1,19 +1,18 @@
 <script lang="ts">
 	import { Toast, Toaster } from '@ark-ui/svelte/toast';
-	import { RiCheckboxCircleFill, RiCloseLine, RiErrorWarningFill } from '#lib/icons.js';
-	import Icon from './Icon.svelte';
 	import { toaster } from './toast';
 </script>
 
 <Toaster {toaster}>
 	{#snippet children(toast)}
 		<Toast.Root class={toast().description ? 'toast detailed' : 'toast'}>
-			<span class="glyph"
-				><Icon
-					icon={toast().type === 'success' ? RiCheckboxCircleFill : RiErrorWarningFill}
-					size="1.125rem"
-				/></span
-			>
+			<span class="glyph">
+				{#if toast().type === 'success'}
+					<i class="ri-checkbox-circle-fill" style:font-size="18px" aria-hidden="true"></i>
+				{:else}
+					<i class="ri-error-warning-fill" style:font-size="18px" aria-hidden="true"></i>
+				{/if}
+			</span>
 			<div class="message">
 				<Toast.Title class="title">{toast().title}</Toast.Title>
 				{#if toast().description}
@@ -21,7 +20,7 @@
 				{/if}
 			</div>
 			<Toast.CloseTrigger class="close" aria-label="Dismiss">
-				<Icon icon={RiCloseLine} size="0.875rem" />
+				<i class="ri-close-line" style:font-size="14px" aria-hidden="true"></i>
 			</Toast.CloseTrigger>
 		</Toast.Root>
 	{/snippet}

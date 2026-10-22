@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { RiRefreshLine } from '#lib/icons.js';
 	import type { API, APILogEntry } from '#lib/api/index.js';
 	import { Alert, Badge, IconButton, Note } from '#lib/components/ui/index.js';
 	import { apiLogsOptions } from '#lib/query/index.js';
@@ -42,7 +41,7 @@
 		here once the token endpoint issues tokens.
 	</p>
 	<IconButton
-		icon={RiRefreshLine}
+		icon="ri-refresh-line"
 		label="Refresh the log"
 		size="sm"
 		loading={logs.isFetching}

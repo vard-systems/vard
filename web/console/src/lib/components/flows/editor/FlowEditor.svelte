@@ -2,20 +2,12 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { SvelteFlowProvider } from '@xyflow/svelte';
-	import {
-		RiCheckLine,
-		RiDeleteBinLine,
-		RiDownload2Line,
-		RiFileCopyLine,
-		RiArrowGoBackLine
-	} from '#lib/icons.js';
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { flowsApi, type LoginFlow, type LoginStep, type LoginStepSpec } from '#lib/api/index.js';
 	import {
 		Alert,
 		Button,
 		ConfirmDialog,
-		Icon,
 		IconButton,
 		PageHeader,
 		Tag,
@@ -200,13 +192,18 @@
 
 		{#snippet secondary()}
 			<IconButton
-				icon={RiDownload2Line}
+				icon="ri-download-2-line"
 				label="Export as JSON"
 				onclick={() =>
 					download(`${draft.slug || 'flow'}.flow.json`, JSON.stringify(toFile(draft), null, 2))}
 			/>
 			{#if editable && !creating}
-				<IconButton icon={RiFileCopyLine} label="Duplicate" onclick={duplicate} disabled={busy} />
+				<IconButton
+					icon="ri-file-copy-line"
+					label="Duplicate"
+					onclick={duplicate}
+					disabled={busy}
+				/>
 			{/if}
 		{/snippet}
 
@@ -214,17 +211,17 @@
 			{#if editable}
 				{#if !creating && !flow?.is_default}
 					<Button variant="subtle" colorPalette="danger" onclick={() => (confirmingDelete = true)}
-						><Icon icon={RiDeleteBinLine} />Delete</Button
+						><i class="ri-delete-bin-line" aria-hidden="true"></i>Delete</Button
 					>
 				{/if}
 				{#if dirty && !creating}
 					<Button variant="subtle" onclick={discard} disabled={busy}>
-						<Icon icon={RiArrowGoBackLine} />
+						<i class="ri-arrow-go-back-line" aria-hidden="true"></i>
 						Discard changes
 					</Button>
 				{/if}
 				<Button onclick={save} loading={busy} disabled={!dirty || problems.length > 0}>
-					<Icon icon={RiCheckLine} />
+					<i class="ri-check-line" aria-hidden="true"></i>
 					{creating ? 'Create flow' : 'Save changes'}
 				</Button>
 			{/if}

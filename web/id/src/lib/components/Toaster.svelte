@@ -2,11 +2,14 @@
 	import { fly } from 'svelte/transition';
 	import { useTranslator } from '#lib/i18n/index.js';
 	import { dismiss, pause, resume, toasts, type ToastTone } from '#lib/toast.svelte.js';
-	import Icon, { type IconName } from './Icon.svelte';
+	import type { IconName } from './icon';
 
 	const t = useTranslator();
 
-	const icons: Record<ToastTone, IconName> = { success: 'success', danger: 'alert' };
+	const icons: Record<ToastTone, IconName> = {
+		success: 'ri-checkbox-circle-line',
+		danger: 'ri-error-warning-line'
+	};
 
 	const motion =
 		typeof window !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -16,6 +19,7 @@
 
 <section class="toaster" aria-live="polite" aria-label={t('toast.region')}>
 	{#each toasts as toast (toast.id)}
+		{@const toneIcon = icons[toast.tone]}
 		<div
 			class="toast"
 			role={toast.tone === 'danger' ? 'alert' : 'status'}
@@ -26,7 +30,7 @@
 			onfocusin={() => pause(toast.id)}
 			onfocusout={() => resume(toast.id)}
 		>
-			<span class="glyph"><Icon name={icons[toast.tone]} /></span>
+			<span class="glyph"><i class={toneIcon} aria-hidden="true"></i></span>
 			<p class="message">
 				<span class="title">{toast.title}</span>
 				{#if toast.description}
@@ -39,7 +43,7 @@
 				aria-label={t('action.dismiss')}
 				onclick={() => dismiss(toast.id)}
 			>
-				<Icon name="close" size="1rem" />
+				<i class="ri-close-line" style:font-size="16px" aria-hidden="true"></i>
 			</button>
 		</div>
 	{/each}

@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiAddLine, RiDeleteBinLine } from '#lib/icons.js';
 	import type { Role, SSORoleMapping } from '#lib/api/index.js';
-	import { Button, Icon, IconButton, Input, Note, Select } from '#lib/components/ui/index.js';
+	import { Button, IconButton, Input, Note, Select } from '#lib/components/ui/index.js';
 	import { resolve } from '$app/paths';
 
 	type Props = {
@@ -46,7 +45,11 @@
 				<Input label="Role" value={mapping.role_id} readOnly />
 			{/if}
 			{#if !readOnly}
-				<IconButton icon={RiDeleteBinLine} label="Remove mapping" onclick={() => remove(index)} />
+				<IconButton
+					icon="ri-delete-bin-line"
+					label="Remove mapping"
+					onclick={() => remove(index)}
+				/>
 			{/if}
 		</div>
 	{/each}
@@ -61,7 +64,7 @@
 	{:else if !readOnly}
 		<div>
 			<Button variant="subtle" size="sm" onclick={add}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				Add mapping
 			</Button>
 		</div>

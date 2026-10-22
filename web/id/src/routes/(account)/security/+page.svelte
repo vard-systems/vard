@@ -3,7 +3,7 @@
 	import { notify } from '#lib/toast.svelte.js';
 	import { refreshAll } from '$app/navigation';
 	import { account } from '#lib/api/index.js';
-	import { Button, Icon, Panel, PasswordField } from '#lib/components/index.js';
+	import { Button, Panel, PasswordField } from '#lib/components/index.js';
 	import { describeDevice, formatDate, timeAgo } from '#lib/utils/format.js';
 	import type { PageProps } from './$types';
 
@@ -106,7 +106,7 @@
 		<ul class="sessions">
 			{#each data.sessions as session (session.id)}
 				<li>
-					<span class="device"><Icon name="device" /></span>
+					<span class="device"><i class="ri-computer-line" aria-hidden="true"></i></span>
 					<div class="details">
 						<strong>
 							{describeDevice(session.user_agent, t)}

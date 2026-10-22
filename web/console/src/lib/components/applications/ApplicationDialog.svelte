@@ -2,13 +2,6 @@
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import {
-		RiArrowRightLine,
-		RiCodeBoxLine,
-		RiRefreshLine,
-		RiSettings3Line,
-		RiShieldCheckLine
-	} from '#lib/icons.js';
-	import {
 		applicationsApi,
 		type Admin,
 		type Application,
@@ -25,7 +18,6 @@
 		FullscreenDialog,
 		FieldGrid,
 		FormSection,
-		Icon,
 		Input,
 		Select,
 		type SelectOption,
@@ -327,7 +319,7 @@
 									onclick={() => (confirmingRotate = true)}
 									disabled={saving}
 								>
-									<Icon icon={RiRefreshLine} />
+									<i class="ri-refresh-line" aria-hidden="true"></i>
 									Rotate secret
 								</Button>
 							</div>
@@ -491,7 +483,7 @@
 						<a class="link" href={rolesHref}>
 							Manage {current.role_count}
 							{current.role_count === 1 ? 'role' : 'roles'}
-							<Icon icon={RiArrowRightLine} size="0.875rem" />
+							<i class="ri-arrow-right-line" style:font-size="14px" aria-hidden="true"></i>
 						</a>
 					{/if}
 				{/snippet}
@@ -537,7 +529,7 @@
 
 	{#if current}
 		<div class="summary">
-			<span class="mark"><Icon icon={kind.icon} size="1.25rem" /></span>
+			<span class="mark"><i class={kind.icon} style:font-size="20px" aria-hidden="true"></i></span>
 			<div class="summary-text">
 				<strong>{kind.label}</strong>
 				<span>{kind.public ? 'Public client' : 'Confidential client'}</span>
@@ -551,9 +543,9 @@
 	{#if current}
 		<Tabs
 			tabs={[
-				{ value: 'settings', label: 'Settings', icon: RiSettings3Line },
-				{ value: 'apis', label: 'API access', icon: RiCodeBoxLine },
-				{ value: 'preview', label: 'Token preview', icon: RiShieldCheckLine }
+				{ value: 'settings', label: 'Settings', icon: 'ri-settings-3-line' },
+				{ value: 'apis', label: 'API access', icon: 'ri-code-box-line' },
+				{ value: 'preview', label: 'Token preview', icon: 'ri-shield-check-line' }
 			]}
 			bind:value={tab}
 			label="Application sections"
@@ -578,7 +570,7 @@
 	title="Rotate the client secret?"
 	description="A new secret is made and shown once. The current one stops working at once, so anything still using it can no longer ask for tokens until it is given the new one."
 	tone="warning"
-	icon={RiRefreshLine}
+	icon="ri-refresh-line"
 	confirmLabel="Rotate now"
 	busy={saving}
 	onConfirm={rotateNow}

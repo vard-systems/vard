@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import type { HTMLTextareaAttributes } from 'svelte/elements';
 	import { Field as ArkField } from '@ark-ui/svelte/field';
 	import Field from './Field.svelte';
@@ -7,7 +7,7 @@
 	type Props = Omit<HTMLTextareaAttributes, 'value'> & {
 		label: string;
 		value: string;
-		icon?: IconData;
+		icon?: IconName;
 		hint?: string;
 		error?: string;
 		required?: boolean;

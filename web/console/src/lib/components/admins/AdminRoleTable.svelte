@@ -1,12 +1,5 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import {
-		RiAdminLine,
-		RiFileTextLine,
-		RiKey2Line,
-		RiLockLine,
-		RiShieldKeyholeLine
-	} from '#lib/icons.js';
 	import type { AdminRole } from '#lib/api/index.js';
 	import { Badge, Code, type Column, DataTable } from '#lib/components/ui/index.js';
 
@@ -20,11 +13,11 @@
 	let { roles, onOpen, selected, onSelect }: Props = $props();
 
 	const columns: Column[] = [
-		{ key: 'id', label: 'ID', icon: RiKey2Line, min: '10rem' },
-		{ key: 'name', label: 'Name', icon: RiShieldKeyholeLine, min: '10rem' },
-		{ key: 'description', label: 'Description', icon: RiFileTextLine, min: '14rem' },
-		{ key: 'permissions', label: 'Permissions', icon: RiLockLine, min: '16rem' },
-		{ key: 'admins', label: 'Administrators', icon: RiAdminLine, min: '8rem' }
+		{ key: 'id', label: 'ID', min: '10rem' },
+		{ key: 'name', label: 'Name', min: '10rem' },
+		{ key: 'description', label: 'Description', min: '14rem', grow: true },
+		{ key: 'permissions', label: 'Permissions', min: '16rem' },
+		{ key: 'admins', label: 'Administrators', min: '8rem' }
 	];
 
 	const SHOWN = 3;

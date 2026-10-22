@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiShieldKeyholeLine } from '#lib/icons.js';
 	import {
 		adminsApi,
 		type AdminPermission,
@@ -115,7 +114,7 @@
 		<FormSection title="Role" description="What administrators holding this role are called.">
 			<Input
 				label="Name"
-				icon={RiShieldKeyholeLine}
+				icon="ri-shield-keyhole-line"
 				bind:value={name}
 				autocomplete="off"
 				autocapitalize="none"

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Icon from './Icon.svelte';
 
 	type Props = {
 		tone?: 'danger' | 'success' | 'info' | 'warning';
@@ -9,11 +8,17 @@
 
 	let { tone = 'danger', children }: Props = $props();
 
-	const icon = $derived(tone === 'success' ? 'success' : tone === 'info' ? 'info' : 'alert');
+	const toneIcon = $derived(
+		tone === 'success'
+			? 'ri-checkbox-circle-line'
+			: tone === 'info'
+				? 'ri-information-line'
+				: 'ri-error-warning-line'
+	);
 </script>
 
 <div class="alert {tone}" role={tone === 'danger' ? 'alert' : 'status'}>
-	<Icon name={icon} />
+	<i class={toneIcon} aria-hidden="true"></i>
 	<div class="body">{@render children()}</div>
 </div>
 
@@ -31,7 +36,7 @@
 		line-height: 1.5;
 	}
 
-	.alert :global(svg) {
+	.alert :global(i) {
 		margin-top: 1px;
 		color: var(--tone);
 	}

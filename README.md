@@ -150,9 +150,10 @@ scripts/                   what the Makefile runs
 - The sign-in pages bundle Roboto and Roboto Mono, and the console Google Sans
   Code and Poppins, all under the SIL Open Font License 1.1 (the licence is
   beside each font).
-- The console's icons are [Remix Icon](https://remixicon.com), under the
-  Apache License 2.0; `make generate` copies the ones it uses from the
-  `remixicon` package.
+- Both apps' icons are the [Remix Icon](https://remixicon.com) font, version
+  4.8.0, under the Apache License 2.0 (later versions use the Remix Icon
+  License); the sign-in providers' marks in it remain their owners'
+  trademarks.
 - **The console also bundles Chirp, X's proprietary typeface, which is not open
   source**: replace it, or confirm you have a licence, before distributing the
   console publicly.

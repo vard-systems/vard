@@ -1,30 +1,19 @@
-import {
-	RiAtLine,
-	RiCheckboxCircleLine,
-	RiFileAddLine,
-	RiFileTextLine,
-	RiKey2Line,
-	RiMailLine,
-	RiShareLine,
-	RiShieldCheckLine,
-	RiTimerFlashLine,
-	type IconData
-} from '#lib/icons.js';
+import type { IconName } from '#lib/components/ui/index.js';
 import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
 import { BRAND } from '#lib/brand.js';
 
-const marks: Record<LoginStep, IconData> = {
-	identifier: RiAtLine,
-	password: RiKey2Line,
-	social: RiShareLine,
-	email_code: RiMailLine,
-	totp: RiTimerFlashLine,
-	terms: RiFileTextLine,
-	consent: RiCheckboxCircleLine
+const marks: Record<LoginStep, IconName> = {
+	identifier: 'ri-at-line',
+	password: 'ri-key-2-line',
+	social: 'ri-share-line',
+	email_code: 'ri-mail-line',
+	totp: 'ri-timer-flash-line',
+	terms: 'ri-file-text-line',
+	consent: 'ri-checkbox-circle-line'
 };
 
-export function markFor(step: LoginStep): IconData {
-	return marks[step] ?? RiCheckboxCircleLine;
+export function markFor(step: LoginStep): IconName {
+	return marks[step] ?? 'ri-checkbox-circle-line';
 }
 
 export function labelFor(step: LoginStep, kinds: LoginStepSpec[]): string {
@@ -124,7 +113,7 @@ export type FlowTemplate = {
 	id: string;
 	name: string;
 	hint: string;
-	icon: IconData;
+	icon: IconName;
 	draft: FlowDraft;
 };
 
@@ -147,14 +136,14 @@ export const TEMPLATES: FlowTemplate[] = [
 		id: 'password',
 		name: 'Password',
 		hint: 'An email and a password, with the accounts from the Social page beside them.',
-		icon: RiKey2Line,
+		icon: 'ri-key-2-line',
 		draft: { ...base, name: '', slug: '', steps: ['identifier', 'password', 'social'] }
 	},
 	{
 		id: 'passwordless',
 		name: 'Other accounts only',
 		hint: 'No passwords here: people sign in with Google, GitHub and the other providers.',
-		icon: RiShareLine,
+		icon: 'ri-share-line',
 		draft: {
 			...base,
 			name: '',
@@ -167,7 +156,7 @@ export const TEMPLATES: FlowTemplate[] = [
 		id: 'staff',
 		name: 'Staff',
 		hint: 'A password, a verified address, no sign-ups, and eight-hour sessions.',
-		icon: RiShieldCheckLine,
+		icon: 'ri-shield-check-line',
 		draft: {
 			...base,
 			name: '',
@@ -182,7 +171,7 @@ export const TEMPLATES: FlowTemplate[] = [
 		id: 'blank',
 		name: 'Blank',
 		hint: 'An email and a password, and nothing else to start from.',
-		icon: RiFileAddLine,
+		icon: 'ri-file-add-line',
 		draft: { ...base, name: '', slug: '', steps: ['identifier', 'password'] }
 	}
 ];

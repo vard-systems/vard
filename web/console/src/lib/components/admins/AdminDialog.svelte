@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { MIN_ADMIN_PASSWORD } from '#lib/constants.js';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { RiAddLine, RiCloseLine, RiMailLine, RiShieldKeyholeLine } from '#lib/icons.js';
 	import {
 		adminsApi,
 		type AdminInput,
@@ -16,7 +15,6 @@
 		ConfirmDialog,
 		FullscreenDialog,
 		FormSection,
-		Icon,
 		IconButton,
 		Input,
 		PasswordInput,
@@ -239,7 +237,7 @@
 	>
 		<Input
 			label="Email"
-			icon={RiMailLine}
+			icon="ri-mail-line"
 			bind:value={email}
 			type="email"
 			autocomplete="off"
@@ -325,7 +323,7 @@
 					</div>
 
 					<IconButton
-						icon={RiCloseLine}
+						icon="ri-close-line"
 						label="Remove this role"
 						onclick={() => removeRow(row.key)}
 						disabled={locked(row)}
@@ -346,7 +344,7 @@
 
 		<div>
 			<Button size="sm" variant="subtle" onclick={addRow}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				Add a role
 			</Button>
 		</div>
@@ -408,7 +406,7 @@
 	title="Reset two-factor sign-in?"
 	description={`${admin?.email ?? 'This administrator'} loses their authenticator and recovery codes, and is signed out everywhere. They set it up again at their next sign-in where it is required.`}
 	tone="warning"
-	icon={RiShieldKeyholeLine}
+	icon="ri-shield-keyhole-line"
 	confirmLabel="Reset two-factor"
 	busy={resetting}
 	onConfirm={resetMfa}

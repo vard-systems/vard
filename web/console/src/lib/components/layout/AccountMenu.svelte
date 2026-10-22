@@ -2,17 +2,10 @@
 	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import {
-		RiArrowDownSLine,
-		RiLogoutBoxRLine,
-		RiShieldUserLine,
-		RiUserSettingsLine
-	} from '#lib/icons.js';
 	import { adminApi, type Admin } from '#lib/api/index.js';
 	import {
 		ConfirmDialog,
 		DropdownMenu,
-		Icon,
 		MenuGroup,
 		MenuInfo,
 		MenuItem,
@@ -64,7 +57,9 @@
 	{#snippet trigger()}
 		<Thumb src={admin.avatar_url} text={monogram} size="xs" shape="circle" tone="accent" />
 		<span class="name">{name}</span>
-		<span class="chevron" aria-hidden="true"><Icon icon={RiArrowDownSLine} size="1rem" /></span>
+		<span class="chevron" aria-hidden="true"
+			><i class="ri-arrow-down-s-line" aria-hidden="true"></i></span
+		>
 	{/snippet}
 
 	<MenuGroup label="Signed in as">
@@ -73,7 +68,7 @@
 				<Thumb src={admin.avatar_url} text={monogram} size="xs" shape="circle" tone="accent" />
 			{/snippet}
 		</MenuInfo>
-		<MenuInfo icon={RiShieldUserLine} label={role} description="Role" />
+		<MenuInfo icon="ri-shield-user-line" label={role} description="Role" />
 	</MenuGroup>
 
 	<MenuSeparator />
@@ -81,7 +76,7 @@
 	<MenuGroup label="Account">
 		<MenuItem
 			value="account"
-			icon={RiUserSettingsLine}
+			icon="ri-user-settings-line"
 			label="Account settings"
 			description="Profile, security and sessions"
 			onSelect={() => (accountOpen = true)}
@@ -92,7 +87,7 @@
 
 	<MenuItem
 		value="sign-out"
-		icon={RiLogoutBoxRLine}
+		icon="ri-logout-box-r-line"
 		label="Sign out"
 		description="End this session"
 		danger
@@ -107,7 +102,7 @@
 	title="Sign out?"
 	description="You will need to sign in again to manage the console."
 	tone="danger"
-	icon={RiLogoutBoxRLine}
+	icon="ri-logout-box-r-line"
 	confirmLabel="Sign out"
 	busy={signingOut}
 	onConfirm={signOut}

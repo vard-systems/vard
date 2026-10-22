@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { RiDeleteBinLine } from '#lib/icons.js';
 	import Button from './Button.svelte';
-	import Icon from './Icon.svelte';
 	import Note from './Note.svelte';
 
 	type Props = {
@@ -27,7 +25,7 @@
 			{@render children()}
 		{:else}
 			<Button colorPalette="danger" variant="subtle" size="sm" {onclick}>
-				<Icon icon={RiDeleteBinLine} />
+				<i class="ri-delete-bin-line" aria-hidden="true"></i>
 				{label}
 			</Button>
 		{/if}

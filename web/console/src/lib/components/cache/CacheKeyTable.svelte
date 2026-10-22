@@ -1,11 +1,4 @@
 <script lang="ts">
-	import {
-		RiDatabase2Line,
-		RiHardDrive2Line,
-		RiKey2Line,
-		RiPriceTag3Line,
-		RiTimerLine
-	} from '#lib/icons.js';
 	import type { CacheKey } from '#lib/api/index.js';
 	import { Code, type Column, DataTable, Tag } from '#lib/components/ui/index.js';
 	import { formatBytes, formatTTL, kinds } from './cache';
@@ -19,11 +12,11 @@
 	let { keys, empty, onOpen }: Props = $props();
 
 	const columns: Column[] = [
-		{ key: 'name', label: 'Key', icon: RiKey2Line, min: '20rem' },
-		{ key: 'kind', label: 'Kind', icon: RiPriceTag3Line, min: '8rem' },
-		{ key: 'group', label: 'Group', icon: RiDatabase2Line, min: '9rem' },
-		{ key: 'ttl', label: 'Expires in', icon: RiTimerLine, min: '8rem', align: 'end' },
-		{ key: 'size', label: 'Size', icon: RiHardDrive2Line, min: '6rem', align: 'end' }
+		{ key: 'name', label: 'Key', min: '20rem', grow: true },
+		{ key: 'kind', label: 'Kind', min: '8rem' },
+		{ key: 'group', label: 'Group', min: '9rem' },
+		{ key: 'ttl', label: 'Expires in', min: '8rem', align: 'end' },
+		{ key: 'size', label: 'Size', min: '6rem', align: 'end' }
 	];
 
 	const rows = $derived(keys.map((key) => ({ ...key, id: key.name })));

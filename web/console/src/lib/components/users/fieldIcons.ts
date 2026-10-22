@@ -1,20 +1,10 @@
-import {
-	RiCalendarLine,
-	RiHashtag,
-	RiKey2Line,
-	RiMailLine,
-	RiText,
-	RiToggleLine,
-	type IconData
-} from '#lib/icons.js';
+import type { IconName } from '#lib/components/ui/index.js';
 import type { FieldType } from '#lib/api/index.js';
 
-export const fieldIcons: Record<FieldType, IconData> = {
-	text: RiText,
-	number: RiHashtag,
-	bool: RiToggleLine,
-	email: RiMailLine,
-	date: RiCalendarLine
+export const fieldIcons: Record<FieldType, IconName> = {
+	text: 'ri-text',
+	number: 'ri-hashtag',
+	bool: 'ri-toggle-line',
+	email: 'ri-mail-line',
+	date: 'ri-calendar-line'
 };
-
-export const idIcon = RiKey2Line;

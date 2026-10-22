@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
-	import Icon from './Icon.svelte';
+	import type { IconName } from './icon';
 
 	type Props = {
 		src?: string;
-		icon?: IconData;
+		icon?: IconName;
 		text?: string;
 		size?: 'xs' | 'sm' | 'md';
 		shape?: 'square' | 'circle';
@@ -26,7 +25,7 @@
 
 	const picture = $derived(src && src !== failed ? src : '');
 
-	const glyph = { xs: '0.875rem', sm: '1rem', md: '1.15rem' };
+	const glyph = { xs: 14, sm: 16, md: 18 };
 </script>
 
 <span
@@ -38,7 +37,7 @@
 	{#if picture}
 		<img src={picture} alt="" onerror={() => (failed = picture)} />
 	{:else if icon}
-		<Icon {icon} size={glyph[size]} />
+		<i class={icon} style:font-size="{glyph[size]}px" aria-hidden="true"></i>
 	{:else if text}
 		{text}
 	{/if}

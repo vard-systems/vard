@@ -5,13 +5,7 @@
 	import { page } from '$app/state';
 	import { signIn } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
-	import {
-		Brand,
-		Icon,
-		LanguagePicker,
-		ThemeToggle,
-		type IconName
-	} from '#lib/components/index.js';
+	import { Brand, LanguagePicker, ThemeToggle, type IconName } from '#lib/components/index.js';
 	import { useTranslator } from '#lib/i18n/index.js';
 	import { initials } from '#lib/utils/format.js';
 	import type { LayoutProps } from './$types';
@@ -21,9 +15,9 @@
 	const t = useTranslator();
 
 	const sections: { path: '' | 'security' | 'applications'; key: string; icon: IconName }[] = [
-		{ path: '', key: 'account.profile', icon: 'user' },
-		{ path: 'security', key: 'account.security', icon: 'lock' },
-		{ path: 'applications', key: 'account.applications', icon: 'apps' }
+		{ path: '', key: 'account.profile', icon: 'ri-user-line' },
+		{ path: 'security', key: 'account.security', icon: 'ri-lock-line' },
+		{ path: 'applications', key: 'account.applications', icon: 'ri-apps-line' }
 	];
 
 	let signingOut = $state(false);
@@ -58,7 +52,7 @@
 					</span>
 				</div>
 				<button class="signout" type="button" onclick={signOut} disabled={signingOut}>
-					<Icon name="logout" />
+					<i class="ri-logout-box-r-line" aria-hidden="true"></i>
 					<span>{t('action.sign_out')}</span>
 				</button>
 			</div>
@@ -70,7 +64,7 @@
 					href={resolve(section.path)}
 					aria-current={page.url.pathname === resolve(section.path) ? 'page' : undefined}
 				>
-					<Icon name={section.icon} size="1rem" />
+					<i class={section.icon} style:font-size="16px" aria-hidden="true"></i>
 					{t(section.key)}
 				</a>
 			{/each}
@@ -83,7 +77,7 @@
 
 	<footer>
 		<span class="secured">
-			<Icon name="shield" size="0.9375rem" />
+			<i class="ri-shield-keyhole-line" style:font-size="15px" aria-hidden="true"></i>
 			<span>{t('shell.secured_by')} <strong>{BRAND.name}</strong></span>
 		</span>
 	</footer>

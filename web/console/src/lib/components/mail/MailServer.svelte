@@ -1,14 +1,5 @@
 <script lang="ts">
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import {
-		RiAtLine,
-		RiLockLine,
-		RiMailCheckLine,
-		RiMailLine,
-		RiMailSendLine,
-		RiServerLine,
-		RiUserLine
-	} from '#lib/icons.js';
 	import { mailApi, type MailEncryption, type MailResponse } from '#lib/api/index.js';
 	import {
 		Button,
@@ -159,7 +150,7 @@
 	<FormSection
 		title="Sending"
 		description="Whether messages leave this server at all."
-		icon={RiMailSendLine}
+		icon="ri-mail-send-line"
 	>
 		{#snippet meta()}
 			{#if form.is_enabled}
@@ -179,11 +170,11 @@
 	<FormSection
 		title="Mail server"
 		description="Where messages are handed over, and how the connection to it is protected."
-		icon={RiServerLine}
+		icon="ri-server-line"
 	>
 		<Input
 			label="Host"
-			icon={RiServerLine}
+			icon="ri-server-line"
 			bind:value={form.host}
 			maxlength={255}
 			placeholder="smtp.example.com"
@@ -209,7 +200,7 @@
 
 			<Input
 				label="Username"
-				icon={RiUserLine}
+				icon="ri-user-line"
 				bind:value={form.username}
 				maxlength={255}
 				hint="Leave empty for a server that takes no credentials."
@@ -217,7 +208,7 @@
 
 			<Input
 				label="Password"
-				icon={RiLockLine}
+				icon="ri-lock-line"
 				bind:value={password}
 				type="password"
 				autocomplete="off"
@@ -238,11 +229,11 @@
 		{/if}
 	</FormSection>
 
-	<FormSection title="From" description="Who every message says it comes from." icon={RiMailLine}>
+	<FormSection title="From" description="Who every message says it comes from." icon="ri-mail-line">
 		<FieldGrid spacing="comfortable">
 			<Input
 				label="From address"
-				icon={RiAtLine}
+				icon="ri-at-line"
 				bind:value={form.from_address}
 				type="email"
 				maxlength={255}
@@ -263,12 +254,12 @@
 	<FormSection
 		title="Send a test"
 		description="One message with the settings on this form, saved or not — so a server can be tried before anybody's sign-in depends on it. A password left blank is the stored one."
-		icon={RiMailCheckLine}
+		icon="ri-mail-check-line"
 	>
 		<div class="try">
 			<Input
 				label="Send a test message to"
-				icon={RiAtLine}
+				icon="ri-at-line"
 				bind:value={testTo}
 				type="email"
 				maxlength={255}

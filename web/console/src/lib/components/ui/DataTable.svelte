@@ -1,8 +1,6 @@
 <script lang="ts" generics="Row extends { id: string }">
 	import type { Snippet } from 'svelte';
-	import { RiArrowRightLine, RiInbox2Line } from '#lib/icons.js';
 	import Checkbox from './Checkbox.svelte';
-	import Icon from './Icon.svelte';
 	import IconButton from './IconButton.svelte';
 	import type { Column } from './table';
 
@@ -59,13 +57,13 @@
 						{/if}
 
 						{#each columns as column (column.key)}
-							<th style:min-width={column.min} class:end={column.align === 'end'}>
-								<span class="label">
-									{#if column.icon}
-										<Icon icon={column.icon} size="0.9375rem" />
-									{/if}
-									{column.label}
-								</span>
+							<th
+								scope="col"
+								style:min-width={column.min}
+								class:end={column.align === 'end'}
+								class:grow={column.grow}
+							>
+								{column.label}
 							</th>
 						{/each}
 						{#if onOpen}
@@ -77,7 +75,11 @@
 
 			<tbody>
 				{#each rows as item (item.id)}
-					<tr class:clickable={onOpen !== undefined} onclick={() => onOpen?.(item)}>
+					<tr
+						class:clickable={onOpen !== undefined}
+						class:selected={ticked.has(item.id)}
+						onclick={() => onOpen?.(item)}
+					>
 						{#if selectable}
 							<td class="tick" onclick={(event) => event.stopPropagation()}>
 								<Checkbox
@@ -93,7 +95,7 @@
 						{#if onOpen}
 							<td class="pin">
 								<IconButton
-									icon={RiArrowRightLine}
+									icon="ri-arrow-right-s-line"
 									label={label?.(item) ?? 'Open'}
 									size="sm"
 									placement="left"
@@ -105,7 +107,9 @@
 					<tr>
 						<td class="empty" colspan={columns.length + (onOpen ? 1 : 0) + (selectable ? 1 : 0)}>
 							<span class="empty-state">
-								<Icon icon={RiInbox2Line} size="1.5rem" />
+								<span class="empty-icon"
+									><i class="ri-inbox-2-line" style:font-size="20px" aria-hidden="true"></i></span
+								>
 								{empty}
 							</span>
 						</td>
@@ -139,15 +143,21 @@
 	   a `td` says so with :global, anchored to the table itself. */
 	th,
 	table :global(td) {
-		height: 52px;
-		transition: background-color var(--speed-fast);
 		padding: 0 var(--space-3);
-		border-bottom: 1px solid var(--color-border);
-		font-size: var(--text-base);
-		font-weight: 400;
 		text-align: left;
 		vertical-align: middle;
 		white-space: nowrap;
+	}
+
+	table :global(td) {
+		height: 56px;
+		padding-top: var(--space-2);
+		padding-bottom: var(--space-2);
+		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: var(--text-base);
+		transition: background-color var(--speed-fast);
 	}
 
 	table :global(tbody tr:last-child td) {
@@ -156,30 +166,27 @@
 
 	th {
 		height: 40px;
+		border-bottom: 1px solid var(--color-border);
 		background: var(--color-surface-alt);
 		color: var(--color-text-hint);
 		font-size: var(--text-xs);
 		font-weight: 600;
-		letter-spacing: 0.02em;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
 	}
 
-	.label {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.label :global(svg) {
-		opacity: 0.8;
-	}
-
-	th.end .label {
-		justify-content: flex-end;
+	th.grow {
+		width: 100%;
 	}
 
 	th.end,
 	table :global(td.end) {
 		text-align: right;
+	}
+
+	/* Figures line up down a column only if every digit is as wide as the next. */
+	table :global(td.end) {
+		font-variant-numeric: tabular-nums;
 	}
 
 	th:first-child,
@@ -200,6 +207,11 @@
 		background: var(--row-hover);
 	}
 
+	tr.selected :global(td),
+	tr.selected:hover :global(td) {
+		background: var(--color-brand-subtle);
+	}
+
 	.tick {
 		position: sticky;
 		left: 0;
@@ -207,12 +219,6 @@
 		width: 1%;
 		padding-right: 0;
 		line-height: 0;
-		background: var(--color-surface);
-		transition: background-color var(--speed-fast);
-	}
-
-	th.tick {
-		background: var(--color-surface-alt);
 	}
 
 	.tick::after {
@@ -240,13 +246,7 @@
 		right: 0;
 		z-index: 1;
 		width: 1%;
-		padding-left: var(--space-2);
-		background: var(--color-surface);
-		transition: background-color var(--speed-fast);
-	}
-
-	th.pin {
-		background: var(--color-surface-alt);
+		padding-left: var(--space-1);
 	}
 
 	.pin::before {
@@ -272,13 +272,17 @@
 	.pin :global(.control) {
 		margin-left: auto;
 		color: var(--color-text-disabled);
+		transition:
+			color var(--speed-fast),
+			transform var(--speed);
 	}
 
 	tr.clickable:hover .pin :global(.control) {
 		color: var(--color-text);
+		transform: translateX(2px);
 	}
 
-	.empty {
+	td.empty {
 		height: auto;
 		padding: var(--space-6) var(--space-4);
 		white-space: normal;
@@ -290,10 +294,18 @@
 		align-items: center;
 		gap: var(--space-2);
 		color: var(--color-text-hint);
+		font-size: var(--text-sm);
 		text-align: center;
 	}
 
-	.empty-state :global(svg) {
+	.empty-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		border-radius: var(--radius-pill);
+		background: var(--color-secondary);
 		color: var(--color-text-disabled);
 	}
 </style>

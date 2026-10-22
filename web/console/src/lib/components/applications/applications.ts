@@ -1,10 +1,4 @@
-import {
-	RiAppsLine,
-	RiComputerLine,
-	RiServerLine,
-	RiSmartphoneLine,
-	type IconData
-} from '#lib/icons.js';
+import type { IconName } from '#lib/components/ui/index.js';
 import type {
 	ApplicationInput,
 	ApplicationType,
@@ -15,30 +9,30 @@ import type {
 
 export const types: Record<
 	ApplicationType,
-	{ label: string; description: string; icon: IconData; public: boolean }
+	{ label: string; description: string; icon: IconName; public: boolean }
 > = {
 	web: {
 		label: 'Web application',
 		description: 'Rendered on a server that keeps a client secret',
-		icon: RiComputerLine,
+		icon: 'ri-computer-line',
 		public: false
 	},
 	spa: {
 		label: 'Single-page app',
 		description: 'Runs in the browser; no secret, PKCE instead',
-		icon: RiAppsLine,
+		icon: 'ri-apps-line',
 		public: true
 	},
 	native: {
 		label: 'Native app',
 		description: 'Mobile or desktop; no secret, PKCE instead',
-		icon: RiSmartphoneLine,
+		icon: 'ri-smartphone-line',
 		public: true
 	},
 	m2m: {
 		label: 'Machine to machine',
 		description: 'A service calling APIs as itself, with no user',
-		icon: RiServerLine,
+		icon: 'ri-server-line',
 		public: false
 	}
 };

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { COOKIES } from '#lib/brand.js';
 	import { useTranslator } from '#lib/i18n/index.js';
-	import Icon from './Icon.svelte';
 
 	const t = useTranslator();
 
@@ -18,8 +17,8 @@
 </script>
 
 <button type="button" class="toggle" onclick={toggle} aria-label={t('shell.theme')}>
-	<span class="moon"><Icon name="moon" /></span>
-	<span class="sun"><Icon name="sun" /></span>
+	<span class="moon"><i class="ri-moon-line" aria-hidden="true"></i></span>
+	<span class="sun"><i class="ri-sun-line" aria-hidden="true"></i></span>
 </button>
 
 <style>

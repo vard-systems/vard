@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { RiDatabase2Line, RiEraserLine, RiFilter3Line } from '#lib/icons.js';
 	import type { CacheGroup } from '#lib/api/index.js';
-	import { Button, Icon, List, ListItem, Panel, Tag, Thumb } from '#lib/components/ui/index.js';
+	import { Button, List, ListItem, Panel, Tag, Thumb } from '#lib/components/ui/index.js';
 
 	type Props = {
 		groups: CacheGroup[];
@@ -20,11 +19,11 @@
 	}
 </script>
 
-<Panel title="Groups" icon={RiDatabase2Line} flush>
+<Panel title="Groups" icon="ri-database-2-line" flush>
 	<List label="Cache groups">
 		{#each groups as group (group.name)}
 			<ListItem title={group.name} description={describe(group)}>
-				{#snippet lead()}<Thumb icon={RiDatabase2Line} />{/snippet}
+				{#snippet lead()}<Thumb icon="ri-database-2-line" />{/snippet}
 				{#snippet end()}
 					<span class="end">
 						{#if !group.known}
@@ -36,7 +35,7 @@
 							<Tag small tone="info" dot>shown below</Tag>
 						{:else}
 							<Button size="sm" variant="subtle" onclick={() => onFilter(group.name)}>
-								<Icon icon={RiFilter3Line} />
+								<i class="ri-filter-3-line" aria-hidden="true"></i>
 								Show
 							</Button>
 						{/if}
@@ -49,7 +48,7 @@
 								disabled={clearing !== undefined}
 								onclick={() => onClear(group.name)}
 							>
-								<Icon icon={RiEraserLine} />
+								<i class="ri-eraser-line" aria-hidden="true"></i>
 								Clear
 							</Button>
 						{/if}

@@ -1,9 +1,8 @@
 <script lang="ts" generics="Value extends string">
 	import { createListCollection, Select as ArkSelect } from '@ark-ui/svelte/select';
 	import { Portal } from '@ark-ui/svelte/portal';
-	import { RiArrowDownSLine, RiCheckLine, RiCloseLine, type IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import FieldText from './FieldText.svelte';
-	import Icon from './Icon.svelte';
 	import type { SelectOption } from './select';
 
 	type Props = {
@@ -11,7 +10,7 @@
 		value: Value;
 		options: readonly (Value | SelectOption<Value>)[];
 		placeholder?: string;
-		icon?: IconData;
+		icon?: IconName;
 		hint?: string;
 		error?: string;
 		required?: boolean;
@@ -93,17 +92,17 @@
 		<ArkSelect.Control>
 			<ArkSelect.Trigger>
 				{#if chosen?.icon}
-					<Icon icon={chosen.icon} />
+					<i class={chosen.icon} aria-hidden="true"></i>
 				{/if}
 				<ArkSelect.ValueText {placeholder} />
 				<ArkSelect.Indicator>
-					<Icon icon={RiArrowDownSLine} />
+					<i class="ri-arrow-down-s-line" aria-hidden="true"></i>
 				</ArkSelect.Indicator>
 			</ArkSelect.Trigger>
 
 			{#if canClear}
 				<ArkSelect.ClearTrigger aria-label="Clear {label}">
-					<Icon icon={RiCloseLine} />
+					<i class="ri-close-line" aria-hidden="true"></i>
 				</ArkSelect.ClearTrigger>
 			{/if}
 		</ArkSelect.Control>
@@ -116,7 +115,7 @@
 					{#each items as item (item.value)}
 						<ArkSelect.Item {item}>
 							{#if item.icon}
-								<Icon icon={item.icon} />
+								<i class={item.icon} aria-hidden="true"></i>
 							{:else if gutter}
 								<span data-part="item-gutter"></span>
 							{/if}
@@ -129,7 +128,7 @@
 							</span>
 
 							<ArkSelect.ItemIndicator>
-								<Icon icon={RiCheckLine} />
+								<i class="ri-check-line" aria-hidden="true"></i>
 							</ArkSelect.ItemIndicator>
 						</ArkSelect.Item>
 					{:else}

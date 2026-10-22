@@ -122,3 +122,15 @@ input[type='number']::-webkit-outer-spin-button {
 		box-shadow: none;
 	}
 }
+
+/* A Remix Icon glyph is as wide and tall as its font size, sits on the text
+   baseline and never shrinks inside a flex row. One that differs from this
+   size says its own with style:font-size. */
+[class^='ri-'],
+[class*=' ri-'] {
+	display: inline-block;
+	flex: none;
+	font-size: 16px;
+	line-height: 1;
+	vertical-align: -0.125em;
+}

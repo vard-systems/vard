@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { IconData } from '#lib/icons.js';
+	import type { IconName } from './icon';
 	import type { Snippet } from 'svelte';
 	import { Field } from '@ark-ui/svelte/field';
 	import FieldText from './FieldText.svelte';
@@ -7,7 +7,7 @@
 	type Props = {
 		label: string;
 		children: Snippet;
-		icon?: IconData;
+		icon?: IconName;
 		hint?: string;
 		error?: string;
 		required?: boolean;

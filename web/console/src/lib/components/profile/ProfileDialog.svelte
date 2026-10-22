@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiSettings3Line, RiUserLine } from '#lib/icons.js';
 	import type { Admin } from '#lib/api/index.js';
 	import { FullscreenDialog, Tabs, Tag, Thumb } from '#lib/components/ui/index.js';
 	import { initials } from '#lib/utils/format.js';
@@ -14,8 +13,8 @@
 	let { admin, open = $bindable(false) }: Props = $props();
 
 	const tabs = [
-		{ value: 'account', label: 'Account', icon: RiUserLine },
-		{ value: 'settings', label: 'Settings', icon: RiSettings3Line }
+		{ value: 'account', label: 'Account', icon: 'ri-user-line' },
+		{ value: 'settings', label: 'Settings', icon: 'ri-settings-3-line' }
 	];
 
 	const name = $derived(admin.full_name.trim() || admin.email);

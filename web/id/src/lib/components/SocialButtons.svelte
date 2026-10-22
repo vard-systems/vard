@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { SocialProvider } from '#lib/api/index.js';
-	import Icon, { type IconName } from './Icon.svelte';
+	import type { IconName } from './icon';
 
 	type Props = {
 		providers: SocialProvider[];
@@ -18,11 +18,11 @@
 		disabled = false
 	}: Props = $props();
 
-	const marks: Record<string, IconName> = {
-		google: 'google',
-		apple: 'apple',
-		facebook: 'facebook',
-		vk: 'vk'
+	const marks: Record<string, IconName | undefined> = {
+		google: 'ri-google-fill',
+		apple: 'ri-apple-fill',
+		facebook: 'ri-facebook-circle-fill',
+		vk: 'ri-vk-fill'
 	};
 
 	function href(slug: string): string {
@@ -44,12 +44,13 @@
 		<div class="buttons" class:single={providers.length === 1}>
 			{#each providers as provider (provider.slug)}
 				{@const to = disabled ? undefined : href(provider.slug)}
+				{@const mark = marks[provider.kind]}
 				<!-- The server's own path, which redirects to the provider: a full
 				     navigation off this app, not a route of it. -->
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a class="provider" href={to} aria-disabled={disabled} data-sveltekit-reload>
-					{#if marks[provider.kind]}
-						<Icon name={marks[provider.kind]} size="1.125rem" />
+					{#if mark}
+						<i class={mark} aria-hidden="true"></i>
 					{/if}
 					<span>{provider.name}</span>
 				</a>

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiAddLine, RiDeleteBinLine, RiRefreshLine } from '#lib/icons.js';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { adminsApi, type AdminRole } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
@@ -13,7 +12,6 @@
 	import {
 		Button,
 		ConfirmDialog,
-		Icon,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -116,7 +114,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}
@@ -126,7 +124,7 @@
 
 	{#snippet actions()}
 		<Button onclick={() => openRole(null)}>
-			<Icon icon={RiAddLine} />
+			<i class="ri-add-line" aria-hidden="true"></i>
 			New admin role
 		</Button>
 	{/snippet}
@@ -155,7 +153,7 @@
 
 <SelectionBar count={chosen.length} onReset={reset}>
 	<Button colorPalette="danger" size="sm" onclick={() => (confirmingDelete = true)} disabled={busy}>
-		<Icon icon={RiDeleteBinLine} />
+		<i class="ri-delete-bin-line" aria-hidden="true"></i>
 		Delete
 	</Button>
 </SelectionBar>

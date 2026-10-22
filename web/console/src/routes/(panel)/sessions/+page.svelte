@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { RiRefreshLine } from '#lib/icons.js';
 	import { createInfiniteQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { sessionsApi, type UserSessionRecord } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
@@ -90,7 +89,7 @@
 >
 	{#snippet secondary()}
 		<IconButton
-			icon={RiRefreshLine}
+			icon="ri-refresh-line"
 			label="Refresh the data"
 			onclick={refresh}
 			loading={refreshing}

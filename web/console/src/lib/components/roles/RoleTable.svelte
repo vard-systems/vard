@@ -1,14 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import {
-		RiAppsLine,
-		RiFileTextLine,
-		RiGroupLine,
-		RiNodeTree,
-		RiShieldUserLine
-	} from '#lib/icons.js';
 	import type { Application, Role, UserRoleRef } from '#lib/api/index.js';
-	import { Badge, DataTable, Icon, type Column } from '#lib/components/ui/index.js';
+	import { Badge, DataTable, type Column } from '#lib/components/ui/index.js';
 
 	type Props = {
 		roles: Role[];
@@ -37,13 +30,11 @@
 	}
 
 	const columns = $derived<Column[]>([
-		{ key: 'name', label: 'Role', icon: RiShieldUserLine, min: '12rem' },
-		...(showApplication
-			? [{ key: 'application', label: 'Application', icon: RiAppsLine, min: '10rem' }]
-			: []),
-		{ key: 'description', label: 'Description', icon: RiFileTextLine, min: '16rem' },
-		{ key: 'includes', label: 'Includes', icon: RiNodeTree, min: '12rem' },
-		{ key: 'users', label: 'Users', icon: RiGroupLine, min: '6rem', align: 'end' }
+		{ key: 'name', label: 'Role', min: '12rem' },
+		...(showApplication ? [{ key: 'application', label: 'Application', min: '10rem' }] : []),
+		{ key: 'description', label: 'Description', min: '16rem', grow: true },
+		{ key: 'includes', label: 'Includes', min: '12rem' },
+		{ key: 'users', label: 'Users', min: '6rem', align: 'end' }
 	]);
 
 	function appName(role: Role): string {
@@ -77,7 +68,7 @@
 		{#if showApplication}
 			<td>
 				<span class="app">
-					<Icon icon={RiShieldUserLine} size="0.9375rem" />
+					<i class="ri-shield-user-line" style:font-size="15px" aria-hidden="true"></i>
 					{appName(role)}
 				</span>
 			</td>

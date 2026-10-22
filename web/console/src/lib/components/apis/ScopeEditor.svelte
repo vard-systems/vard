@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { RiAddLine, RiDeleteBinLine } from '#lib/icons.js';
-	import { Button, Checkbox, Icon, IconButton } from '#lib/components/ui/index.js';
+	import { Button, Checkbox, IconButton } from '#lib/components/ui/index.js';
 	import { scopeProblem, scopeRow, type ScopeRow } from './scopes';
 
 	type Props = {
@@ -62,7 +61,7 @@
 					<span>
 						{#if editable}
 							<IconButton
-								icon={RiDeleteBinLine}
+								icon="ri-delete-bin-line"
 								label="Remove {row.name || 'this scope'}"
 								size="sm"
 								colorPalette="danger"
@@ -84,7 +83,7 @@
 	{#if editable}
 		<div>
 			<Button size="sm" variant="subtle" onclick={add}>
-				<Icon icon={RiAddLine} />
+				<i class="ri-add-line" aria-hidden="true"></i>
 				Add scope
 			</Button>
 		</div>
