@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"loginer/i18n"
 	"loginer/internal/mail"
 	"loginer/internal/model"
 	"loginer/internal/store"
@@ -65,7 +64,7 @@ func (s *Service) ForgotPassword(ctx context.Context, email, request, language s
 
 	text := s.textIn(ctx, language)
 
-	name := text["email.reset.your_account"]
+	name := text.Localize("email.reset.your_account", nil)
 	if pending, err := s.pending(ctx, request); err == nil {
 		name = pending.Application.Name
 	} else {
@@ -82,8 +81,8 @@ func (s *Service) ForgotPassword(ctx context.Context, email, request, language s
 
 	msg := mail.Message{
 		To:      user.Email,
-		Subject: i18n.Fill(text["email.reset.subject"], params),
-		Body:    i18n.Fill(text["email.reset.body"], params),
+		Subject: text.Localize("email.reset.subject", params),
+		Body:    text.Localize("email.reset.body", params),
 	}
 
 	s.record(ctx, user, user.Email, "user.password_reset_requested", client, nil)

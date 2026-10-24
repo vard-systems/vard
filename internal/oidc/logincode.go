@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"loginer/i18n"
 	"loginer/internal/mail"
 	"loginer/internal/model"
 	"loginer/internal/store"
@@ -221,7 +220,7 @@ func (s *Service) mailCode(
 ) {
 	text := s.textIn(ctx, client.Language)
 
-	name := text["email.reset.your_account"]
+	name := text.Localize("email.reset.your_account", nil)
 	if pending, err := s.pending(ctx, request); err == nil {
 		name = pending.Application.Name
 	}
@@ -235,8 +234,8 @@ func (s *Service) mailCode(
 
 	msg := mail.Message{
 		To:      user.Email,
-		Subject: i18n.Fill(text["email.code.subject"], params),
-		Body:    i18n.Fill(text["email.code.body"], params),
+		Subject: text.Localize("email.code.subject", params),
+		Body:    text.Localize("email.code.body", params),
 	}
 
 	go func() {

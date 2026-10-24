@@ -4,7 +4,7 @@ export type { Messages } from './flatten';
 
 export const BASE = 'en';
 
-const groupModules = import.meta.glob('../../../../../i18n/id/en/*.json', {
+const groupModules = import.meta.glob('../../../../../i18n/id/*.en.json', {
 	eager: true,
 	import: 'default'
 });

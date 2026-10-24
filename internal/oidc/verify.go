@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"time"
 
-	"loginer/i18n"
 	"loginer/internal/mail"
 	"loginer/internal/model"
 	"loginer/internal/store"
@@ -40,7 +39,7 @@ func (s *Service) mailVerification(
 
 	text := s.textIn(ctx, client.Language)
 
-	name := text["email.reset.your_account"]
+	name := text.Localize("email.reset.your_account", nil)
 	if pending, err := s.pending(ctx, request); err == nil {
 		name = pending.Application.Name
 	} else {
@@ -64,8 +63,8 @@ func (s *Service) mailVerification(
 
 	err = s.mail.Send(sendCtx, mail.Message{
 		To:      to,
-		Subject: i18n.Fill(text["email.verify.subject"], params),
-		Body:    i18n.Fill(text["email.verify.body"], params),
+		Subject: text.Localize("email.verify.subject", params),
+		Body:    text.Localize("email.verify.body", params),
 	})
 	if err != nil {
 		return fmt.Errorf("send the verification email: %w", err)

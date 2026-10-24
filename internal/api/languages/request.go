@@ -28,8 +28,8 @@ func init() {
 	})
 }
 
-// createRequest adds a language. CopyFrom is another installed language to
-// copy, a shipped language to restore, or empty to start untranslated.
+// createRequest adds a language. CopyFrom is an installed language to start
+// from, or empty to start untranslated.
 type createRequest struct {
 	Code       string `json:"code" validate:"required,max=16,languagetag"`
 	Name       string `json:"name" validate:"required,max=64"`

@@ -12,7 +12,7 @@
 <PageTitle parts={[t('apps.head'), t('account.nav')]} />
 
 <Stack gap="lg">
-	<PageHeading title={t('apps.title')} description={t('apps.description')} />
+	<PageHeading title={t('apps.title')} description={t('apps.subtitle')} />
 
 	{#each data.applications as application (application.client_id)}
 		<ConnectedApplication {application} timezone={data.timezone} />

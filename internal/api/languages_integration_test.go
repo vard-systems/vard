@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-// A language, end to end: imported from the shipped groups on the first start,
-// added and translated in the panel, offered to the sign-in pages and served
-// to them with its gaps filled in, and removed again.
+// A language, end to end: English alone on a fresh installation, another added
+// and translated in the panel, offered to the sign-in pages and served to them
+// with its gaps filled in, made the default, and removed again.
 
 type languageBody struct {
 	Code      string         `json:"code"`
@@ -22,9 +22,6 @@ type languageBody struct {
 
 type languageList struct {
 	Languages []languageBody `json:"languages"`
-	Shipped   []struct {
-		Code string `json:"code"`
-	} `json:"shipped"`
 }
 
 func (l languageList) find(code string) *languageBody {
@@ -60,21 +57,19 @@ func TestLiveLanguages(t *testing.T) {
 	s := newLiveServer(t)
 	super := s.superAdmin()
 
-	// The first start imported every shipped language, whole, and offers only
-	// the base one.
+	// A fresh installation has English and nothing else: whole, offered and
+	// the default. Every other language is added here.
 	var list languageList
 	super.must(http.StatusOK, http.MethodGet, "/languages", nil, &list)
 
-	for _, code := range []string{"en", "ru"} {
-		language := list.find(code)
-		switch {
-		case language == nil:
-			t.Fatalf("%s was not imported: %+v", code, list.Languages)
-		case language.Coverage["id"] != 100:
-			t.Errorf("%s covers %d%% of the sign-in pages, want all of them", code, language.Coverage["id"])
-		case language.Enabled != (code == "en"):
-			t.Errorf("%s enabled = %v, want only the base language offered", code, language.Enabled)
-		}
+	english := list.find("en")
+	switch {
+	case len(list.Languages) != 1 || english == nil:
+		t.Fatalf("languages = %+v, want English alone", list.Languages)
+	case english.Coverage["id"] != 100:
+		t.Errorf("English covers %d%% of the sign-in pages, want all of them", english.Coverage["id"])
+	case !english.Enabled || !english.IsDefault:
+		t.Errorf("English = %+v, want it offered and the default", english)
 	}
 
 	// The panel is written in English, in its own markup, so no language is
@@ -85,15 +80,7 @@ func TestLiveLanguages(t *testing.T) {
 		}
 	}
 
-	if len(list.Shipped) != 0 {
-		t.Errorf("shipped but not installed = %v, want none on a fresh installation", list.Shipped)
-	}
-
-	if status := s.public("/languages/ru", nil); status != http.StatusNotFound {
-		t.Errorf("a language that is off = %d to the sign-in pages, want 404", status)
-	}
-
-	// A language that did not ship, added from nothing and translated.
+	// A language added from nothing and translated.
 	var created struct{ Language languageBody }
 	super.must(http.StatusCreated, http.MethodPost, "/languages", map[string]any{
 		"code": "de", "name": "German", "native_name": "Deutsch",
@@ -103,8 +90,8 @@ func TestLiveLanguages(t *testing.T) {
 		t.Errorf("a new language covers %d%% of the sign-in pages, want nothing yet", created.Language.Coverage["id"])
 	}
 
-	// The panel is shown in English and Russian only: a language an
-	// installation adds is a sign-in language and nothing more.
+	// The panel is shown in English only: a language an installation adds is a
+	// sign-in language and nothing more.
 	if _, counted := created.Language.Coverage["console"]; counted {
 		t.Error("de was counted against the panel, which is not shown in it")
 	}
@@ -112,6 +99,10 @@ func TestLiveLanguages(t *testing.T) {
 	super.must(http.StatusNotFound, http.MethodPut, "/languages/de/translations/console", map[string]any{
 		"messages": map[string]string{"nav.languages": "Sprachen"},
 	}, nil)
+
+	if status := s.public("/languages/de", nil); status != http.StatusNotFound {
+		t.Errorf("a language that is off = %d to the sign-in pages, want 404", status)
+	}
 
 	super.must(http.StatusConflict, http.MethodPost, "/languages", map[string]any{
 		"code": "DE", "name": "German", "native_name": "Deutsch",
@@ -199,28 +190,35 @@ func TestLiveLanguages(t *testing.T) {
 	super.must(http.StatusOK, http.MethodPatch, "/languages/en", map[string]any{"is_default": true}, nil)
 	super.must(http.StatusNoContent, http.MethodDelete, "/languages/de", nil, nil)
 
-	// A shipped language removed is offered back, and comes back whole.
-	super.must(http.StatusNoContent, http.MethodDelete, "/languages/ru", nil, nil)
-	super.must(http.StatusOK, http.MethodGet, "/languages", nil, &list)
-
-	if len(list.Shipped) != 1 || list.Shipped[0].Code != "ru" {
-		t.Errorf("shipped but not installed = %+v, want ru", list.Shipped)
-	}
-
+	// A language copied from another starts with all of its text, and one
+	// added as the default is offered at once and takes the mark.
 	super.must(http.StatusCreated, http.MethodPost, "/languages", map[string]any{
-		"code": "ru", "copy_from": "ru",
+		"code": "en-GB", "name": "English (UK)", "native_name": "English (UK)",
+		"copy_from": "en", "is_default": true,
 	}, &created)
 
-	if created.Language.Native == "" || created.Language.Coverage["id"] != 100 {
-		t.Errorf("ru brought back = %+v, want its names and all its text", created.Language)
+	if created.Language.Coverage["id"] != 100 || !created.Language.Enabled || !created.Language.IsDefault {
+		t.Errorf("en-GB = %+v, want all of English's text, offered and the default", created.Language)
 	}
+	super.must(http.StatusOK, http.MethodGet, "/languages", nil, &list)
+	if list.find("en").IsDefault {
+		t.Error("adding a default language left English the default as well")
+	}
+	s.public("/languages", &offered)
+	if offered.Default != "en-GB" {
+		t.Errorf("the sign-in pages' default = %q, want en-GB", offered.Default)
+	}
+
+	super.must(http.StatusBadRequest, http.MethodPost, "/languages", map[string]any{
+		"code": "fr", "name": "French", "native_name": "Français", "copy_from": "it",
+	}, nil)
 
 	// The sign-in pages are the only app a language is translated for, so the
 	// panel is neither counted nor writable through this.
 	if _, counted := created.Language.Coverage["console"]; counted {
 		t.Errorf("the panel is counted as translated: %+v", created.Language.Coverage)
 	}
-	super.must(http.StatusNotFound, http.MethodPut, "/languages/ru/translations/console", map[string]any{
+	super.must(http.StatusNotFound, http.MethodPut, "/languages/en-GB/translations/console", map[string]any{
 		"messages": map[string]string{"error.unknown": "…"},
 	}, nil)
 }

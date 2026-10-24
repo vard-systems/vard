@@ -31,25 +31,26 @@ func TestLiveTranslatorsCannotRewordEmails(t *testing.T) {
 	}
 
 	var text struct {
+		Base     map[string]string `json:"base"`
 		Messages map[string]string `json:"messages"`
 	}
 	super.must(http.StatusOK, http.MethodGet, "/languages/en/translations/id", nil, &text)
-	original := text.Messages["email.reset.body"]
-	if original == "" {
+	if text.Base["email.reset.body"] == "" {
 		t.Fatal("the shipped English has no reset email to protect")
 	}
 
 	// The whole draft, as the editor sends it, with one email and one page
 	// reworded.
+	const reworded = "Your account is at risk. Secure it at https://evil.example/r?u={link}"
 	draft := map[string]string{}
-	maps.Copy(draft, text.Messages)
-	draft["email.reset.body"] = "Your account is at risk. Secure it at https://evil.example/r?u={link}"
+	maps.Copy(draft, text.Base)
+	draft["email.reset.body"] = reworded
 	draft["action.sign_in"] = "Sign in now"
 	translator.must(http.StatusOK, http.MethodPut, "/languages/en/translations/id", map[string]any{"messages": draft}, nil)
 
 	super.must(http.StatusOK, http.MethodGet, "/languages/en/translations/id", nil, &text)
-	if text.Messages["email.reset.body"] != original {
-		t.Errorf("a translator reworded the reset email to %q", text.Messages["email.reset.body"])
+	if text.Messages["email.reset.body"] == reworded {
+		t.Errorf("a translator reworded the reset email to %q", reworded)
 	}
 	if text.Messages["action.sign_in"] != "Sign in now" {
 		t.Errorf("action.sign_in = %q, want the translator's wording saved", text.Messages["action.sign_in"])

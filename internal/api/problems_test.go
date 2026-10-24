@@ -38,7 +38,7 @@ func TestErrorCodesMatchTheCatalogs(t *testing.T) {
 
 			text, ok := i18n.Text(app, problem.Key())
 			if !ok {
-				t.Errorf("%s: %s is missing from i18n/%s/en/", problem.Code, problem.Key(), app)
+				t.Errorf("%s: %s is missing from i18n/%s/", problem.Code, problem.Key(), app)
 				continue
 			}
 
@@ -57,7 +57,7 @@ func TestErrorCodesMatchTheCatalogs(t *testing.T) {
 				continue
 			}
 
-			t.Errorf("i18n/%s/en/ has %s, which the server never answers %s with", app, key, app)
+			t.Errorf("i18n/%s/ has %s, which the server never answers %s with", app, key, app)
 		}
 	}
 }

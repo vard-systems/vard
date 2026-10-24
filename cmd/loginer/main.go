@@ -15,7 +15,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/i18n"
 	"loginer/internal/api"
 	"loginer/internal/brand"
 	"loginer/internal/cache"
@@ -105,14 +104,6 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	if err := st.EnsureOTPSettings(context.Background()); err != nil {
-		return err
-	}
-
-	shipped, err := i18n.Shipped()
-	if err != nil {
-		return err
-	}
-	if err := st.EnsureLanguages(context.Background(), shipped); err != nil {
 		return err
 	}
 

@@ -28,7 +28,7 @@
 	"security": {
 		"head": "Security",
 		"title": "Security",
-		"description": "Your password, two-step verification, and the devices you are signed in on.",
+		"subtitle": "Your password, two-step verification, and the devices you are signed in on.",
 		"password_title": "Change password",
 		"password_description": "Changing it signs you out on every other device, and from every connected app.",
 		"password_changed": "Your password has been changed. Other devices have been signed out.",
@@ -77,7 +77,7 @@
 	"apps": {
 		"head": "Connected apps",
 		"title": "Connected apps",
-		"description": "Applications that can keep you signed in and act for you while you are away.",
+		"subtitle": "Applications that can keep you signed in and act for you while you are away.",
 		"empty": "No connected apps",
 		"last_used": "Last used {when}",
 		"it_can": "It can",

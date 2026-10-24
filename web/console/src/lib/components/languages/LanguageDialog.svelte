@@ -221,11 +221,9 @@
 
 							<Note>
 								{#if language.base}
-									This is the language every other is a translation of: a key another language has
-									no text for is shown in it. It cannot be turned off or removed.
-								{:else if language.shipped}
-									The server ships a translation of this language, so a key a new release adds is
-									filled in on the next start. Nothing written here is overwritten.
+									English ships with the server, and every other language is a translation of it: a
+									key another language has no text for is shown in English. What is saved here
+									replaces the shipped text. It cannot be turned off or removed.
 								{:else}
 									Added on this page. A key it has no text for is shown in English until somebody
 									translates it.

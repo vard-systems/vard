@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { languagesApi, type Language, type ShippedLanguage } from '#lib/api/index.js';
+	import { languagesApi, type Language } from '#lib/api/index.js';
 	import {
 		Button,
 		FullscreenDialog,
@@ -18,11 +18,10 @@
 	type Props = {
 		open: boolean;
 		languages: Language[];
-		shipped: ShippedLanguage[];
 		onCreated: (language: Language) => void;
 	};
 
-	let { open = $bindable(false), languages, shipped, onCreated }: Props = $props();
+	let { open = $bindable(false), languages, onCreated }: Props = $props();
 
 	const queryClient = useQueryClient();
 
@@ -33,6 +32,7 @@
 
 	let copyFrom = $state(NOTHING);
 	let enabled = $state(false);
+	let isDefault = $state(false);
 
 	let namesTyped = $state(false);
 
@@ -46,11 +46,11 @@
 		native = '';
 		copyFrom = NOTHING;
 		enabled = false;
+		isDefault = false;
 		namesTyped = false;
 	});
 
 	const trimmed = $derived(code.trim());
-	const shippedMatch = $derived(shipped.find((one) => one.code === trimmed));
 
 	const codeError = $derived.by(() => {
 		if (trimmed === '') return undefined;
@@ -74,34 +74,13 @@
 	function fillNames(current: string) {
 		if (namesTyped) return;
 
-		const match = shipped.find((one) => one.code === current);
 		const names = languageCode.test(current) ? namesOf(current) : null;
-		name = match?.name ?? names?.name ?? '';
-		native = match?.native_name ?? names?.native ?? '';
-
-		if (match && copyFrom === NOTHING) copyFrom = match.code;
-		if (!match && shipped.some((one) => one.code === copyFrom)) copyFrom = NOTHING;
-	}
-
-	function restore(language: ShippedLanguage) {
-		code = language.code;
-		name = language.name;
-		native = language.native_name;
-		copyFrom = language.code;
-		namesTyped = false;
+		name = names?.name ?? '';
+		native = names?.native ?? '';
 	}
 
 	const sources = $derived([
 		{ value: NOTHING, label: 'Nothing — untranslated text is shown in English' },
-		...(shippedMatch
-			? [
-					{
-						value: shippedMatch.code,
-						label: 'The shipped translation',
-						description: shippedMatch.native_name
-					}
-				]
-			: []),
 		...languages.map((language) => ({
 			value: language.code,
 			label: `A copy of ${language.native_name}`,
@@ -115,7 +94,8 @@
 				code: trimmed,
 				name: name.trim(),
 				native_name: native.trim(),
-				is_enabled: enabled,
+				is_enabled: enabled || isDefault,
+				is_default: isDefault,
 				copy_from: copyFrom === NOTHING ? undefined : copyFrom
 			}),
 		onSuccess: async ({ language }) => {
@@ -148,22 +128,6 @@
 	description="It starts off, so it can be translated before anybody is offered it."
 	onsubmit={submit}
 >
-	{#if shipped.length > 0}
-		<FormSection
-			title="Bring back a shipped language"
-			description="The server ships these translations, and this installation does not have them."
-		>
-			<div class="restore">
-				{#each shipped as language (language.code)}
-					<Button size="sm" variant="outline" onclick={() => restore(language)}>
-						<i class="ri-arrow-go-back-line" aria-hidden="true"></i>
-						<span lang={language.code}>{language.native_name}</span>
-					</Button>
-				{/each}
-			</div>
-		</FormSection>
-	{/if}
-
 	<FormSection title="Names" description="The tag it is known by, and what it is called.">
 		<Input
 			label="Code"
@@ -205,6 +169,13 @@
 			label="Offer it now"
 			description="Otherwise it stays off until you turn it on, so it can be translated first."
 			bind:checked={enabled}
+			disabled={isDefault}
+		/>
+
+		<SwitchField
+			label="The default language"
+			description="What the sign-in pages show somebody who has not chosen. It takes the mark from English, and is offered at once."
+			bind:checked={isDefault}
 		/>
 	</FormSection>
 
@@ -213,11 +184,3 @@
 		<Button type="submit" loading={saving} disabled={!ready || saving}>Add language</Button>
 	{/snippet}
 </FullscreenDialog>
-
-<style>
-	.restore {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2);
-	}
-</style>

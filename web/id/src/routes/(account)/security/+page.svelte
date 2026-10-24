@@ -12,7 +12,7 @@
 <PageTitle parts={[t('security.head'), t('account.nav')]} />
 
 <Stack gap="lg">
-	<PageHeading title={t('security.title')} description={t('security.description')} />
+	<PageHeading title={t('security.title')} description={t('security.subtitle')} />
 	<PasswordForm />
 	<TwoStepPanel twoStep={data.twoStep} timezone={data.timezone} />
 	<SessionList sessions={data.sessions} timezone={data.timezone} />

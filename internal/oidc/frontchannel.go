@@ -101,9 +101,9 @@ func (s *Service) Frontchannel(ctx context.Context, handle string) (*Frontchanne
 		Language: language,
 		Frames:   logout.Frames,
 		Next:     logout.Next,
-		Title:    text["frontchannel.head"],
-		Body:     text["frontchannel.body"],
-		Continue: text["frontchannel.continue"],
+		Title:    text.Localize("frontchannel.head", nil),
+		Body:     text.Localize("frontchannel.body", nil),
+		Continue: text.Localize("frontchannel.continue", nil),
 	}, nil
 }
 

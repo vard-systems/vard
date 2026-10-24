@@ -26,7 +26,7 @@
 		if (said) return t(`error.${reason}`);
 
 		const key = `error_page.reason.${code}`;
-		return t.has(key) ? t(key) : t('error_page.reason.other');
+		return t.has(key) ? t(key) : t('error_page.reason.unknown');
 	});
 </script>
 

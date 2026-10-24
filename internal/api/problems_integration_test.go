@@ -58,7 +58,7 @@ func TestLiveErrorsCarryCodes(t *testing.T) {
 		{
 			name: "the admin API, a language added twice",
 			send: func(out *problemBody) int {
-				return super.do(http.MethodPost, "/languages", map[string]any{"code": "ru", "name": "Russian", "native_name": "Русский"}, out)
+				return super.do(http.MethodPost, "/languages", map[string]any{"code": "en", "name": "English", "native_name": "English"}, out)
 			},
 			wantStatus: http.StatusConflict,
 			wantCode:   "language_code_taken",
@@ -128,24 +128,31 @@ func TestLiveResetEmailIsInTheReadersLanguage(t *testing.T) {
 	s := newLiveServer(t)
 	super := s.superAdmin()
 
-	super.must(http.StatusOK, http.MethodPatch, "/languages/ru", map[string]any{"is_enabled": true}, nil)
+	// A language added in the panel, with its own reset email.
+	super.must(http.StatusCreated, http.MethodPost, "/languages", map[string]any{
+		"code": "de", "name": "German", "native_name": "Deutsch", "is_enabled": true,
+	}, nil)
+	super.must(http.StatusOK, http.MethodPut, "/languages/de/translations/id", map[string]any{"messages": map[string]string{
+		"email.reset.subject": "Passwort zurücksetzen",
+		"email.reset.body":    "Wählen Sie hier ein neues Passwort für {app}:\n{link}\n",
+	}}, nil)
 
-	for _, email := range []string{"ru@example.com", "xx@example.com"} {
+	for _, email := range []string{"de@example.com", "xx@example.com"} {
 		super.must(http.StatusCreated, http.MethodPost, "/users", map[string]any{
 			"email": email, "first_name": "R", "password": "reader-password-1", "confirm_password": "reader-password-1",
 		}, nil)
 	}
 
 	b := s.browser()
-	b.account(http.MethodPost, "/forgot-password", map[string]string{"email": "ru@example.com", "language": "ru"}, nil)
+	b.account(http.MethodPost, "/forgot-password", map[string]string{"email": "de@example.com", "language": "de"}, nil)
 	b.account(http.MethodPost, "/forgot-password", map[string]string{"email": "xx@example.com", "language": "xx"}, nil)
 
-	russian := s.mail.wait(t, "ru@example.com")
-	if russian.Subject != "Сброс пароля" || !strings.Contains(russian.Body, "Задайте новый пароль") {
-		t.Errorf("the email to a Russian reader = %q / %q, want it in Russian", russian.Subject, russian.Body)
+	german := s.mail.wait(t, "de@example.com")
+	if german.Subject != "Passwort zurücksetzen" || !strings.Contains(german.Body, "Wählen Sie hier") {
+		t.Errorf("the email to a German reader = %q / %q, want it in German", german.Subject, german.Body)
 	}
-	if !strings.Contains(russian.Body, testAccountURL+"/reset-password?") {
-		t.Errorf("the Russian email has no link: %q", russian.Body)
+	if !strings.Contains(german.Body, testAccountURL+"/reset-password?") {
+		t.Errorf("the German email has no link: %q", german.Body)
 	}
 
 	fallback := s.mail.wait(t, "xx@example.com")

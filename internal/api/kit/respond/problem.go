@@ -70,8 +70,8 @@ func (p Problem) Key() string {
 
 func (p Problem) English(params map[string]any) string {
 	for _, app := range p.Apps {
-		if text, ok := i18n.Text(app, p.Key()); ok {
-			return i18n.Fill(text, params)
+		if english := i18n.English(app); english.Has(p.Key()) {
+			return english.Localize(p.Key(), params)
 		}
 	}
 

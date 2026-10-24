@@ -39,7 +39,10 @@ func (s *Service) Languages(ctx context.Context) ([]PublicLanguage, string, erro
 	return languages, fallback.Code, nil
 }
 
-func (s *Service) textIn(ctx context.Context, code string) map[string]string {
+// textIn is the sign-in pages' text in the language code names, or the
+// default when it is not offered, or the shipped English when the database
+// cannot say.
+func (s *Service) textIn(ctx context.Context, code string) *i18n.Catalog {
 	language, err := s.store.Language(ctx, code)
 	if err != nil || !language.IsEnabled {
 		language, err = s.store.DefaultLanguage(ctx)
@@ -47,11 +50,11 @@ func (s *Service) textIn(ctx context.Context, code string) map[string]string {
 
 	if err == nil {
 		if text, err := s.store.ResolvedTranslation(ctx, language, i18n.ID); err == nil {
-			return text
+			return i18n.NewCatalog(language.Code, text)
 		}
 	}
 
-	return i18n.Resolve(i18n.ID)
+	return i18n.English(i18n.ID)
 }
 
 func (s *Service) LanguageText(ctx context.Context, code string) (PublicLanguage, map[string]string, error) {

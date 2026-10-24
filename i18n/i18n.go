@@ -1,39 +1,42 @@
-// Package i18n holds the shipped translations and the list of keys that exist.
+// Package i18n holds the English the server ships and formats text in any
+// language with go-i18n.
 //
-// A language is a directory of JSON groups (`i18n/id/ru/` is Russian for the
-// sign-in pages), nested by namespace and flattened to dotted keys such as
-// "login.title". Only the sign-in pages are translated; `i18n/console/en/`
-// holds just the English sentences for the admin API's problems.
+// English is the only language that ships: `i18n/id/*.en.json` are the
+// sign-in pages, `i18n/console/*.en.json` the admin API's problems. Every
+// other language is added, translated and offered from the panel and lives in
+// the database; its text is resolved against these files (Resolve) and
+// formatted through a Catalog.
 //
-// What an installation serves lives in the database: the first start imports
-// everything, and afterwards the shipped files only matter as the base
-// language's key list (and last-resort fallback text) and as the source of keys
-// a release adds.
+// Placeholders are ICU's `{name}`, the same text svelte-i18n formats on the
+// sign-in pages, so one translation serves both.
 package i18n
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
-	"path"
-	"regexp"
+	"io/fs"
+	"maps"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
+
+	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
 
-//go:embed id/*/*.json console/*/*.json
+//go:embed id/*.en.json console/*.en.json
 var files embed.FS
 
 type App string
 
 const (
+	// ID is the sign-in pages: the one app a language is translated for.
 	ID App = "id"
-
+	// Console is the admin API's English; the panel itself is not translated.
 	Console App = "console"
 )
 
+// Apps are the apps a language added in the panel is translated for.
 var Apps = []App{ID}
 
 var catalogued = []App{ID, Console}
@@ -48,50 +51,29 @@ func ParseApp(name string) (App, bool) {
 	return "", false
 }
 
-func AppsFor(string) []App {
-	return Apps
-}
-
-func ServesApp(code string, app App) bool {
-	return slices.Contains(AppsFor(code), app)
-}
-
+// Base is the language every other falls back to.
 const Base = "en"
 
 type Messages = map[string]string
 
-type File struct {
-	Code string
-
-	Name   string
-	Native string
-
-	Messages map[App]Messages
-}
-
-const metaPrefix = "$"
-
-func Shipped() ([]File, error) {
-	shipped, err := load()
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]File, len(shipped.files))
-	copy(out, shipped.files)
-
-	return out, nil
-}
-
+// Keys are the keys an app has, sorted.
 func Keys(app App) []string {
-	shipped, err := load()
-	if err != nil {
-		return nil
-	}
-
-	return shipped.keys[app]
+	return load().keys[app]
 }
 
+// Text is the shipped English of one key, unformatted.
+func Text(app App, key string) (string, bool) {
+	text, ok := load().english[app][key]
+
+	return text, ok
+}
+
+// English is the shipped English of an app as a Catalog.
+func English(app App) *Catalog {
+	return load().catalogs[app]
+}
+
+// Coverage is how much of an app's keys messages translates.
 func Coverage(app App, messages Messages) (percent, missing int) {
 	keys := Keys(app)
 	if len(keys) == 0 {
@@ -108,17 +90,14 @@ func Coverage(app App, messages Messages) (percent, missing int) {
 	return translated * 100 / len(keys), len(keys) - translated
 }
 
+// Resolve is every key of an app, from the first layer that has it, else the
+// shipped English.
 func Resolve(app App, layers ...Messages) Messages {
-	shipped, err := load()
-	if err != nil {
-		shipped = &catalog{}
-	}
+	english := load().english[app]
+	out := make(Messages, len(english))
 
-	base := shipped.base[app]
-	out := make(Messages, len(shipped.keys[app]))
-
-	for _, key := range shipped.keys[app] {
-		out[key] = base[key]
+	for key, text := range english {
+		out[key] = text
 
 		for _, layer := range layers {
 			if value := layer[key]; strings.TrimSpace(value) != "" {
@@ -131,47 +110,18 @@ func Resolve(app App, layers ...Messages) Messages {
 	return out
 }
 
-func Text(app App, key string) (string, bool) {
-	shipped, err := load()
-	if err != nil {
-		return "", false
-	}
-
-	text, ok := shipped.base[app][key]
-
-	return text, ok
-}
-
-func Fill(text string, params map[string]any) string {
-	if len(params) == 0 {
-		return text
-	}
-
-	return placeholder.ReplaceAllStringFunc(text, func(whole string) string {
-		value, ok := params[whole[1:len(whole)-1]]
-		if !ok {
-			return whole
-		}
-
-		return fmt.Sprint(value)
-	})
-}
-
-var placeholder = regexp.MustCompile(`\{(\w+)\}`)
-
+// Known keeps the keys an app has and are filled in, and counts the ones it
+// does not have. A file the panel exports names its language in `$name` and
+// `$native`, which are passed over without being counted.
 func Known(app App, messages Messages) (Messages, int) {
-	keys := make(map[string]bool, len(Keys(app)))
-	for _, key := range Keys(app) {
-		keys[key] = true
-	}
-
+	english := load().english[app]
 	out := make(Messages, len(messages))
 	dropped := 0
 
 	for key, value := range messages {
 		switch {
-		case strings.HasPrefix(key, metaPrefix):
-		case !keys[key]:
+		case strings.HasPrefix(key, "$"):
+		case english[key] == "":
 			dropped++
 		case strings.TrimSpace(value) != "":
 			out[key] = value
@@ -181,191 +131,102 @@ func Known(app App, messages Messages) (Messages, int) {
 	return out, dropped
 }
 
-type catalog struct {
-	files []File
-	keys  map[App][]string
-	base  map[App]Messages
+// Catalog is one language's text, formatted by go-i18n.
+type Catalog struct {
+	localizer *goi18n.Localizer
 }
 
-var load = sync.OnceValues(func() (*catalog, error) {
-	byCode := map[string]*File{}
-
-	for _, app := range Apps {
-		messages, err := readApp(app)
-		if err != nil {
-			return nil, err
-		}
-
-		for code, file := range messages {
-			language := byCode[code]
-			if language == nil {
-				language = &File{Code: code, Messages: map[App]Messages{}}
-				byCode[code] = language
-			}
-
-			if language.Name == "" {
-				language.Name = file["$name"]
-			}
-			if language.Native == "" {
-				language.Native = file["$native"]
-			}
-
-			language.Messages[app] = withoutMeta(file)
-		}
+// NewCatalog is a catalog of messages in the language code names. A code
+// go-i18n cannot read is taken as English, which only changes plural rules.
+func NewCatalog(code string, messages Messages) *Catalog {
+	tag, err := language.Parse(code)
+	if err != nil {
+		tag = language.English
 	}
 
-	shipped := &catalog{keys: map[App][]string{}, base: map[App]Messages{}}
-
-	for _, language := range byCode {
-		if language.Name == "" {
-			language.Name = language.Code
-		}
-		if language.Native == "" {
-			language.Native = language.Name
-		}
-
-		shipped.files = append(shipped.files, *language)
+	bundle := goi18n.NewBundle(tag)
+	for key, text := range messages {
+		bundle.MustAddMessages(tag, &goi18n.Message{ID: key, Other: text})
 	}
 
-	sort.Slice(shipped.files, func(i, j int) bool {
-		a, b := shipped.files[i], shipped.files[j]
-		if (a.Code == Base) != (b.Code == Base) {
-			return a.Code == Base
-		}
+	return &Catalog{localizer: goi18n.NewLocalizer(bundle, tag.String())}
+}
 
-		return a.Name < b.Name
+// Has says whether the catalog has a key.
+func (c *Catalog) Has(key string) bool {
+	_, err := c.localizer.Localize(&goi18n.LocalizeConfig{MessageID: key, TemplateParser: placeholders})
+
+	return err == nil
+}
+
+// Localize is a key's text with params filled in, or the key itself when the
+// catalog lacks it.
+func (c *Catalog) Localize(key string, params map[string]any) string {
+	text, err := c.localizer.Localize(&goi18n.LocalizeConfig{
+		MessageID:      key,
+		TemplateData:   params,
+		TemplateParser: placeholders,
 	})
-
-	base := byCode[Base]
-	if base == nil {
-		return nil, fmt.Errorf("there is no %s translation directory: it is the language every other falls back to", Base)
+	if err != nil {
+		return key
 	}
+
+	return text
+}
+
+type shipped struct {
+	english  map[App]Messages
+	keys     map[App][]string
+	catalogs map[App]*Catalog
+}
+
+// load reads the embedded files once. They are compiled in, so one that does
+// not parse is a broken build: the tests fail on it before anything ships.
+var load = sync.OnceValue(func() *shipped {
+	out := &shipped{english: map[App]Messages{}, keys: map[App][]string{}, catalogs: map[App]*Catalog{}}
 
 	for _, app := range catalogued {
-		messages := base.Messages[app]
-
-		if messages == nil {
-			files, err := readApp(app)
-			if err != nil {
-				return nil, err
-			}
-			messages = withoutMeta(files[Base])
-		}
-
-		shipped.base[app] = messages
-
-		keys := make([]string, 0, len(messages))
-		for key := range messages {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-
-		shipped.keys[app] = keys
-	}
-
-	return shipped, nil
-})
-
-func readApp(app App) (map[string]Messages, error) {
-	entries, err := files.ReadDir(string(app))
-	if err != nil {
-		return nil, fmt.Errorf("read %s translations: %w", app, err)
-	}
-
-	byCode := make(map[string]Messages, len(entries))
-
-	for _, languageEntry := range entries {
-		if !languageEntry.IsDir() {
-			continue
-		}
-
-		code := languageEntry.Name()
-		groups, err := files.ReadDir(path.Join(string(app), code))
+		english, err := readApp(app)
 		if err != nil {
-			return nil, fmt.Errorf("read %s/%s translations: %w", app, code, err)
+			panic(err)
 		}
 
-		messages := Messages{}
-		for _, group := range groups {
-			name := group.Name()
-			if group.IsDir() || !strings.HasSuffix(name, ".json") {
-				continue
-			}
-
-			groupPath := path.Join(string(app), code, name)
-			raw, err := files.ReadFile(groupPath)
-			if err != nil {
-				return nil, fmt.Errorf("read %s: %w", groupPath, err)
-			}
-
-			var nested map[string]any
-			if err := json.Unmarshal(raw, &nested); err != nil {
-				return nil, fmt.Errorf("read %s: %w", groupPath, err)
-			}
-
-			file, err := Flatten(nested)
-			if err != nil {
-				return nil, fmt.Errorf("read %s: %w", groupPath, err)
-			}
-
-			for key, value := range file {
-				if _, twice := messages[key]; twice {
-					return nil, fmt.Errorf("read %s: %s is given twice", groupPath, key)
-				}
-				messages[key] = value
-			}
-		}
-
-		if len(messages) > 0 {
-			byCode[code] = messages
-		}
-	}
-
-	return byCode, nil
-}
-
-func Flatten(nested map[string]any) (Messages, error) {
-	out := Messages{}
-	if err := flattenInto(out, "", nested); err != nil {
-		return nil, err
-	}
-
-	return out, nil
-}
-
-func flattenInto(out Messages, prefix string, node map[string]any) error {
-	for key, value := range node {
-		full := key
-		if prefix != "" {
-			full = prefix + "." + key
-		}
-
-		switch value := value.(type) {
-		case string:
-			if _, twice := out[full]; twice {
-				return fmt.Errorf("%s is given twice", full)
-			}
-			out[full] = value
-		case map[string]any:
-			if err := flattenInto(out, full, value); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("%s is not text", full)
-		}
-	}
-
-	return nil
-}
-
-func withoutMeta(file Messages) Messages {
-	out := make(Messages, len(file))
-
-	for key, value := range file {
-		if !strings.HasPrefix(key, metaPrefix) {
-			out[key] = value
-		}
+		out.english[app] = english
+		out.keys[app] = slices.Sorted(maps.Keys(english))
+		out.catalogs[app] = NewCatalog(Base, english)
 	}
 
 	return out
+})
+
+// readApp parses an app's files with go-i18n, which flattens nested groups to
+// dotted keys. A key given in two files is refused.
+func readApp(app App) (Messages, error) {
+	paths, err := fs.Glob(files, string(app)+"/*."+Base+".json")
+	if err != nil {
+		return nil, err
+	}
+
+	bundle := goi18n.NewBundle(language.English)
+	out := Messages{}
+
+	for _, path := range paths {
+		file, err := bundle.LoadMessageFileFS(files, path)
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", path, err)
+		}
+
+		for _, message := range file.Messages {
+			if _, twice := out[message.ID]; twice {
+				return nil, fmt.Errorf("read %s: %s is given twice", path, message.ID)
+			}
+			out[message.ID] = message.Other
+		}
+	}
+
+	if len(out) == 0 {
+		return nil, fmt.Errorf("i18n/%s has no %s text: it is what every language falls back to", app, Base)
+	}
+
+	return out, nil
 }

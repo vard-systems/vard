@@ -9,7 +9,7 @@
 			"unauthorized_client": "This application is not allowed to sign users in right now.",
 			"access_denied": "You do not have access to this application.",
 			"server_error": "Something went wrong on our side. Try again in a moment.",
-			"other": "The sign-in could not be completed."
+			"unknown": "The sign-in could not be completed."
 		}
 	},
 	"error": {

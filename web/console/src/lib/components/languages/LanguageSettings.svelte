@@ -85,12 +85,7 @@
 
 <LanguageDialog bind:open={dialogOpen} language={editing} tab={dialogTab} {canWrite} />
 
-<NewLanguageDialog
-	bind:open={creating}
-	languages={list.data.languages}
-	shipped={list.data.shipped}
-	onCreated={created}
-/>
+<NewLanguageDialog bind:open={creating} languages={list.data.languages} onCreated={created} />
 
 <style>
 	.languages {

@@ -1,6 +1,4 @@
 {
-	"$name": "English",
-	"$native": "English",
 	"shell": {
 		"secured_by": "Secured by",
 		"trouble": "Trouble signing in?",

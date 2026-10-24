@@ -30,8 +30,7 @@ func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
 	return &Handler{store: st, audit: recorder, log: log}
 }
 
-// List returns every language, with how much of each app it translates, and
-// the shipped languages this installation does not have.
+// List returns every language, with how much of each app it translates.
 func (h *Handler) List(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -57,13 +56,7 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
-	shipped, err := i18n.Shipped()
-	if err != nil {
-		respond.Failure(c, h.log, err, "reading the shipped languages failed")
-		return
-	}
-
-	c.JSON(http.StatusOK, newListResponse(languages, text, shipped))
+	c.JSON(http.StatusOK, newListResponse(languages, text))
 }
 
 // Create adds a language, with the text it starts from (createRequest).
@@ -76,27 +69,16 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	text, file, err := h.startingText(c, strings.TrimSpace(req.CopyFrom))
+	text, err := h.startingText(c, strings.TrimSpace(req.CopyFrom))
 	if err != nil {
 		respond.Failure(c, h.log, err, "loading the text a language starts from failed")
 		return
-	}
-
-	if file != nil && normalizeCode(req.Code) == file.Code {
-		req.Name = firstOf(req.Name, file.Name)
-		req.NativeName = firstOf(req.NativeName, file.Native)
 	}
 
 	language, err := req.newLanguage()
 	if err != nil {
 		respond.Failure(c, h.log, err, "validating a language failed")
 		return
-	}
-
-	for app := range text {
-		if !i18n.ServesApp(language.Code, i18n.App(app)) {
-			delete(text, app)
-		}
 	}
 
 	language.Position = h.store.NextLanguagePosition(ctx)
@@ -118,39 +100,31 @@ func (h *Handler) Create(c *gin.Context) {
 	h.answer(c, http.StatusCreated, language)
 }
 
-func (h *Handler) startingText(c *gin.Context, from string) (map[string]map[string]string, *i18n.File, error) {
+// startingText is the text of the installed language a new one copies, every
+// key filled in, or nothing when it starts untranslated.
+func (h *Handler) startingText(c *gin.Context, from string) (map[string]map[string]string, error) {
 	if from == "" {
-		return nil, nil, nil
+		return nil, nil
 	}
 
-	source, err := h.store.Language(c.Request.Context(), from)
+	ctx := c.Request.Context()
+
+	source, err := h.store.Language(ctx, from)
 	switch {
-	case err == nil:
-		text, err := h.store.Translations(c.Request.Context(), source.ID)
-		return text[source.ID], nil, err
-	case !errors.Is(err, store.ErrNotFound):
-		return nil, nil, err
+	case errors.Is(err, store.ErrNotFound):
+		return nil, nothingToCopy.With("code", from)
+	case err != nil:
+		return nil, err
 	}
 
-	shipped, err := i18n.Shipped()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for _, file := range shipped {
-		if file.Code != from {
-			continue
+	text := make(map[string]map[string]string, len(i18n.Apps))
+	for _, app := range i18n.Apps {
+		if text[string(app)], err = h.store.ResolvedTranslation(ctx, source, app); err != nil {
+			return nil, err
 		}
-
-		text := make(map[string]map[string]string, len(file.Messages))
-		for app, messages := range file.Messages {
-			text[string(app)] = messages
-		}
-
-		return text, &file, nil
 	}
 
-	return nil, nil, nothingToCopy.With("code", from)
+	return text, nil
 }
 
 // Update changes a language's names and whether and where it is offered.
@@ -364,23 +338,5 @@ func (h *Handler) describe(c *gin.Context, language *model.Language) (languageRe
 		return languageResponse{}, err
 	}
 
-	shipped, err := i18n.Shipped()
-	if err != nil {
-		return languageResponse{}, err
-	}
-
-	codes := make(map[string]bool, len(shipped))
-	for _, file := range shipped {
-		codes[file.Code] = true
-	}
-
-	return newLanguageResponse(*language, text[language.ID], codes), nil
-}
-
-func firstOf(value, fallback string) string {
-	if strings.TrimSpace(value) != "" {
-		return value
-	}
-
-	return fallback
+	return newLanguageResponse(*language, text[language.ID]), nil
 }

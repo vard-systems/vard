@@ -18,7 +18,8 @@ OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
 configurable login flows, emailed one-time codes, TOTP for administrators,
 optional two-step verification (authenticator app or passkeys) for users,
 passwordless sign-in with a passkey, roles and API scopes, an activity log, and
-translations editable from the panel.
+the sign-in pages in English, with more languages added, translated and made the
+default from the panel.
 
 ## Quick start
 
@@ -147,7 +148,7 @@ cmd/loginer, cmd/migrate   the server, and the migration runner
 internal/                  the Go code: api (HTTP handlers), oidc (the provider),
                            store (every query), model (the schema), and the rest
 migrations/                the schema and every change to it, in order
-i18n/                      the sign-in pages' translations, the API's messages
+i18n/                      the English that ships: sign-in pages, API messages
 web/id, web/console        the two SvelteKit apps
 deploy/                    the Docker stack
 scripts/                   what the Makefile runs

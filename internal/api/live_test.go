@@ -19,7 +19,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"loginer/i18n"
 	"loginer/internal/cache"
 	"loginer/internal/cache/cachetest"
 	"loginer/internal/config"
@@ -227,19 +226,12 @@ func startNode(t *testing.T, db *gorm.DB, dbCfg config.DB, shared *cache.Redis, 
 }
 
 // seed writes what main writes before serving: the administrators' sign-in
-// settings, the shipped languages and the server's own APIs.
+// settings and the server's own APIs.
 func seed(t *testing.T, st *store.Store, cfg config.Config) {
 	t.Helper()
 
 	ctx := context.Background()
 	if err := st.EnsureAdminSecurity(ctx, cfg.AdminMFARequired); err != nil {
-		t.Fatal(err)
-	}
-	shipped, err := i18n.Shipped()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := st.EnsureLanguages(ctx, shipped); err != nil {
 		t.Fatal(err)
 	}
 	if err := st.EnsureSystemAPIs(ctx); err != nil {

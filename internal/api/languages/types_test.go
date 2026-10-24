@@ -10,7 +10,6 @@ import (
 // web/console/src/lib/api/types.ts; this keeps the two in step.
 func TestAnswersMatchThePanelsTypes(t *testing.T) {
 	tstypes.Match(t, "Language", languageResponse{})
-	tstypes.Match(t, "ShippedLanguage", shippedResponse{})
 	tstypes.Match(t, "LanguageList", listResponse{})
 	tstypes.Match(t, "Translation", translationResponse{})
 }

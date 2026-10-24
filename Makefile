@@ -15,7 +15,7 @@ COMPOSE := docker compose -f deploy/compose.yaml
 
 # $(call each-app,command): run the command in every app, stopping at the
 # first that fails.
-each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)); done
+each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)) || exit 1; done
 
 .PHONY: help setup deps tidy dev start run build build-api build-web generate \
 	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \

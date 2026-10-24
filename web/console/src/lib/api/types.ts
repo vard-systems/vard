@@ -690,20 +690,12 @@ export type Language = {
 	is_default: boolean;
 	position: number;
 	base: boolean;
-	shipped: boolean;
 	updated_at: string;
-};
-
-export type ShippedLanguage = {
-	code: string;
-	name: string;
-	native_name: string;
 };
 
 export type LanguageList = {
 	languages: Language[];
 	apps: LocaleApp[];
-	shipped: ShippedLanguage[];
 };
 
 export type LanguageInput = {

@@ -69,8 +69,9 @@ internal/api/kit/        what every handler shares: respond (answers and the
                          share: the user's session, the provider's refusals);
                          tstypes (holds the panel's types.ts to the answers)
 migrations/              the schema, then one file per change, applied in order
-i18n/                    translations: id/<locale>/ for the sign-in pages,
-                         console/en/ for the admin API's problems
+i18n/                    the English that ships, read with go-i18n: id/*.en.json
+                         for the sign-in pages, console/*.en.json for the admin
+                         API's problems; Catalog formats any language's text
 web/<app>/src/hooks.server.ts  the app's server: API paths passed on
                          (lib/server/api.ts), page headers (lib/server/headers.ts)
 web/console/src/lib/     api/, query/, components/ui/, components/<feature>/,
@@ -194,7 +195,7 @@ takes an admin-cli token; a route for a person alone goes under `signedIn`.
 — or in `kit/respond/shared.go` if several packages use it. Answer with
 `respond.Fail(c, taken)` or return `taken.With("code", code)` (a write that
 may hit a unique value: `respond.Taken`), and add
-`error.language_code_taken` to `i18n/<app>/<locale>/server.json` for each app
+`error.language_code_taken` to `i18n/<app>/server.en.json` for each app
 it is for (`Public` → `id`, `Admin` → `console`, `Both`). A parameter in the
 sentence is listed in `TestErrorParametersAreSent`. A malformed id is answered
 like a missing one: `*_not_found`. The one exception is `respond.Invalid`,
@@ -245,8 +246,14 @@ commits. Cache a projection, never a model carrying a secret, and add it to
 `TestCachedTypesSurviveJSON`. Never cache users, codes or refresh tokens.
 Everything must work with a nil cache.
 
-**A language** (sign-in pages only; the panel is English). Add `i18n/id/<tag>/`
-with the same groups as `en` and `$name`/`$native` in `common.json`.
+**A language** (sign-in pages only; the panel is English). English is the
+only one that ships, and the default on a fresh installation. Every other is
+added on the panel's Languages page (Settings), translated there, and offered
+when it is turned on; one of them may be made the default the sign-in pages
+show before somebody chooses. Nothing but `*.en.json` goes in `i18n/`. The
+server formats text with go-i18n (`i18n.Catalog`, `{name}` placeholders, as
+svelte-i18n does on the pages); a group may not hold only keys go-i18n
+reserves (`other`, `description`, `one`, …), which `TestEveryKeyIsRead` catches.
 
 **A panel page.** A folder under `src/routes/(panel)/`, whose layout signs
 the administrator in and draws the header and sidebar. `+page.ts` checks the
@@ -281,7 +288,7 @@ shield mark does.
 ## Conventions
 
 - **Text.** Sign-in pages: never a literal — `const t = useTranslator()` and
-  `t('area.thing', { param })`, the key added to every group under `i18n/id/`.
+  `t('area.thing', { param })`, the key added to its group in `i18n/id/*.en.json`.
   Panel: the opposite — English in the markup; an error shown is the sentence
   the API sent (`messageOf` from `#lib/api/index.js`).
 - **The project's own name is never spelled out.** `internal/brand` holds it

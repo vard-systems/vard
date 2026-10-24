@@ -177,10 +177,9 @@ var indexes = []struct{ name, create string }{
 // in (admin_security) is written on the server's first start, from the
 // configuration, for the same reason: it is a setting, not a schema.
 //
-// The base language's row is the only language here. Its text, and the other
-// languages the server ships with, are imported on the first start by
-// store.EnsureLanguages: the files change with every release, and a migration
-// has to say the same thing forever.
+// English is the only language here, offered and the default. Its text is not
+// stored: it ships in i18n/ and changes with every release, and a migration has
+// to say the same thing forever. Other languages are added from the panel.
 func seed(db *gorm.DB) error {
 	roles := append([]model.AdminRole(nil), startingRoles...)
 	if err := db.Create(&roles).Error; err != nil {
