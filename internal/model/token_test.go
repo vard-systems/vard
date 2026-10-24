@@ -238,6 +238,11 @@ func TestEvaluateTokenRefusals(t *testing.T) {
 			reason: "the application requires a role, and the user holds none of its roles",
 		},
 		{
+			name:   "a user, and no grant that signs users in",
+			change: func(f *fixture, r *TokenRequest) { r.Application.GrantTypes = []string{GrantClientCredentials} },
+			reason: "a token for a user needs the authorization_code or device code grant, which the application does not have",
+		},
+		{
 			name:   "no user, and no client_credentials grant",
 			change: func(f *fixture, r *TokenRequest) { r.User = nil },
 			reason: "a token without a user needs the client_credentials grant, which the application does not have",
@@ -288,6 +293,18 @@ func TestEvaluateTokenClaims(t *testing.T) {
 
 // A machine-to-machine token: no user, so the application's allowance is the
 // only limit, and there is no ID token.
+// A device the user allowed elsewhere gets tokens for them as a browser
+// sign-in would.
+func TestEvaluateTokenForADeviceOnlyApplication(t *testing.T) {
+	f := newFixture()
+	r := f.request("openid orders:read")
+	r.Application.GrantTypes = []string{GrantDeviceCode}
+
+	if p := EvaluateToken(r); !p.Issued {
+		t.Errorf("a device-only application was refused a token for its user: %s", p.Reason)
+	}
+}
+
 func TestEvaluateTokenMachine(t *testing.T) {
 	f := newFixture()
 	r := f.request("openid orders:write orders:refund")

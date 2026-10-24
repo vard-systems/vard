@@ -162,6 +162,9 @@ type ConnectedApplication struct {
 	LastUsed   time.Time `json:"last_used_at"`
 }
 
+// ConnectedApplications are the applications that can act for the user — one
+// holding a refresh token — and those the user allowed on the consent page,
+// which ask nothing more of them until they are disconnected.
 func (s *Service) ConnectedApplications(ctx context.Context, session *Session) ([]ConnectedApplication, error) {
 	grants, err := s.store.UserGrants(ctx, session.User.ID, s.now())
 	if err != nil {
@@ -188,6 +191,39 @@ func (s *Service) ConnectedApplications(ctx context.Context, session *Session) (
 		})
 	}
 
+	consents, err := s.store.UserConsents(ctx, session.User.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, consent := range consents {
+		if consent.Application == nil {
+			continue
+		}
+
+		index := slices.IndexFunc(out, func(it ConnectedApplication) bool {
+			return it.ClientID == consent.Application.ClientID
+		})
+		if index >= 0 {
+			for _, scope := range consent.Scopes {
+				if !slices.Contains(out[index].Scopes, scope) {
+					out[index].Scopes = append(out[index].Scopes, scope)
+				}
+			}
+			continue
+		}
+
+		out = append(out, ConnectedApplication{
+			ClientID:   consent.Application.ClientID,
+			Name:       consent.Application.Name,
+			LogoURL:    consent.Application.LogoURL,
+			WebsiteURL: consent.Application.WebsiteURL,
+			Scopes:     slices.Clone(consent.Scopes),
+			Authorized: consent.CreatedAt,
+			LastUsed:   consent.UpdatedAt,
+		})
+	}
+
 	return out, nil
 }
 
@@ -204,7 +240,14 @@ func (s *Service) DisconnectApplication(ctx context.Context, session *Session, c
 	if err != nil {
 		return err
 	}
-	if revoked == 0 {
+
+	// Disconnected, it asks again before it is let back in.
+	forgotten, err := s.store.ForgetConsent(ctx, session.User.ID, app.ID)
+	if err != nil {
+		return err
+	}
+
+	if revoked == 0 && !forgotten {
 		return ErrNotYours
 	}
 

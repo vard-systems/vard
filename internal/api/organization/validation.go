@@ -2,6 +2,8 @@ package organization
 
 import (
 	"net/http"
+	"slices"
+	"time"
 
 	"loginer/internal/api/kit/respond"
 	"loginer/internal/api/kit/validate"
@@ -41,6 +43,12 @@ func (r *organizationRequest) applyTo(organization *model.Organization) ([]strin
 		if field.was != field.became {
 			changed = append(changed, field.name)
 		}
+	}
+
+	// Users who accepted the old links are asked again by the Agreements step.
+	if slices.Contains(changed, "terms_url") || slices.Contains(changed, "privacy_url") {
+		now := time.Now()
+		updated.AgreementsUpdatedAt = &now
 	}
 
 	*organization = updated

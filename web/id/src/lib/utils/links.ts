@@ -9,6 +9,17 @@ export function authHref(page: AuthPage, request: string | null): string {
 	return request ? `${path}?request=${encodeURIComponent(request)}` : path;
 }
 
+/** The second-factor page, for a sign-in that waits for one: the sign-in it finishes is named by a
+    cookie, so the address carries only where to go after. */
+export function secondFactorHref(request: string | null, next: string | null): string {
+	const query = new URLSearchParams();
+	if (request) query.set('request', request);
+	if (next && next !== '/') query.set('next', next);
+
+	const search = query.toString();
+	return `${resolve('second-factor')}${search ? `?${search}` : ''}`;
+}
+
 type StartOptions = { request?: string | null; next?: string | null; email?: string };
 
 /** The server's own path that sends the browser on to an SSO connection. */

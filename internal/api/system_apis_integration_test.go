@@ -292,6 +292,16 @@ func TestLiveAccountAPIWithAUserToken(t *testing.T) {
 		t.Errorf("POST /email with an account.write token = %d %v, want 403 email_change_not_offered", status, body)
 	}
 
+	// Nor may a token accept terms or allow an application for its user:
+	// those pages answer only to the person's own browser.
+	for _, path := range []string{"/consent", "/agreements", "/device"} {
+		if status, body := f.bearer(http.MethodPost, account+path, writer, map[string]any{
+			"request": "any", "user_code": "BCDF-GHJK", "yes": true,
+		}); status != http.StatusForbidden || body["code"] != "browser_session_required" {
+			t.Errorf("POST %s with an account.write token = %d %v, want 403 browser_session_required", path, status, body)
+		}
+	}
+
 	// A token for another API is not an account API token.
 	b := f.s.browser()
 	verifier, challenge := pkce(t)

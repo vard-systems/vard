@@ -1,4 +1,4 @@
-package auth
+package recovery
 
 import (
 	"strings"
@@ -7,9 +7,9 @@ import (
 	"loginer/internal/jose"
 )
 
-// testService is a Service with only what the recovery-code helpers need: a
-// sealer to key the hashes with.
-func testService(t *testing.T) *Service {
+const purpose = "test recovery code"
+
+func testSealer(t *testing.T) *jose.Sealer {
 	t.Helper()
 
 	sealer, err := jose.NewSealer("test-secret-at-least-32-bytes-long!!")
@@ -17,37 +17,37 @@ func testService(t *testing.T) *Service {
 		t.Fatal(err)
 	}
 
-	return &Service{sealer: sealer}
+	return sealer
 }
 
 // The shape a code is read off paper in, and the shape check that tells one
 // from an authenticator's six digits.
 func TestNewRecoveryCodesAreTheShapeTheyAreReadIn(t *testing.T) {
-	s := testService(t)
-	codes, hashes, err := s.newRecoveryCodes()
+	sealer := testSealer(t)
+	codes, hashes, err := New(sealer, purpose)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if len(codes) != recoveryCodeCount || len(hashes) != recoveryCodeCount {
-		t.Fatalf("got %d codes and %d hashes, want %d of each", len(codes), len(hashes), recoveryCodeCount)
+	if len(codes) != Count || len(hashes) != Count {
+		t.Fatalf("got %d codes and %d hashes, want %d of each", len(codes), len(hashes), Count)
 	}
 
 	seen := map[string]bool{}
 	for i, code := range codes {
-		half := recoveryCodeLetters / 2
+		half := letters / 2
 
 		switch {
-		case len(code) != recoveryCodeLetters+1:
-			t.Errorf("code %q is %d characters, want %d", code, len(code), recoveryCodeLetters+1)
+		case len(code) != letters+1:
+			t.Errorf("code %q is %d characters, want %d", code, len(code), letters+1)
 		case code[half] != '-':
 			t.Errorf("code %q has no dash in the middle", code)
-		case !isRecoveryCode(code):
+		case !Is(code):
 			t.Errorf("code %q is not recognised as a recovery code", code)
 		}
 
 		for _, letter := range strings.ReplaceAll(code, "-", "") {
-			if !strings.ContainsRune(recoveryAlphabet, letter) {
+			if !strings.ContainsRune(alphabet, letter) {
 				t.Errorf("code %q has %q, which is not in the alphabet", code, letter)
 			}
 		}
@@ -57,7 +57,7 @@ func TestNewRecoveryCodesAreTheShapeTheyAreReadIn(t *testing.T) {
 		}
 		seen[code] = true
 
-		if hashes[i] != s.hashRecoveryCode(code) {
+		if hashes[i] != Hash(sealer, purpose, code) {
 			t.Errorf("the hash stored for %q is not its own", code)
 		}
 	}
@@ -75,19 +75,19 @@ func TestNewRecoveryCodesAreTheShapeTheyAreReadIn(t *testing.T) {
 // the bound below is nearly six, which an even spread will not cross in the
 // life of this repository.
 func TestRecoveryCodeLettersAreEvenlySpread(t *testing.T) {
-	s := testService(t)
+	sealer := testSealer(t)
 
 	const (
 		rounds   = 1000
-		favoured = 256 % len(recoveryAlphabet) // 8: the letters a modulo would repeat
-		expected = float64(favoured) / float64(len(recoveryAlphabet))
+		favoured = 256 % len(alphabet) // 8: the letters a modulo would repeat
+		expected = float64(favoured) / float64(len(alphabet))
 		bound    = 0.008
 	)
 
 	letters, hits := 0, 0
 
 	for range rounds {
-		codes, _, err := s.newRecoveryCodes()
+		codes, _, err := New(sealer, purpose)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -95,7 +95,7 @@ func TestRecoveryCodeLettersAreEvenlySpread(t *testing.T) {
 		for _, code := range codes {
 			for _, letter := range strings.ReplaceAll(code, "-", "") {
 				letters++
-				if strings.IndexRune(recoveryAlphabet, letter) < favoured {
+				if strings.IndexRune(alphabet, letter) < favoured {
 					hits++
 				}
 			}

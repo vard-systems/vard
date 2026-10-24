@@ -214,6 +214,72 @@ const actions: Record<string, Action> = {
 		category: 'access',
 		icon: 'ri-apps-line'
 	},
+	'user.two_step_enabled': {
+		label: 'Two-step on',
+		verb: 'added a second factor',
+		category: 'access',
+		icon: 'ri-shield-keyhole-line'
+	},
+	'user.two_step_removed': {
+		label: 'Factor removed',
+		verb: 'removed a second factor',
+		category: 'access',
+		icon: 'ri-shield-cross-line'
+	},
+	'user.recovery_codes_regenerated': {
+		label: 'Recovery codes',
+		verb: 'replaced their recovery codes',
+		category: 'access',
+		icon: 'ri-key-line'
+	},
+	'user.second_factor_failed': {
+		label: 'Second factor failed',
+		verb: 'gave a wrong second factor',
+		category: 'access',
+		icon: 'ri-error-warning-line'
+	},
+	'user.two_step_reset': {
+		label: 'Two-step reset',
+		verb: 'reset two-step verification for',
+		category: 'users',
+		icon: 'ri-shield-cross-line'
+	},
+	'user.device_allowed': {
+		label: 'Device allowed',
+		verb: 'allowed a device to sign in',
+		category: 'access',
+		icon: 'ri-tv-2-line'
+	},
+	'user.device_denied': {
+		label: 'Device refused',
+		verb: 'refused a device',
+		category: 'access',
+		icon: 'ri-tv-2-line'
+	},
+	'user.consent_given': {
+		label: 'App allowed',
+		verb: 'allowed an application',
+		category: 'access',
+		icon: 'ri-checkbox-circle-line'
+	},
+	'user.consent_denied': {
+		label: 'App refused',
+		verb: 'refused an application',
+		category: 'access',
+		icon: 'ri-close-circle-line'
+	},
+	'user.agreements_accepted': {
+		label: 'Terms accepted',
+		verb: 'accepted the terms',
+		category: 'access',
+		icon: 'ri-file-shield-2-line'
+	},
+	'user.agreements_declined': {
+		label: 'Terms declined',
+		verb: 'declined the terms',
+		category: 'access',
+		icon: 'ri-file-forbid-line'
+	},
 	'user.password_reset': {
 		label: 'Password reset',
 		verb: 'reset their password',
@@ -314,6 +380,19 @@ const actions: Record<string, Action> = {
 		verb: 'updated application',
 		category: 'applications',
 		icon: 'ri-apps-line'
+	},
+	'application.registered': {
+		label: 'Application registered',
+		verb: 'registered application',
+		category: 'applications',
+		icon: 'ri-apps-2-add-line'
+	},
+	'application.logout_undelivered': {
+		label: 'Logout not delivered',
+		verb: 'was signed out, but no logout reached',
+		category: 'applications',
+		tone: 'warning',
+		icon: 'ri-logout-box-r-line'
 	},
 	'application.deleted': {
 		label: 'Application deleted',
@@ -678,6 +757,16 @@ const selfTargeted = new Set([
 	'user.identity_connected',
 	'user.session_revoked',
 	'user.application_disconnected',
+	'user.two_step_enabled',
+	'user.two_step_removed',
+	'user.recovery_codes_regenerated',
+	'user.second_factor_failed',
+	'user.device_allowed',
+	'user.device_denied',
+	'user.consent_given',
+	'user.consent_denied',
+	'user.agreements_accepted',
+	'user.agreements_declined',
 	'user.login_code_sent',
 	'user.login_code_failed'
 ]);

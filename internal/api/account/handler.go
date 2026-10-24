@@ -8,12 +8,13 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	"loginer/internal/api/kit/respond"
 	"loginer/internal/api/kit/session"
+	"loginer/internal/api/kit/signedin"
 	"loginer/internal/api/kit/validate"
 	"loginer/internal/brand"
 	"loginer/internal/model"
@@ -173,7 +174,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	result, err := h.provider.SignIn(c.Request.Context(), req.Email, req.Password, req.Request, req.Remember, client(c))
+	result, err := h.provider.SignIn(c.Request.Context(), req.Email, req.Password, req.Request, req.Remember, signedin.Client(c))
 	if err != nil {
 		h.fail(c, err, "signing a user in failed")
 		return
@@ -202,7 +203,7 @@ func (h *Handler) Register(c *gin.Context) {
 		LastName:      req.LastName,
 		AcceptedTerms: req.AcceptTerms,
 		Remember:      req.Remember,
-	}, client(c))
+	}, signedin.Client(c))
 	if err != nil {
 		h.fail(c, err, "registering a user failed")
 		return
@@ -221,6 +222,14 @@ func (h *Handler) signedIn(c *gin.Context, request string, result *oidc.SignInRe
 	// so nothing but the code finishes this sign-in.
 	if result.Code != nil {
 		c.JSON(http.StatusOK, signedInResponse{Code: result.Code})
+		return
+	}
+
+	// Held for the user's second factor: the cookie names the sign-in, and
+	// the second-factor page finishes it.
+	if result.SecondFactorHandle != "" {
+		session.SetSecondFactor(c, result.SecondFactorHandle, time.Now().Add(model.PendingSignInLifetime), h.secure)
+		c.JSON(http.StatusOK, signedInResponse{SecondFactor: true})
 		return
 	}
 
@@ -253,7 +262,7 @@ func (h *Handler) Code(c *gin.Context) {
 		return
 	}
 
-	result, err := h.provider.SubmitLoginCode(c.Request.Context(), req.Handle, req.Code, client(c))
+	result, err := h.provider.SubmitLoginCode(c.Request.Context(), req.Handle, req.Code, signedin.Client(c))
 	if err != nil {
 		h.fail(c, err, "checking a one-time code failed")
 		return
@@ -275,35 +284,13 @@ func (h *Handler) ResendCode(c *gin.Context) {
 		return
 	}
 
-	challenge, err := h.provider.ResendLoginCode(c.Request.Context(), req.Handle, client(c))
+	challenge, err := h.provider.ResendLoginCode(c.Request.Context(), req.Handle, signedin.Client(c))
 	if err != nil {
 		h.fail(c, err, "sending another one-time code failed")
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": challenge})
-}
-
-// ChangeEmail starts moving the signed-in user to another address, given their
-// current password. It answers the same whether or not the address is taken,
-// and only to a browser session: an access token is refused.
-func (h *Handler) ChangeEmail(c *gin.Context) {
-	var req emailRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respond.Fail(c, respond.InvalidBody)
-		return
-	}
-	if err := req.validate(); err != nil {
-		respond.Failure(c, h.log, err, "validating an address change failed")
-		return
-	}
-
-	if err := h.provider.RequestEmailChange(c.Request.Context(), signedInSession(c), req.Email, req.CurrentPassword, client(c)); err != nil {
-		h.fail(c, err, "starting an address change failed")
-		return
-	}
-
-	c.JSON(http.StatusAccepted, gin.H{"status": "sent"})
 }
 
 // ForgotPassword sends a reset link. It answers the same whether or not the
@@ -319,7 +306,7 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.provider.ForgotPassword(c.Request.Context(), req.Email, req.Request, req.Language, client(c)); err != nil {
+	if err := h.provider.ForgotPassword(c.Request.Context(), req.Email, req.Request, req.Language, signedin.Client(c)); err != nil {
 		h.fail(c, err, "starting a password reset failed")
 		return
 	}
@@ -350,7 +337,7 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.provider.ResetPassword(c.Request.Context(), req.Token, req.Password, client(c)); err != nil {
+	if err := h.provider.ResetPassword(c.Request.Context(), req.Token, req.Password, signedin.Client(c)); err != nil {
 		h.fail(c, err, "resetting a password failed")
 		return
 	}
@@ -373,7 +360,7 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	if err := h.provider.VerifyEmail(c.Request.Context(), req.Token, client(c)); err != nil {
+	if err := h.provider.VerifyEmail(c.Request.Context(), req.Token, signedin.Client(c)); err != nil {
 		h.fail(c, err, "verifying an email failed")
 		return
 	}
@@ -402,7 +389,7 @@ func (h *Handler) Logout(c *gin.Context) {
 		PostLogoutRedirectURI: req.PostLogoutRedirectURI,
 		State:                 req.State,
 		Confirmed:             true,
-	}, session.UserToken(c), client(c))
+	}, session.UserToken(c), signedin.Client(c))
 	if err != nil {
 		h.log.Error("signing a user out failed", "error", err)
 		signedOut = true
@@ -414,8 +401,6 @@ func (h *Handler) Logout(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "signed out", "location": location})
 }
-
-const sessionKey = "user_session"
 
 var (
 	accountTokenRefused = respond.Define(http.StatusUnauthorized, "account_token_refused", respond.Public)
@@ -445,7 +430,7 @@ func (h *Handler) RequireSession(c *gin.Context) {
 		return
 	}
 
-	c.Set(sessionKey, current)
+	signedin.Set(c, current)
 	c.Next()
 }
 
@@ -472,132 +457,91 @@ func (h *Handler) requireToken(c *gin.Context, token string) {
 		return
 	}
 
-	c.Set(sessionKey, caller.Session)
+	signedin.Set(c, caller.Session)
 	c.Next()
 }
 
-func signedInSession(c *gin.Context) *oidc.Session {
-	value, _ := c.Get(sessionKey)
-	current, _ := value.(*oidc.Session)
-	return current
-}
-
-// Me returns the signed-in user.
-func (h *Handler) Me(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"user": newUserResponse(signedInSession(c).User)})
-}
-
-// UpdateMe changes the signed-in user's name.
-func (h *Handler) UpdateMe(c *gin.Context) {
-	var req profileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respond.Fail(c, respond.InvalidBody)
-		return
-	}
-	if err := req.validate(); err != nil {
-		respond.Failure(c, h.log, err, "validating a profile failed")
-		return
-	}
-
-	user, err := h.provider.UpdateProfile(c.Request.Context(), signedInSession(c), oidc.Profile{
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-	}, client(c))
-	if err != nil {
-		h.fail(c, err, "updating a profile failed")
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"user": newUserResponse(user)})
-}
-
-// ChangePassword replaces the signed-in user's password.
-func (h *Handler) ChangePassword(c *gin.Context) {
-	var req passwordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respond.Fail(c, respond.InvalidBody)
-		return
-	}
-	if err := req.validate(); err != nil {
-		respond.Failure(c, h.log, err, "validating a password change failed")
-		return
-	}
-
-	err := h.provider.ChangePassword(c.Request.Context(), signedInSession(c), req.CurrentPassword, req.NewPassword, client(c))
-	if err != nil {
-		h.fail(c, err, "changing a password failed")
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"status": "changed"})
-}
-
-// Sessions lists where the signed-in user is signed in.
-func (h *Handler) Sessions(c *gin.Context) {
-	sessions, err := h.provider.Sessions(c.Request.Context(), signedInSession(c))
-	if err != nil {
-		h.fail(c, err, "listing sessions failed")
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"sessions": sessions})
-}
-
-// EndSession signs one of the user's other browsers out.
-func (h *Handler) EndSession(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		respond.Fail(c, provided[oidc.ErrNotYours.Code])
-		return
-	}
-
-	if err := h.provider.EndSession(c.Request.Context(), signedInSession(c), id, client(c)); err != nil {
-		h.fail(c, err, "ending a session failed")
-		return
-	}
-
-	c.Status(http.StatusNoContent)
-}
-
-// Applications lists the applications that can still act for the user.
-func (h *Handler) Applications(c *gin.Context) {
-	apps, err := h.provider.ConnectedApplications(c.Request.Context(), signedInSession(c))
-	if err != nil {
-		h.fail(c, err, "listing connected applications failed")
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"applications": apps})
-}
-
-// Disconnect revokes an application's refresh tokens for the user.
-func (h *Handler) Disconnect(c *gin.Context) {
-	err := h.provider.DisconnectApplication(c.Request.Context(), signedInSession(c), c.Param("client_id"), client(c))
-	if err != nil {
-		h.fail(c, err, "disconnecting an application failed")
-		return
-	}
-
-	c.Status(http.StatusNoContent)
-}
-
 func (h *Handler) fail(c *gin.Context, err error, note string) {
-	if sso, ok := errors.AsType[*oidc.SSORequired](err); ok {
-		respond.Fail(c, provided[oidc.ErrSSORequired.Code], "slug", sso.Slug, "name", sso.Name)
+	signedin.Fail(c, h.log, err, note)
+}
+
+// SecondFactor is what the second-factor page offers for the sign-in the
+// browser's cookie names.
+func (h *Handler) SecondFactor(c *gin.Context) {
+	challenge, err := h.provider.SecondFactorFor(c.Request.Context(), session.SecondFactor(c))
+	if err != nil {
+		h.fail(c, err, "loading a second-factor challenge failed")
 		return
 	}
 
-	if refused, ok := errors.AsType[*oidc.Problem](err); ok {
-		if problem, ok := provided[refused.Code]; ok {
-			respond.Write(c, problem.Fault(nil))
-			return
-		}
-	}
-
-	respond.Failure(c, h.log, err, note)
+	c.JSON(http.StatusOK, gin.H{"second_factor": challenge})
 }
 
-func client(c *gin.Context) oidc.Client {
-	language, _ := c.Cookie(oidc.LanguageCookie)
-	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: language}
+// SubmitSecondFactor finishes a waiting sign-in, and answers as the sign-in
+// itself does: a cookie, and where to go next.
+func (h *Handler) SubmitSecondFactor(c *gin.Context) {
+	var req secondFactorRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+	if err := req.validate(); err != nil {
+		respond.Failure(c, h.log, err, "validating a second factor failed")
+		return
+	}
+
+	result, err := h.provider.SubmitSecondFactor(c.Request.Context(), session.SecondFactor(c), oidc.SecondFactorAnswer{
+		Code:    req.Code,
+		Passkey: req.Passkey,
+	}, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "checking a second factor failed")
+		return
+	}
+
+	session.ClearSecondFactor(c, h.secure)
+	h.signedIn(c, result.Request, result)
+}
+
+// BeginPasskey starts a sign-in with a passkey alone.
+func (h *Handler) BeginPasskey(c *gin.Context) {
+	var req passkeyStartRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+	if err := req.validate(); err != nil {
+		respond.Failure(c, h.log, err, "validating a passkey sign-in failed")
+		return
+	}
+
+	offer, err := h.provider.BeginPasskeySignIn(c.Request.Context(), req.Request, req.Remember)
+	if err != nil {
+		h.fail(c, err, "starting a passkey sign-in failed")
+		return
+	}
+
+	c.JSON(http.StatusOK, offer)
+}
+
+// FinishPasskey signs in with the passkey's answer, and answers as a password
+// sign-in does: a cookie, and where to go next.
+func (h *Handler) FinishPasskey(c *gin.Context) {
+	var req passkeyFinishRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+	if err := req.validate(); err != nil {
+		respond.Failure(c, h.log, err, "validating a passkey answer failed")
+		return
+	}
+
+	result, err := h.provider.FinishPasskeySignIn(c.Request.Context(), req.Handle, req.Response, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "checking a passkey failed")
+		return
+	}
+
+	h.signedIn(c, result.Request, result)
 }

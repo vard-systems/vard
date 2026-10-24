@@ -63,8 +63,14 @@ type TokenParams struct {
 	RedirectURI  string
 	CodeVerifier string
 	RefreshToken string
+	DeviceCode   string
 	Scope        string
 	Audience     string
+	// DPoP is the request's DPoP proof, "" when it sent none.
+	DPoP string
+
+	// dpopKey is the thumbprint of the key the proof showed, once checked.
+	dpopKey string
 }
 
 // TokenResponse is a successful token response (RFC 6749 section 5.1).
@@ -90,11 +96,19 @@ func (s *Service) Token(ctx context.Context, p TokenParams) (*TokenResponse, err
 		return nil, oauthError(ErrUnauthorizedClient, "the application does not have the "+p.GrantType+" grant")
 	}
 
+	if p.DPoP != "" {
+		if p.dpopKey, err = s.checkDPoP(ctx, p.DPoP, "POST", s.issuer+PathToken, ""); err != nil {
+			return nil, err
+		}
+	}
+
 	switch p.GrantType {
 	case model.GrantAuthorizationCode:
 		return s.exchangeCode(ctx, app, p)
 	case model.GrantRefreshToken:
 		return s.refresh(ctx, app, p)
+	case model.GrantDeviceCode:
+		return s.deviceToken(ctx, app, p)
 	default:
 		return s.clientCredentials(ctx, app, p)
 	}
@@ -163,7 +177,7 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		}
 	}
 
-	return s.issue(ctx, grant{
+	response, err := s.issue(ctx, grant{
 		app:      app,
 		user:     user,
 		scopes:   strings.Fields(code.Scope),
@@ -172,8 +186,22 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		authTime: code.AuthenticatedAt,
 		session:  code.SessionID,
 		codeID:   &code.ID,
+		dpopKey:  p.dpopKey,
 		refusal:  ErrInvalidGrant,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// The tokens are already issued and the code spent, so failing here would
+	// only lose them; the application is then just not told of the logout.
+	if code.SessionID != nil && response.IDToken != "" {
+		if err := s.store.RememberSessionApplication(ctx, *code.SessionID, app.ID); err != nil {
+			s.log.Error("recording the application a session signed in failed", "error", err)
+		}
+	}
+
+	return response, nil
 }
 
 func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenParams) (*TokenResponse, error) {
@@ -207,6 +235,11 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		return nil, oauthError(ErrInvalidGrant, "the refresh token has expired")
 	}
 
+	// A family bound to a key goes on only with a proof from that key.
+	if old.DPoPKey != "" && p.dpopKey != old.DPoPKey {
+		return nil, oauthError(ErrInvalidGrant, "the refresh token is bound to a DPoP key; send a proof from it")
+	}
+
 	original := strings.Fields(old.Scope)
 	scopes := original
 	if p.Scope != "" {
@@ -232,7 +265,9 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		scopes:   scopes,
 		audience: old.Audience,
 		authTime: old.AuthenticatedAt,
+		session:  old.SessionID,
 		replaces: old,
+		dpopKey:  p.dpopKey,
 		refusal:  ErrInvalidGrant,
 	})
 }
@@ -246,6 +281,7 @@ func (s *Service) clientCredentials(ctx context.Context, app *model.Application,
 		app:      app,
 		scopes:   strings.Fields(p.Scope),
 		audience: p.Audience,
+		dpopKey:  p.dpopKey,
 		refusal:  ErrUnauthorizedClient,
 	})
 }
@@ -260,7 +296,9 @@ type grant struct {
 	session  *uuid.UUID
 	codeID   *uuid.UUID
 	replaces *model.RefreshToken
-	refusal  string
+	// dpopKey binds the tokens to a key, when the request proved one.
+	dpopKey string
+	refusal string
 }
 
 func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
@@ -279,6 +317,9 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 
 	access := evaluated.AccessToken
 	access["jti"] = jti.String()
+	if g.dpopKey != "" {
+		access["cnf"] = map[string]any{"jkt": g.dpopKey}
+	}
 	if g.user != nil {
 		access["auth_time"] = g.authTime.Unix()
 	}
@@ -300,7 +341,7 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 
 	response := &TokenResponse{
 		AccessToken: accessToken,
-		TokenType:   "Bearer",
+		TokenType:   tokenType(g.dpopKey),
 		ExpiresIn:   exp - iat,
 		Scope:       granted,
 	}
@@ -354,6 +395,8 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 		ApplicationID:   g.app.ID,
 		UserID:          g.user.ID,
 		CodeID:          g.codeID,
+		SessionID:       g.session,
+		DPoPKey:         refreshBinding(g),
 		Scope:           scope,
 		Audience:        g.audience,
 		AuthenticatedAt: g.authTime,
@@ -369,6 +412,7 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 
 	next.FamilyID = g.replaces.FamilyID
 	next.CodeID = g.replaces.CodeID
+	next.DPoPKey = g.replaces.DPoPKey
 	next.ExpiresAt = g.replaces.ExpiresAt
 
 	err = s.store.RotateRefreshToken(ctx, g.replaces, next, now)
@@ -381,6 +425,23 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 	}
 
 	return token, err
+}
+
+// tokenType is Bearer, or DPoP for a token bound to a key.
+func tokenType(dpopKey string) string {
+	if dpopKey != "" {
+		return TokenTypeDPoP
+	}
+	return "Bearer"
+}
+
+// refreshBinding is the key a new family is bound to: a public client's, since
+// a confidential one is bound by its own credentials (RFC 9449 §5).
+func refreshBinding(g grant) string {
+	if g.app.Type.Public() {
+		return g.dpopKey
+	}
+	return ""
 }
 
 type accessClaims struct {
@@ -420,14 +481,17 @@ func (s *Service) verifyAccessToken(ctx context.Context, token string) (*accessC
 	return &claims, raw, nil
 }
 
-func (s *Service) UserInfo(ctx context.Context, accessToken string) (map[string]any, error) {
+func (s *Service) UserInfo(ctx context.Context, accessToken string, how Presentation) (map[string]any, error) {
 	if accessToken == "" {
 		return nil, oauthError(ErrInvalidToken, "an access token is required")
 	}
 
-	claims, _, err := s.verifyAccessToken(ctx, accessToken)
+	claims, raw, err := s.verifyAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, oauthError(ErrInvalidToken, "the access token is invalid or has expired")
+	}
+	if err := s.presented(ctx, accessToken, raw, how); err != nil {
+		return nil, err
 	}
 
 	scopes := strings.Fields(claims.Scope)
@@ -546,7 +610,7 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 			}
 		}
 
-		out := map[string]any{"active": true, "token_type": "Bearer"}
+		out := map[string]any{"active": true, "token_type": tokenType(boundKey(raw))}
 		maps.Copy(out, raw)
 		return out, nil
 	}

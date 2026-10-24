@@ -95,21 +95,35 @@ func (s *Service) Logout(ctx context.Context, p LogoutParams, sessionToken strin
 		}
 	}
 
+	// Read before the session ends: afterwards it names nobody.
+	frames, err := s.frontchannelFrames(ctx, sessionToken)
+	if err != nil {
+		return "", false, err
+	}
+
 	signedOut, err = s.endSession(ctx, sessionToken, subject, client)
 	if err != nil {
 		return "", false, err
 	}
 
 	if p.PostLogoutRedirectURI != "" {
-		return withQuery(p.PostLogoutRedirectURI, url.Values{"state": {p.State}}), signedOut, nil
+		location = withQuery(p.PostLogoutRedirectURI, url.Values{"state": {p.State}})
+	} else {
+		values := url.Values{}
+		if app != nil {
+			values.Set("client_id", app.ClientID)
+		}
+		location = withQuery(s.accountURL+PageLoggedOut, values)
 	}
 
-	values := url.Values{}
-	if app != nil {
-		values.Set("client_id", app.ClientID)
+	if signedOut && len(frames) > 0 {
+		location, err = s.frontchannelPage(ctx, frames, location, client)
+		if err != nil {
+			return "", false, err
+		}
 	}
 
-	return withQuery(s.accountURL+PageLoggedOut, values), signedOut, nil
+	return location, signedOut, nil
 }
 
 func (s *Service) endSession(ctx context.Context, sessionToken, subject string, client Client) (bool, error) {

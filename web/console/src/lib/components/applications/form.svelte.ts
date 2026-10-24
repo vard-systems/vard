@@ -64,6 +64,8 @@ export class ApplicationForm {
 			...this.input,
 			name: this.input.name.trim(),
 			description: this.input.description.trim(),
+			backchannel_logout_uri: this.input.backchannel_logout_uri.trim(),
+			frontchannel_logout_uri: this.input.frontchannel_logout_uri.trim(),
 			redirect_uris: lines(this.redirects),
 			post_logout_redirect_uris: lines(this.logoutRedirects),
 			access_token_lifetime: Number(this.accessMinutes) * MINUTE,

@@ -100,3 +100,36 @@ func writeSignInState(c *gin.Context, value string, maxAge int, secure bool) {
 		SameSite: sameSite,
 	})
 }
+
+// SecondFactorCookie holds the handle of a sign-in waiting for its second
+// factor. The page never sees it: only the endpoints that finish the sign-in
+// read it.
+const SecondFactorCookie = brand.SecondFactorCookie
+
+const secondFactorPath = "/api/v1/account/login/second-factor"
+
+func SetSecondFactor(c *gin.Context, handle string, expires time.Time, secure bool) {
+	writeSecondFactor(c, handle, int(time.Until(expires).Seconds()), secure)
+}
+
+func ClearSecondFactor(c *gin.Context, secure bool) {
+	writeSecondFactor(c, "", -1, secure)
+}
+
+// SecondFactor is the waiting sign-in's handle, or "" when absent or
+// duplicated (a planted sibling-subdomain cookie cannot stand in).
+func SecondFactor(c *gin.Context) string {
+	return single(c, SecondFactorCookie)
+}
+
+func writeSecondFactor(c *gin.Context, value string, maxAge int, secure bool) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     SecondFactorCookie,
+		Value:    value,
+		Path:     secondFactorPath,
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+	})
+}

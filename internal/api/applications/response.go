@@ -33,8 +33,11 @@ type applicationResponse struct {
 	ResponseTypes          []string         `json:"response_types"`
 	RedirectURIs           []string         `json:"redirect_uris"`
 	PostLogoutRedirectURIs []string         `json:"post_logout_redirect_uris"`
+	BackchannelLogoutURI   string           `json:"backchannel_logout_uri"`
+	FrontchannelLogoutURI  string           `json:"frontchannel_logout_uri"`
 	Scopes                 []string         `json:"scopes"`
 	RequirePKCE            bool             `json:"require_pkce"`
+	RequirePushedRequests  bool             `json:"require_pushed_authorization_requests"`
 
 	AccessTokenLifetime  int `json:"access_token_lifetime"`
 	IDTokenLifetime      int `json:"id_token_lifetime"`
@@ -74,8 +77,11 @@ func newApplicationResponse(app model.Application, roles int64) applicationRespo
 		ResponseTypes:          app.ResponseTypes(),
 		RedirectURIs:           nonNil(app.RedirectURIs),
 		PostLogoutRedirectURIs: nonNil(app.PostLogoutRedirectURIs),
+		BackchannelLogoutURI:   app.BackchannelLogoutURI,
+		FrontchannelLogoutURI:  app.FrontchannelLogoutURI,
 		Scopes:                 nonNil(app.Scopes),
 		RequirePKCE:            app.RequirePKCE,
+		RequirePushedRequests:  app.RequirePushedRequests,
 		AccessTokenLifetime:    app.AccessTokenLifetime,
 		IDTokenLifetime:        app.IDTokenLifetime,
 		RefreshTokenLifetime:   app.RefreshTokenLifetime,

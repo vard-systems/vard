@@ -52,6 +52,9 @@ export default defineConfig({
 			}
 		})
 	],
+	// Components mounted in a test need Svelte's browser build; the
+	// accessibility specs mount them in jsdom.
+	resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
 	test: {
 		expect: { requireAssertions: true },
 		environment: 'node',

@@ -37,8 +37,11 @@ type applicationRequest struct {
 	GrantTypes             []string `json:"grant_types"`
 	RedirectURIs           []string `json:"redirect_uris" validate:"dive,max=512"`
 	PostLogoutRedirectURIs []string `json:"post_logout_redirect_uris" validate:"dive,max=512"`
+	BackchannelLogoutURI   string   `json:"backchannel_logout_uri" validate:"max=512"`
+	FrontchannelLogoutURI  string   `json:"frontchannel_logout_uri" validate:"max=512"`
 	Scopes                 []string `json:"scopes"`
 	RequirePKCE            *bool    `json:"require_pkce"`
+	RequirePushedRequests  *bool    `json:"require_pushed_authorization_requests"`
 
 	AccessTokenLifetime  int `json:"access_token_lifetime"`
 	IDTokenLifetime      int `json:"id_token_lifetime"`
@@ -67,6 +70,8 @@ func (r *applicationRequest) clean() {
 	r.PrivacyURL = strings.TrimSpace(r.PrivacyURL)
 	r.TermsURL = strings.TrimSpace(r.TermsURL)
 	r.TokenAuthMethod = strings.TrimSpace(r.TokenAuthMethod)
+	r.BackchannelLogoutURI = strings.TrimSpace(r.BackchannelLogoutURI)
+	r.FrontchannelLogoutURI = strings.TrimSpace(r.FrontchannelLogoutURI)
 
 	if r.AccessTokenLifetime == 0 {
 		r.AccessTokenLifetime = model.DefaultAccessTokenLifetime

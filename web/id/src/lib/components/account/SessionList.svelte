@@ -4,7 +4,7 @@
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
 	import { notify } from '#lib/state/toast.svelte.js';
 	import { describeDevice, formatDate, timeAgo } from '#lib/utils/format.js';
-	import { Badge, Button, Note, Panel } from '../ui/index.js';
+	import { Badge, Button, ItemList, ItemRow, Note, Panel } from '../ui/index.js';
 
 	type Props = {
 		sessions: Session[];
@@ -39,98 +39,39 @@
 		<Badge size="md">{sessions.length}</Badge>
 	{/snippet}
 
-	<ul>
+	<ItemList>
 		{#each sessions as session (session.id)}
-			<li>
-				<span class="device"><i class="ri-computer-line" aria-hidden="true"></i></span>
-				<div class="details">
-					<strong>
-						{describeDevice(session.user_agent, t)}
-						{#if session.current}
-							<Badge tone="success">{t('security.this_device')}</Badge>
-						{/if}
-					</strong>
-					<span>
-						{t('security.session_line', {
-							ip: session.ip || t('security.unknown_address'),
-							when: timeAgo(session.signed_in_at, t),
-							until: formatDate(session.expires_at, t, timezone)
-						})}
-					</span>
-				</div>
-				{#if !session.current}
-					<Button
-						variant="danger"
-						size="sm"
-						loading={ending === session.id}
-						onclick={() => end(session.id)}
-					>
-						{t('action.sign_out')}
-					</Button>
-				{/if}
-			</li>
+			<ItemRow
+				icon="ri-computer-line"
+				detail={t('security.session_line', {
+					ip: session.ip || t('security.unknown_address'),
+					when: timeAgo(session.signed_in_at, t),
+					until: formatDate(session.expires_at, t, timezone)
+				})}
+			>
+				{#snippet title()}
+					{describeDevice(session.user_agent, t)}
+					{#if session.current}
+						<Badge tone="success">{t('security.this_device')}</Badge>
+					{/if}
+				{/snippet}
+				{#snippet actions()}
+					{#if !session.current}
+						<Button
+							variant="danger"
+							size="sm"
+							loading={ending === session.id}
+							onclick={() => end(session.id)}
+						>
+							{t('action.sign_out')}
+						</Button>
+					{/if}
+				{/snippet}
+			</ItemRow>
 		{/each}
-	</ul>
+	</ItemList>
 
 	{#if others === 0}
 		<Note size="sm">{t('security.no_other_sessions')}</Note>
 	{/if}
 </Panel>
-
-<style>
-	ul {
-		display: flex;
-		flex-direction: column;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	li {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		padding: var(--space-3) 0;
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	li:first-child {
-		padding-top: 0;
-	}
-
-	li:last-child {
-		padding-bottom: 0;
-		border-bottom: 0;
-	}
-
-	.device {
-		display: grid;
-		place-items: center;
-		flex-shrink: 0;
-		width: 40px;
-		height: 40px;
-		border-radius: var(--radius-md);
-		background: var(--color-input);
-		color: var(--color-text-hint);
-	}
-
-	.details {
-		display: flex;
-		flex: 1;
-		flex-direction: column;
-		min-width: 0;
-	}
-
-	.details strong {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--space-2);
-	}
-
-	.details > span {
-		color: var(--color-text-hint);
-		font-size: var(--text-sm);
-		overflow-wrap: anywhere;
-	}
-</style>

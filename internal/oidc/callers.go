@@ -102,8 +102,14 @@ func (s *Service) AccountCaller(ctx context.Context, token string) (*AccountCall
 }
 
 func (s *Service) caller(ctx context.Context, token, audience string) (*accessClaims, *model.Application, error) {
-	claims, _, err := s.verifyAccessToken(ctx, token)
+	claims, raw, err := s.verifyAccessToken(ctx, token)
 	if err != nil || !slices.Contains(claims.Audience, audience) {
+		return nil, nil, ErrTokenRefused
+	}
+
+	// These APIs do not check DPoP proofs, so a token bound to a key is not
+	// taken here as a plain bearer token: that would undo the binding.
+	if boundKey(raw) != "" {
 		return nil, nil, ErrTokenRefused
 	}
 

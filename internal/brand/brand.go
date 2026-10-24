@@ -27,6 +27,10 @@ const (
 
 	SignInStateCookie = Slug + "_sign_in_state"
 
+	// SecondFactorCookie names a sign-in waiting for the user's second
+	// factor, so only the browser that signed in can finish it.
+	SecondFactorCookie = Slug + "_second_factor"
+
 	LanguageCookie = Slug + "-account-language"
 )
 

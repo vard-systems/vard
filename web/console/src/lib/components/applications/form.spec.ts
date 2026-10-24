@@ -30,6 +30,14 @@ describe('ApplicationForm', () => {
 		expect(form.toInput().redirect_uris).toEqual(['https://shop.test/a', 'https://shop.test/b']);
 	});
 
+	it('sends the back-channel logout URI trimmed, and none for a new application', () => {
+		const form = filled();
+		expect(form.toInput().backchannel_logout_uri).toBe('');
+
+		form.input.backchannel_logout_uri = ' https://shop.test/logout ';
+		expect(form.toInput().backchannel_logout_uri).toBe('https://shop.test/logout');
+	});
+
 	it('trims the name and description', () =>
 		expect(filled().toInput()).toMatchObject({ name: 'Shop', description: 'A shop' }));
 

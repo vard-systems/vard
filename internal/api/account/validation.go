@@ -2,10 +2,10 @@ package account
 
 import (
 	"strings"
-	"unicode/utf8"
 
+	"loginer/internal/api/kit/respond"
+	"loginer/internal/api/kit/signedin"
 	"loginer/internal/api/kit/validate"
-	"loginer/internal/oidc"
 )
 
 func (r *loginRequest) validate() error {
@@ -22,7 +22,7 @@ func (r *registerRequest) validate() error {
 		return err
 	}
 
-	return checkPassword(r.Password)
+	return signedin.CheckPassword(r.Password)
 }
 
 func (r *codeRequest) validate() error {
@@ -31,11 +31,6 @@ func (r *codeRequest) validate() error {
 }
 
 func (r *resendRequest) validate() error {
-	return validate.Struct(r)
-}
-
-func (r *emailRequest) validate() error {
-	r.Email = strings.ToLower(strings.TrimSpace(r.Email))
 	return validate.Struct(r)
 }
 
@@ -49,32 +44,28 @@ func (r *resetRequest) validate() error {
 		return err
 	}
 
-	return checkPassword(r.Password)
+	return signedin.CheckPassword(r.Password)
 }
 
-func (r *profileRequest) validate() error {
-	r.FirstName = strings.TrimSpace(r.FirstName)
-	r.LastName = strings.TrimSpace(r.LastName)
+// maxPasskeyResponse is far more than any authenticator's answer, and keeps a
+// body that is not one from being parsed at length.
+const maxPasskeyResponse = 16 << 10
+
+func (r *secondFactorRequest) validate() error {
+	r.Code = strings.TrimSpace(r.Code)
+	if len(r.Passkey) > maxPasskeyResponse {
+		return respond.InvalidBody.With()
+	}
 	return validate.Struct(r)
 }
 
-func (r *passwordRequest) validate() error {
-	if err := validate.Struct(r); err != nil {
-		return err
-	}
-
-	return checkPassword(r.NewPassword)
+func (r *passkeyStartRequest) validate() error {
+	return validate.Struct(r)
 }
 
-// checkPassword enforces length only; over 72 bytes is refused since bcrypt
-// would silently truncate.
-func checkPassword(password string) error {
-	switch {
-	case utf8.RuneCountInString(password) < oidc.MinPasswordLength:
-		return passwordTooShort.With("min", oidc.MinPasswordLength)
-	case len(password) > 72:
-		return provided[oidc.ErrPasswordTooLong.Code].Fault(nil)
+func (r *passkeyFinishRequest) validate() error {
+	if len(r.Response) == 0 || len(r.Response) > maxPasskeyResponse {
+		return respond.InvalidBody.With()
 	}
-
-	return nil
+	return validate.Struct(r)
 }

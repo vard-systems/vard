@@ -53,7 +53,17 @@ export const authMethods: { value: AuthMethod; label: string; description: strin
 export const grants: { value: GrantType; description: string }[] = [
 	{ value: 'authorization_code', description: 'Sign users in with a redirect and a code' },
 	{ value: 'refresh_token', description: 'Get new tokens without asking the user again' },
-	{ value: 'client_credentials', description: 'Act as the application itself, with no user' }
+	{ value: 'client_credentials', description: 'Act as the application itself, with no user' },
+	{
+		value: 'urn:ietf:params:oauth:grant-type:device_code',
+		description: 'Sign users in on a TV or a command line: they enter a short code on their phone'
+	}
+];
+
+/** The grants that get tokens for a user. */
+export const userGrants: GrantType[] = [
+	'authorization_code',
+	'urn:ietf:params:oauth:grant-type:device_code'
 ];
 
 export const scopes: { value: Scope; description: string }[] = [
@@ -79,8 +89,11 @@ export function blank(type: ApplicationType): ApplicationInput {
 		grant_types: type === 'm2m' ? ['client_credentials'] : ['authorization_code', 'refresh_token'],
 		redirect_uris: [],
 		post_logout_redirect_uris: [],
+		backchannel_logout_uri: '',
+		frontchannel_logout_uri: '',
 		scopes: type === 'm2m' ? [] : ['openid', 'profile', 'email'],
 		require_pkce: type !== 'm2m',
+		require_pushed_authorization_requests: false,
 		access_token_lifetime: 60 * 60,
 		id_token_lifetime: 60 * 60,
 		refresh_token_lifetime: 30 * 24 * 60 * 60,

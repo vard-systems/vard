@@ -136,7 +136,11 @@ export type ApplicationType = 'web' | 'spa' | 'native' | 'm2m';
 
 export type AuthMethod = 'client_secret_basic' | 'client_secret_post' | 'none';
 
-export type GrantType = 'authorization_code' | 'refresh_token' | 'client_credentials';
+export type GrantType =
+	| 'authorization_code'
+	| 'refresh_token'
+	| 'client_credentials'
+	| 'urn:ietf:params:oauth:grant-type:device_code';
 
 export type Scope = 'openid' | 'profile' | 'email' | 'offline_access' | 'roles';
 
@@ -159,8 +163,15 @@ export type Application = {
 	response_types: string[];
 	redirect_uris: string[];
 	post_logout_redirect_uris: string[];
+	/** Where the server posts a logout token when a session the application
+	    signed someone in through ends; empty, it is not told. */
+	backchannel_logout_uri: string;
+	/** Loaded in a hidden frame of the browser that signs out; empty, it is not. */
+	frontchannel_logout_uri: string;
 	scopes: Scope[];
 	require_pkce: boolean;
+	/** Authorization requests must be pushed first (RFC 9126). */
+	require_pushed_authorization_requests: boolean;
 	access_token_lifetime: number;
 	id_token_lifetime: number;
 	refresh_token_lifetime: number;
@@ -187,8 +198,11 @@ export type ApplicationInput = Pick<
 	| 'grant_types'
 	| 'redirect_uris'
 	| 'post_logout_redirect_uris'
+	| 'backchannel_logout_uri'
+	| 'frontchannel_logout_uri'
 	| 'scopes'
 	| 'require_pkce'
+	| 'require_pushed_authorization_requests'
 	| 'access_token_lifetime'
 	| 'id_token_lifetime'
 	| 'refresh_token_lifetime'
@@ -337,6 +351,13 @@ export type SocialAccount = {
 export type UserRecord = UserBuiltins & {
 	id: string;
 	has_password: boolean;
+	/** Whether they turned on two-step verification. */
+	two_step_enabled: boolean;
+	last_login_at: string | null;
+	/** Until when wrong passwords keep them out; null when they are not locked. */
+	locked_until: string | null;
+	/** When they last accepted the organization's terms, on the Agreements step. */
+	agreements_accepted_at: string | null;
 	roles: UserRoleRef[];
 	social_accounts: SocialAccount[];
 	data: Record<string, unknown> | null;

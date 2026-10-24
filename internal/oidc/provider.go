@@ -14,6 +14,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/go-webauthn/webauthn/webauthn"
+
 	"loginer/internal/brand"
 	"loginer/internal/config"
 	"loginer/internal/jose"
@@ -54,6 +56,9 @@ type Service struct {
 	social   *http.Client
 	ssoCache *ssoCache
 
+	backchannel *backchannelLogout
+	webauthn    *webauthn.WebAuthn
+
 	now func() time.Time
 }
 
@@ -63,7 +68,12 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 		return nil, err
 	}
 
-	return &Service{
+	passkeys, err := newWebAuthn(cfg.AccountURL)
+	if err != nil {
+		return nil, err
+	}
+
+	s := &Service{
 		store:      st,
 		keys:       keys,
 		mail:       mailer,
@@ -73,8 +83,19 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 		sealer:     sealer,
 		social:     newFederationClient(socialTimeout, onLoopback(cfg.Issuer)),
 		ssoCache:   newSSOCache(),
-		now:        time.Now,
-	}, nil
+		backchannel: &backchannelLogout{
+			client:   newBackchannelClient(onLoopback(cfg.Issuer)),
+			stopping: make(chan struct{}),
+		},
+		webauthn: passkeys,
+		now:      time.Now,
+	}
+
+	// Every path that ends sessions goes through the store; it finds the
+	// applications to tell and hands them here after the commit.
+	st.OnLogout(s.TellApplications)
+
+	return s, nil
 }
 
 func (s *Service) MaintainKeys(ctx context.Context) {
@@ -91,6 +112,11 @@ func (s *Service) MaintainKeys(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// Issuer is the server's issuer, the origin clients address it at.
+func (s *Service) Issuer() string {
+	return s.issuer
 }
 
 func (s *Service) SigningKeys() []KeyInfo {
@@ -124,6 +150,28 @@ type Discovery struct {
 	CodeChallengeMethodsSupported              []string `json:"code_challenge_methods_supported"`
 	PromptValuesSupported                      []string `json:"prompt_values_supported"`
 	AuthorizationResponseIssParameterSupported bool     `json:"authorization_response_iss_parameter_supported"`
+
+	// Back-Channel Logout 1.0: applications with a backchannel_logout_uri
+	// are told when a session ends, and the logout token always has a sid.
+	BackchannelLogoutSupported        bool `json:"backchannel_logout_supported"`
+	BackchannelLogoutSessionSupported bool `json:"backchannel_logout_session_supported"`
+
+	// Front-Channel Logout 1.0: applications with a frontchannel_logout_uri
+	// are loaded in the signing-out browser, always with iss and sid.
+	FrontchannelLogoutSupported        bool `json:"frontchannel_logout_supported"`
+	FrontchannelLogoutSessionSupported bool `json:"frontchannel_logout_session_supported"`
+
+	// RFC 9126: requests may be pushed first; each application says whether
+	// it must, so the server as a whole does not require it.
+	PushedAuthorizationRequestEndpoint string `json:"pushed_authorization_request_endpoint"`
+	DeviceAuthorizationEndpoint        string `json:"device_authorization_endpoint"`
+	// RegistrationEndpoint takes clients' metadata (RFC 7591), with an
+	// initial access token.
+	RegistrationEndpoint string `json:"registration_endpoint"`
+
+	// RFC 9449: proofs are accepted signed with these.
+	DPoPSigningAlgValuesSupported      []string `json:"dpop_signing_alg_values_supported"`
+	RequirePushedAuthorizationRequests bool     `json:"require_pushed_authorization_requests"`
 
 	// The organisation's terms and privacy links (op_tos_uri, op_policy_uri),
 	// omitted when unset.
@@ -168,10 +216,18 @@ func (s *Service) Discovery(ctx context.Context) Discovery {
 		RevocationEndpointAuthMethodsSupported:     append(append([]string{}, secretMethods...), string(model.AuthNone)),
 		IntrospectionEndpointAuthMethodsSupported:  secretMethods,
 		CodeChallengeMethodsSupported:              []string{model.PKCES256},
-		PromptValuesSupported:                      []string{"none", "login"},
+		PromptValuesSupported:                      []string{"none", "login", "consent"},
 		AuthorizationResponseIssParameterSupported: true,
-		OpTosURI:    tos,
-		OpPolicyURI: policy,
+		BackchannelLogoutSupported:                 true,
+		BackchannelLogoutSessionSupported:          true,
+		FrontchannelLogoutSupported:                true,
+		FrontchannelLogoutSessionSupported:         true,
+		PushedAuthorizationRequestEndpoint:         s.issuer + PathPushedAuthorization,
+		DeviceAuthorizationEndpoint:                s.issuer + PathDeviceAuthorization,
+		RegistrationEndpoint:                       s.issuer + PathRegistration,
+		DPoPSigningAlgValuesSupported:              dpopAlgorithms,
+		OpTosURI:                                   tos,
+		OpPolicyURI:                                policy,
 	}
 }
 

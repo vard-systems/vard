@@ -60,7 +60,7 @@ func (s *Store) PasswordResetByHash(ctx context.Context, hash string) (*model.Pa
 }
 
 func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, user *model.User, at time.Time) error {
-	var ended []model.UserSession
+	var ended endedSessions
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&model.PasswordReset{}).
@@ -110,7 +110,7 @@ func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, u
 		return err
 	}
 
-	s.putUserSessions(ctx, ended...)
+	s.sessionsEnded(ctx, ended)
 
 	return nil
 }

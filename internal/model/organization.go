@@ -26,6 +26,29 @@ type Organization struct {
 	TermsURL   string `gorm:"size:512;not null;default:''" json:"terms_url"`
 	PrivacyURL string `gorm:"size:512;not null;default:''" json:"privacy_url"`
 	Timezone   string `gorm:"size:64;not null;default:UTC" json:"timezone"`
+
+	// AgreementsUpdatedAt is when the terms or privacy link last changed. A
+	// user who accepted them before then is asked again by the Agreements
+	// step.
+	AgreementsUpdatedAt *time.Time `json:"agreements_updated_at"`
+}
+
+// HasAgreements says there is something for the Agreements step to ask.
+func (o Organization) HasAgreements() bool {
+	return o.TermsURL != "" || o.PrivacyURL != ""
+}
+
+// AgreementsAccepted says a user who accepted at `at` (nil: never) has
+// accepted the agreements as they stand.
+func (o Organization) AgreementsAccepted(at *time.Time) bool {
+	if !o.HasAgreements() {
+		return true
+	}
+	if at == nil {
+		return false
+	}
+
+	return o.AgreementsUpdatedAt == nil || !at.Before(*o.AgreementsUpdatedAt)
 }
 
 func (Organization) TableName() string {

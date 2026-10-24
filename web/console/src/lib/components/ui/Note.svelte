@@ -2,13 +2,15 @@
 	import type { Snippet } from 'svelte';
 
 	type Props = {
+		/** Set apart on a quiet fill: a remark beside fields rather than under them. */
+		boxed?: boolean;
 		children: Snippet;
 	};
 
-	let { children }: Props = $props();
+	let { boxed = false, children }: Props = $props();
 </script>
 
-<p class="note">{@render children()}</p>
+<p class={['note', { boxed }]}>{@render children()}</p>
 
 <style>
 	.note {
@@ -16,6 +18,12 @@
 		color: var(--color-text-hint);
 		font-size: var(--text-sm);
 		line-height: 1.5;
+	}
+
+	.boxed {
+		padding: var(--space-3);
+		border-radius: var(--radius-sm);
+		background: var(--color-secondary-alt);
 	}
 
 	.note :global(a),

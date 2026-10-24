@@ -116,3 +116,42 @@ func (s *Store) ClaimAuthorizationCode(ctx context.Context, hash string, applica
 
 	return &used, ErrAlreadyUsed
 }
+
+// ConsentAsked marks that a sign-in's prompt=consent has been answered, so
+// finishing it does not ask again.
+func (s *Store) ConsentAsked(ctx context.Context, req *model.AuthorizationRequest) error {
+	err := s.db.WithContext(ctx).Model(&model.AuthorizationRequest{}).
+		Where("id = ?", req.ID).
+		Update("force_consent", false).Error
+	if err == nil {
+		req.ForceConsent = false
+	}
+
+	return err
+}
+
+func (s *Store) CreatePushedRequest(ctx context.Context, pushed *model.PushedRequest) error {
+	return s.db.WithContext(ctx).Omit(clause.Associations).Create(pushed).Error
+}
+
+// ClaimPushedRequest takes a pushed request, once, with its application:
+// ErrNotFound when there is none, ErrAlreadyUsed when it was taken or has
+// expired.
+func (s *Store) ClaimPushedRequest(ctx context.Context, hash string, at time.Time) (*model.PushedRequest, error) {
+	var pushed model.PushedRequest
+	if err := s.db.WithContext(ctx).Preload("Application").First(&pushed, "handle_hash = ?", hash).Error; err != nil {
+		return nil, translate(err)
+	}
+
+	result := s.db.WithContext(ctx).Model(&model.PushedRequest{}).
+		Where("id = ? AND used_at IS NULL AND expires_at > ?", pushed.ID, at).
+		Update("used_at", at)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, ErrAlreadyUsed
+	}
+
+	return &pushed, nil
+}

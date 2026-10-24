@@ -6,6 +6,8 @@ export { default as Checkbox } from './Checkbox.svelte';
 export { default as FieldRow } from './FieldRow.svelte';
 export { default as Form } from './Form.svelte';
 export type { IconName } from './icon';
+export { default as ItemList } from './ItemList.svelte';
+export { default as ItemRow } from './ItemRow.svelte';
 export { default as NewPasswordFields } from './NewPasswordFields.svelte';
 export { default as Note } from './Note.svelte';
 export { default as PageHeading } from './PageHeading.svelte';

@@ -4,15 +4,23 @@
 package oauth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"html/template"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"slices"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"loginer/internal/api/kit/respond"
 	"loginer/internal/api/kit/session"
 	"loginer/internal/brand"
+	"loginer/internal/model"
 	"loginer/internal/oidc"
 )
 
@@ -122,9 +130,18 @@ func (h *Handler) SocialCallback(c *gin.Context) {
 		return
 	}
 
+	c.Header("Cache-Control", "no-store")
+
+	// The user has a second factor: the provider was the first, and the
+	// second-factor page asks for the other.
+	if result.SignIn.SecondFactorHandle != "" {
+		session.SetSecondFactor(c, result.SignIn.SecondFactorHandle, time.Now().Add(model.PendingSignInLifetime), h.secure)
+		c.Redirect(http.StatusFound, h.provider.SecondFactorLanding(result))
+		return
+	}
+
 	session.SetUser(c, result.SignIn.Token, result.SignIn.Session.Record.ExpiresAt, result.SignIn.Remember, h.secure)
 
-	c.Header("Cache-Control", "no-store")
 	c.Redirect(http.StatusFound, h.provider.SocialLanding(ctx, result))
 }
 
@@ -264,17 +281,83 @@ func (h *Handler) Token(c *gin.Context) {
 	c.JSON(http.StatusOK, tokens)
 }
 
+// PushAuthorization takes an authorization request server to server, and
+// answers with the request_uri the browser carries instead (RFC 9126).
+func (h *Handler) PushAuthorization(c *gin.Context) {
+	noStore(c)
+
+	client, params, err := pushedParams(c)
+	if err != nil {
+		h.oauthError(c, err)
+		return
+	}
+
+	pushed, err := h.provider.PushAuthorization(c.Request.Context(), client, params)
+	if err != nil {
+		h.oauthError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, pushed)
+}
+
+// StartDevice begins a device's sign-in (RFC 8628): a code for the person to
+// enter elsewhere, and one for the device to ask with.
+func (h *Handler) StartDevice(c *gin.Context) {
+	noStore(c)
+
+	client, scope, audience, err := deviceParams(c)
+	if err != nil {
+		h.oauthError(c, err)
+		return
+	}
+
+	started, err := h.provider.StartDevice(c.Request.Context(), client, scope, audience)
+	if err != nil {
+		h.oauthError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, started)
+}
+
+// RegisterClient registers a client from its metadata (RFC 7591), for whoever
+// holds an initial access token.
+func (h *Handler) RegisterClient(c *gin.Context) {
+	noStore(c)
+
+	token, err := bearer(c)
+	if err != nil {
+		h.oauthError(c, err)
+		return
+	}
+
+	var metadata oidc.ClientMetadata
+	if err := c.ShouldBindJSON(&metadata); err != nil {
+		h.oauthError(c, invalidRequest("the body must be the client's metadata as JSON"))
+		return
+	}
+
+	client, err := h.provider.RegisterClient(c.Request.Context(), token, metadata)
+	if err != nil {
+		h.oauthError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, client)
+}
+
 // UserInfo answers the claims about the user an access token is for.
 func (h *Handler) UserInfo(c *gin.Context) {
 	noStore(c)
 
-	token, err := bearer(c)
+	token, how, err := presentation(c, h.provider.Issuer()+oidc.PathUserInfo)
 	if err != nil {
 		h.bearerError(c, err)
 		return
 	}
 
-	claims, err := h.provider.UserInfo(c.Request.Context(), token)
+	claims, err := h.provider.UserInfo(c.Request.Context(), token, how)
 	if err != nil {
 		h.bearerError(c, err)
 		return
@@ -368,8 +451,15 @@ func (h *Handler) bearerError(c *gin.Context, err error) {
 		return
 	}
 
-	c.Header("WWW-Authenticate", `Bearer realm="`+brand.Realm+`", error="`+failure.Code+`", error_description="`+quoteSafe(failure.Description)+`"`)
-	c.JSON(failure.Status, errorResponse{Error: failure.Code, Description: failure.Description})
+	// A refused proof is answered with a DPoP challenge, at 401, as for a
+	// refused token (RFC 9449 §7.1).
+	scheme, status := "Bearer", failure.Status
+	if failure.Code == oidc.ErrInvalidDPoPProof {
+		scheme, status = oidc.TokenTypeDPoP, http.StatusUnauthorized
+	}
+
+	c.Header("WWW-Authenticate", scheme+` realm="`+brand.Realm+`", error="`+failure.Code+`", error_description="`+quoteSafe(failure.Description)+`"`)
+	c.JSON(status, errorResponse{Error: failure.Code, Description: failure.Description})
 }
 
 func (h *Handler) serverError(c *gin.Context, err error, note string) {
@@ -390,3 +480,83 @@ func client(c *gin.Context) oidc.Client {
 	language, _ := c.Cookie(oidc.LanguageCookie)
 	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: language}
 }
+
+// FrontchannelLogout is the page that tells a signing-out browser's
+// applications, each in a hidden frame, then moves on. Its policy names those
+// applications' origins and nothing else, and it is shown once.
+func (h *Handler) FrontchannelLogout(c *gin.Context) {
+	page, err := h.provider.Frontchannel(c.Request.Context(), c.Query("logout"))
+	if errors.Is(err, oidc.ErrRequestExpired) {
+		c.Redirect(http.StatusFound, h.provider.SignedOutPage())
+		return
+	}
+	if err != nil {
+		respond.Failure(c, h.log, err, "showing a front-channel logout failed")
+		return
+	}
+
+	nonce, err := newNonce()
+	if err != nil {
+		respond.Failure(c, h.log, err, "making a nonce failed")
+		return
+	}
+
+	origins := []string{}
+	for _, frame := range page.Frames {
+		if parsed, err := url.Parse(frame); err == nil && parsed.Host != "" {
+			origin := parsed.Scheme + "://" + parsed.Host
+			if !slices.Contains(origins, origin) {
+				origins = append(origins, origin)
+			}
+		}
+	}
+
+	c.Header("Cache-Control", "no-store")
+	c.Header("Content-Security-Policy", "default-src 'none'; frame-src "+strings.Join(origins, " ")+
+		"; style-src 'nonce-"+nonce+"'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+	c.Status(http.StatusOK)
+	c.Header("Content-Type", "text/html; charset=utf-8")
+
+	if err := frontchannelTemplate.Execute(c.Writer, frontchannelView{FrontchannelPage: page, Nonce: nonce}); err != nil {
+		h.log.Error("writing a front-channel logout page failed", "error", err)
+	}
+}
+
+type frontchannelView struct {
+	*oidc.FrontchannelPage
+	Nonce string
+}
+
+func newNonce() (string, error) {
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", err
+	}
+	return base64.RawStdEncoding.EncodeToString(b[:]), nil
+}
+
+// The frames load while the page waits a moment, then the browser carries on;
+// the link is there for one that does not follow the refresh.
+var frontchannelTemplate = template.Must(template.New("frontchannel").Parse(`<!doctype html>
+<html lang="{{.Language}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="2;url={{.Next}}">
+<title>{{.Title}}</title>
+<style nonce="{{.Nonce}}">
+body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;color:#25272d;background:#f5f6f8}
+main{text-align:center;padding:24px}
+a{color:#2f6fdb}
+@media (prefers-color-scheme:dark){body{color:#ececec;background:#1b1c1f}a{color:#7aa7ff}}
+</style>
+</head>
+<body>
+<main>
+<p>{{.Body}}</p>
+<p><a href="{{.Next}}">{{.Continue}}</a></p>
+</main>
+{{range .Frames}}<iframe src="{{.}}" hidden title="logout"></iframe>
+{{end}}</body>
+</html>
+`))

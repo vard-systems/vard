@@ -8,12 +8,17 @@ with two web apps:
 | `web/id`      | Hosted sign-in pages and each user's own account |
 | `web/console` | The admin panel                                  |
 
-**Features:** authorization code with PKCE, refresh token rotation with reuse
-detection, client credentials, userinfo, logout, revocation, introspection,
-social sign-in (Google, Apple, Facebook, Yandex, VK, any OIDC/OAuth provider),
-enterprise SSO (OpenID Connect and SAML 2.0), configurable login flows, emailed
-one-time codes, TOTP for administrators, roles and API scopes, an activity log,
-and translations editable from the panel.
+**Features:** authorization code with PKCE, pushed authorization requests
+(PAR), the device authorization grant (sign-in on TVs and command lines),
+refresh token rotation with reuse detection, client credentials, DPoP-bound
+tokens, dynamic client registration, userinfo, introspection, revocation,
+logout (RP-initiated, back-channel and front-channel), a consent page, terms
+acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
+OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
+configurable login flows, emailed one-time codes, TOTP for administrators,
+optional two-step verification (authenticator app or passkeys) for users,
+passwordless sign-in with a passkey, roles and API scopes, an activity log, and
+translations editable from the panel.
 
 ## Quick start
 
@@ -111,9 +116,12 @@ API's `LOGINER_TRUSTED_PROXIES` set to the apps' addresses.
 - The admin API runs on its own listener and is never served on the public one.
 - Outbound calls to identity providers refuse private, link-local and cloud
   metadata addresses.
-- **There is no consent screen.** Every application registered in the panel is
-  trusted to sign users in, which is right for an organisation's own apps.
-  Registering an application is therefore an admin permission.
+- **Consent is a login-flow step.** Without it, every application registered
+  in the panel is trusted to sign users in, which is right for an
+  organisation's own apps; a flow with the Consent step asks each user once
+  for what an application wants. Registering an application — in the panel or
+  through `/oauth2/register` with an initial access token — is an admin
+  permission either way.
 
 ## Development
 

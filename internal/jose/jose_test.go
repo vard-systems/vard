@@ -276,3 +276,67 @@ func TestParseJWKRefuses(t *testing.T) {
 		})
 	}
 }
+
+// The example key of RFC 7638 §3.1 and the thumbprint the RFC gives for it.
+func TestThumbprint(t *testing.T) {
+	jwk := JWK{
+		KeyType: "RSA",
+		E:       "AQAB",
+		N:       "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
+	}
+
+	got, err := Thumbprint(jwk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"; got != want {
+		t.Errorf("Thumbprint = %s, want %s", got, want)
+	}
+}
+
+// A token signed with the key in its own header verifies; the same token
+// under another key's header does not.
+func TestVerifyEmbedded(t *testing.T) {
+	signer, err := Generate(ES256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := Key{Algorithm: ES256, Private: signer}
+	public, err := key.Public()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	token := signEmbedded(t, key, public)
+
+	var claims map[string]any
+	header, err := VerifyEmbedded(token, &claims)
+	if err != nil || header.JWK == nil || claims["jti"] != "one" {
+		t.Fatalf("VerifyEmbedded = %v, %v, %v", header, claims, err)
+	}
+
+	other, _ := Generate(ES256)
+	otherPublic, _ := Key{Algorithm: ES256, Private: other}.Public()
+	if _, err := VerifyEmbedded(signEmbedded(t, key, otherPublic), &claims); err == nil {
+		t.Error("a token whose header carries another key was accepted")
+	}
+}
+
+func signEmbedded(t *testing.T, key Key, carried JWK) string {
+	t.Helper()
+
+	carried.KeyID, carried.Use, carried.Algorithm = "", "", ""
+	header, err := json.Marshal(Header{Algorithm: ES256, Type: "dpop+jwt", JWK: &carried})
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, _ := json.Marshal(map[string]any{"jti": "one"})
+	input := b64.EncodeToString(header) + "." + b64.EncodeToString(payload)
+
+	signature, err := sign(key, []byte(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return input + "." + b64.EncodeToString(signature)
+}

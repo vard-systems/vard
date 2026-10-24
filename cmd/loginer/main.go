@@ -145,10 +145,17 @@ func run(log *slog.Logger) error {
 	go st.KeepSwept(ctx, cfg.AuditRetention, log)
 	go shared.KeepSettling(ctx)
 
-	return serve(ctx, log, map[string]*http.Server{
+	err = serve(ctx, log, map[string]*http.Server{
 		"public": newServer(cfg.Addr, public),
 		"admin":  newServer(cfg.AdminAddr, admin),
 	})
+
+	// The servers are stopped; logouts they started are still being told.
+	waiting, cancel := context.WithTimeout(context.Background(), shutdownGrace)
+	defer cancel()
+	provider.Wait(waiting)
+
+	return err
 }
 
 func ensureMailSettings(ctx context.Context, st *store.Store, sealer *jose.Sealer, cfg config.Mail) error {

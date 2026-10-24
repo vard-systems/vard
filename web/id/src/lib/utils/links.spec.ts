@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { socialHref, ssoHref } from './links';
+import { secondFactorHref, socialHref, ssoHref } from './links';
 
 describe('provider start links', () => {
 	it.each([
@@ -20,5 +20,17 @@ describe('provider start links', () => {
 			'/oauth2/sso/a%2F..%2Fb/start'
 		],
 		['nulls left out', ssoHref('acme', { request: null, next: null }), '/oauth2/sso/acme/start']
+	])('%s', (_, href, expected) => expect(href).toBe(expected));
+});
+
+describe('the second-factor page', () => {
+	it.each([
+		['for an application', secondFactorHref('abc', '/'), '/second-factor?request=abc'],
+		[
+			'for the account pages',
+			secondFactorHref(null, '/security'),
+			'/second-factor?next=%2Fsecurity'
+		],
+		['with nothing to carry', secondFactorHref(null, null), '/second-factor']
 	])('%s', (_, href, expected) => expect(href).toBe(expected));
 });

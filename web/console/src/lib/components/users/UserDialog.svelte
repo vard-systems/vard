@@ -13,26 +13,23 @@
 	import {
 		Alert,
 		Button,
-		FullscreenDialog,
 		FieldGrid,
 		FormSection,
+		FullscreenDialog,
 		Input,
 		LinkButton,
-		List,
-		ListItem,
 		PasswordInput,
 		SwitchField,
 		Tabs,
-		Tag,
-		Thumb,
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys, roleMappingsOptions } from '#lib/query/index.js';
-	import { markFor as providerMark } from '#lib/components/social/providers.js';
-	import { formatDate, formatRelative } from '#lib/utils/format.js';
 	import RoleMappings from '#lib/components/roles/RoleMappings.svelte';
 	import { additional } from './fields';
-	import FieldInput from './FieldInput.svelte';
+	import { UserForm } from './form.svelte';
+	import UserExtraFields from './UserExtraFields.svelte';
+	import UserProviders from './UserProviders.svelte';
+	import UserTwoStep from './UserTwoStep.svelte';
 
 	type Props = {
 		user: UserRecord | null;
@@ -56,135 +53,60 @@
 
 	const queryClient = useQueryClient();
 
+	const form = new UserForm();
+
+	/** The user being edited: the one opened, or the one just created. */
 	let current = $state<UserRecord | null>(null);
-
 	let tab = $state('user');
-
 	let created = $state(false);
-
-	let email = $state('');
-	let isEmailVerified = $state(false);
-	let firstName = $state('');
-	let lastName = $state('');
-	let isActive = $state(true);
-
-	let password = $state('');
-	let confirmPassword = $state('');
-	let isPasswordTemporary = $state(false);
-
-	let values = $state<Record<string, string | boolean>>({});
-
 	let saving = $state(false);
 
 	const editing = $derived(current !== null);
+	const extras = $derived(additional(fields));
 
-	let disconnecting = $state('');
+	/** Whether the user will have a password once saved: only a password can be temporary. */
+	const hasPassword = $derived(
+		!editing || form.password !== '' || (current?.has_password ?? false)
+	);
 
-	async function disconnect(identity: string) {
-		if (!current) return;
-
-		disconnecting = identity;
-
-		try {
-			await usersApi.disconnect(current.id, identity);
-			notify.success('Provider disconnected');
-			await queryClient.invalidateQueries({ queryKey: keys.users.all });
-
-			current = {
-				...current,
-				social_accounts: current.social_accounts.filter((account) => account.id !== identity)
-			};
-		} catch (err) {
-			notify.error(err, 'Could not disconnect this provider');
-		} finally {
-			disconnecting = '';
-		}
-	}
+	const canSubmit = $derived(
+		!saving &&
+			editable &&
+			form.email.trim() !== '' &&
+			form.password === form.confirmPassword &&
+			(editing || form.password !== '')
+	);
 
 	const mappings = createQuery(() => ({
 		...roleMappingsOptions(current?.id ?? ''),
 		enabled: open && current !== null
 	}));
 
-	const mismatch = $derived(confirmPassword !== '' && password !== confirmPassword);
-
-	const hasPassword = $derived(!editing || password !== '' || (current?.has_password ?? false));
-
-	const canSubmit = $derived(
-		!saving &&
-			editable &&
-			email.trim() !== '' &&
-			password === confirmPassword &&
-			(editing || password !== '')
-	);
-
-	const extras = $derived(additional(fields));
-	const details = $derived(extras.filter((field) => field.type !== 'bool'));
-	const flags = $derived(extras.filter((field) => field.type === 'bool'));
+	const tabs = $derived([
+		{ value: 'user', label: 'User', icon: 'ri-user-line' },
+		{
+			value: 'roles',
+			label: 'Role mapping',
+			icon: 'ri-shield-user-line',
+			count: mappings.data?.filter((it) => it.assigned).length,
+			disabled: !editing
+		}
+	]);
 
 	$effect(() => {
-		if (!open) {
-			tab = 'user';
-			return;
-		}
+		tab = 'user';
+		if (!open) return;
 
 		current = user;
-		tab = 'user';
 		created = false;
-		untrack(() => fill(user));
+		untrack(() => form.fill(user, extras));
 	});
 
-	function fill(record: UserRecord | null) {
-		email = record?.email ?? '';
-		isEmailVerified = record?.is_email_verified ?? false;
-		firstName = record?.first_name ?? '';
-		lastName = record?.last_name ?? '';
-		isActive = record?.is_active ?? true;
-		password = '';
-		confirmPassword = '';
-		isPasswordTemporary = record ? record.is_password_temporary : true;
-
-		values = Object.fromEntries(
-			extras.map((field) => {
-				const stored = record?.data?.[field.name];
-
-				if (field.type === 'bool') return [field.name, stored === true];
-				const text = typeof stored === 'string' || typeof stored === 'number' ? String(stored) : '';
-				if (field.type === 'date') return [field.name, text.slice(0, 10)];
-
-				return [field.name, text];
-			})
-		);
-	}
-
-	function payload() {
-		const data: Record<string, unknown> = {};
-
-		for (const field of extras) {
-			const value = values[field.name];
-
-			if (field.type === 'bool') {
-				data[field.name] = value === true;
-			} else if (String(value ?? '').trim() !== '') {
-				data[field.name] = value;
-			}
-		}
-
-		return {
-			email: email.trim(),
-			is_email_verified: isEmailVerified,
-			first_name: firstName.trim(),
-			last_name: lastName.trim(),
-			is_active: isActive,
-			is_password_temporary: isPasswordTemporary && hasPassword,
-			...(password !== '' ? { password, confirm_password: confirmPassword } : {}),
-			data
-		};
-	}
-
 	const save = createMutation(() => ({
-		mutationFn: () =>
-			current ? usersApi.update(current.id, payload()) : usersApi.create(payload()),
+		mutationFn: () => {
+			const input = form.toInput(extras, hasPassword);
+			return current ? usersApi.update(current.id, input) : usersApi.create(input);
+		},
 		onSuccess: async (result: { user: UserRecord }) => {
 			notify.success(current ? 'User saved' : 'User created');
 			await Promise.all([
@@ -197,8 +119,9 @@
 				return;
 			}
 
+			// Created: stay open on its roles, which is what comes next.
 			current = result.user;
-			fill(result.user);
+			form.fill(result.user, extras);
 			created = true;
 			tab = 'roles';
 		},
@@ -218,17 +141,6 @@
 		saving = true;
 		save.mutate();
 	}
-
-	const tabs = $derived([
-		{ value: 'user', label: 'User', icon: 'ri-user-line' },
-		{
-			value: 'roles',
-			label: 'Role mapping',
-			icon: 'ri-shield-user-line',
-			count: mappings.data?.filter((it) => it.assigned).length,
-			disabled: !editing
-		}
-	]);
 </script>
 
 <FullscreenDialog
@@ -264,7 +176,7 @@
 						<Input
 							label="Email"
 							icon="ri-mail-line"
-							bind:value={email}
+							bind:value={form.email}
 							type="email"
 							autocomplete="off"
 							placeholder="user@example.com"
@@ -272,8 +184,8 @@
 						/>
 
 						<FieldGrid>
-							<Input label="First name" bind:value={firstName} />
-							<Input label="Last name" bind:value={lastName} />
+							<Input label="First name" bind:value={form.firstName} />
+							<Input label="Last name" bind:value={form.lastName} />
 						</FieldGrid>
 
 						{#if editing}
@@ -292,67 +204,44 @@
 						<FieldGrid>
 							<PasswordInput
 								label={editing ? 'New password' : 'Password'}
-								bind:value={password}
+								bind:value={form.password}
 								autocomplete="new-password"
 								required={!editing}
 							/>
 							<PasswordInput
 								label="Confirm password"
-								bind:value={confirmPassword}
+								bind:value={form.confirmPassword}
 								autocomplete="new-password"
-								required={!editing || password !== ''}
+								required={!editing || form.password !== ''}
 							/>
 						</FieldGrid>
 
-						{#if mismatch}
+						{#if form.mismatch}
 							<p class="mismatch">The passwords do not match.</p>
 						{/if}
 
 						<SwitchField
 							label="Is Temporary"
 							description="The user has to choose a new password the next time they sign in."
-							bind:checked={isPasswordTemporary}
+							bind:checked={form.isPasswordTemporary}
 							disabled={!hasPassword}
 						/>
 					</FormSection>
 
-					{#if editing && (current?.social_accounts ?? []).length > 0}
-						<FormSection
-							title="Signs in with"
-							description="Accounts elsewhere that reach this one. Disconnecting one leaves the account itself alone."
-						>
-							<List bordered label="Connected providers">
-								{#each current?.social_accounts ?? [] as account (account.id)}
-									<ListItem
-										title={account.provider}
-										description={account.email || `Connected ${formatDate(account.connected_at)}`}
-									>
-										{#snippet lead()}
-											<Thumb icon={providerMark(account.kind)} />
-										{/snippet}
+					{#if current && (current.social_accounts ?? []).length > 0}
+						<UserProviders
+							user={current}
+							{editable}
+							ondisconnected={(updated) => (current = updated)}
+						/>
+					{/if}
 
-										{#snippet end()}
-											{#if account.last_login_at}
-												<Tag small>used {formatRelative(account.last_login_at)}</Tag>
-											{/if}
-
-											{#if editable}
-												<Button
-													size="sm"
-													variant="subtle"
-													colorPalette="danger"
-													loading={disconnecting === account.id}
-													disabled={disconnecting !== ''}
-													onclick={() => disconnect(account.id)}
-												>
-													Disconnect
-												</Button>
-											{/if}
-										{/snippet}
-									</ListItem>
-								{/each}
-							</List>
-						</FormSection>
+					{#if current?.two_step_enabled}
+						<UserTwoStep
+							user={current}
+							{editable}
+							onreset={() => current && (current = { ...current, two_step_enabled: false })}
+						/>
 					{/if}
 
 					<FormSection
@@ -363,33 +252,18 @@
 							<SwitchField
 								label="Is Active"
 								description="An inactive user cannot sign in to any application."
-								bind:checked={isActive}
+								bind:checked={form.isActive}
 							/>
 							<SwitchField
 								label="Is Email Verified"
 								description="Whether the user has confirmed they own this address."
-								bind:checked={isEmailVerified}
+								bind:checked={form.isEmailVerified}
 							/>
 						</div>
 					</FormSection>
 
 					{#if extras.length > 0}
-						<FormSection
-							title="Additional fields"
-							description="The fields this organisation keeps about its users."
-						>
-							{#each details as field (field.id)}
-								<FieldInput {field} bind:value={values[field.name]} />
-							{/each}
-
-							{#if flags.length > 0}
-								<div class="flags">
-									{#each flags as field (field.id)}
-										<FieldInput {field} bind:value={values[field.name]} />
-									{/each}
-								</div>
-							{/if}
-						</FormSection>
+						<UserExtraFields {extras} bind:values={form.values} />
 					{/if}
 				</fieldset>
 			{:else if current}
@@ -441,11 +315,5 @@
 	.switches {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.flags {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-		gap: var(--space-2) var(--space-4);
 	}
 </style>

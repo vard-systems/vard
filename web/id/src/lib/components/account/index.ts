@@ -5,3 +5,4 @@ export { default as PasswordForm } from './PasswordForm.svelte';
 export { default as ProfileForm } from './ProfileForm.svelte';
 export { default as ProfileIntro } from './ProfileIntro.svelte';
 export { default as SessionList } from './SessionList.svelte';
+export { default as TwoStepPanel } from './TwoStepPanel.svelte';

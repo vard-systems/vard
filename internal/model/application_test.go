@@ -49,6 +49,48 @@ func TestApplicationValidate(t *testing.T) {
 			change: func(a *Application) { a.RedirectURIs = []string{"com.example.shop:/callback"} },
 		},
 		{
+			name:   "a back-channel logout URI over https with a query",
+			kind:   AppWeb,
+			change: func(a *Application) { a.BackchannelLogoutURI = "https://shop.example.com/logout?from=idp" },
+		},
+		{
+			name:   "a back-channel logout URI on loopback over http",
+			kind:   AppWeb,
+			change: func(a *Application) { a.BackchannelLogoutURI = "http://localhost:3000/logout" },
+		},
+		{
+			name:   "a back-channel logout URI over plain http",
+			kind:   AppWeb,
+			change: func(a *Application) { a.BackchannelLogoutURI = "http://shop.example.com/logout" },
+			want:   "backchannel_logout_uri",
+		},
+		{
+			name:   "a back-channel logout URI with a fragment",
+			kind:   AppWeb,
+			change: func(a *Application) { a.BackchannelLogoutURI = "https://shop.example.com/logout#now" },
+			want:   "must not have a fragment",
+		},
+		{
+			name:   "a relative back-channel logout URI",
+			kind:   AppWeb,
+			change: func(a *Application) { a.BackchannelLogoutURI = "/logout" },
+			want:   "not an absolute URL",
+		},
+		{
+			name:   "a front-channel logout URI with a fragment",
+			kind:   AppSPA,
+			change: func(a *Application) { a.FrontchannelLogoutURI = "https://shop.example.com/logout#now" },
+			want:   "frontchannel_logout_uri",
+		},
+		{
+			name: "a television app that signs in with the device code alone",
+			kind: AppNative,
+			change: func(a *Application) {
+				a.GrantTypes = []string{GrantDeviceCode, GrantRefreshToken}
+				a.RedirectURIs = nil
+			},
+		},
+		{
 			name:   "an unknown type",
 			kind:   "desktop",
 			change: func(*Application) {},
@@ -207,7 +249,12 @@ func TestApplicationNormalize(t *testing.T) {
 	m2m := app(AppM2M)
 	m2m.GrantTypes = []string{GrantAuthorizationCode}
 	m2m.RedirectURIs = []string{"https://a.example.com/cb"}
+	m2m.BackchannelLogoutURI = "https://a.example.com/logout"
 	m2m.Normalize()
+
+	if m2m.BackchannelLogoutURI != "" {
+		t.Errorf("m2m: back-channel logout URI = %q, want none: a service signs nobody in", m2m.BackchannelLogoutURI)
+	}
 
 	if len(m2m.GrantTypes) != 1 || m2m.GrantTypes[0] != GrantClientCredentials || len(m2m.RedirectURIs) != 0 {
 		t.Errorf("m2m: grants = %v, redirects = %v, want client_credentials only and none", m2m.GrantTypes, m2m.RedirectURIs)

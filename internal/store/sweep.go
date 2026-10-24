@@ -21,16 +21,22 @@ const sweepBatch = 5000
 // family's expiry, so reuse detection never loses a token it would have caught.
 var expiring = []any{
 	&model.AuthorizationRequest{},
+	&model.PushedRequest{},
+	&model.DeviceAuthorization{},
 	&model.AuthorizationCode{},
 	&model.RefreshToken{},
 	&model.UserSession{},
 	&model.PasswordReset{},
 	&model.EmailVerification{},
 	&model.LoginCode{},
+	&model.PendingSignIn{},
+	&model.PasskeyLogin{},
+	&model.FrontchannelLogout{},
 	&model.AdminSession{},
 	&model.SocialLogin{},
 	&model.SSOLogin{},
 	&model.SAMLAssertion{},
+	&model.DPoPProof{},
 }
 
 func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, error) {

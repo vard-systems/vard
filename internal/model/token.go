@@ -80,8 +80,8 @@ func EvaluateToken(r TokenRequest) TokenPreview {
 		return deny("the application is disabled")
 	case r.User == nil && !slices.Contains(app.GrantTypes, GrantClientCredentials):
 		return deny("a token without a user needs the client_credentials grant, which the application does not have")
-	case r.User != nil && !slices.Contains(app.GrantTypes, GrantAuthorizationCode):
-		return deny("a token for a user needs the authorization_code grant, which the application does not have")
+	case r.User != nil && !app.SignsUsersIn():
+		return deny("a token for a user needs the authorization_code or device code grant, which the application does not have")
 	case r.User != nil && !r.User.IsActive:
 		return deny("the user is inactive")
 	case r.API != nil && !r.Authorized:

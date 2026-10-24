@@ -32,6 +32,38 @@ func authorizeParams(c *gin.Context) (oidc.AuthorizeParams, error) {
 		Prompt:              form.Get("prompt"),
 		MaxAge:              form.Get("max_age"),
 		LoginHint:           form.Get("login_hint"),
+		RequestURI:          form.Get("request_uri"),
+	}, nil
+}
+
+// pushedParams is a pushed authorization request: the client's credentials,
+// and the request as the authorization endpoint would read it.
+func pushedParams(c *gin.Context) (oidc.ClientAuth, oidc.AuthorizeParams, error) {
+	form, err := readForm(c)
+	if err != nil {
+		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, err
+	}
+
+	auth, err := clientAuth(c, form)
+	if err != nil {
+		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, err
+	}
+
+	return auth, oidc.AuthorizeParams{
+		ClientID:            form.Get("client_id"),
+		RedirectURI:         form.Get("redirect_uri"),
+		ResponseType:        form.Get("response_type"),
+		ResponseMode:        form.Get("response_mode"),
+		Scope:               form.Get("scope"),
+		State:               form.Get("state"),
+		Nonce:               form.Get("nonce"),
+		CodeChallenge:       form.Get("code_challenge"),
+		CodeChallengeMethod: form.Get("code_challenge_method"),
+		Audience:            form.Get("audience"),
+		Prompt:              form.Get("prompt"),
+		MaxAge:              form.Get("max_age"),
+		LoginHint:           form.Get("login_hint"),
+		RequestURI:          form.Get("request_uri"),
 	}, nil
 }
 
@@ -60,6 +92,11 @@ func tokenParams(c *gin.Context) (oidc.TokenParams, error) {
 		return oidc.TokenParams{}, err
 	}
 
+	proof, err := dpopProof(c)
+	if err != nil {
+		return oidc.TokenParams{}, err
+	}
+
 	return oidc.TokenParams{
 		Client:       auth,
 		GrantType:    form.Get("grant_type"),
@@ -67,8 +104,10 @@ func tokenParams(c *gin.Context) (oidc.TokenParams, error) {
 		RedirectURI:  form.Get("redirect_uri"),
 		CodeVerifier: form.Get("code_verifier"),
 		RefreshToken: form.Get("refresh_token"),
+		DeviceCode:   form.Get("device_code"),
 		Scope:        form.Get("scope"),
 		Audience:     form.Get("audience"),
+		DPoP:         proof,
 	}, nil
 }
 
@@ -158,4 +197,53 @@ func bearer(c *gin.Context) (string, error) {
 	}
 
 	return "", &oidc.Error{Code: oidc.ErrInvalidToken, Description: "an access token is required", Status: http.StatusUnauthorized}
+}
+
+// deviceParams is a device asking to sign someone in: its credentials, and
+// what it asks for.
+func deviceParams(c *gin.Context) (oidc.ClientAuth, string, string, error) {
+	form, err := readForm(c)
+	if err != nil {
+		return oidc.ClientAuth{}, "", "", err
+	}
+
+	auth, err := clientAuth(c, form)
+	if err != nil {
+		return oidc.ClientAuth{}, "", "", err
+	}
+
+	return auth, form.Get("scope"), form.Get("audience"), nil
+}
+
+// dpopProof is the request's DPoP header (RFC 9449 §4.1): one, or none.
+func dpopProof(c *gin.Context) (string, error) {
+	proofs := c.Request.Header.Values("DPoP")
+	if len(proofs) > 1 {
+		return "", &oidc.Error{Code: oidc.ErrInvalidDPoPProof, Description: "send one DPoP proof", Status: http.StatusBadRequest}
+	}
+	if len(proofs) == 0 {
+		return "", nil
+	}
+	return proofs[0], nil
+}
+
+// presentation reads a protected request's token, as Bearer or as DPoP with
+// its proof, for the address the client sent it to.
+func presentation(c *gin.Context, target string) (string, oidc.Presentation, error) {
+	how := oidc.Presentation{Method: c.Request.Method, URL: target, Scheme: "Bearer"}
+
+	if header := c.GetHeader("Authorization"); header != "" {
+		scheme, token, found := strings.Cut(header, " ")
+		if found && strings.EqualFold(scheme, oidc.TokenTypeDPoP) && strings.TrimSpace(token) != "" {
+			proof, err := dpopProof(c)
+			if err != nil {
+				return "", how, err
+			}
+			how.Scheme, how.Proof = oidc.TokenTypeDPoP, proof
+			return strings.TrimSpace(token), how, nil
+		}
+	}
+
+	token, err := bearer(c)
+	return token, how, err
 }

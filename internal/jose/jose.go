@@ -50,6 +50,8 @@ type Header struct {
 	Algorithm string `json:"alg"`
 	KeyID     string `json:"kid,omitempty"`
 	Type      string `json:"typ,omitempty"`
+	// JWK is the public key a self-signed token carries (a DPoP proof).
+	JWK *JWK `json:"jwk,omitempty"`
 }
 
 func Generate(algorithm string) (crypto.Signer, error) {
@@ -291,6 +293,49 @@ func ParseJWK(jwk JWK) (Key, error) {
 	}
 
 	return key, nil
+}
+
+// VerifyEmbedded checks a token signed with the key its own header carries, as
+// a DPoP proof is (RFC 9449 §4.2), and returns the header with that key. It
+// proves only that whoever made the token holds the key; what the key is
+// trusted for is the caller's to decide.
+func VerifyEmbedded(token string, claims any) (Header, error) {
+	var parsed Key
+	header, err := VerifyAmong(token, func(header Header) []Key {
+		if header.JWK == nil {
+			return nil
+		}
+		key, err := ParseJWK(*header.JWK)
+		if err != nil {
+			return nil
+		}
+		// The header names the algorithm; verify refuses one the key cannot do.
+		key.Algorithm = header.Algorithm
+		parsed = key
+		return []Key{key}
+	}, claims)
+	if err != nil || parsed.PublicKey == nil {
+		return Header{}, ErrInvalid
+	}
+
+	return header, nil
+}
+
+// Thumbprint is a public key's JWK SHA-256 thumbprint (RFC 7638): its
+// required members only, in order, without whitespace.
+func Thumbprint(jwk JWK) (string, error) {
+	var canonical string
+	switch jwk.KeyType {
+	case "EC":
+		canonical = fmt.Sprintf(`{"crv":%q,"kty":"EC","x":%q,"y":%q}`, jwk.Curve, jwk.X, jwk.Y)
+	case "RSA":
+		canonical = fmt.Sprintf(`{"e":%q,"kty":"RSA","n":%q}`, jwk.E, jwk.N)
+	default:
+		return "", fmt.Errorf("jose: the key type %q has no thumbprint here", jwk.KeyType)
+	}
+
+	sum := sha256.Sum256([]byte(canonical))
+	return b64.EncodeToString(sum[:]), nil
 }
 
 // HalfHash is at_hash (OpenID Connect Core 3.1.3.6): the base64url left half of

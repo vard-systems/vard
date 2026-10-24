@@ -7,7 +7,7 @@ Write a migration for: $ARGUMENTS
 
 Migrations are Go files in `migrations/`, one per change, each registering
 itself with goose from `init`. `make migrate-new name=x` makes the file;
-`migrations/20260927000000_schema.go` holds `gormTx` and shows the shape.
+`migrations/00001_schema.go` holds `gormTx` and shows the shape.
 
 - `up` takes goose's transaction, wraps it with `gormTx`, and uses the models:
   `db.AutoMigrate(&model.Thing{})` rather than hand-written DDL, so the table

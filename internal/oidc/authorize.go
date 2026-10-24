@@ -28,6 +28,9 @@ type AuthorizeParams struct {
 	MaxAge              string
 	LoginHint           string
 	ResponseMode        string
+	// RequestURI names a request the client pushed first (RFC 9126); the
+	// parameters are then the pushed ones, not the address's.
+	RequestURI string `json:"-"`
 }
 
 const (
@@ -66,6 +69,15 @@ func (p AuthorizeParams) oversized() string {
 }
 
 func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Session) (string, error) {
+	pushed := p.RequestURI != ""
+	if pushed {
+		taken, page, err := s.takePushed(ctx, p)
+		if err != nil || page != "" {
+			return page, err
+		}
+		p = *taken
+	}
+
 	app, err := s.store.ApplicationByClientID(ctx, p.ClientID)
 	switch {
 	case p.ClientID == "":
@@ -76,71 +88,32 @@ func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Ses
 		return "", err
 	}
 
-	// Until the redirect URI is known to be the application's, no error may
-	// be sent to it.
-	if p.RedirectURI == "" {
-		return s.errorPage(ErrInvalidRequest, "redirect_uri is required"), nil
-	}
-	if !slices.Contains(app.RedirectURIs, p.RedirectURI) {
-		return s.errorPage(ErrInvalidRequest, "redirect_uri is not registered for this application; it has to match exactly"), nil
+	if app.RequirePushedRequests && !pushed {
+		return s.errorPage(ErrInvalidRequest, "this application has to push its authorization requests first"), nil
 	}
 
-	// Stored values have size limits and must be valid UTF-8; an oversized
-	// request goes to the error page rather than being echoed back.
-	if reason := p.oversized(); reason != "" {
-		return s.errorPage(ErrInvalidRequest, reason), nil
+	// Until the redirect URI is known to be the application's, no error may
+	// be sent to it.
+	if page := s.redirectProblem(app, p); page != "" {
+		return s.errorPage(ErrInvalidRequest, page), nil
+	}
+
+	code, description, err := s.requestProblem(ctx, app, p)
+	if err != nil {
+		return "", err
+	}
+	if code != "" {
+		return s.redirectError(p.RedirectURI, p.State, code, description), nil
+	}
+
+	prompts := strings.Fields(p.Prompt)
+	maxAge := -1
+	if p.MaxAge != "" {
+		maxAge, _ = strconv.Atoi(p.MaxAge)
 	}
 
 	back := func(code, description string) (string, error) {
 		return s.redirectError(p.RedirectURI, p.State, code, description), nil
-	}
-
-	if !app.IsEnabled {
-		return back(ErrUnauthorizedClient, "the application is disabled")
-	}
-	if p.ResponseType != "code" {
-		return back(ErrUnsupportedResponseType, "response_type must be code")
-	}
-	if p.ResponseMode != "" && p.ResponseMode != "query" {
-		return back(ErrInvalidRequest, "response_mode must be query")
-	}
-	if !slices.Contains(app.GrantTypes, model.GrantAuthorizationCode) {
-		return back(ErrUnauthorizedClient, "the application does not have the authorization_code grant")
-	}
-
-	switch {
-	case p.CodeChallenge == "" && app.RequirePKCE:
-		return back(ErrInvalidRequest, "code_challenge is required: this application must use PKCE")
-	case p.CodeChallenge != "" && p.CodeChallengeMethod != model.PKCES256:
-		return back(ErrInvalidRequest, "code_challenge_method must be S256")
-	case p.CodeChallenge != "" && (len(p.CodeChallenge) != 43):
-		return back(ErrInvalidRequest, "code_challenge must be the base64url SHA-256 of the code verifier")
-	}
-
-	if strings.TrimSpace(p.Scope) == "" {
-		return back(ErrInvalidScope, "scope is required")
-	}
-
-	if p.Audience != "" {
-		if _, err := s.store.APIByIdentifier(ctx, p.Audience); errors.Is(err, store.ErrNotFound) {
-			return back(ErrInvalidRequest, errUnknownAudience.Description)
-		} else if err != nil {
-			return "", err
-		}
-	}
-
-	prompts := strings.Fields(p.Prompt)
-	if slices.Contains(prompts, "none") && len(prompts) > 1 {
-		return back(ErrInvalidRequest, "prompt=none cannot be combined with other values")
-	}
-
-	maxAge := -1
-	if p.MaxAge != "" {
-		n, err := strconv.Atoi(p.MaxAge)
-		if err != nil || n < 0 {
-			return back(ErrInvalidRequest, "max_age must be a number of seconds")
-		}
-		maxAge = n
 	}
 
 	now := s.now()
@@ -184,6 +157,7 @@ func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Ses
 		CodeChallengeMethod: p.CodeChallengeMethod,
 		Audience:            p.Audience,
 		LoginHint:           p.LoginHint,
+		ForceConsent:        slices.Contains(prompts, "consent"),
 		ExpiresAt:           now.Add(model.AuthorizationRequestLifetime),
 	}
 	req.Application = app
@@ -193,10 +167,81 @@ func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Ses
 	}
 
 	if session != nil {
-		return s.finish(ctx, req, session.User, &session.Record)
+		if slices.Contains(prompts, "none") {
+			page, err := s.stepBefore(ctx, req, session.User)
+			if err != nil {
+				return "", err
+			}
+			if page != "" {
+				return back(silentRefusal(page))
+			}
+		}
+
+		return s.finish(ctx, req, handle, session.User, &session.Record)
 	}
 
 	return withQuery(s.accountURL+PageLogin, url.Values{"request": {handle}}), nil
+}
+
+// redirectProblem is what is wrong before any error may be sent to the
+// redirect URI: it is missing, not the application's, or the request is
+// oversized. "" when there is nothing.
+func (s *Service) redirectProblem(app *model.Application, p AuthorizeParams) string {
+	switch {
+	case p.RedirectURI == "":
+		return "redirect_uri is required"
+	case !slices.Contains(app.RedirectURIs, p.RedirectURI):
+		return "redirect_uri is not registered for this application; it has to match exactly"
+	}
+
+	// Stored values have size limits and must be valid UTF-8; an oversized
+	// request goes to the error page rather than being echoed back.
+	return p.oversized()
+}
+
+// requestProblem checks an authorization request against its application, as
+// the authorization endpoint and the pushed one both do once the redirect URI
+// is known to be good. It returns an OAuth error code and description, or "".
+func (s *Service) requestProblem(ctx context.Context, app *model.Application, p AuthorizeParams) (code, description string, err error) {
+	switch {
+	case !app.IsEnabled:
+		return ErrUnauthorizedClient, "the application is disabled", nil
+	case p.ResponseType != "code":
+		return ErrUnsupportedResponseType, "response_type must be code", nil
+	case p.ResponseMode != "" && p.ResponseMode != "query":
+		return ErrInvalidRequest, "response_mode must be query", nil
+	case !slices.Contains(app.GrantTypes, model.GrantAuthorizationCode):
+		return ErrUnauthorizedClient, "the application does not have the authorization_code grant", nil
+	case p.CodeChallenge == "" && app.RequirePKCE:
+		return ErrInvalidRequest, "code_challenge is required: this application must use PKCE", nil
+	case p.CodeChallenge != "" && p.CodeChallengeMethod != model.PKCES256:
+		return ErrInvalidRequest, "code_challenge_method must be S256", nil
+	case p.CodeChallenge != "" && (len(p.CodeChallenge) != 43):
+		return ErrInvalidRequest, "code_challenge must be the base64url SHA-256 of the code verifier", nil
+	case strings.TrimSpace(p.Scope) == "":
+		return ErrInvalidScope, "scope is required", nil
+	}
+
+	if p.Audience != "" {
+		if _, err := s.store.APIByIdentifier(ctx, p.Audience); errors.Is(err, store.ErrNotFound) {
+			return ErrInvalidRequest, errUnknownAudience.Description, nil
+		} else if err != nil {
+			return "", "", err
+		}
+	}
+
+	prompts := strings.Fields(p.Prompt)
+	if slices.Contains(prompts, "none") && len(prompts) > 1 {
+		return ErrInvalidRequest, "prompt=none cannot be combined with other values", nil
+	}
+
+	if p.MaxAge != "" {
+		if n, err := strconv.Atoi(p.MaxAge); err != nil || n < 0 {
+			return ErrInvalidRequest, "max_age must be a number of seconds", nil
+		}
+	}
+
+	return "", "", nil
 }
 
 // sessionSatisfies reports whether this flow would have made the session.
@@ -258,10 +303,13 @@ func (s *Service) Continue(ctx context.Context, handle string, session *Session)
 		return "", err
 	}
 
-	return s.finish(ctx, req, session.User, &session.Record)
+	return s.finish(ctx, req, handle, session.User, &session.Record)
 }
 
-func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, user *model.User, session *model.UserSession) (string, error) {
+// finish issues the code for a sign-in whose user is known, or sends the
+// browser to the Agreements or Consent page first while one of them is still
+// to be passed. handle names the request to those pages.
+func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, handle string, user *model.User, session *model.UserSession) (string, error) {
 	app := req.Application
 
 	// Redirect URIs and PKCE are checked again: an administrator may have
@@ -284,6 +332,14 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, u
 	}
 	if !token.Issued {
 		return s.redirectError(req.RedirectURI, req.State, ErrAccessDenied, token.Reason), nil
+	}
+
+	page, err := s.stepBefore(ctx, req, user)
+	if err != nil {
+		return "", err
+	}
+	if page != "" {
+		return s.stepPage(page, handle), nil
 	}
 
 	now := s.now()

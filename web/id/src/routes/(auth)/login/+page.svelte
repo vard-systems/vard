@@ -10,7 +10,13 @@
 		type SignedIn
 	} from '#lib/api/index.js';
 
-	import { AuthCard, CodeForm, SocialButtons, SSOButtons } from '#lib/components/auth/index.js';
+	import {
+		AuthCard,
+		CodeForm,
+		PasskeySignIn,
+		SocialButtons,
+		SSOButtons
+	} from '#lib/components/auth/index.js';
 	import {
 		Alert,
 		Button,
@@ -23,7 +29,7 @@
 	} from '#lib/components/ui/index.js';
 	import { LIMITS } from '#lib/constants.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
-	import { authHref, leaveTo, ssoHref } from '#lib/utils/links.js';
+	import { authHref, leaveTo, secondFactorHref, ssoHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -35,6 +41,8 @@
 	const flow = $derived(data.login);
 	const offerSocial = $derived(flow.steps.includes('social'));
 	const offerPassword = $derived(flow.steps.includes('password'));
+	/** Passkeys are added where two-step verification is offered, so that is where they sign in. */
+	const offerPasskey = $derived(flow.steps.includes('totp'));
 	const offerRegistration = $derived(
 		offerPassword && flow.allow_registration && app?.allow_registration === true
 	);
@@ -65,6 +73,12 @@
 			// on it, and Back does not return to a URL carrying a live token.
 			// eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved, with a query
 			await goto(`${resolve('reset-password')}?${query}`, { replace: true });
+			return;
+		}
+
+		if (result.second_factor) {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved, with a query
+			await goto(secondFactorHref(data.request, next), { replace: true });
 			return;
 		}
 
@@ -228,6 +242,18 @@
 					{submitting ? t('login.submitting') : t('login.submit')}
 				</Button>
 			</Form>
+		{/if}
+
+		{#if !offerPassword && error}<Alert>{error}</Alert>{/if}
+
+		{#if offerPasskey}
+			<PasskeySignIn
+				request={data.request}
+				{remember}
+				disabled={submitting}
+				onsignedin={(result) => arrive(result, data.next)}
+				onerror={(message) => (error = message)}
+			/>
 		{/if}
 
 		<SocialButtons

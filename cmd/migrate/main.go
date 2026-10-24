@@ -25,6 +25,9 @@ func main() {
 func run(log *slog.Logger) error {
 	// Writing a new, empty migration needs no database and no configuration.
 	if len(os.Args) == 3 && os.Args[1] == "new" {
+		// Numbered in order (00002_x.go), not by timestamp, so the folder reads
+		// as the sequence it is applied in.
+		goose.SetSequential(true)
 		return goose.Create(nil, "migrations", os.Args[2], "go")
 	}
 

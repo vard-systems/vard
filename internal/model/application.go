@@ -26,8 +26,8 @@ type Application struct {
 	Description string          `gorm:"size:255;not null;default:''" json:"description"`
 	Type        ApplicationType `gorm:"type:varchar(16);not null;index" json:"type"`
 
-	// LogoURL and ClientURI are shown on the sign-in pages. There is no
-	// consent page: every registered application is trusted (see README.md).
+	// LogoURL and ClientURI are shown on the sign-in pages, and on the
+	// consent page when the application's login flow has that step.
 	LogoURL    string `gorm:"size:512;not null;default:''" json:"logo_url"`
 	WebsiteURL string `gorm:"size:512;not null;default:''" json:"website_url"`
 
@@ -49,7 +49,20 @@ type Application struct {
 	PostLogoutRedirectURIs []string `gorm:"type:text;serializer:json" json:"post_logout_redirect_uris"`
 	Scopes                 []string `gorm:"type:text;serializer:json" json:"scopes"`
 
+	// BackchannelLogoutURI is told, server to server, when a session the
+	// application signed someone in through ends (OpenID Connect
+	// Back-Channel Logout 1.0). Empty, it is not told.
+	BackchannelLogoutURI string `gorm:"size:512;not null;default:''" json:"backchannel_logout_uri"`
+	// FrontchannelLogoutURI is loaded in a hidden frame of the browser that
+	// signs out, with iss and sid (OpenID Connect Front-Channel Logout 1.0):
+	// for an application that ends its session in the browser.
+	FrontchannelLogoutURI string `gorm:"size:512;not null;default:''" json:"frontchannel_logout_uri"`
+
 	RequirePKCE bool `gorm:"not null" json:"require_pkce"`
+	// RequirePushedRequests refuses an authorization request the application
+	// did not push first (RFC 9126 §6), so its parameters never travel in a
+	// browser's address.
+	RequirePushedRequests bool `gorm:"not null" json:"require_pushed_authorization_requests"`
 
 	AccessTokenLifetime  int `gorm:"not null" json:"access_token_lifetime"`
 	IDTokenLifetime      int `gorm:"not null" json:"id_token_lifetime"`
@@ -100,9 +113,11 @@ const (
 	GrantAuthorizationCode = "authorization_code"
 	GrantRefreshToken      = "refresh_token"
 	GrantClientCredentials = "client_credentials"
+	// GrantDeviceCode is the device authorization grant (RFC 8628).
+	GrantDeviceCode = "urn:ietf:params:oauth:grant-type:device_code"
 )
 
-var GrantTypes = []string{GrantAuthorizationCode, GrantRefreshToken, GrantClientCredentials}
+var GrantTypes = []string{GrantAuthorizationCode, GrantRefreshToken, GrantClientCredentials, GrantDeviceCode}
 
 const (
 	ScopeOpenID        = "openid"
@@ -134,6 +149,12 @@ func (a Application) ResponseTypes() []string {
 	return []string{}
 }
 
+// SignsUsersIn says the application has a grant that gets tokens for a user:
+// through a browser, or through a device the user allows elsewhere.
+func (a Application) SignsUsersIn() bool {
+	return slices.Contains(a.GrantTypes, GrantAuthorizationCode) || slices.Contains(a.GrantTypes, GrantDeviceCode)
+}
+
 func (a Application) HasSecret() bool {
 	return a.TokenAuthMethod != AuthNone
 }
@@ -152,15 +173,20 @@ func (a *Application) Normalize() {
 		a.GrantTypes = []string{GrantClientCredentials}
 		a.RedirectURIs = []string{}
 		a.PostLogoutRedirectURIs = []string{}
+		a.BackchannelLogoutURI = ""
+		a.FrontchannelLogoutURI = ""
 		a.Scopes = []string{}
 		a.RequirePKCE = false
 		a.RequireRoleAssignment = false
+		a.RequirePushedRequests = false
 	}
 
 	a.GrantTypes = ordered(a.GrantTypes, GrantTypes)
 	a.Scopes = ordered(a.Scopes, Scopes)
 	a.RedirectURIs = tidyURIs(a.RedirectURIs)
 	a.PostLogoutRedirectURIs = tidyURIs(a.PostLogoutRedirectURIs)
+	a.BackchannelLogoutURI = strings.TrimSpace(a.BackchannelLogoutURI)
+	a.FrontchannelLogoutURI = strings.TrimSpace(a.FrontchannelLogoutURI)
 }
 
 func (a Application) Validate() error {
@@ -187,20 +213,21 @@ func (a Application) Validate() error {
 	}
 
 	code := slices.Contains(a.GrantTypes, GrantAuthorizationCode)
+	device := slices.Contains(a.GrantTypes, GrantDeviceCode)
 
 	switch a.Type {
 	case AppM2M:
 	case AppWeb, AppSPA, AppNative:
-		if !code {
-			return fmt.Errorf("grant_types: a %s application signs users in, so it needs authorization_code", a.Type)
+		if !code && !device {
+			return fmt.Errorf("grant_types: a %s application signs users in, so it needs authorization_code or the device code grant", a.Type)
 		}
 		if a.Type.Public() && slices.Contains(a.GrantTypes, GrantClientCredentials) {
 			return fmt.Errorf("grant_types: a public client has no secret, so it cannot use client_credentials")
 		}
 	}
 
-	if slices.Contains(a.GrantTypes, GrantRefreshToken) && !code {
-		return fmt.Errorf("grant_types: refresh_token needs authorization_code")
+	if slices.Contains(a.GrantTypes, GrantRefreshToken) && !code && !device {
+		return fmt.Errorf("grant_types: refresh_token needs authorization_code or the device code grant")
 	}
 
 	if code && len(a.RedirectURIs) == 0 {
@@ -216,6 +243,18 @@ func (a Application) Validate() error {
 	for _, uri := range a.PostLogoutRedirectURIs {
 		if err := checkRedirectURI(uri, a.Type); err != nil {
 			return fmt.Errorf("post_logout_redirect_uris: %w", err)
+		}
+	}
+
+	if a.BackchannelLogoutURI != "" {
+		if err := checkLogoutURI(a.BackchannelLogoutURI); err != nil {
+			return fmt.Errorf("backchannel_logout_uri: %w", err)
+		}
+	}
+
+	if a.FrontchannelLogoutURI != "" {
+		if err := checkLogoutURI(a.FrontchannelLogoutURI); err != nil {
+			return fmt.Errorf("frontchannel_logout_uri: %w", err)
 		}
 	}
 
@@ -293,6 +332,29 @@ func checkRedirectURI(raw string, kind ApplicationType) error {
 			return nil
 		}
 		return fmt.Errorf("%q must use https", raw)
+	}
+}
+
+// checkLogoutURI holds an address an application is told of a logout at:
+// absolute, https except on loopback, and without a fragment (Back-Channel
+// Logout 1.0 §2.2, Front-Channel Logout 1.0 §2). A query is allowed.
+func checkLogoutURI(raw string) error {
+	parsed, err := url.Parse(raw)
+	if err != nil || !parsed.IsAbs() || parsed.Host == "" {
+		return fmt.Errorf("%q is not an absolute URL", raw)
+	}
+
+	if parsed.Fragment != "" || strings.Contains(raw, "#") {
+		return fmt.Errorf("%q must not have a fragment", raw)
+	}
+
+	switch {
+	case parsed.Scheme == "https":
+		return nil
+	case parsed.Scheme == "http" && loopback(parsed.Hostname()):
+		return nil
+	default:
+		return fmt.Errorf("%q must use https, unless it is on localhost", raw)
 	}
 }
 

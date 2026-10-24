@@ -64,7 +64,10 @@ internal/api/<subject>/  one package per subject the API answers about:
 internal/api/kit/        what every handler shares: respond (answers and the
                          problem catalog; shared.go: problems several packages
                          use), validate, query, session (who is calling, route
-                         guards), audit, cors, csrf, ratelimit, middleware
+                         guards), audit, cors, csrf, ratelimit, middleware;
+                         signedin (what account, profile, steps and twostep
+                         share: the user's session, the provider's refusals);
+                         tstypes (holds the panel's types.ts to the answers)
 migrations/              the schema, then one file per change, applied in order
 i18n/                    translations: id/<locale>/ for the sign-in pages,
                          console/en/ for the admin API's problems
@@ -75,6 +78,7 @@ web/console/src/lib/     api/, query/, components/ui/, components/<feature>/,
 web/id/src/lib/          api/, i18n/, state/, components/ui/ (primitives),
                          components/auth|account|layout/, constants.ts (the
                          API's field limits)
+web/<app>/src/lib/testing/  expectAccessible: axe on a mounted component
 web/console/scripts/     theme.ts, the generator
 scripts/                 what the Makefile runs: setup, start, docker-local, db;
                          lib.sh (load_env) is shared by all of them
@@ -118,10 +122,28 @@ code near it, and add a test when adding a case.
   `session.SignInState`**, which treat a duplicated cookie (planted from a
   sibling subdomain) as none. Never `c.Cookie(...)` for a session.
 - **Outbound requests to admin- or user-supplied URLs** (social, SSO, SAML
-  metadata) go through `newFederationClient` in `internal/oidc/outbound.go`,
-  which refuses private, link-local and metadata addresses at dial time.
+  metadata, back-channel logout) go through `newFederationClient` in
+  `internal/oidc/outbound.go`, which refuses private, link-local and metadata
+  addresses at dial time. A logout token follows no redirect.
 - **Redirect targets** are exact-matched redirect URIs, or a path checked by
   `safePath` (Go) / `safeNext` (`web/id`). Never redirect to a raw parameter.
+- **A second factor is guessed against the account's lockout.** Every answer
+  is counted before it is checked, and a right password does not give its
+  attempt back while a second factor is still to come; only the right second
+  factor does. The waiting sign-in is named by an httpOnly cookie, never by
+  anything the page or the address holds.
+- **Only the person, in their own browser, accepts terms or allows an
+  application.** The Agreements, Consent and device answers, and every change
+  to two-step verification, refuse an application's access token.
+- **Every one-time thing is taken with one conditional UPDATE**: a pushed
+  request's `request_uri`, a device's approval and its tokens, a passkey
+  sign-in's ceremony, a front-channel logout page; a DPoP proof's jti is
+  recorded once. Device user codes are short, so they are kept as a keyed hash
+  and entering them is rate-limited.
+- **A DPoP-bound access token is never taken as a bearer token.** Userinfo
+  checks its proof; the account and admin APIs, which do not, refuse it.
+- **Registering a client takes an initial access token** (an admin API token
+  with `applications.write`); `/oauth2/register` is never open.
 - **Unknown accounts cost the same as wrong passwords** (`CompareDummyPassword`),
   and sign-in failures give one answer, so timing and wording reveal nothing.
 - **Browsers are held to exact origin lists** (`api/kit/cors`, `api/kit/csrf`): no
@@ -183,7 +205,7 @@ registered in `model.All()` — bump the count in `TestAllListsEveryModel`. A
 plain `string` column is `not null;default:''`, a `bool` or `int` is
 `not null`, anything that may be absent is a pointer. Nothing is soft-deleted.
 
-**A migration.** `migrations/20260927000000_schema.go` builds a fresh database
+**A migration.** `migrations/00001_schema.go` builds a fresh database
 from `model.All()`; existing databases are stepped forward, so every change
 after it gets its own file (`make migrate-new name=x`; `/migration`). `up` is a
 no-op on a fresh database, `down` undoes it, and table and column lists are
@@ -231,7 +253,8 @@ the administrator in and draws the header and sidebar. `+page.ts` checks the
 permission (`requirePermission` / `requireAnywhere`, from `#lib/api/load.js`)
 and fetches through the typed client in `lib/api/admin.ts`, wrapped in
 `fromApi` — an endpoint's path and answer are written there once, never in a
-load. The API enforces the same permission on every call. `+page.svelte` seeds
+load; the answer's type in `lib/api/types.ts` is held to the Go struct by the
+package's `types_test.go` (`tstypes.Match`), so a new answer adds its pair there. The API enforces the same permission on every call. `+page.svelte` seeds
 a TanStack query from it. Query options in `lib/query/` (key in
 `lib/query/keys.ts`), components in `lib/components/<feature>/`. A list's
 filters live in its address: `setSearchParams` and `debounce` from
@@ -281,7 +304,9 @@ shield mark does.
   `Organization`), prose may be British.
 - **Tests** are table-driven and named for what they prove ("a slug with
   spaces", not "TestCase3"). Tests needing Postgres are named `TestLive…` and
-  skip without `LOGINER_TEST_DB_DSN`.
+  skip without `LOGINER_TEST_DB_DSN`. A new component that people use goes in
+  the app's `components/a11y.spec.ts`, which runs axe on it in jsdom
+  (`expectAccessible` from `#lib/testing/a11y.js`).
 - **Formatting is enforced.** The hook in `.claude/hooks/format.sh` runs gofmt
   or the app's Prettier on every file written; `bunx prettier --write <path>`
   fixes what `bun run lint` refuses.

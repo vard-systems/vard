@@ -1,3 +1,7 @@
+import type {
+	PublicKeyCredentialCreationOptionsJSON,
+	PublicKeyCredentialRequestOptionsJSON
+} from '@simplewebauthn/browser';
 import { request, type Fetch } from './client';
 
 export type Application = {
@@ -74,7 +78,42 @@ export type SignedIn = {
 	password_change_required?: boolean;
 	reset_token?: string;
 	code?: CodeChallenge;
+	/** The sign-in waits for the user's second factor, on the second-factor page. */
+	second_factor?: boolean;
 };
+
+export type SecondFactorMethod = 'totp' | 'passkey' | 'recovery_code';
+
+/** What the second-factor page offers. The sign-in itself is named by a cookie the page never
+    sees. */
+export type SecondFactorChallenge = {
+	methods: SecondFactorMethod[];
+	expires_at: string;
+	passkey?: PublicKeyCredentialRequestOptionsJSON;
+};
+
+export type SecondFactorAnswer = { code: string } | { passkey: unknown };
+
+export type Factor = {
+	id: string;
+	label: string;
+	added_at: string;
+	last_used_at: string | null;
+};
+
+export type TwoStep = {
+	/** Whether factors may be added here; one already on can always be removed. */
+	offered: boolean;
+	enabled: boolean;
+	/** Whether removing a factor, or new recovery codes, ask for the password. */
+	asks_password: boolean;
+	authenticator: Factor | null;
+	passkeys: Factor[];
+	recovery_codes_left: number;
+};
+
+/** Recovery codes, the one time they are shown; empty when none were made. */
+export type RecoveryCodes = { recovery_codes: string[] | null };
 
 export type User = {
 	id: string;
@@ -104,6 +143,22 @@ export type ConnectedApplication = {
 	authorized_at: string;
 	last_used_at: string;
 };
+
+/** One thing an application asks for. A standard scope is described by the page; an API's
+    scope comes with the API's own words. */
+export type RequestedScope = {
+	name: string;
+	description: string;
+	api?: string;
+};
+
+export type ConsentPage = {
+	application: Application;
+	scopes: RequestedScope[];
+};
+
+/** The Agreements or Consent page's answer, for the sign-in it names. */
+export type StepAnswer = { request: string; yes: boolean };
 
 export type RegisterInput = {
 	request: string;
@@ -178,6 +233,30 @@ export const signIn = {
 	verifyEmail: (body: { token: string }) =>
 		request<{ status: string }>('/account/verify-email', { method: 'POST', body }),
 
+	consent: (handle: string, fetch?: Fetch) =>
+		request<{ consent: ConsentPage }>(`/account/consent?request=${encode(handle)}`, { fetch }),
+
+	answerConsent: (body: StepAnswer) =>
+		request<{ redirect_to: string }>('/account/consent', { method: 'POST', body }),
+
+	answerAgreements: (body: StepAnswer) =>
+		request<{ redirect_to: string }>('/account/agreements', { method: 'POST', body }),
+
+	beginPasskey: (body: { request: string; remember: boolean }) =>
+		request<{ handle: string; passkey: PublicKeyCredentialRequestOptionsJSON }>(
+			'/account/login/passkey',
+			{ method: 'POST', body }
+		),
+
+	finishPasskey: (body: { handle: string; response: unknown }) =>
+		request<SignedIn>('/account/login/passkey/finish', { method: 'POST', body }),
+
+	secondFactor: (fetch?: Fetch) =>
+		request<{ second_factor: SecondFactorChallenge }>('/account/login/second-factor', { fetch }),
+
+	submitSecondFactor: (body: SecondFactorAnswer) =>
+		request<SignedIn>('/account/login/second-factor', { method: 'POST', body }),
+
 	/** Signs this browser out. The confirmation page passes on what the
 	    application's logout named; `location` is where the server says to go. */
 	logout: (body?: { client_id: string; post_logout_redirect_uri: string; state: string }) =>
@@ -197,6 +276,47 @@ export const account = {
 		request<{ status: string }>('/account/email', { method: 'POST', body }),
 
 	sessions: (fetch?: Fetch) => request<{ sessions: Session[] }>('/account/sessions', { fetch }),
+
+	device: (userCode: string, fetch?: Fetch) =>
+		request<{ device: ConsentPage }>(`/account/device?user_code=${encode(userCode)}`, { fetch }),
+
+	answerDevice: (body: { user_code: string; yes: boolean }) =>
+		request<void>('/account/device', { method: 'POST', body }),
+
+	twoStep: (fetch?: Fetch) => request<{ two_step: TwoStep }>('/account/two-step', { fetch }),
+
+	beginAuthenticator: (currentPassword: string) =>
+		request<{ authenticator: { secret: string; uri: string } }>('/account/two-step/authenticator', {
+			method: 'POST',
+			body: { current_password: currentPassword }
+		}),
+
+	confirmAuthenticator: (code: string) =>
+		request<RecoveryCodes>('/account/two-step/authenticator/confirm', {
+			method: 'POST',
+			body: { code }
+		}),
+
+	beginPasskey: (currentPassword: string) =>
+		request<{ passkey: PublicKeyCredentialCreationOptionsJSON }>('/account/two-step/passkeys', {
+			method: 'POST',
+			body: { current_password: currentPassword }
+		}),
+
+	finishPasskey: (body: { label: string; response: unknown }) =>
+		request<RecoveryCodes>('/account/two-step/passkeys/finish', { method: 'POST', body }),
+
+	removeFactor: (id: string, currentPassword: string) =>
+		request<void>(`/account/two-step/factors/${encodeURIComponent(id)}`, {
+			method: 'DELETE',
+			body: { current_password: currentPassword }
+		}),
+
+	newRecoveryCodes: (currentPassword: string) =>
+		request<RecoveryCodes>('/account/two-step/recovery-codes', {
+			method: 'POST',
+			body: { current_password: currentPassword }
+		}),
 
 	endSession: (id: string) =>
 		request<void>(`/account/sessions/${encode(id)}`, { method: 'DELETE' }),

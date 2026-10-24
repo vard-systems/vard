@@ -4,9 +4,10 @@
 // Importing this package is what makes the migrations exist; internal/database
 // imports it for that reason alone.
 //
-// This file is the whole schema in one step. A later change to it is a new
-// file beside this one (make migrate-new name=x), never an edit here: a
-// migration that has run anywhere says the same thing forever.
+// This file is the whole schema in one step, built from the models. A later
+// change to it is a new file beside this one (make migrate-new name=x), never
+// an edit here: a migration that has run anywhere says the same thing
+// forever.
 package migrations
 
 import (
@@ -60,7 +61,34 @@ func upSchema(_ context.Context, tx *sql.Tx) error {
 		}
 	}
 
+	if err := userSearchIndex(db); err != nil {
+		return err
+	}
+
 	return seed(db)
+}
+
+// userSearch lets the users page find a word anywhere in a user's address,
+// name or fields. It needs pg_trgm, which a managed database may not let us
+// install; without it the search still works, by scanning.
+const userSearch = `CREATE INDEX idx_users_search ON users USING gin (
+	LOWER(email || ' ' || COALESCE(first_name, '') || ' ' || COALESCE(last_name, '') || ' ' || COALESCE(data, ''))
+	gin_trgm_ops)`
+
+func userSearchIndex(db *gorm.DB) error {
+	if err := db.Exec("SAVEPOINT trigram").Error; err != nil {
+		return err
+	}
+
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS pg_trgm").Error; err != nil {
+		return db.Exec("ROLLBACK TO SAVEPOINT trigram").Error
+	}
+
+	if err := db.Exec(userSearch).Error; err != nil {
+		return fmt.Errorf("create idx_users_search: %w", err)
+	}
+
+	return nil
 }
 
 // downSchema drops everything again: the join tables GORM made for the
@@ -111,6 +139,27 @@ var indexes = []struct{ name, create string }{
 		ON audit_logs (action, created_at DESC)`},
 	{"idx_audit_logs_actor_created", `CREATE INDEX idx_audit_logs_actor_created
 		ON audit_logs (actor_email, created_at DESC)`},
+	// What an entry is about, newest first: an application's or a user's
+	// history in the panel.
+	{"idx_audit_logs_target", `CREATE INDEX idx_audit_logs_target
+		ON audit_logs (target_type, target_id, created_at DESC)`},
+	// Entries about an API name it in their metadata, not as their target.
+	{"idx_audit_logs_api", `CREATE INDEX idx_audit_logs_api
+		ON audit_logs (((metadata::jsonb) ->> 'api_id')) WHERE metadata LIKE '%"api_id"%'`},
+	{"idx_users_created", `CREATE INDEX idx_users_created ON users (created_at DESC)`},
+
+	// The other side of each join table GORM makes: their primary keys lead
+	// with the first column only.
+	{"idx_user_role_members_role", `CREATE INDEX idx_user_role_members_role
+		ON user_role_members (user_role_id)`},
+	{"idx_user_role_inherits_inherited", `CREATE INDEX idx_user_role_inherits_inherited
+		ON user_role_inherits (inherited_role_id)`},
+	{"idx_user_role_api_scopes_scope", `CREATE INDEX idx_user_role_api_scopes_scope
+		ON user_role_api_scopes (api_scope_id)`},
+	{"idx_application_apis_api", `CREATE INDEX idx_application_apis_api
+		ON application_apis (api_id)`},
+	{"idx_application_api_scopes_scope", `CREATE INDEX idx_application_api_scopes_scope
+		ON application_api_scopes (api_scope_id)`},
 }
 
 // seed writes the rows an installation cannot start without: the admin roles

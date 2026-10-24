@@ -86,14 +86,29 @@ func (s *Store) SaveUserProfile(ctx context.Context, user *model.User) error {
 	}).Error)
 }
 
+// DeleteUser removes a user. Their sessions are ended first, so the
+// applications they were signed in to hear of it before the record of which
+// ones goes with the rows.
 func (s *Store) DeleteUser(ctx context.Context, user *model.User) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	var ended endedSessions
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var err error
+		if ended, err = revokeUserSessionsIn(tx, time.Now(), "user_id = ?", user.ID); err != nil {
+			return err
+		}
+
 		if err := tx.Exec("DELETE FROM user_role_members WHERE user_id = ?", user.ID).Error; err != nil {
 			return err
 		}
 
 		return tx.Delete(user).Error
 	})
+	if err == nil {
+		s.sessionsEnded(ctx, ended)
+	}
+
+	return err
 }
 
 func (s *Store) FieldValueTaken(ctx context.Context, field string, value any, except uuid.UUID) (bool, error) {
@@ -169,7 +184,7 @@ func (s *Store) ClearUserFailedLogins(ctx context.Context, user *model.User, at 
 }
 
 func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep uuid.UUID, at time.Time) error {
-	var ended []model.UserSession
+	var ended endedSessions
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(user).Updates(map[string]any{
@@ -201,7 +216,7 @@ func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep u
 		return err
 	}
 
-	s.putUserSessions(ctx, ended...)
+	s.sessionsEnded(ctx, ended)
 
 	return nil
 }

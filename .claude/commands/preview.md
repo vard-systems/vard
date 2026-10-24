@@ -38,9 +38,11 @@ it:
 3. The panel against it, from `web/console` — its server renders the pages
    and passes `/api/v1/admin` on to `API_URL`, so the browser calls the API
    on the panel's own origin:
-   `API_URL=http://localhost:8091 bunx vite dev --port 5184 --strictPort`
+   `API_URL=http://localhost:8091 ./node_modules/.bin/vite dev --port 5184 --strictPort`
    (and, for the sign-in pages, from `web/id`:
-   `API_URL=http://localhost:8090 bunx vite dev --port 5183 --strictPort`).
+   `API_URL=http://localhost:8090 ./node_modules/.bin/vite dev --port 5183 --strictPort`).
+   The app's own Vite, not `bunx vite`: bunx can resolve a copy of its own,
+   which starts without the SvelteKit plugin and answers every page 404.
 
 4. The first administrator, since the database is empty:
 
@@ -53,6 +55,10 @@ it:
 5. Sign in at `http://localhost:5184/login` with the browser tools and
    go to the path. Look at it in both themes if the change is visual — the
    header's toggle switches them.
+
+   Cookies on `localhost` are shared by every port, so signing in here
+   replaces the running stack's session in this browser: say so when you
+   report, since its owner will be signed out of it.
 
 Then take it all down: stop every process you started — the API and the Vite
 servers, found by their spare ports, never the running stack's —

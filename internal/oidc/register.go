@@ -72,6 +72,14 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 		return nil, err
 	}
 
+	// The form's checkbox shows the application's own links, or the
+	// organization's when it has none; ticked over the organization's, it is
+	// the Agreements step already passed.
+	if r.AcceptedTerms && app.TermsURL == "" && app.PrivacyURL == "" && flow.Offers(model.StepTerms) {
+		now := s.now()
+		user.AgreementsAcceptedAt = &now
+	}
+
 	roles, err := s.store.DefaultUserRoles(ctx)
 	if err != nil {
 		return nil, err

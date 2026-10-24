@@ -20,6 +20,8 @@ type Store struct {
 	db       *gorm.DB
 	cache    *cache.Cache
 	sessions *cache.Cache
+
+	onLogout func(context.Context, []LogoutNotice)
 }
 
 func New(db *gorm.DB) *Store {

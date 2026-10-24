@@ -20,7 +20,7 @@ type AuditLog struct {
 
 	Action string `gorm:"size:128;not null" json:"action"`
 
-	TargetType string `gorm:"index;size:64;not null;default:''" json:"target_type,omitempty"`
+	TargetType string `gorm:"size:64;not null;default:''" json:"target_type,omitempty"`
 	TargetID   string `gorm:"index;size:64;not null;default:''" json:"target_id,omitempty"`
 
 	// Metadata carries whatever else is worth keeping, such as the fields that

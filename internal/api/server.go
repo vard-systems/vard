@@ -42,10 +42,13 @@ import (
 	"loginer/internal/api/oauth"
 	"loginer/internal/api/organization"
 	"loginer/internal/api/otp"
+	"loginer/internal/api/profile"
 	"loginer/internal/api/roles"
 	"loginer/internal/api/setup"
 	"loginer/internal/api/social"
 	"loginer/internal/api/sso"
+	"loginer/internal/api/steps"
+	"loginer/internal/api/twostep"
 	"loginer/internal/api/users"
 	"loginer/internal/api/usersessions"
 	"loginer/internal/auth"
@@ -72,6 +75,9 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 	registerPublicRoutes(r, publicHandlers{
 		oauth:   oauth.New(provider, log, cfg.SecureUserCookies),
 		account: account.New(provider, log, cfg.SecureUserCookies),
+		twoStep: twostep.New(provider, log),
+		profile: profile.New(provider, log),
+		steps:   steps.New(provider, log),
 		limit:   ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "public").Middleware(),
 		tokens:  ratelimit.New(cfg.RateLimit*tokenLimitMultiple).Shared(shared.SessionDB(), "token").Middleware(),
 		csrf:    csrf.New(allowed(cfg.AccountURL, cfg.CORSOrigins)),
@@ -146,6 +152,9 @@ func allowed(appURL string, extra []string) []string {
 type publicHandlers struct {
 	oauth   *oauth.Handler
 	account *account.Handler
+	twoStep *twostep.Handler
+	profile *profile.Handler
+	steps   *steps.Handler
 	limit   gin.HandlerFunc
 	tokens  gin.HandlerFunc
 	csrf    gin.HandlerFunc
@@ -189,10 +198,14 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 	r.GET(oidc.PathAuthorize, h.tokens, h.oauth.Authorize)
 	r.POST(oidc.PathAuthorize, h.tokens, h.oauth.Authorize)
 	r.POST(oidc.PathToken, h.tokens, h.oauth.Token)
+	r.POST(oidc.PathPushedAuthorization, h.tokens, h.oauth.PushAuthorization)
+	r.POST(oidc.PathDeviceAuthorization, h.tokens, h.oauth.StartDevice)
+	r.POST(oidc.PathRegistration, h.tokens, h.oauth.RegisterClient)
 	r.GET(oidc.PathUserInfo, h.oauth.UserInfo)
 	r.POST(oidc.PathUserInfo, h.oauth.UserInfo)
 	r.GET(oidc.PathLogout, h.oauth.Logout)
 	r.POST(oidc.PathLogout, h.oauth.Logout)
+	r.GET(oidc.PathFrontchannelLogout, h.oauth.FrontchannelLogout)
 	r.POST(oidc.PathRevoke, h.tokens, h.oauth.Revoke)
 	r.POST(oidc.PathIntrospect, h.tokens, h.oauth.Introspect)
 
@@ -228,6 +241,10 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 		accounts.POST("/login", h.limit, h.account.Login)
 		accounts.POST("/login/code", h.limit, h.account.Code)
 		accounts.POST("/login/code/resend", h.limit, h.account.ResendCode)
+		accounts.GET("/login/second-factor", h.account.SecondFactor)
+		accounts.POST("/login/second-factor", h.limit, h.account.SubmitSecondFactor)
+		accounts.POST("/login/passkey", h.limit, h.account.BeginPasskey)
+		accounts.POST("/login/passkey/finish", h.limit, h.account.FinishPasskey)
 		accounts.POST("/register", h.limit, h.account.Register)
 		accounts.POST("/forgot-password", h.limit, h.account.ForgotPassword)
 		accounts.GET("/reset-password", h.account.CheckReset)
@@ -236,14 +253,26 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 		accounts.POST("/logout", h.account.Logout)
 
 		own := accounts.Group("", h.account.RequireSession)
-		own.GET("/me", h.account.Me)
-		own.PATCH("/me", h.account.UpdateMe)
-		own.POST("/password", h.limit, h.account.ChangePassword)
-		own.POST("/email", h.limit, h.account.ChangeEmail)
-		own.GET("/sessions", h.account.Sessions)
-		own.DELETE("/sessions/:id", h.account.EndSession)
-		own.GET("/connected-applications", h.account.Applications)
-		own.DELETE("/connected-applications/:client_id", h.account.Disconnect)
+		own.GET("/me", h.profile.Me)
+		own.PATCH("/me", h.profile.UpdateMe)
+		own.POST("/password", h.limit, h.profile.ChangePassword)
+		own.POST("/email", h.limit, h.profile.ChangeEmail)
+		own.GET("/sessions", h.profile.Sessions)
+		own.DELETE("/sessions/:id", h.profile.EndSession)
+		own.GET("/connected-applications", h.profile.Applications)
+		own.DELETE("/connected-applications/:client_id", h.profile.Disconnect)
+		own.GET("/consent", h.steps.Consent)
+		own.POST("/consent", h.steps.AnswerConsent)
+		own.POST("/agreements", h.steps.AnswerAgreements)
+		own.GET("/device", h.limit, h.steps.Device)
+		own.POST("/device", h.limit, h.steps.AnswerDevice)
+		own.GET("/two-step", h.twoStep.TwoStep)
+		own.POST("/two-step/authenticator", h.limit, h.twoStep.BeginAuthenticator)
+		own.POST("/two-step/authenticator/confirm", h.limit, h.twoStep.ConfirmAuthenticator)
+		own.POST("/two-step/passkeys", h.limit, h.twoStep.BeginPasskey)
+		own.POST("/two-step/passkeys/finish", h.twoStep.FinishPasskey)
+		own.DELETE("/two-step/factors/:id", h.limit, h.twoStep.RemoveFactor)
+		own.POST("/two-step/recovery-codes", h.limit, h.twoStep.NewRecoveryCodes)
 	}
 
 	r.NoRoute(notFound)
@@ -307,6 +336,7 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 		writeUsers.PATCH("/users/:id", h.users.Update)
 		writeUsers.DELETE("/users/:id", h.users.Delete)
 		writeUsers.DELETE("/users/:id/social-accounts/:identity", h.users.Disconnect)
+		writeUsers.DELETE("/users/:id/two-step", h.users.ResetTwoStep)
 		writeUsers.DELETE("/users/:id/sessions", h.userSessions.SignOutUser)
 		writeUsers.DELETE("/user-sessions/:id", h.userSessions.End)
 

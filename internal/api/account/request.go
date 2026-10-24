@@ -1,5 +1,7 @@
 package account
 
+import "encoding/json"
+
 // loginRequest is the body of POST /account/login. Request is the handle of
 // the sign-in under way, when there is one.
 type loginRequest struct {
@@ -56,28 +58,31 @@ type resetRequest struct {
 	Password string `json:"password" validate:"required,max=72"`
 }
 
-type profileRequest struct {
-	FirstName string `json:"first_name" validate:"max=100"`
-	LastName  string `json:"last_name" validate:"max=100"`
-}
-
-// emailRequest is the body of POST /account/email: the address to move to.
-type emailRequest struct {
-	Email string `json:"email" validate:"required,email,max=255"`
-	// CurrentPassword proves the person at the session owns the account; a
-	// wrong one counts towards the lockout, as at sign-in.
-	CurrentPassword string `json:"current_password" validate:"required,max=128"`
-}
-
-type passwordRequest struct {
-	CurrentPassword string `json:"current_password" validate:"required,max=128"`
-	NewPassword     string `json:"new_password" validate:"required,max=72"`
-}
-
 // logoutRequest is the body of POST /account/logout, all of it optional: the
 // confirmation page passes on what the application's logout request named.
 type logoutRequest struct {
 	ClientID              string `json:"client_id" validate:"max=255"`
 	PostLogoutRedirectURI string `json:"post_logout_redirect_uri" validate:"max=2048"`
 	State                 string `json:"state" validate:"max=512"`
+}
+
+// secondFactorRequest answers a waiting sign-in: a code (from the
+// authenticator, or a recovery code), or a passkey's response as the browser
+// gave it.
+type secondFactorRequest struct {
+	Code    string          `json:"code" validate:"max=32"`
+	Passkey json.RawMessage `json:"passkey"`
+}
+
+// passkeyStartRequest starts a sign-in with a passkey alone, for the sign-in
+// under way when there is one.
+type passkeyStartRequest struct {
+	Request  string `json:"request" validate:"max=64"`
+	Remember bool   `json:"remember"`
+}
+
+// passkeyFinishRequest is the browser's answer, with the handle it was given.
+type passkeyFinishRequest struct {
+	Handle   string          `json:"handle" validate:"required,max=64"`
+	Response json.RawMessage `json:"response"`
 }

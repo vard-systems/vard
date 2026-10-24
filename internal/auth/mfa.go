@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -12,10 +11,9 @@ import (
 	"time"
 
 	"loginer/internal/model"
+	"loginer/internal/recovery"
 	"loginer/internal/totp"
 )
-
-const recoveryCodeCount = 10
 
 var (
 	ErrInvalidCode  = errors.New("that code is not right; check the time on your phone and try the newest code")
@@ -154,7 +152,7 @@ func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, co
 		return nil, ErrInvalidCode
 	}
 
-	codes, hashes, err := s.newRecoveryCodes()
+	codes, hashes, err := recovery.New(s.sealer, recoveryCodePurpose)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +238,7 @@ func (s *Service) RegenerateRecoveryCodes(ctx context.Context, admin *model.Admi
 		return nil, err
 	}
 
-	codes, hashes, err := s.newRecoveryCodes()
+	codes, hashes, err := recovery.New(s.sealer, recoveryCodePurpose)
 	if err != nil {
 		return nil, err
 	}
@@ -273,8 +271,8 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 		return "", ErrInvalidCode
 	}
 
-	if isRecoveryCode(code) {
-		ok, err := s.store.ConsumeRecoveryCode(ctx, factor.ID, s.hashRecoveryCode(code))
+	if recovery.Is(code) {
+		ok, err := s.store.ConsumeRecoveryCode(ctx, factor.ID, recovery.Hash(s.sealer, recoveryCodePurpose, code))
 		if err != nil {
 			return "", err
 		}
@@ -348,74 +346,9 @@ func (s *Service) secretOf(factor model.MFA) (string, error) {
 	return string(plain), nil
 }
 
-const (
-	recoveryAlphabet = "abcdefghjkmnpqrstuvwxyz23456789"
-	// recoveryCodeLetters is how many of them a code is made of, the dash
-	// aside. Ten of this alphabet is a little under fifty bits.
-	recoveryCodeLetters = 10
-)
-
-func (s *Service) newRecoveryCodes() (codes, hashes []string, err error) {
-	for range recoveryCodeCount {
-		code, err := newRecoveryCode()
-		if err != nil {
-			return nil, nil, err
-		}
-
-		codes = append(codes, code)
-		hashes = append(hashes, s.hashRecoveryCode(code))
-	}
-
-	return codes, hashes, nil
-}
-
-// newRecoveryCode draws each letter uniformly, rejecting bytes past the last
-// whole alphabet rather than taking a biased modulo.
-func newRecoveryCode() (string, error) {
-	const whole = 256 - 256%len(recoveryAlphabet)
-
-	letters := make([]byte, 0, recoveryCodeLetters)
-
-	for len(letters) < recoveryCodeLetters {
-		var batch [recoveryCodeLetters]byte
-		if _, err := rand.Read(batch[:]); err != nil {
-			return "", fmt.Errorf("auth: generate recovery code: %w", err)
-		}
-
-		for _, v := range batch {
-			if int(v) >= whole {
-				continue
-			}
-
-			letters = append(letters, recoveryAlphabet[int(v)%len(recoveryAlphabet)])
-			if len(letters) == recoveryCodeLetters {
-				break
-			}
-		}
-	}
-
-	half := recoveryCodeLetters / 2
-
-	return string(letters[:half]) + "-" + string(letters[half:]), nil
-}
-
-func normalizeRecoveryCode(code string) string {
-	return strings.NewReplacer("-", "", " ", "").Replace(strings.ToLower(strings.TrimSpace(code)))
-}
-
-func isRecoveryCode(code string) bool {
-	return len(normalizeRecoveryCode(code)) == recoveryCodeLetters
-}
-
-// hashRecoveryCode keys the hash with the server's secret: a code has under
-// fifty bits, which a bare SHA-256 from a database dump would give up quickly.
-func (s *Service) hashRecoveryCode(code string) string {
-	return hex.EncodeToString(s.sealer.Tag(recoveryCodePurpose, []byte(normalizeRecoveryCode(code))))
-}
-
 const recoveryCodePurpose = "admin recovery code"
 
 func legacyHashRecoveryCode(code string) string {
-	sum := sha256.Sum256([]byte(normalizeRecoveryCode(code)))
+	sum := sha256.Sum256([]byte(recovery.Normalize(code)))
 	return hex.EncodeToString(sum[:])
 }

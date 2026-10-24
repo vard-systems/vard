@@ -28,6 +28,11 @@ type User struct {
 	// it anything about the password.
 	HasPassword bool `gorm:"-" json:"has_password"`
 
+	// TwoStepEnabled tells the panel the user turned on two-step
+	// verification, so an administrator can reset it for someone who lost
+	// every factor.
+	TwoStepEnabled bool `gorm:"-" json:"two_step_enabled"`
+
 	// SocialAccounts are the providers this user signs in with, loaded from
 	// social_identities.
 	SocialAccounts []SocialAccount `gorm:"-" json:"social_accounts"`
@@ -36,6 +41,10 @@ type User struct {
 	LastLoginAt      *time.Time `json:"last_login_at"`
 	FailedLoginCount int        `gorm:"not null;default:0" json:"-"`
 	LockedUntil      *time.Time `json:"locked_until"`
+
+	// AgreementsAcceptedAt is when the user last accepted the organization's
+	// terms and privacy policy, on the Agreements step.
+	AgreementsAcceptedAt *time.Time `json:"agreements_accepted_at"`
 
 	Data map[string]any `gorm:"serializer:json" json:"data"`
 

@@ -24,8 +24,11 @@ type SignInResult struct {
 	Token      string
 	ResetToken string
 	Code       *CodeChallenge
-	Request    string
-	Remember   bool
+	// SecondFactorHandle is set when the sign-in waits for the user's second
+	// factor: no session yet, and the handle goes in a cookie.
+	SecondFactorHandle string
+	Request            string
+	Remember           bool
 }
 
 func (s *Session) InBrowser() bool {
@@ -124,9 +127,18 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return nil, ErrInvalidCredentials
 	}
 
-	// A right password returns the attempt now, before any emailed code.
-	if err := s.store.ClearUserFailedLogins(ctx, user, now); err != nil {
+	// A right password returns the attempt now, before any emailed code —
+	// unless a second factor is still to come. Then only that returns it:
+	// otherwise a right password between wrong codes would reset the count,
+	// and codes could be guessed for ever.
+	secondFactor, err := s.store.HasUserFactor(ctx, user.ID)
+	if err != nil {
 		return nil, err
+	}
+	if !secondFactor {
+		if err := s.store.ClearUserFailedLogins(ctx, user, now); err != nil {
+			return nil, err
+		}
 	}
 
 	if user.IsPasswordTemporary {
@@ -164,6 +176,8 @@ func (s *Service) finishSignIn(
 	return s.sendLoginCode(ctx, user, request, remember, client)
 }
 
+// startSession is where every way of signing in ends: the flow's checks, the
+// user's second factor if they have one, then the session.
 func (s *Service) startSession(
 	ctx context.Context,
 	user *model.User,
@@ -173,23 +187,65 @@ func (s *Service) startSession(
 	client Client,
 	action string,
 ) (*SignInResult, error) {
-	now := s.now()
+	if err := s.admit(ctx, user, flow, request, client); err != nil {
+		return nil, err
+	}
 
-	// A closed flow is checked here because every way in ends here.
+	held, err := s.holdForSecondFactor(ctx, user, request, remember)
+	if err != nil || held != nil {
+		return held, err
+	}
+
+	return s.openSession(ctx, user, flow, request, remember, client, action)
+}
+
+// startFederatedSession is startSession for single sign-on, whose provider
+// answers for the second factor of the people it signs in.
+func (s *Service) startFederatedSession(
+	ctx context.Context,
+	user *model.User,
+	flow *model.LoginFlow,
+	request string,
+	client Client,
+) (*SignInResult, error) {
+	if err := s.admit(ctx, user, flow, request, client); err != nil {
+		return nil, err
+	}
+
+	return s.openSession(ctx, user, flow, request, true, client, "user.login")
+}
+
+// admit is what the flow asks of everyone, checked here because every way in
+// ends here.
+func (s *Service) admit(ctx context.Context, user *model.User, flow *model.LoginFlow, request string, client Client) error {
 	if !flow.AllowSignIn {
 		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "sign-in is closed"})
 
-		return nil, ErrSignInClosed
+		return ErrSignInClosed
 	}
 
 	if flow.RequireVerifiedEmail && !user.IsEmailVerified {
 		if err := s.sendVerification(ctx, user, request, client); err != nil {
-			return nil, err
+			return err
 		}
 		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "email not verified"})
 
-		return nil, ErrEmailNotVerified
+		return ErrEmailNotVerified
 	}
+
+	return nil
+}
+
+func (s *Service) openSession(
+	ctx context.Context,
+	user *model.User,
+	flow *model.LoginFlow,
+	request string,
+	remember bool,
+	client Client,
+	action string,
+) (*SignInResult, error) {
+	now := s.now()
 
 	token, hash, err := model.NewSecret()
 	if err != nil {

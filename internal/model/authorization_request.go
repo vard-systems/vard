@@ -23,6 +23,9 @@ type AuthorizationRequest struct {
 	CodeChallengeMethod string `gorm:"size:8;not null;default:''"`
 	Audience            string `gorm:"size:255;not null;default:''"`
 	LoginHint           string `gorm:"size:255;not null;default:''"`
+	// ForceConsent is prompt=consent: the consent page is shown even when
+	// the user has allowed everything asked before.
+	ForceConsent bool `gorm:"not null"`
 
 	ExpiresAt   time.Time `gorm:"not null;index"`
 	CompletedAt *time.Time

@@ -106,18 +106,21 @@ var LoginStepSpecs = []LoginStepSpec{
 	},
 	{
 		Step:        StepTOTP,
-		Label:       "Authenticator code",
-		Description: "Ask for a code from an authenticator app.",
+		Label:       "Two-step verification",
+		Description: "Let users turn on an authenticator app or passkeys from their account. Whoever turns it on is asked for it at every sign-in.",
+		Implemented: true,
 	},
 	{
 		Step:        StepTerms,
 		Label:       "Agreements",
-		Description: "Ask a new account to accept the organisation's terms and privacy policy.",
+		Description: "Ask for the organisation's terms and privacy policy to be accepted, and again when they change.",
+		Implemented: true,
 	},
 	{
 		Step:        StepConsent,
 		Label:       "Consent",
-		Description: "Show what the application is asking for and wait to be allowed.",
+		Description: "Show what the application is asking for and wait to be allowed, once for each new thing it asks.",
+		Implemented: true,
 	},
 }
 

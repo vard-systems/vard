@@ -184,7 +184,9 @@ export const usersApi = {
 	removeField: (id: string) => api.delete<void>(`/admin/user-fields/${id}`),
 
 	disconnect: (id: string, identity: string) =>
-		api.delete<void>(`/admin/users/${id}/social-accounts/${identity}`)
+		api.delete<void>(`/admin/users/${id}/social-accounts/${identity}`),
+
+	resetTwoStep: (id: string) => api.delete<void>(`/admin/users/${id}/two-step`)
 };
 
 export const organizationApi = {

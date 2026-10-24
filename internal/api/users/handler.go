@@ -65,6 +65,11 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
+	if err := h.fillTwoStep(c, pointersTo(users)...); err != nil {
+		respond.Failure(c, h.log, err, "reading users' two-step verification failed")
+		return
+	}
+
 	c.JSON(http.StatusOK, newPageResponse(users, total, query))
 }
 
@@ -81,7 +86,34 @@ func (h *Handler) Get(c *gin.Context) {
 		return
 	}
 
+	if err := h.fillTwoStep(c, user); err != nil {
+		respond.Failure(c, h.log, err, "reading a user's two-step verification failed")
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+// ResetTwoStep turns a user's two-step verification off, for someone who
+// lost every factor and recovery code. They sign in with their first factor
+// alone until they turn it on again.
+func (h *Handler) ResetTwoStep(c *gin.Context) {
+	user, ok := h.find(c)
+	if !ok {
+		return
+	}
+
+	removed, err := h.store.ResetTwoStep(c.Request.Context(), user.ID)
+	if err != nil {
+		respond.Failure(c, h.log, err, "resetting two-step verification failed")
+		return
+	}
+
+	h.audit.RecordWith(c, "user.two_step_reset", targetType, user.ID.String(), map[string]any{
+		"email": user.Email, "factors": removed,
+	})
+
+	c.Status(http.StatusNoContent)
 }
 
 func (h *Handler) fillSocialAccounts(c *gin.Context, users ...*model.User) error {
@@ -97,6 +129,24 @@ func (h *Handler) fillSocialAccounts(c *gin.Context, users ...*model.User) error
 
 	for _, user := range users {
 		user.SocialAccounts = accounts[user.ID]
+	}
+
+	return nil
+}
+
+func (h *Handler) fillTwoStep(c *gin.Context, users ...*model.User) error {
+	ids := make([]uuid.UUID, 0, len(users))
+	for _, user := range users {
+		ids = append(ids, user.ID)
+	}
+
+	with, err := h.store.UsersWithTwoStep(c.Request.Context(), ids)
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		user.TwoStepEnabled = with[user.ID]
 	}
 
 	return nil
@@ -216,6 +266,11 @@ func (h *Handler) Update(c *gin.Context) {
 
 	if err := h.fillSocialAccounts(c, user); err != nil {
 		respond.Failure(c, h.log, err, "listing the providers this user signs in with failed")
+		return
+	}
+
+	if err := h.fillTwoStep(c, user); err != nil {
+		respond.Failure(c, h.log, err, "reading a user's two-step verification failed")
 		return
 	}
 

@@ -1,7 +1,7 @@
 <script lang="ts" generics="Value extends string">
 	type Props = {
 		label: string;
-		options: readonly { value: Value; label: string; reset?: boolean }[];
+		options: readonly { value: Value; label: string; reset?: boolean; disabled?: boolean }[];
 		value: Value;
 		onChange: (value: Value) => void;
 	};
@@ -15,6 +15,7 @@
 			type="button"
 			class:selected={option.value === value}
 			aria-pressed={option.value === value}
+			disabled={option.disabled}
 			onclick={() => onChange(option.value)}
 		>
 			{option.label}
@@ -95,5 +96,10 @@
 		.segmented::-webkit-scrollbar {
 			display: none;
 		}
+	}
+
+	button:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
 	}
 </style>

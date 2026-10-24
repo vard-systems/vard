@@ -47,8 +47,11 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 	app.GrantTypes = r.GrantTypes
 	app.RedirectURIs = r.RedirectURIs
 	app.PostLogoutRedirectURIs = r.PostLogoutRedirectURIs
+	app.BackchannelLogoutURI = r.BackchannelLogoutURI
+	app.FrontchannelLogoutURI = r.FrontchannelLogoutURI
 	app.Scopes = r.Scopes
 	app.RequirePKCE = validate.Flag(r.RequirePKCE, app.RequirePKCE)
+	app.RequirePushedRequests = validate.Flag(r.RequirePushedRequests, app.RequirePushedRequests)
 	app.AccessTokenLifetime = r.AccessTokenLifetime
 	app.IDTokenLifetime = r.IDTokenLifetime
 	app.RefreshTokenLifetime = r.RefreshTokenLifetime

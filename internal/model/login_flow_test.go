@@ -147,14 +147,18 @@ func TestDefaultLoginFlowIsValid(t *testing.T) {
 // — but the pages get a list to put on the screen, and a step nobody will be
 // asked for does not belong in it.
 func TestPublicOptionsLeaveOutTheStepsNobodyRunsYet(t *testing.T) {
+	// Every step in the catalog is run today, so a step the catalog does not
+	// know stands in for a planned one.
+	planned := LoginStep("planned")
+
 	flow := LoginFlow{
-		Steps:             StepList{StepIdentifier, StepPassword, StepTOTP, StepSocial, StepConsent},
+		Steps:             StepList{StepIdentifier, StepPassword, planned, StepTOTP, StepSocial, StepConsent},
 		AllowRegistration: true,
 	}
 
 	options := flow.PublicOptions()
 
-	want := []LoginStep{StepIdentifier, StepPassword, StepSocial}
+	want := []LoginStep{StepIdentifier, StepPassword, StepTOTP, StepSocial, StepConsent}
 	if !slices.Equal(options.Steps, want) {
 		t.Errorf("steps = %v, want %v", options.Steps, want)
 	}
