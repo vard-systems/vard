@@ -59,7 +59,14 @@ export function describeDevice(userAgent: string, t: Translate): string {
 	return t('device.on', { browser: String(browser), system: String(system) });
 }
 
-export function initials(user: { first_name: string; last_name: string; email: string }): string {
+type Person = { first_name: string; last_name: string; email: string };
+
+/** A person's name, or their address when they have not given one. */
+export function displayName(user: Person): string {
+	return `${user.first_name} ${user.last_name}`.trim() || user.email;
+}
+
+export function initials(user: Person): string {
 	const letters = `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.trim();
 	return (letters || user.email.charAt(0)).toUpperCase();
 }

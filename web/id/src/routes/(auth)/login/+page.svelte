@@ -10,17 +10,18 @@
 		type SignedIn
 	} from '#lib/api/index.js';
 
+	import { AuthCard, CodeForm, SocialButtons, SSOButtons } from '#lib/components/auth/index.js';
 	import {
 		Alert,
-		AuthCard,
 		Button,
 		Checkbox,
-		CodeForm,
+		Form,
+		Note,
+		PageTitle,
 		PasswordField,
-		TextField,
-		SocialButtons,
-		SSOButtons
-	} from '#lib/components/index.js';
+		TextField
+	} from '#lib/components/ui/index.js';
+	import { LIMITS } from '#lib/constants.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
 	import { authHref, leaveTo, ssoHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
@@ -29,7 +30,7 @@
 
 	const t = useTranslator();
 
-	const app = $derived(data.signInRequest?.application ?? null);
+	const app = $derived(data.application);
 
 	const flow = $derived(data.login);
 	const offerSocial = $derived(flow.steps.includes('social'));
@@ -103,8 +104,7 @@
 		error = message;
 	}
 
-	async function submit(event: SubmitEvent) {
-		event.preventDefault();
+	async function submit() {
 		if (!canSubmit) return;
 
 		error = '';
@@ -144,9 +144,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{t('login.head')}{app ? ` · ${app.name}` : ''}</title>
-</svelte:head>
+<PageTitle parts={[t('login.head'), app?.name]} />
 
 {#if data.expired}
 	<AuthCard
@@ -191,7 +189,7 @@
 		subtitle={app ? t('login.subtitle_app', { app: app.name }) : t('login.subtitle_account')}
 	>
 		{#if offerPassword}
-			<form onsubmit={submit} novalidate>
+			<Form onsubmit={submit}>
 				{#if error}<Alert>{error}</Alert>{/if}
 				{#if notice}<Alert tone="info">{notice}</Alert>{/if}
 				{#if redirecting}
@@ -206,6 +204,7 @@
 					autocomplete="username"
 					autocapitalize="none"
 					spellcheck={false}
+					maxlength={LIMITS.email}
 					disabled={submitting}
 				/>
 
@@ -228,13 +227,13 @@
 				<Button type="submit" block loading={submitting} disabled={!canSubmit}>
 					{submitting ? t('login.submitting') : t('login.submit')}
 				</Button>
-			</form>
+			</Form>
 		{/if}
 
 		<SocialButtons
 			providers={offerSocial ? data.socialProviders : []}
 			request={data.request}
-			next={data.next ?? null}
+			next={data.next}
 			label={t('login.social')}
 			disabled={submitting}
 		/>
@@ -242,15 +241,15 @@
 		<SSOButtons
 			connections={data.ssoConnections}
 			request={data.request}
-			next={data.next ?? null}
+			next={data.next}
 			disabled={submitting}
 		/>
 
 		{#if data.ssoAvailable}
-			<p class="sso-link">
+			<Note align="center" size="sm">
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a href={authHref('/sso', data.request)}>{t('login.sso')}</a>
-			</p>
+			</Note>
 		{/if}
 
 		{#snippet below()}
@@ -264,18 +263,6 @@
 {/if}
 
 <style>
-	.sso-link {
-		margin: var(--space-4) 0 0;
-		text-align: center;
-		font-size: var(--text-sm);
-	}
-
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
 	.aside {
 		display: block;
 		color: var(--color-text-muted);

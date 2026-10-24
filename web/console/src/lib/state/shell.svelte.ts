@@ -1,4 +1,4 @@
-import { getContext, setContext } from 'svelte';
+import { createContext } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { rememberClosedGroups, rememberSidebar, type SidebarState } from './sidebar';
 
@@ -13,7 +13,7 @@ export type Shell = {
 	setMenu: (open: boolean) => void;
 };
 
-const key = Symbol('shell');
+const [getShell, setShell, hasShell] = createContext<Shell>();
 
 export function provideShell(initial: SidebarState, closedGroups: string[]): Shell {
 	let collapsed = $state(initial === 'mini');
@@ -57,12 +57,11 @@ export function provideShell(initial: SidebarState, closedGroups: string[]): She
 		}
 	};
 
-	return setContext(key, shell);
+	return setShell(shell);
 }
 
 export function useShell(): Shell {
-	const shell = getContext<Shell | undefined>(key);
-	if (!shell) throw new Error('useShell() needs the panel layout above it');
+	if (!hasShell()) throw new Error('useShell() needs the panel layout above it');
 
-	return shell;
+	return getShell();
 }

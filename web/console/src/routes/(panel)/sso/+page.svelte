@@ -4,6 +4,7 @@
 	import { BRAND } from '#lib/brand.js';
 	import {
 		Button,
+		EmptyState,
 		IconButton,
 		PageHeader,
 		SearchInput,
@@ -92,25 +93,20 @@
 </PageHeader>
 
 {#if list.data.connections.length === 0}
-	<section class="empty">
-		<span class="mark" aria-hidden="true"
-			><i class="ri-building-2-line" style:font-size="26px" aria-hidden="true"></i></span
-		>
-		<div>
-			<h2>No identity providers connected yet</h2>
-			<p>
-				Connect a company's identity provider and its people sign in with their work account: routed
-				there by their email domain, given an account the first time, and roles from the groups the
-				provider puts them in.
-			</p>
+	<EmptyState icon="ri-building-2-line" title="No identity providers connected yet" size="lg">
+		Connect a company's identity provider and its people sign in with their work account: routed
+		there by their email domain, given an account the first time, and roles from the groups the
+		provider puts them in.
+
+		{#snippet actions()}
 			{#if canWrite}
 				<Button onclick={() => open(null)}>
 					<i class="ri-add-line" aria-hidden="true"></i>
 					New connection
 				</Button>
 			{/if}
-		</div>
-	</section>
+		{/snippet}
+	</EmptyState>
 {:else}
 	<Toolbar>
 		<SearchInput
@@ -134,37 +130,3 @@
 	canReadRoles={data.mayReadRoles}
 	{canWrite}
 />
-
-<style>
-	.empty {
-		display: flex;
-		align-items: flex-start;
-		gap: var(--space-4);
-		padding: var(--space-5) var(--space-4);
-		border: 1px dashed var(--color-border);
-		border-radius: var(--radius-surface);
-	}
-
-	.empty h2 {
-		margin: 0;
-		font-size: var(--text-lg);
-	}
-
-	.empty p {
-		max-width: 40rem;
-		margin: var(--space-1) 0 var(--space-3);
-		color: var(--color-text-hint);
-		line-height: 1.55;
-	}
-
-	.mark {
-		display: grid;
-		flex-shrink: 0;
-		place-items: center;
-		width: 56px;
-		height: 56px;
-		border-radius: 16px;
-		background: var(--color-primary);
-		color: var(--color-primary-text);
-	}
-</style>

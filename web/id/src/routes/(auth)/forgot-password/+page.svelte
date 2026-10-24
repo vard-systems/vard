@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { requiredSSO, signIn } from '#lib/api/index.js';
-	import { Alert, AuthCard, Button, TextField } from '#lib/components/index.js';
+	import { AuthCard } from '#lib/components/auth/index.js';
+	import { Alert, Button, Form, Note, PageTitle, TextField } from '#lib/components/ui/index.js';
+	import { LIMITS } from '#lib/constants.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
 	import { authHref, leaveTo, ssoHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
@@ -9,8 +11,7 @@
 
 	const t = useTranslator();
 
-	const app = $derived(data.signInRequest?.application ?? null);
-	const request = $derived(data.signInRequest ? data.request : null);
+	const app = $derived(data.application);
 
 	// svelte-ignore state_referenced_locally
 	let email = $state(data.signInRequest?.login_hint ?? '');
@@ -20,8 +21,7 @@
 
 	const canSubmit = $derived(email.trim() !== '' && !submitting);
 
-	async function submit(event: SubmitEvent) {
-		event.preventDefault();
+	async function submit() {
 		if (!canSubmit) return;
 
 		error = '';
@@ -29,7 +29,7 @@
 
 		try {
 			await signIn.forgotPassword({
-				request: request ?? '',
+				request: data.openRequest ?? '',
 				email: email.trim(),
 				language: data.language
 			});
@@ -48,20 +48,18 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{t('forgot.head')}{app ? ` · ${app.name}` : ''}</title>
-</svelte:head>
+<PageTitle parts={[t('forgot.head'), app?.name]} />
 
 {#if sentTo}
 	<AuthCard organization={data.organization} application={app} title={t('forgot.sent_title')}>
 		<!-- The same words whether or not the address has an account, so the
 		     page cannot be used to find out which ones do. -->
 		<Alert tone="success">{t('forgot.sent_body', { email: sentTo })}</Alert>
-		<p class="muted">{t('forgot.sent_hint')}</p>
+		<Note align="center">{t('forgot.sent_hint')}</Note>
 
 		{#snippet below()}
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-			<a href={authHref('/login', request)}>{t('action.back_to_sign_in')}</a>
+			<a href={authHref('/login', data.openRequest)}>{t('action.back_to_sign_in')}</a>
 		{/snippet}
 	</AuthCard>
 {:else}
@@ -71,7 +69,7 @@
 		title={t('forgot.title')}
 		subtitle={t('forgot.subtitle')}
 	>
-		<form onsubmit={submit} novalidate>
+		<Form onsubmit={submit}>
 			{#if error}<Alert>{error}</Alert>{/if}
 
 			<TextField
@@ -81,32 +79,19 @@
 				autocomplete="email"
 				autocapitalize="none"
 				spellcheck={false}
+				maxlength={LIMITS.email}
 				disabled={submitting}
 			/>
 
 			<Button type="submit" block loading={submitting} disabled={!canSubmit}>
 				{submitting ? t('forgot.submitting') : t('forgot.submit')}
 			</Button>
-		</form>
+		</Form>
 
 		{#snippet below()}
 			{t('forgot.remembered')}
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-			<a href={authHref('/login', request)}>{t('action.back_to_sign_in')}</a>
+			<a href={authHref('/login', data.openRequest)}>{t('action.back_to_sign_in')}</a>
 		{/snippet}
 	</AuthCard>
 {/if}
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	.muted {
-		margin-top: var(--space-4);
-		color: var(--color-text-hint);
-		text-align: center;
-	}
-</style>

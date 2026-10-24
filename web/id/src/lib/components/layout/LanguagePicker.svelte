@@ -56,23 +56,16 @@
 	// A <details> opens and closes itself, and works before the page has
 	// loaded any JavaScript. What it does not do is close when somebody
 	// clicks elsewhere or presses Escape, which a menu is expected to.
-	$effect(() => {
-		const outside = (event: PointerEvent) => {
-			if (menu && !menu.contains(event.target as Node)) close();
-		};
-		const escape = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') close(true);
-		};
+	function outside(event: PointerEvent) {
+		if (menu && !menu.contains(event.target as Node)) close();
+	}
 
-		document.addEventListener('pointerdown', outside);
-		document.addEventListener('keydown', escape);
-
-		return () => {
-			document.removeEventListener('pointerdown', outside);
-			document.removeEventListener('keydown', escape);
-		};
-	});
+	function escape(event: KeyboardEvent) {
+		if (event.key === 'Escape') close(true);
+	}
 </script>
+
+<svelte:document onpointerdown={outside} onkeydown={escape} />
 
 {#if languages.length > 1}
 	<details class="picker" bind:this={menu}>

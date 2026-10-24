@@ -82,7 +82,7 @@
 		border-radius: var(--radius-md);
 		background: var(--color-surface);
 		color: var(--color-text);
-		box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
+		box-shadow: var(--shadow-sm);
 		transition:
 			border-color var(--speed-fast),
 			box-shadow var(--speed-fast);

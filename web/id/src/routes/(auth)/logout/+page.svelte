@@ -2,7 +2,8 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { signIn } from '#lib/api/index.js';
-	import { Alert, AuthCard, Button } from '#lib/components/index.js';
+	import { AuthCard } from '#lib/components/auth/index.js';
+	import { Alert, Button, Note, PageTitle } from '#lib/components/ui/index.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
 	import { leaveTo } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
@@ -37,9 +38,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{t('logout.head')}</title>
-</svelte:head>
+<PageTitle parts={[t('logout.head')]} />
 
 <AuthCard
 	organization={data.organization}
@@ -49,33 +48,25 @@
 >
 	{#if error}<Alert tone="danger">{error}</Alert>{/if}
 
-	<p class="body">{t('logout.body')}</p>
+	<Note align="center">{t('logout.body')}</Note>
 
 	<div class="actions">
 		<Button block loading={submitting} onclick={signOut}>{t('logout.confirm')}</Button>
 		{#if app?.website_url}
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-			<a class="secondary" href={app.website_url}>{t('logout.stay', { app: app.name })}</a>
+			<a href={app.website_url}>{t('logout.stay', { app: app.name })}</a>
 		{:else}
-			<a class="secondary" href={resolve('')}>{t('logout.stay_account')}</a>
+			<a href={resolve('')}>{t('logout.stay_account')}</a>
 		{/if}
 	</div>
 </AuthCard>
 
 <style>
-	.body {
-		color: var(--color-text-hint);
-		text-align: center;
-	}
-
 	.actions {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
-		margin-top: var(--space-5);
-	}
-
-	.secondary {
+		margin-top: var(--space-1);
 		text-align: center;
 	}
 </style>

@@ -60,6 +60,7 @@ import type {
 	SocialSpec,
 	SSOConnection,
 	SSOConnectionInput,
+	SSOTestInput,
 	SSOTestResult,
 	Role,
 	RoleInput,
@@ -302,13 +303,7 @@ export const ssoApi = {
 
 	remove: (id: string) => api.delete<void>(`/admin/sso-connections/${id}`),
 
-	test: (input: {
-		protocol: string;
-		issuer?: string;
-		scopes?: string[];
-		metadata_url?: string;
-		metadata?: string;
-	}) => api.post<SSOTestResult>('/admin/sso-connections/test', input),
+	test: (input: SSOTestInput) => api.post<SSOTestResult>('/admin/sso-connections/test', input),
 
 	refreshMetadata: (id: string) =>
 		api.post<{ connection: SSOConnection }>(`/admin/sso-connections/${id}/refresh-metadata`)

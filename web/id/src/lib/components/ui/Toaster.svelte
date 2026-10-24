@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { useTranslator } from '#lib/i18n/index.js';
-	import { dismiss, pause, resume, toasts, type ToastTone } from '#lib/toast.svelte.js';
+	import { dismiss, pause, resume, toasts, type ToastTone } from '#lib/state/toast.svelte.js';
 	import type { IconName } from './icon';
 
 	const t = useTranslator();

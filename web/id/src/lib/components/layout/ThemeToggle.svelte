@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { COOKIES } from '#lib/brand.js';
 	import { useTranslator } from '#lib/i18n/index.js';
+	import { rememberChoice } from '#lib/utils/cookies.js';
 
 	const t = useTranslator();
 
@@ -12,7 +13,7 @@
 
 		root.dataset.theme = next;
 		root.style.colorScheme = next;
-		document.cookie = `${COOKIES.theme}=${next}; path=/; max-age=31536000; samesite=lax`;
+		rememberChoice(COOKIES.theme, next);
 	}
 </script>
 

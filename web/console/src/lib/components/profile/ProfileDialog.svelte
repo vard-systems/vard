@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { Admin } from '#lib/api/index.js';
-	import { FullscreenDialog, Tabs, Tag, Thumb } from '#lib/components/ui/index.js';
+	import { FullscreenDialog, Tabs, Thumb } from '#lib/components/ui/index.js';
 	import { initials } from '#lib/utils/format.js';
 	import AccountForms from './AccountForms.svelte';
+	import RoleCodes from './RoleCodes.svelte';
 	import SecuritySettings from './SecuritySettings.svelte';
 
 	type Props = {
@@ -18,23 +19,17 @@
 	];
 
 	const name = $derived(admin.full_name.trim() || admin.email);
-
-	const standing = $derived(
-		admin.is_super_admin
-			? 'Super administrator'
-			: admin.roles.filter((role) => role !== 'super_admin').join(', ') || 'No roles'
-	);
 </script>
 
 <FullscreenDialog bind:open title="Your account">
-	<div class="summary">
+	<section class="summary" aria-label="Signed in as">
 		<Thumb src={admin.avatar_url} text={initials(name)} size="md" shape="circle" tone="accent" />
-		<div class="summary-text">
-			<strong>{name}</strong>
-			<span>{admin.email}</span>
+		<div class="who">
+			<strong title={name}>{name}</strong>
+			{#if admin.email !== name}<span title={admin.email}>{admin.email}</span>{/if}
 		</div>
-		<Tag tone={admin.is_super_admin ? 'info' : 'neutral'} strong>{standing}</Tag>
-	</div>
+		<div class="roles"><RoleCodes {admin} /></div>
+	</section>
 
 	<Tabs {tabs} value="account" label="Your account">
 		{#snippet panel(value)}
@@ -48,33 +43,53 @@
 </FullscreenDialog>
 
 <style>
+	/* The avatar, the person, then their roles; on a narrow screen the roles
+	   drop under the name rather than squeezing it. */
 	.summary {
-		display: flex;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
-		gap: var(--space-3);
+		gap: var(--space-2) var(--space-3);
 		margin-bottom: var(--space-5);
-		padding: var(--space-3);
+		padding: var(--space-3) var(--space-4);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-surface);
 	}
 
-	.summary-text {
-		flex: 1;
+	.who {
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
 		min-width: 0;
+		line-height: 1.3;
 	}
 
-	.summary-text strong,
-	.summary-text span {
+	.who strong,
+	.who span {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.summary-text span {
+	.who span {
 		color: var(--color-text-hint);
 		font-size: var(--text-sm);
+	}
+
+	.roles {
+		justify-self: end;
+		max-width: 20rem;
+	}
+
+	@media (max-width: 40rem) {
+		.summary {
+			grid-template-columns: auto minmax(0, 1fr);
+		}
+
+		.roles {
+			grid-column: 2;
+			justify-self: start;
+			max-width: none;
+		}
 	}
 </style>

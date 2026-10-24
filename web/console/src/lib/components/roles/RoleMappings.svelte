@@ -7,7 +7,15 @@
 		type Role,
 		type RoleMapping
 	} from '#lib/api/index.js';
-	import { Alert, Button, IconButton, Switch, Tooltip, notify } from '#lib/components/ui/index.js';
+	import {
+		Alert,
+		Button,
+		EmptyState,
+		IconButton,
+		Switch,
+		Tooltip,
+		notify
+	} from '#lib/components/ui/index.js';
 	import { canAnywhere } from '#lib/permissions.js';
 	import { keys, roleMappingsOptions } from '#lib/query/index.js';
 	import { countOf } from '#lib/utils/format.js';
@@ -191,13 +199,9 @@
 	{:else if mappings.isError}
 		<Alert>Could not load this user's roles.</Alert>
 	{:else if held.length === 0}
-		<div class="empty">
-			<i class="ri-shield-user-line" style:font-size="20px" aria-hidden="true"></i>
-			<div>
-				<strong>No roles yet</strong>
-				<p>Roles decide what this user may do in your applications.</p>
-			</div>
-		</div>
+		<EmptyState icon="ri-shield-user-line" title="No roles yet">
+			Roles decide what this user may do in your applications.
+		</EmptyState>
 	{:else}
 		<div class="panel">
 			{#each rows as row (row.key)}
@@ -464,25 +468,6 @@
 	.swatch.inherited {
 		border-style: dashed;
 		background: transparent;
-	}
-
-	.empty {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		padding: var(--space-4);
-		border: 1px dashed var(--color-border);
-		border-radius: var(--radius-surface);
-		color: var(--color-text-hint);
-	}
-
-	.empty strong {
-		color: var(--color-text);
-	}
-
-	.empty p {
-		margin: 2px 0 0;
-		font-size: var(--text-sm);
 	}
 
 	.skeleton {

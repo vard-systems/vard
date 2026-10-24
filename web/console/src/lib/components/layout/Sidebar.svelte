@@ -45,16 +45,12 @@
 	// Escape closes it — listened for on the way down rather than on the way
 	// up, because the control that opens the panel carries a tooltip, and a
 	// tooltip takes Escape for itself before it reaches the window.
-	$effect(() => {
-		function dismiss(event: KeyboardEvent) {
-			if (event.key === 'Escape' && shell.menuOpen) shell.setMenu(false);
-		}
-
-		window.addEventListener('keydown', dismiss, true);
-
-		return () => window.removeEventListener('keydown', dismiss, true);
-	});
+	function dismiss(event: KeyboardEvent) {
+		if (event.key === 'Escape' && shell.menuOpen) shell.setMenu(false);
+	}
 </script>
+
+<svelte:window onkeydowncapture={dismiss} />
 
 {#if narrow.current && shell.menuOpen}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->

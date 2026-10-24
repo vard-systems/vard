@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ApiError, socialApi } from '#lib/api/index.js';
+	import { messageOf, socialApi } from '#lib/api/index.js';
 	import { Button, CopyButton, Input, Textarea } from '#lib/components/ui/index.js';
 
 	type Props = {
@@ -41,7 +41,7 @@
 			({ secret } = await socialApi.secret(providerId));
 			mode = 'revealed';
 		} catch (err) {
-			error = err instanceof ApiError ? err.message : 'Could not read this secret';
+			error = messageOf(err, 'Could not read this secret');
 		} finally {
 			loading = false;
 		}

@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { getContext, setContext } from 'svelte';
+import { createContext } from 'svelte';
 import { addMessages, format, getMessageFormatter, init, json, locale } from 'svelte-i18n';
 import { ApiError } from '#lib/api/client.js';
 import { BASE, base, type Messages } from './messages';
@@ -117,14 +117,16 @@ export function messageOf(err: unknown, t: Translate): string {
 	return t(key, params);
 }
 
-const KEY = Symbol('i18n');
+const [getTranslator, setTranslator, hasTranslator] = createContext<Translate>();
 
 export function provideTranslator(translate: Translate) {
-	setContext(KEY, translate);
+	setTranslator(translate);
 }
 
+/** The page's translator; outside the root layout (a component on its own),
+ *  one over the base language. */
 export function useTranslator(): Translate {
-	return getContext<Translate | undefined>(KEY) ?? translator(() => base);
+	return hasTranslator() ? getTranslator() : translator(() => base);
 }
 
 export function chooseLanguage(

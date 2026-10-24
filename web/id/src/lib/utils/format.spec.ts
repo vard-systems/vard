@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { translator } from '#lib/i18n/index.js';
 import { base } from '#lib/i18n/messages.js';
-import { describeDevice, formatDate, initials, timeAgo } from './format';
+import { describeDevice, displayName, formatDate, initials, timeAgo } from './format';
 
 const english = translator(
 	() => base,
@@ -64,4 +64,20 @@ describe('initials', () => {
 		expect(initials({ first_name: 'Ada', last_name: 'Lovelace', email: 'a@x' })).toBe('AL');
 		expect(initials({ first_name: '', last_name: '', email: 'grace@x' })).toBe('G');
 	});
+});
+
+describe('displayName', () => {
+	it.each([
+		[
+			'both names',
+			{ first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.test' },
+			'Ada Lovelace'
+		],
+		['a first name alone', { first_name: 'Ada', last_name: '', email: 'ada@example.test' }, 'Ada'],
+		[
+			'no name at all',
+			{ first_name: '', last_name: '', email: 'ada@example.test' },
+			'ada@example.test'
+		]
+	])('%s', (_, user, expected) => expect(displayName(user)).toBe(expected));
 });

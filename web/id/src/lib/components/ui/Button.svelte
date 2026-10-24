@@ -1,38 +1,53 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { HTMLButtonAttributes } from 'svelte/elements';
+	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
 
-	type Props = HTMLButtonAttributes & {
+	type Props = Omit<HTMLButtonAttributes, 'type'> & {
 		variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
 		size?: 'md' | 'sm';
+		type?: 'button' | 'submit';
 		loading?: boolean;
 		block?: boolean;
+		/** Makes it a link that looks like a button: somewhere to go, not
+		    something to do. Resolved by the caller. */
+		href?: string;
+		target?: HTMLAnchorAttributes['target'];
+		rel?: HTMLAnchorAttributes['rel'];
 		children: Snippet;
 	};
 
 	let {
 		variant = 'primary',
 		size = 'md',
+		type = 'button',
 		loading = false,
 		block = false,
 		disabled = false,
-		type = 'button',
+		href,
+		target,
+		rel,
 		children,
 		...rest
 	}: Props = $props();
+
+	const classes = $derived(['button', variant, size, { block }]);
 </script>
 
-<button
-	{type}
-	class="button {variant} {size}"
-	class:block
-	disabled={disabled || loading}
-	aria-busy={loading || undefined}
-	{...rest}
->
-	{#if loading}<span class="spinner" aria-hidden="true"></span>{/if}
-	{@render children()}
-</button>
+{#if href !== undefined}
+	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the caller resolves it -->
+	<a class={classes} {href} {target} {rel}>{@render children()}</a>
+{:else}
+	<button
+		{type}
+		class={classes}
+		disabled={disabled || loading}
+		aria-busy={loading || undefined}
+		{...rest}
+	>
+		{#if loading}<span class="spinner" aria-hidden="true"></span>{/if}
+		{@render children()}
+	</button>
+{/if}
 
 <style>
 	.button {
@@ -47,6 +62,7 @@
 		font-weight: 600;
 		font-size: var(--text-base);
 		white-space: nowrap;
+		text-decoration: none;
 		cursor: pointer;
 		transition:
 			background var(--speed),
@@ -101,6 +117,10 @@
 	.ghost:hover:not(:disabled) {
 		background: var(--color-input);
 		color: var(--color-text);
+	}
+
+	a.button:hover {
+		text-decoration: none;
 	}
 
 	.button:disabled {

@@ -5,7 +5,8 @@
 	import { Alert, Button, SearchInput, Switch, notify } from '#lib/components/ui/index.js';
 	import { nest } from './flatten';
 	import { translationOptions } from '#lib/query/index.js';
-	import { download, missingParameters, readTranslationFile } from './translations';
+	import { saveFile } from '#lib/utils/download.js';
+	import { missingParameters, readTranslationFile } from './translations';
 
 	type Props = {
 		code: string;
@@ -102,7 +103,7 @@
 		const body: Record<string, string> = { $name: name, $native: native };
 		for (const key of saved.data.keys) body[key] = draft?.[key] ?? '';
 
-		download(`${code}.${app}.json`, JSON.stringify(nest(body), null, 2) + '\n');
+		saveFile(`${code}.${app}.json`, JSON.stringify(nest(body), null, 2) + '\n');
 	}
 </script>
 

@@ -1,16 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { adminApi, ApiError, setupApi } from '#lib/api/index.js';
+	import { adminApi, messageOf, setupApi } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
-	import {
-		Alert,
-		Button,
-		Card,
-		Input,
-		PasswordInput,
-		ThemeToggle
-	} from '#lib/components/ui/index.js';
+	import GateShell from '#lib/components/layout/GateShell.svelte';
+	import { Alert, Button, FieldGrid, Input, PasswordInput } from '#lib/components/ui/index.js';
+	import { MIN_ADMIN_PASSWORD } from '#lib/constants.js';
+	import { longEnoughForAdmin } from '#lib/utils/password.js';
 
 	let firstName = $state('');
 	let lastName = $state('');
@@ -20,7 +16,7 @@
 	let creating = $state(false);
 
 	const canSubmit = $derived(
-		firstName.trim() !== '' && email.trim() !== '' && password.length >= 10 && !creating
+		firstName.trim() !== '' && email.trim() !== '' && longEnoughForAdmin(password) && !creating
 	);
 
 	async function create(event: SubmitEvent) {
@@ -43,7 +39,7 @@
 			const target = result.next === 'enroll' ? '/mfa-setup' : '/(panel)';
 			await goto(resolve(target), { replace: true, refreshAll: true });
 		} catch (err) {
-			error = err instanceof ApiError ? err.message : 'Could not create the account';
+			error = messageOf(err, 'Could not create the account');
 			creating = false;
 		}
 	}
@@ -51,135 +47,42 @@
 
 <svelte:head><title>Set up {BRAND.name}</title></svelte:head>
 
-<main>
-	<div class="corner">
-		<ThemeToggle />
-	</div>
+<GateShell
+	title="Set up {BRAND.name}"
+	width="md"
+	description="This panel has no administrator yet. The account you make here is the super admin: it can do everything, including making the others."
+>
+	<form onsubmit={create}>
+		{#if error}<Alert>{error}</Alert>{/if}
 
-	<div class="panel">
-		<Card padded>
-			<form onsubmit={create}>
-				<header>
-					<span class="mark">
-						<i
-							class="ri-shield-keyhole-line"
-							style:font-size="20px"
-							role="img"
-							aria-label={BRAND.name}
-						></i>
-					</span>
-					<h1>Set up {BRAND.name}</h1>
-					<p class="muted">
-						This panel has no administrator yet. The account you make here is the super admin: it
-						can do everything, including making the others.
-					</p>
-				</header>
+		<FieldGrid>
+			<Input label="First name" bind:value={firstName} disabled={creating} required />
+			<Input label="Last name" bind:value={lastName} disabled={creating} />
+		</FieldGrid>
 
-				{#if error}
-					<Alert>{error}</Alert>
-				{/if}
+		<Input
+			label="Email"
+			bind:value={email}
+			type="email"
+			autocomplete="email"
+			autocapitalize="none"
+			spellcheck={false}
+			hint="This is what you will sign in with."
+			disabled={creating}
+			required
+		/>
 
-				<div class="names">
-					<Input label="First name" bind:value={firstName} disabled={creating} required />
-					<Input label="Last name" bind:value={lastName} disabled={creating} />
-				</div>
+		<PasswordInput
+			label="Password"
+			bind:value={password}
+			autocomplete="new-password"
+			hint="At least {MIN_ADMIN_PASSWORD} characters. Nothing else is asked of it."
+			disabled={creating}
+			required
+		/>
 
-				<Input
-					label="Email"
-					bind:value={email}
-					type="email"
-					autocomplete="email"
-					autocapitalize="none"
-					spellcheck={false}
-					hint="This is what you will sign in with."
-					disabled={creating}
-					required
-				/>
-
-				<PasswordInput
-					label="Password"
-					bind:value={password}
-					autocomplete="new-password"
-					disabled={creating}
-					required
-				/>
-				<p class="muted small">At least 10 characters. Nothing else is asked of it.</p>
-
-				<Button type="submit" size="lg" loading={creating} disabled={!canSubmit}>
-					{creating ? 'Creating…' : 'Create the super admin'}
-				</Button>
-			</form>
-		</Card>
-	</div>
-</main>
-
-<style>
-	main {
-		display: grid;
-		place-items: center;
-		min-height: 100dvh;
-		padding: var(--space-5);
-	}
-
-	.corner {
-		position: fixed;
-		top: var(--space-3);
-		right: var(--space-3);
-	}
-
-	.panel {
-		width: 100%;
-		max-width: 28rem;
-	}
-
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	header {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-		margin-bottom: var(--space-2);
-	}
-
-	.mark {
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		border-radius: var(--radius-md);
-		background: var(--color-accent);
-		color: var(--color-accent-text);
-	}
-
-	h1 {
-		margin: 0;
-		font-size: var(--text-xl);
-	}
-
-	.muted {
-		color: var(--color-text-hint);
-		font-size: var(--text-base);
-		line-height: 1.5;
-	}
-
-	.small {
-		margin-top: calc(var(--space-2) * -1);
-		font-size: var(--text-sm);
-	}
-
-	.names {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--space-2);
-	}
-
-	@media (max-width: 30rem) {
-		.names {
-			grid-template-columns: 1fr;
-		}
-	}
-</style>
+		<Button type="submit" size="lg" loading={creating} disabled={!canSubmit}>
+			{creating ? 'Creating…' : 'Create the super admin'}
+		</Button>
+	</form>
+</GateShell>

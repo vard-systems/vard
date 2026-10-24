@@ -5,7 +5,8 @@
 		"secured_by": "Secured by",
 		"trouble": "Trouble signing in?",
 		"language": "Language",
-		"theme": "Switch theme"
+		"theme": "Switch theme",
+		"logo": "{name} logo"
 	},
 	"legal": {
 		"terms": "Terms of service",

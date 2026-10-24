@@ -6,6 +6,7 @@
 		Alert,
 		Badge,
 		Checkbox,
+		EmptyState,
 		Note,
 		SearchInput,
 		Switch,
@@ -95,18 +96,11 @@
 {:else if applications.isError}
 	<Alert>Could not load the applications.</Alert>
 {:else if applications.data.length === 0}
-	<div class="empty">
-		<i class="ri-apps-line" style:font-size="20px" aria-hidden="true"></i>
-		<div>
-			<strong>No applications to authorise</strong>
-			<p>
-				Register one on the
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a href={resolve('/(panel)/applications')}>Applications page</a>, then allow it to use this
-				API here.
-			</p>
-		</div>
-	</div>
+	<EmptyState icon="ri-apps-line" title="No applications to authorise">
+		Register one on the
+		<a href={resolve('/(panel)/applications')}>Applications page</a>, then allow it to use this API
+		here.
+	</EmptyState>
 {:else}
 	<div class="toolbar">
 		<p class="summary">
@@ -300,28 +294,5 @@
 		align-items: center;
 		gap: var(--space-2);
 		min-width: 0;
-	}
-
-	.empty {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		padding: var(--space-4);
-		border: 1px dashed var(--color-border);
-		border-radius: var(--radius-surface);
-		color: var(--color-text-hint);
-	}
-
-	.empty strong {
-		color: var(--color-text);
-	}
-
-	.empty p {
-		margin: 2px 0 0;
-		font-size: var(--text-sm);
-	}
-
-	.empty a {
-		color: var(--color-text);
 	}
 </style>

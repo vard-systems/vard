@@ -23,14 +23,18 @@
 		SearchInput,
 		SegmentedControl,
 		SelectionBar,
+		Note,
 		ShowMore,
+		TabList,
 		Toolbar,
-		notify
+		notify,
+		type Tab
 	} from '#lib/components/ui/index.js';
 	import RoleDialog from '#lib/components/roles/RoleDialog.svelte';
 	import RoleTable from '#lib/components/roles/RoleTable.svelte';
 	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
+	import { datedName, saveJson } from '#lib/utils/download.js';
 	import { debounce, setSearchParams } from '#lib/utils/url.js';
 
 	let { data }: { data: PageData } = $props();
@@ -55,6 +59,30 @@
 
 	const globalCount = $derived(choices.data.filter((role) => role.application_id === null).length);
 	const appCount = $derived(choices.data.length - globalCount);
+
+	const kinds: Tab[] = $derived([
+		{ value: 'global', label: 'Global roles', icon: 'ri-global-line', count: globalCount },
+		...(applications.data.length > 0
+			? [
+					{
+						value: 'application',
+						label: 'Application roles',
+						icon: 'ri-apps-line',
+						count: appCount
+					}
+				]
+			: [])
+	]);
+
+	/** Each kind starts unfiltered: a search for one is rarely the search for the other. */
+	function showKind(kind: string) {
+		void setSearchParams({
+			tab: kind === 'global' ? '' : kind,
+			application: '',
+			search: '',
+			default: ''
+		});
+	}
 
 	const canCreate = $derived(
 		canEditRoles(data.admin, null) ||
@@ -138,15 +166,7 @@
 	}));
 
 	function download() {
-		const blob = new Blob([JSON.stringify(chosenRoles(), null, 2)], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-
-		link.href = url;
-		link.download = `roles-${new Date().toISOString().slice(0, 10)}.json`;
-		link.click();
-
-		URL.revokeObjectURL(url);
+		saveJson(datedName('roles'), chosenRoles());
 	}
 
 	const filters = [
@@ -182,43 +202,16 @@
 	{/snippet}
 </PageHeader>
 
-<div class="tabs" role="tablist" aria-label="Kinds of role">
-	<button
-		type="button"
-		role="tab"
-		aria-selected={data.tab === 'global'}
-		class:on={data.tab === 'global'}
-		onclick={() => setSearchParams({ tab: '', application: '', search: '', default: '' })}
-	>
-		<i class="ri-global-line" aria-hidden="true"></i>
-		Global roles
-		<span class="count">{globalCount}</span>
-	</button>
-
-	{#if applications.data.length > 0}
-		<button
-			type="button"
-			role="tab"
-			aria-selected={data.tab === 'application'}
-			class:on={data.tab === 'application'}
-			onclick={() =>
-				setSearchParams({ tab: 'application', application: '', search: '', default: '' })}
-		>
-			<i class="ri-apps-line" aria-hidden="true"></i>
-			Application roles
-			<span class="count">{appCount}</span>
-		</button>
-	{/if}
-</div>
+<TabList tabs={kinds} value={data.tab} label="Kinds of role" onchange={showKind} />
 
 {#if data.tab === 'application' && data.application}
-	<p class="narrowed">
+	<Note>
 		Showing the roles of
 		<strong>{applications.data.find((app) => app.id === data.application)?.name}</strong>.
 		<button type="button" onclick={() => setSearchParams({ application: '' })}>
 			Show every application
 		</button>
-	</p>
+	</Note>
 {/if}
 
 <Toolbar>
@@ -293,78 +286,3 @@
 	admin={data.admin}
 	bind:open={roleOpen}
 />
-
-<style>
-	.tabs {
-		display: flex;
-		gap: var(--space-1);
-		overflow-x: auto;
-		scrollbar-width: none;
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	.tabs::-webkit-scrollbar {
-		display: none;
-	}
-
-	.tabs button {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--space-2);
-		height: 42px;
-		margin-bottom: -1px;
-		padding: 0 var(--space-3);
-		border: none;
-		border-bottom: 2px solid transparent;
-		background: transparent;
-		color: var(--color-text-hint);
-		font: inherit;
-		font-size: var(--text-base);
-		font-weight: 600;
-		white-space: nowrap;
-		cursor: pointer;
-	}
-
-	.tabs button:hover {
-		color: var(--color-text);
-	}
-
-	.tabs button.on {
-		border-bottom-color: var(--color-text);
-		color: var(--color-text);
-	}
-
-	.count {
-		display: inline-grid;
-		place-items: center;
-		min-width: 20px;
-		height: 20px;
-		padding: 0 6px;
-		border-radius: var(--radius-pill);
-		background: var(--color-secondary);
-		color: var(--color-text-hint);
-		font-size: var(--text-xs);
-	}
-
-	.narrowed {
-		margin: 0;
-		color: var(--color-text-hint);
-		font-size: var(--text-sm);
-	}
-
-	.narrowed strong {
-		color: var(--color-text);
-	}
-
-	.narrowed button {
-		margin-left: var(--space-1);
-		padding: 0;
-		border: none;
-		background: none;
-		color: var(--color-text);
-		font: inherit;
-		text-decoration: underline;
-		text-underline-offset: 3px;
-		cursor: pointer;
-	}
-</style>

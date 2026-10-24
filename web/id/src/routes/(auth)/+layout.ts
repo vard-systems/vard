@@ -50,7 +50,12 @@ export const load: LayoutLoad = async ({ url, fetch }) => {
 
 	return {
 		request,
+		/** `request`, while the sign-in it names is still waiting: what a page
+		    links on with, so the next page is not one for an expired sign-in. */
+		openRequest: signInRequest ? request : null,
 		signInRequest,
+		/** The application being signed in to, if there is one. */
+		application: signInRequest?.application ?? null,
 		expired,
 		organization,
 		socialProviders,

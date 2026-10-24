@@ -72,6 +72,9 @@ web/<app>/src/hooks.server.ts  the app's server: API paths passed on
                          (lib/server/api.ts), page headers (lib/server/headers.ts)
 web/console/src/lib/     api/, query/, components/ui/, components/<feature>/,
                          styles/tokens.css (generated: make generate)
+web/id/src/lib/          api/, i18n/, state/, components/ui/ (primitives),
+                         components/auth|account|layout/, constants.ts (the
+                         API's field limits)
 web/console/scripts/     theme.ts, the generator
 scripts/                 what the Makefile runs: setup, start, docker-local, db;
                          lib.sh (load_env) is shared by all of them

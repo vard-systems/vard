@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { signIn, type PublicLanguage } from '#lib/api/index.js';
 import { COOKIES, LANGUAGE_DEPENDENCY } from '#lib/brand.js';
+import { ONE_YEAR } from '#lib/constants.js';
 import { BASE, chooseLanguage, type Messages } from '#lib/i18n/index.js';
 import { safeNext } from '#lib/utils/next.js';
 import type { LayoutServerLoad } from './$types';
@@ -28,7 +29,7 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 			path: '/',
 			httpOnly: false,
 			sameSite: 'lax',
-			maxAge: 60 * 60 * 24 * 365
+			maxAge: ONE_YEAR
 		});
 
 		const clean = new URL(url);

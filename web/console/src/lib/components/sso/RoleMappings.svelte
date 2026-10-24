@@ -24,6 +24,12 @@
 		mappings = [...mappings, { group: '', role_id: roles[0]?.id ?? '' }];
 	}
 
+	// Each edit replaces the list rather than changing a row inside it, so the
+	// change reaches whoever owns the list through the binding.
+	function update(index: number, change: Partial<SSORoleMapping>) {
+		mappings = mappings.map((mapping, i) => (i === index ? { ...mapping, ...change } : mapping));
+	}
+
 	function remove(index: number) {
 		mappings = mappings.filter((_, i) => i !== index);
 	}
@@ -34,13 +40,18 @@
 		<div class="row">
 			<Input
 				label="Group"
-				bind:value={mapping.group}
+				bind:value={() => mapping.group, (group) => update(index, { group })}
 				placeholder="engineering"
 				{readOnly}
 				autocomplete="off"
 			/>
 			{#if roles.length > 0}
-				<Select label="Role" bind:value={mapping.role_id} {options} {readOnly} />
+				<Select
+					label="Role"
+					bind:value={() => mapping.role_id, (role_id) => update(index, { role_id })}
+					{options}
+					{readOnly}
+				/>
 			{:else}
 				<Input label="Role" value={mapping.role_id} readOnly />
 			{/if}

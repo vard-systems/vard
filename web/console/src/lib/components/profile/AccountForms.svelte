@@ -11,6 +11,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { ADMIN_DEPENDENCY, MIN_ADMIN_PASSWORD } from '#lib/constants.js';
+	import { longEnoughForAdmin } from '#lib/utils/password.js';
 	import { initials } from '#lib/utils/format.js';
 
 	type Props = { admin: Admin };
@@ -71,7 +72,7 @@
 	async function changePassword(event: SubmitEvent) {
 		event.preventDefault();
 
-		if (newPassword.length < MIN_ADMIN_PASSWORD) {
+		if (!longEnoughForAdmin(newPassword)) {
 			notify.problem(`The new password must be at least ${MIN_ADMIN_PASSWORD} characters.`);
 			return;
 		}
@@ -110,7 +111,9 @@
 				required
 			/>
 			<div class="avatar">
-				<Thumb src={preview} text={monogram} size="md" shape="circle" tone="accent" />
+				<span class="picture">
+					<Thumb src={preview} text={monogram} size="md" shape="circle" tone="accent" />
+				</span>
 				<Input
 					label="Avatar URL"
 					icon="ri-image-line"
@@ -206,6 +209,15 @@
 		display: flex;
 		align-items: flex-start;
 		gap: var(--space-3);
+	}
+
+	/* As tall as the field beside it, so the picture sits on its middle
+	   whether or not a hint hangs under the field. */
+	.picture {
+		display: flex;
+		flex: none;
+		align-items: center;
+		height: var(--field-height);
 	}
 
 	.avatar > :global(:last-child) {

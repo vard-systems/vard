@@ -1,11 +1,14 @@
 <script lang="ts">
+	import { useTranslator } from '#lib/i18n/index.js';
+
+	const t = useTranslator();
 </script>
 
 <span class="brand">
 	<span class="mark"
 		><i class="ri-shield-keyhole-line" style:font-size="16px" aria-hidden="true"></i></span
 	>
-	<span>Account</span>
+	<span>{t('account.nav')}</span>
 </span>
 
 <style>

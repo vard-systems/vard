@@ -9,6 +9,7 @@
 		required?: boolean;
 		name?: string;
 		autocomplete?: 'current-password' | 'new-password';
+		hint?: string;
 	};
 
 	let {
@@ -17,15 +18,24 @@
 		disabled,
 		required,
 		name,
-		autocomplete = 'current-password'
+		autocomplete = 'current-password',
+		hint
 	}: Props = $props();
+
+	const uid = $props.id();
+	const hintId = `${uid}-hint`;
 </script>
 
 <PasswordInput.Root class="field-root" {disabled} {required}>
 	<div class="field-box" data-float={value !== '' || undefined}>
 		<PasswordInput.Label><FieldText {label} {required} /></PasswordInput.Label>
 		<PasswordInput.Control>
-			<PasswordInput.Input {name} bind:value {autocomplete} />
+			<PasswordInput.Input
+				{name}
+				bind:value
+				{autocomplete}
+				aria-describedby={hint ? hintId : undefined}
+			/>
 			<PasswordInput.VisibilityTrigger aria-label="Show password">
 				<PasswordInput.Indicator>
 					{#snippet fallback()}
@@ -36,4 +46,8 @@
 			</PasswordInput.VisibilityTrigger>
 		</PasswordInput.Control>
 	</div>
+
+	{#if hint}
+		<p id={hintId} data-part="helper-text">{hint}</p>
+	{/if}
 </PasswordInput.Root>

@@ -776,6 +776,15 @@ export type SSOConnectionInput = Partial<
 	>
 > & { client_secret?: string };
 
+/** What "Test connection" sends: enough to reach the provider, before anything is saved. */
+export type SSOTestInput = {
+	protocol: SSOProtocol;
+	issuer?: string;
+	scopes?: string[];
+	metadata_url?: string;
+	metadata?: string;
+};
+
 export type SSOTestResult = {
 	issuer?: string;
 	authorization_endpoint?: string;

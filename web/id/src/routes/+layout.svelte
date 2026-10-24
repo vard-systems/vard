@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { beforeNavigate } from '$app/navigation';
 	import { updated } from '$app/state';
-	import { Toaster } from '#lib/components/index.js';
+	import { Toaster } from '#lib/components/ui/index.js';
 	import { provideTranslator, translator } from '#lib/i18n/index.js';
 	import 'remixicon/fonts/remixicon.css';
 	import '#lib/styles/app.css';

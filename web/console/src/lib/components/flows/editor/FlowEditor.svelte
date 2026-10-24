@@ -14,7 +14,8 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
-	import { draftOf, download, freeSlug, problemsOf, toFile, type FlowDraft } from '../steps';
+	import { saveJson } from '#lib/utils/download.js';
+	import { draftOf, freeSlug, problemsOf, toFile, type FlowDraft } from '../steps';
 	import FlowCanvas from './FlowCanvas.svelte';
 	import Inspector from './Inspector.svelte';
 	import Palette from './Palette.svelte';
@@ -194,8 +195,7 @@
 			<IconButton
 				icon="ri-download-2-line"
 				label="Export as JSON"
-				onclick={() =>
-					download(`${draft.slug || 'flow'}.flow.json`, JSON.stringify(toFile(draft), null, 2))}
+				onclick={() => saveJson(`${draft.slug || 'flow'}.flow.json`, toFile(draft))}
 			/>
 			{#if editable && !creating}
 				<IconButton

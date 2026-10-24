@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
-	import { ApiError, mfaApi, type MfaEnrolment } from '#lib/api/index.js';
+	import { messageOf, mfaApi, type MfaEnrolment } from '#lib/api/index.js';
 	import { Alert, Button, CopyButton, Input } from '#lib/components/ui/index.js';
 	import RecoveryCodes from './RecoveryCodes.svelte';
 
@@ -26,10 +26,6 @@
 	let error = $state('');
 	let busy = $state(false);
 
-	function message(err: unknown) {
-		return err instanceof ApiError ? err.message : 'Something went wrong';
-	}
-
 	const grouped = $derived(enrolment?.secret.match(/.{1,4}/g)?.join(' ') ?? '');
 
 	async function begin(proof?: string) {
@@ -41,7 +37,7 @@
 			qr = await QRCode.toString(enrolment.uri, { type: 'svg', margin: 1, width: 196 });
 			step = 'scan';
 		} catch (err) {
-			error = message(err);
+			error = messageOf(err);
 		} finally {
 			busy = false;
 		}
@@ -58,7 +54,7 @@
 			({ recovery_codes: codes } = await mfaApi.confirm(code));
 			step = 'codes';
 		} catch (err) {
-			error = message(err);
+			error = messageOf(err);
 			code = '';
 		} finally {
 			busy = false;

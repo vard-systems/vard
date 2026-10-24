@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { useTranslator } from '#lib/i18n/index.js';
 	import { page } from '$app/state';
-	import { Alert, AuthCard } from '#lib/components/index.js';
+	import { AuthCard } from '#lib/components/auth/index.js';
+	import { Alert, Note, PageTitle } from '#lib/components/ui/index.js';
+	import { useTranslator } from '#lib/i18n/index.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -29,17 +30,15 @@
 	});
 </script>
 
-<svelte:head>
-	<title>{t('error_page.head')}</title>
-</svelte:head>
+<PageTitle parts={[t('error_page.head')]} />
 
 <AuthCard organization={data.organization} title={t('error_page.title')} subtitle={explanation}>
 	{#if description && !said}
 		<Alert tone="warning"><code>{code}</code> {description}</Alert>
 	{/if}
-	<p class="muted">
+	<Note align="center">
 		{data.organization?.support_email ? t('error_page.body_support') : t('error_page.body')}
-	</p>
+	</Note>
 </AuthCard>
 
 <style>
@@ -47,11 +46,5 @@
 		margin-right: var(--space-1);
 		font-family: var(--font-mono);
 		font-weight: 700;
-	}
-
-	.muted {
-		margin-top: var(--space-4);
-		color: var(--color-text-hint);
-		text-align: center;
 	}
 </style>

@@ -35,6 +35,12 @@
    by the component; data-readonly, data-disabled and data-invalid on the
    root, set by Ark. */
 
+/* The box's outside height, 54px inside and its border, for whatever sits
+   beside a field and has to line up with it. */
+:root {
+	--field-height: 56px;
+}
+
 .field-root {
 	display: flex;
 	flex-direction: column;
@@ -122,6 +128,12 @@
 		font-size var(--speed) ease,
 		line-height var(--speed) ease,
 		color var(--speed);
+}
+
+/* An icon before the words, set apart from them. */
+.field-box > [data-part='label'] > i {
+	margin-right: 5px;
+	vertical-align: -0.125em;
 }
 
 /* Raised: a value is there, the field has focus, a password manager filled

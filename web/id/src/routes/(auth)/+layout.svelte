@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { BRAND } from '#lib/brand.js';
-	import { LanguagePicker, ThemeToggle } from '#lib/components/index.js';
+	import { LanguagePicker, SecuredBy, ThemeToggle } from '#lib/components/layout/index.js';
 	import { useTranslator } from '#lib/i18n/index.js';
 	import { supportLinks } from '#lib/utils/legal.js';
 	import type { LayoutProps } from './$types';
@@ -36,10 +35,7 @@
 			</p>
 		{/if}
 
-		<p class="secured">
-			<i class="ri-shield-keyhole-line" style:font-size="15px" aria-hidden="true"></i>
-			<span>{t('shell.secured_by')} <strong>{BRAND.name}</strong></span>
-		</p>
+		<SecuredBy />
 	</footer>
 </div>
 
@@ -105,12 +101,6 @@
 	.help a {
 		color: var(--color-text);
 		font-weight: 600;
-	}
-
-	.secured {
-		display: flex;
-		align-items: center;
-		gap: var(--space-1);
 	}
 
 	@media (max-width: 30rem) {

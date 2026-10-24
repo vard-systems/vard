@@ -240,10 +240,3 @@ export function fromFile(text: string, kinds: LoginStepSpec[]): FlowDraft {
 			typeof file.session_lifetime_hours === 'number' ? file.session_lifetime_hours : 24 * 14
 	};
 }
-
-export function download(name: string, content: string) {
-	const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
-	const link = Object.assign(document.createElement('a'), { href: url, download: name });
-	link.click();
-	URL.revokeObjectURL(url);
-}

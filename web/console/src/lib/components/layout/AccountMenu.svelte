@@ -6,14 +6,13 @@
 	import {
 		ConfirmDialog,
 		DropdownMenu,
-		MenuGroup,
-		MenuInfo,
 		MenuItem,
 		MenuSeparator,
 		Thumb
 	} from '#lib/components/ui/index.js';
 	import { initials } from '#lib/utils/format.js';
 	import ProfileDialog from '#lib/components/profile/ProfileDialog.svelte';
+	import RoleCodes from '#lib/components/profile/RoleCodes.svelte';
 
 	type Props = { admin: Admin };
 
@@ -28,13 +27,6 @@
 	const name = $derived(admin.full_name.trim() || admin.email);
 
 	const monogram = $derived(initials(name));
-
-	const role = $derived(
-		[
-			...(admin.is_super_admin ? ['Super administrator'] : []),
-			...admin.roles.filter((name) => name !== 'super_admin')
-		].join(', ') || 'No roles'
-	);
 
 	async function signOut() {
 		signingOut = true;
@@ -53,7 +45,7 @@
 	}
 </script>
 
-<DropdownMenu label="Account: {name}" shape="labelled">
+<DropdownMenu label="Account: {name}" shape="labelled" width="16rem">
 	{#snippet trigger()}
 		<Thumb src={admin.avatar_url} text={monogram} size="xs" shape="circle" tone="accent" />
 		<span class="name">{name}</span>
@@ -62,26 +54,24 @@
 		>
 	{/snippet}
 
-	<MenuGroup label="Signed in as">
-		<MenuInfo label={name} description={admin.email}>
-			{#snippet lead()}
-				<Thumb src={admin.avatar_url} text={monogram} size="xs" shape="circle" tone="accent" />
-			{/snippet}
-		</MenuInfo>
-		<MenuInfo icon="ri-shield-user-line" label={role} description="Role" />
-	</MenuGroup>
+	<div class="card">
+		<Thumb src={admin.avatar_url} text={monogram} size="sm" shape="circle" tone="accent" />
+		<div class="who">
+			<span class="full-name" title={name}>{name}</span>
+			{#if admin.email !== name}<span class="email" title={admin.email}>{admin.email}</span>{/if}
+		</div>
+
+		<div class="roles"><RoleCodes {admin} /></div>
+	</div>
 
 	<MenuSeparator />
 
-	<MenuGroup label="Account">
-		<MenuItem
-			value="account"
-			icon="ri-user-settings-line"
-			label="Account settings"
-			description="Profile, security and sessions"
-			onSelect={() => (accountOpen = true)}
-		/>
-	</MenuGroup>
+	<MenuItem
+		value="account"
+		icon="ri-user-settings-line"
+		label="Account settings"
+		onSelect={() => (accountOpen = true)}
+	/>
 
 	<MenuSeparator />
 
@@ -89,7 +79,6 @@
 		value="sign-out"
 		icon="ri-logout-box-r-line"
 		label="Sign out"
-		description="End this session"
 		danger
 		onSelect={() => (confirmingSignOut = true)}
 	/>
@@ -109,6 +98,43 @@
 />
 
 <style>
+	/* Two columns: the avatar, then everything about the person, so the
+	   name, address and roles start on one line. */
+	.card {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: center;
+		gap: var(--space-2) 10px;
+		padding: 10px;
+	}
+
+	.who {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		line-height: 1.3;
+	}
+
+	.full-name,
+	.email {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.full-name {
+		font-weight: 600;
+	}
+
+	.email {
+		color: var(--color-text-hint);
+		font-size: var(--text-xs);
+	}
+
+	.roles {
+		grid-column: 2;
+	}
+
 	.name {
 		min-width: 0;
 		overflow: hidden;

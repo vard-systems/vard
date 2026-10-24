@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { useTranslator } from '#lib/i18n/index.js';
+
 	type Props = {
 		name?: string;
 		logo?: string;
@@ -6,6 +8,8 @@
 	};
 
 	let { name = '', logo = '', size = 56 }: Props = $props();
+
+	const t = useTranslator();
 
 	let failed = $state(false);
 
@@ -16,7 +20,7 @@
 	<img
 		class="mark"
 		src={logo}
-		alt="{name} logo"
+		alt={t('shell.logo', { name })}
 		style="--size: {size}px"
 		onerror={() => (failed = true)}
 	/>

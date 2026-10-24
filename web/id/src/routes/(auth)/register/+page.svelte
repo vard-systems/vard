@@ -1,29 +1,31 @@
 <script lang="ts">
 	import { ApiError, requiredSSO, signIn } from '#lib/api/index.js';
+	import { AuthCard, SocialButtons } from '#lib/components/auth/index.js';
 	import {
 		Alert,
-		AuthCard,
 		Button,
 		Checkbox,
-		PasswordField,
-		TextField,
-		SocialButtons
-	} from '#lib/components/index.js';
-	import { legalLinks } from '#lib/utils/legal.js';
+		FieldRow,
+		Form,
+		NewPasswordFields,
+		PageTitle,
+		TextField
+	} from '#lib/components/ui/index.js';
+	import { LIMITS } from '#lib/constants.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { legalLinks } from '#lib/utils/legal.js';
 	import { authHref, leaveTo, ssoHref } from '#lib/utils/links.js';
+	import { newPasswordReady } from '#lib/utils/password.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const t = useTranslator();
 
-	const app = $derived(data.signInRequest?.application ?? null);
+	const app = $derived(data.application);
 
 	const agreements = $derived(legalLinks(app, data.organization));
 	const needsConsent = $derived(agreements.length > 0);
-
-	const minLength = 8;
 
 	let firstName = $state('');
 	let lastName = $state('');
@@ -36,17 +38,14 @@
 	let sent = $state('');
 	let submitting = $state(false);
 
-	const mismatch = $derived(confirm !== '' && confirm !== password);
 	const canSubmit = $derived(
 		email.trim() !== '' &&
-			password.length >= minLength &&
-			confirm === password &&
+			newPasswordReady(password, confirm) &&
 			(!needsConsent || accepted) &&
 			!submitting
 	);
 
-	async function submit(event: SubmitEvent) {
-		event.preventDefault();
+	async function submit() {
 		if (!canSubmit || !data.request) return;
 
 		error = '';
@@ -86,9 +85,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{t('register.head')}{app ? ` · ${app.name}` : ''}</title>
-</svelte:head>
+<PageTitle parts={[t('register.head'), app?.name]} />
 
 {#if sent}
 	<AuthCard organization={data.organization} application={app} title={t('verify.title')}>
@@ -123,23 +120,25 @@
 		title={t('register.title')}
 		subtitle={app ? t('register.subtitle_app', { app: app.name }) : undefined}
 	>
-		<form onsubmit={submit} novalidate>
+		<Form onsubmit={submit}>
 			{#if error}<Alert>{error}</Alert>{/if}
 
-			<div class="names">
+			<FieldRow>
 				<TextField
 					label={t('field.first_name')}
 					bind:value={firstName}
 					autocomplete="given-name"
+					maxlength={LIMITS.name}
 					disabled={submitting}
 				/>
 				<TextField
 					label={t('field.last_name')}
 					bind:value={lastName}
 					autocomplete="family-name"
+					maxlength={LIMITS.name}
 					disabled={submitting}
 				/>
-			</div>
+			</FieldRow>
 
 			<TextField
 				label={t('field.email')}
@@ -148,24 +147,11 @@
 				autocomplete="email"
 				autocapitalize="none"
 				spellcheck={false}
+				maxlength={LIMITS.email}
 				disabled={submitting}
 			/>
 
-			<PasswordField
-				label={t('field.password')}
-				bind:value={password}
-				autocomplete="new-password"
-				disabled={submitting}
-				hint={t('field.password_hint', { count: minLength })}
-			/>
-
-			<PasswordField
-				label={t('field.confirm_password')}
-				bind:value={confirm}
-				autocomplete="new-password"
-				disabled={submitting}
-				error={mismatch ? t('field.password_mismatch') : undefined}
-			/>
+			<NewPasswordFields bind:password bind:confirm initial disabled={submitting} />
 
 			{#if needsConsent}
 				<Checkbox bind:checked={accepted} disabled={submitting}>
@@ -183,7 +169,7 @@
 			<Button type="submit" block loading={submitting} disabled={!canSubmit}>
 				{submitting ? t('register.submitting') : t('register.submit')}
 			</Button>
-		</form>
+		</Form>
 
 		<SocialButtons
 			providers={data.socialProviders}
@@ -199,23 +185,3 @@
 		{/snippet}
 	</AuthCard>
 {/if}
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	.names {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--space-3);
-	}
-
-	@media (max-width: 22rem) {
-		.names {
-			grid-template-columns: 1fr;
-		}
-	}
-</style>

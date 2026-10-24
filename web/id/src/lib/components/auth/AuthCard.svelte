@@ -24,21 +24,24 @@
 	}: Props = $props();
 
 	const t = useTranslator();
+	const uid = $props.id();
 
 	const legal = $derived(legalLinks(application, organization));
 </script>
 
-<section class="card" aria-labelledby="auth-title">
+<section class="card" aria-labelledby="auth-title-{uid}">
 	<header>
 		<AppMark
 			name={application?.name ?? organization?.name}
 			logo={application?.logo_url || organization?.logo_url}
 		/>
-		<h1 id="auth-title">{title}</h1>
+		<h1 id="auth-title-{uid}">{title}</h1>
 		{#if subtitle}<p class="subtitle">{subtitle}</p>{/if}
 	</header>
 
-	{@render children()}
+	<div class="body">
+		{@render children()}
+	</div>
 </section>
 
 {#if below}
@@ -79,6 +82,12 @@
 		font-weight: 700;
 		line-height: 1.25;
 		letter-spacing: -0.01em;
+	}
+
+	.body {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
 	}
 
 	.subtitle {

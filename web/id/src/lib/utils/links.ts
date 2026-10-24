@@ -9,17 +9,26 @@ export function authHref(page: AuthPage, request: string | null): string {
 	return request ? `${path}?request=${encodeURIComponent(request)}` : path;
 }
 
-export function ssoHref(
-	slug: string,
-	options: { request?: string | null; next?: string | null; email?: string }
-): string {
+type StartOptions = { request?: string | null; next?: string | null; email?: string };
+
+/** The server's own path that sends the browser on to an SSO connection. */
+export function ssoHref(slug: string, options: StartOptions): string {
+	return startHref('sso', slug, options);
+}
+
+/** The server's own path that sends the browser on to a social provider. */
+export function socialHref(slug: string, options: StartOptions): string {
+	return startHref('social', slug, options);
+}
+
+function startHref(kind: 'sso' | 'social', slug: string, options: StartOptions): string {
 	const query = new URLSearchParams();
 	if (options.request) query.set('request', options.request);
 	if (options.next) query.set('next', options.next);
 	if (options.email) query.set('login_hint', options.email);
 
 	const search = query.toString();
-	return `/oauth2/sso/${encodeURIComponent(slug)}/start${search ? `?${search}` : ''}`;
+	return `/oauth2/${kind}/${encodeURIComponent(slug)}/start${search ? `?${search}` : ''}`;
 }
 
 /** Sends the browser on to where the API said: usually back to an

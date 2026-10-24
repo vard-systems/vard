@@ -18,7 +18,21 @@
 		line-height: 1.5;
 	}
 
-	.note :global(a) {
+	.note :global(a),
+	.note :global(strong) {
 		color: var(--color-text);
+	}
+
+	/* An action that belongs to the sentence, such as undoing what it says. */
+	.note :global(button) {
+		margin-left: var(--space-1);
+		padding: 0;
+		border: none;
+		background: none;
+		color: var(--color-text);
+		font: inherit;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
 	}
 </style>

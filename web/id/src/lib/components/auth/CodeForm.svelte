@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { ApiError, signIn, type CodeChallenge, type SignedIn } from '#lib/api/index.js';
+	import { LIMITS } from '#lib/constants.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
-	import Alert from './Alert.svelte';
-	import Button from './Button.svelte';
-	import TextField from './TextField.svelte';
+	import { Alert, Button, Form, TextField } from '../ui/index.js';
 
 	type Props = {
 		challenge: CodeChallenge;
@@ -45,8 +44,7 @@
 		);
 	}
 
-	async function submit(event: SubmitEvent) {
-		event.preventDefault();
+	async function submit() {
 		if (!canSubmit) return;
 
 		error = '';
@@ -94,7 +92,7 @@
 	}
 </script>
 
-<form onsubmit={submit} novalidate>
+<Form onsubmit={submit}>
 	{#if error}<Alert>{error}</Alert>{/if}
 	{#if notice}<Alert tone="info">{notice}</Alert>{/if}
 
@@ -106,7 +104,7 @@
 		autocomplete="one-time-code"
 		autocapitalize="none"
 		spellcheck={false}
-		maxlength={16}
+		maxlength={LIMITS.code}
 		disabled={submitting}
 		hint={t('login.code_attempts_left', { count: waiting.attempts_left })}
 	/>
@@ -120,15 +118,9 @@
 			{countdown > 0 ? t('login.code_resend_in', { seconds: countdown }) : t('login.code_resend')}
 		</button>
 	</div>
-</form>
+</Form>
 
 <style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
 	.again {
 		text-align: center;
 	}

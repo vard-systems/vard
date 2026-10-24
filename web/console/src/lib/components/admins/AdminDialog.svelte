@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { MIN_ADMIN_PASSWORD } from '#lib/constants.js';
+	import { longEnoughForAdmin } from '#lib/utils/password.js';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import {
 		adminsApi,
@@ -103,7 +104,7 @@
 	]);
 
 	const mismatch = $derived(confirmPassword !== '' && password !== confirmPassword);
-	const tooShort = $derived(password !== '' && password.length < MIN_ADMIN_PASSWORD);
+	const tooShort = $derived(password !== '' && !longEnoughForAdmin(password));
 
 	const canSubmit = $derived(
 		!saving &&

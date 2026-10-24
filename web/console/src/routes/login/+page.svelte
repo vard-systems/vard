@@ -1,18 +1,15 @@
 <script lang="ts">
 	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { adminApi, ApiError } from '#lib/api/index.js';
+	import { adminApi, ApiError, messageOf } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
-	import {
-		Alert,
-		Button,
-		Card,
-		Input,
-		PasswordInput,
-		ThemeToggle
-	} from '#lib/components/ui/index.js';
+	import GateShell from '#lib/components/layout/GateShell.svelte';
+	import { Alert, Button, Input, PasswordInput } from '#lib/components/ui/index.js';
 
 	let { data } = $props();
+
+	/** An authenticator's six digits, which some apps show as "123 456". */
+	const CODE_LENGTH = { totp: 7, recovery: 16 } as const;
 
 	let email = $state('');
 	let password = $state('');
@@ -46,7 +43,7 @@
 			const target = result.next === 'enroll' ? '/mfa-setup' : '/(panel)';
 			await goto(resolve(target), { replace: true, refreshAll: true });
 		} catch (err) {
-			error = err instanceof ApiError ? err.message : 'Something went wrong';
+			error = messageOf(err);
 			password = '';
 			submitting = false;
 		}
@@ -63,11 +60,17 @@
 			await adminApi.verifyMfa(code.trim());
 			await goto(resolve('/(panel)'), { replace: true, refreshAll: true });
 		} catch (err) {
-			if (err instanceof ApiError && err.message.includes('expired')) step = 'password';
-			error = err instanceof ApiError ? err.message : 'Something went wrong';
+			// The half-finished sign-in is gone: only the password starts another.
+			if (err instanceof ApiError && err.code === 'admin_sign_in_expired') step = 'password';
+			error = messageOf(err);
 			code = '';
 			submitting = false;
 		}
+	}
+
+	function switchCode() {
+		useRecovery = !useRecovery;
+		code = '';
 	}
 
 	async function startOver() {
@@ -83,179 +86,70 @@
 	<title>Sign in · {BRAND.name}</title>
 </svelte:head>
 
-<main>
-	<div class="corner">
-		<ThemeToggle />
-	</div>
+{#if step === 'code'}
+	<GateShell
+		title="Two-factor sign-in"
+		description={useRecovery
+			? 'Enter one of your recovery codes. Each works once.'
+			: 'Enter the six-digit code from your authenticator app.'}
+	>
+		<form onsubmit={verify}>
+			{#if error}<Alert>{error}</Alert>{/if}
 
-	<div class="panel">
-		<Card padded>
-			{#if step === 'code'}
-				<form onsubmit={verify}>
-					<header>
-						<span class="mark">
-							<i
-								class="ri-shield-keyhole-line"
-								style:font-size="20px"
-								role="img"
-								aria-label={BRAND.name}
-							></i>
-						</span>
-						<h1>Two-factor sign-in</h1>
-						<p class="muted">
-							{useRecovery
-								? 'Enter one of your recovery codes. Each works once.'
-								: 'Enter the six-digit code from your authenticator app.'}
-						</p>
-					</header>
+			{#key useRecovery}
+				<Input
+					label={useRecovery ? 'Recovery code' : 'Code'}
+					bind:value={code}
+					inputmode={useRecovery ? 'text' : 'numeric'}
+					autocomplete="one-time-code"
+					autocapitalize="none"
+					spellcheck={false}
+					maxlength={useRecovery ? CODE_LENGTH.recovery : CODE_LENGTH.totp}
+					disabled={submitting}
+				/>
+			{/key}
 
-					{#if error}
-						<Alert>{error}</Alert>
-					{/if}
+			<Button type="submit" size="lg" loading={submitting} disabled={!canVerify}>
+				{submitting ? 'Verifying…' : 'Verify'}
+			</Button>
 
-					{#key useRecovery}
-						<Input
-							label={useRecovery ? 'Recovery code' : 'Code'}
-							bind:value={code}
-							inputmode={useRecovery ? 'text' : 'numeric'}
-							autocomplete="one-time-code"
-							autocapitalize="none"
-							spellcheck={false}
-							maxlength={useRecovery ? 16 : 7}
-							disabled={submitting}
-						/>
-					{/key}
+			<div class="links">
+				<Button variant="plain" size="sm" onclick={switchCode}>
+					{useRecovery ? 'Use the authenticator app' : 'Use a recovery code'}
+				</Button>
+				<Button variant="plain" size="sm" onclick={startOver}>Start over</Button>
+			</div>
+		</form>
+	</GateShell>
+{:else}
+	<GateShell title={BRAND.name} description="Sign in to the admin panel">
+		<form onsubmit={signIn}>
+			{#if error}<Alert>{error}</Alert>{/if}
 
-					<Button type="submit" size="lg" loading={submitting} disabled={!canVerify}>
-						{submitting ? 'Verifying…' : 'Verify'}
-					</Button>
+			<Input
+				label="Email"
+				bind:value={email}
+				type="email"
+				disabled={submitting}
+				required
+				autocomplete="email"
+				autocapitalize="none"
+				spellcheck={false}
+			/>
 
-					<div class="links">
-						<button
-							type="button"
-							class="link"
-							onclick={() => {
-								useRecovery = !useRecovery;
-								code = '';
-							}}
-						>
-							{useRecovery ? 'Use the authenticator app' : 'Use a recovery code'}
-						</button>
-						<button type="button" class="link" onclick={startOver}>Start over</button>
-					</div>
-				</form>
-			{:else}
-				<form onsubmit={signIn}>
-					<header>
-						<span class="mark">
-							<i
-								class="ri-shield-keyhole-line"
-								style:font-size="20px"
-								role="img"
-								aria-label={BRAND.name}
-							></i>
-						</span>
-						<h1>{BRAND.name}</h1>
-						<p class="muted">Sign in to the admin panel</p>
-					</header>
+			<PasswordInput label="Password" bind:value={password} disabled={submitting} required />
 
-					{#if error}
-						<Alert>{error}</Alert>
-					{/if}
-
-					<Input
-						label="Email"
-						bind:value={email}
-						type="email"
-						disabled={submitting}
-						required
-						autocomplete="email"
-						autocapitalize="none"
-						spellcheck={false}
-					/>
-
-					<PasswordInput label="Password" bind:value={password} disabled={submitting} required />
-
-					<Button type="submit" size="lg" loading={submitting} disabled={!canSubmit}>
-						{submitting ? 'Signing in…' : 'Sign in'}
-					</Button>
-				</form>
-			{/if}
-		</Card>
-	</div>
-</main>
+			<Button type="submit" size="lg" loading={submitting} disabled={!canSubmit}>
+				{submitting ? 'Signing in…' : 'Sign in'}
+			</Button>
+		</form>
+	</GateShell>
+{/if}
 
 <style>
-	main {
-		display: grid;
-		place-items: center;
-		min-height: 100dvh;
-		padding: var(--space-5);
-	}
-
-	.corner {
-		position: fixed;
-		top: var(--space-3);
-		right: var(--space-3);
-		color: var(--color-text-hint);
-	}
-
-	.panel {
-		width: 100%;
-		max-width: 22rem;
-	}
-
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-		padding: var(--space-2);
-	}
-
-	header {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-	}
-
-	.mark {
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		margin-bottom: var(--space-2);
-		border-radius: var(--radius-md);
-		background: var(--color-accent);
-		color: var(--color-accent-text);
-	}
-
-	header h1 {
-		font-size: var(--text-lg);
-	}
-
-	.muted {
-		color: var(--color-text-hint);
-		font-size: var(--text-base);
-	}
-
 	.links {
 		display: flex;
 		justify-content: space-between;
 		gap: var(--space-2);
-	}
-
-	.link {
-		padding: 0;
-		border: 0;
-		background: none;
-		color: var(--color-text-hint);
-		font: inherit;
-		font-size: var(--text-sm);
-		cursor: pointer;
-	}
-
-	.link:hover {
-		color: var(--color-text);
-		text-decoration: underline;
 	}
 </style>

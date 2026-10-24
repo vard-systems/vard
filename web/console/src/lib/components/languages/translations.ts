@@ -41,17 +41,6 @@ export async function readTranslationFile(file: File, known: string[]): Promise<
 	return { ok: true, messages, skipped };
 }
 
-export function download(filename: string, text: string) {
-	const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = filename;
-	link.click();
-
-	URL.revokeObjectURL(url);
-}
-
 export const languageCode = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/i;
 
 export function namesOf(code: string): { name: string; native: string } | null {

@@ -34,6 +34,7 @@
 	import UserTable from '#lib/components/users/UserTable.svelte';
 	import { countOf } from '#lib/utils/format.js';
 	import type { PageData } from './$types';
+	import { datedName, saveJson } from '#lib/utils/download.js';
 	import { debounce, setSearchParams } from '#lib/utils/url.js';
 
 	let { data }: { data: PageData } = $props();
@@ -130,18 +131,8 @@
 		}
 	}));
 
-	/** Hands the chosen records to the browser as a file. Nothing leaves the
-	    machine: the JSON is built here from what the page already has. */
 	function download() {
-		const blob = new Blob([JSON.stringify(chosenRecords(), null, 2)], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-
-		link.href = url;
-		link.download = `users-${new Date().toISOString().slice(0, 10)}.json`;
-		link.click();
-
-		URL.revokeObjectURL(url);
+		saveJson(datedName('users'), chosenRecords());
 	}
 
 	const filters = [

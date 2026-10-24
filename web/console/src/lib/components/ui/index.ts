@@ -27,6 +27,7 @@ export { notify } from './toast';
 export { default as Badge } from './Badge.svelte';
 export { default as Card } from './Card.svelte';
 export { default as DangerZone } from './DangerZone.svelte';
+export { default as EmptyState } from './EmptyState.svelte';
 export { default as FullscreenDialog } from './FullscreenDialog.svelte';
 export { default as ConfirmDialog } from './ConfirmDialog.svelte';
 export { default as DropdownMenu } from './DropdownMenu.svelte';
@@ -46,6 +47,7 @@ export { default as Thumb } from './Thumb.svelte';
 export { default as FormSection } from './FormSection.svelte';
 export { default as SelectionBar } from './SelectionBar.svelte';
 export { default as Tabs } from './Tabs.svelte';
+export { default as TabList, type Tab } from './TabList.svelte';
 export { default as Tooltip } from './Tooltip.svelte';
 
 export { default as DataTable } from './DataTable.svelte';
