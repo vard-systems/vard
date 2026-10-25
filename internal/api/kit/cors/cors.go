@@ -12,15 +12,21 @@ import (
 const (
 	allowedMethods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
 	allowedHeaders = "Authorization, Content-Type"
+	// A browser app sends its DPoP proof in a header of that name, and must
+	// be able to read the provider's challenge and nonce back; a header not
+	// exposed is hidden from script, which silently breaks DPoP.
+	publicHeaders  = "Authorization, Content-Type, DPoP"
+	exposedHeaders = "DPoP-Nonce, WWW-Authenticate"
 )
 
 // New allows exactly the listed origins, with credentials; no wildcards or
 // suffix matching, since a loose match would let any site act as the signed-in
 // user.
 //
-// The provider endpoints a browser app calls directly (token, userinfo,
+// The provider endpoints a browser app calls directly (token, PAR, userinfo,
 // revocation, introspection, discovery, JWKS) are open to every origin without
-// credentials: they never read a cookie.
+// credentials: they never read a cookie, and the client proves itself in the
+// request.
 func New(origins []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
@@ -30,7 +36,8 @@ func New(origins []string) gin.HandlerFunc {
 				h := c.Writer.Header()
 				h.Set("Access-Control-Allow-Origin", "*")
 				h.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-				h.Set("Access-Control-Allow-Headers", allowedHeaders)
+				h.Set("Access-Control-Allow-Headers", publicHeaders)
+				h.Set("Access-Control-Expose-Headers", exposedHeaders)
 			}
 
 			if c.Request.Method == http.MethodOptions {
@@ -70,6 +77,7 @@ func New(origins []string) gin.HandlerFunc {
 // cookie.
 var publicPaths = []string{
 	"/oauth2/token",
+	"/oauth2/par",
 	"/oauth2/userinfo",
 	"/oauth2/revoke",
 	"/oauth2/introspect",

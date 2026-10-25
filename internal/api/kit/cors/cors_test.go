@@ -3,6 +3,7 @@ package cors
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -242,5 +243,36 @@ func TestCORSPublicProviderEndpoints(t *testing.T) {
 		if got := call(http.MethodGet, path).Header().Get("Access-Control-Allow-Origin"); got != "" {
 			t.Errorf("%s: Allow-Origin = %q for an unlisted origin, want none", path, got)
 		}
+	}
+}
+
+// A browser app using DPoP sends its proof in a DPoP header and has to read
+// the server's DPoP-Nonce and WWW-Authenticate back; a header the preflight
+// does not allow is refused by the browser, and one not exposed is hidden
+// from script. The pushed request endpoint is one such app calls too.
+func TestCORSLetsABrowserAppUseDPoP(t *testing.T) {
+	r := gin.New()
+	r.Use(New([]string{panelOrigin}))
+
+	for _, path := range []string{"/oauth2/token", "/oauth2/par", "/oauth2/userinfo", "/oauth2/revoke"} {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodOptions, path, nil)
+			req.Header.Set("Origin", "https://spa.example.com")
+			req.Header.Set("Access-Control-Request-Headers", "dpop, content-type")
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+
+			if got := w.Header().Get("Access-Control-Allow-Origin"); got != "*" {
+				t.Errorf("Allow-Origin = %q, want *", got)
+			}
+			if got := w.Header().Get("Access-Control-Allow-Headers"); !strings.Contains(got, "DPoP") {
+				t.Errorf("Allow-Headers = %q, want DPoP among them", got)
+			}
+			for _, header := range []string{"DPoP-Nonce", "WWW-Authenticate"} {
+				if got := w.Header().Get("Access-Control-Expose-Headers"); !strings.Contains(got, header) {
+					t.Errorf("Expose-Headers = %q, want %s among them", got, header)
+				}
+			}
+		})
 	}
 }
