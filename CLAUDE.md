@@ -28,7 +28,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Run only the API                   | `make run`                                                                                    |
 | Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                                   |
 | Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                              |
-| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs)                                    |
+| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs; fails with no database)            |
 | Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                                      |
 | Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                           |
 | Console's generated files          | `make generate` (theme tokens, fonts)                                                         |
