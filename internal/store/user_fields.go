@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 func (s *Store) UserFields(ctx context.Context) ([]model.UserField, error) {

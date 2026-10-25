@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/database/databasetest"
-	"loginer/internal/jose"
-	"loginer/internal/store"
+	"vard/internal/database/databasetest"
+	"vard/internal/jose"
+	"vard/internal/store"
 )
 
 // testStore is a store on a throwaway database of its own.

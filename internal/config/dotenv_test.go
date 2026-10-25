@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/brand"
+	"vard/internal/brand"
 )
 
 // The scripts (make dev, make test-integration, the db targets) read .env with
 // load_env in scripts/lib.sh and export it before starting the server, which
 // then believes the environment over the file. If the two readings ever
 // differ, the server started by a script runs with a different value from the
-// one started by `make run` — for LOGINER_SECRET_KEY, a different key, and
+// one started by `make run` — for VARD_SECRET_KEY, a different key, and
 // signing keys one of them cannot open. So every way of writing a line is read
 // both ways here and has to come out the same.
 func TestTheScriptsReadDotEnvLikeTheServer(t *testing.T) {

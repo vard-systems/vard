@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 type Audience struct {

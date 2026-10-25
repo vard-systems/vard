@@ -15,14 +15,14 @@ import (
 
 	"gorm.io/gorm"
 
-	"loginer/internal/brand"
-	"loginer/internal/config"
-	"loginer/internal/database"
+	"vard/internal/brand"
+	"vard/internal/config"
+	"vard/internal/database"
 )
 
 // Env names a Postgres server the tests may create and drop databases on, as
 // a URL: postgres://user:password@localhost:5432/postgres?sslmode=disable.
-const Env = "LOGINER_TEST_DB_DSN"
+const Env = "VARD_TEST_DB_DSN"
 
 // Open makes the database and returns it with the configuration that opens
 // it, which a test starting a second server on the same database needs. A

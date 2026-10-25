@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 type scopeResponse struct {

@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/model"
 )
 
 func TestRoleRequestApplyTo(t *testing.T) {

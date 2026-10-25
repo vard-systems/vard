@@ -12,11 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	"loginer/internal/api/kit/query"
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/session"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/api/kit/query"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/session"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 const (

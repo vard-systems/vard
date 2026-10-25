@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/jose"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/jose"
+	"vard/internal/model"
 )
 
 // sealer is the one these tests seal a password with. The key is only ever

@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // Changing how someone signs in needs them at the keyboard. Without a

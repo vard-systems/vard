@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // MailSettings returns the oldest (seeded) row, or the default, which sends

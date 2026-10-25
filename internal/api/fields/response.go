@@ -1,6 +1,6 @@
 package fields
 
-import "loginer/internal/model"
+import "vard/internal/model"
 
 // fieldResponse is one field as the panel sees it. Built-in fields are columns
 // with no id or timestamps, so this is built by hand rather than returning the

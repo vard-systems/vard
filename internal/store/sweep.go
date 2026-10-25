@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 const sweepInterval = time.Hour

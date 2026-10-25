@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 var ErrWrongPassword = errors.New("the current password is not right")

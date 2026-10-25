@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 func (s *Store) OTPSettings(ctx context.Context) (*model.OTPSettings, error) {

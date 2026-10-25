@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 func (s *Store) Organization(ctx context.Context) (*model.Organization, error) {

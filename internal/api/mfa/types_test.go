@@ -3,8 +3,8 @@ package mfa
 import (
 	"testing"
 
-	"loginer/internal/api/kit/tstypes"
-	"loginer/internal/auth"
+	"vard/internal/api/kit/tstypes"
+	"vard/internal/auth"
 )
 
 // The panel's types for these answers are written by hand in

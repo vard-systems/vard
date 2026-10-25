@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/validate"
-	"loginer/internal/jose"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/validate"
+	"vard/internal/jose"
+	"vard/internal/model"
 )
 
 var (

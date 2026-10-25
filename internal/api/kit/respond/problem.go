@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"loginer/i18n"
+	"vard/i18n"
 )
 
 type Problem struct {

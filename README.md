@@ -1,4 +1,4 @@
-# Loginer
+# Vard
 
 An OAuth 2.0 authorization server and OpenID Connect provider written in Go,
 with two web apps:
@@ -52,21 +52,21 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 
 | Variable                  | Purpose                                                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------- |
-| `LOGINER_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
-| `LOGINER_DB_DSN`          | PostgreSQL connection string.                                                            |
-| `LOGINER_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
-| `LOGINER_ADMIN_URL`       | The console's URL; only this origin may change things via the admin API.                 |
-| `LOGINER_REDIS_HOST`      | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
-| `LOGINER_TRUSTED_PROXIES` | Who may say who the caller is: the apps' servers, and nothing else.                      |
-| `LOGINER_RATE_LIMIT`      | Attempts per minute per address on password and email endpoints.                         |
-| `LOGINER_ADMIN_MFA`       | `required` or `optional`, seeded on first start.                                         |
+| `VARD_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
+| `VARD_DB_DSN`          | PostgreSQL connection string.                                                            |
+| `VARD_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
+| `VARD_ADMIN_URL`       | The console's URL; only this origin may change things via the admin API.                 |
+| `VARD_REDIS_HOST`      | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
+| `VARD_TRUSTED_PROXIES` | Who may say who the caller is: the apps' servers, and nothing else.                      |
+| `VARD_RATE_LIMIT`      | Attempts per minute per address on password and email endpoints.                         |
+| `VARD_ADMIN_MFA`       | `required` or `optional`, seeded on first start.                                         |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.
 
 ## Deploying
 
-The API is one binary (`make build-api` → `bin/loginer`); it applies its
+The API is one binary (`make build-api` → `bin/vard`); it applies its
 migrations on start. Each app is a Node server (`make build-web`, then `node build`
 in its directory, with `API_URL` pointing at its listener).
 
@@ -89,27 +89,27 @@ make docker-local    # generates deploy/.env, builds and starts everything
 make docker-reset    # stops it and drops its data
 ```
 
-Without Docker, run `bin/loginer` and the two `node build` servers, with the
-API's `LOGINER_TRUSTED_PROXIES` set to the apps' addresses.
+Without Docker, run `bin/vard` and the two `node build` servers, with the
+API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 
 ### Before going live
 
 - [ ] `PUBLIC_URL` and `ADMIN_URL` are `https` (session cookies become Secure).
 - [ ] The admin host is reachable only from staff networks or a VPN.
-- [ ] `LOGINER_SECRET_KEY` is stored in a secret manager.
+- [ ] `VARD_SECRET_KEY` is stored in a secret manager.
 - [ ] SMTP is configured, or reset emails only reach the log.
 - [ ] Postgres is backed up.
 - [ ] A TLS proxy is in front of the apps, and only it publishes a port.
 - [ ] The apps' Node servers read the caller from that proxy (`ADDRESS_HEADER`,
-      `XFF_DEPTH`), and the API trusts only the apps (`LOGINER_TRUSTED_PROXIES`).
-- [ ] `LOGINER_ADMIN_MFA=required`, and at least two super admins exist.
+      `XFF_DEPTH`), and the API trusts only the apps (`VARD_TRUSTED_PROXIES`).
+- [ ] `VARD_ADMIN_MFA=required`, and at least two super admins exist.
 - [ ] Applications register `https` redirect URIs.
 
 ## Security model in brief
 
 - Every secret handed out (codes, refresh tokens, session cookies, reset links)
   is 256 random bits stored only as a hash.
-- Signing keys and stored secrets are sealed with `LOGINER_SECRET_KEY`.
+- Signing keys and stored secrets are sealed with `VARD_SECRET_KEY`.
 - Signing keys rotate automatically and stay published until their tokens expire.
 - Passwords use bcrypt; unknown accounts take as long to refuse as wrong passwords.
 - Lockouts and one-time-code guesses are counted atomically in the database, so
@@ -144,7 +144,7 @@ kind of change is made, and the security invariants every change keeps.
 ## Project layout
 
 ```
-cmd/loginer, cmd/migrate   the server, and the migration runner
+cmd/vard, cmd/migrate   the server, and the migration runner
 internal/                  the Go code: api (HTTP handlers), oidc (the provider),
                            store (every query), model (the schema), and the rest
 migrations/                the schema and every change to it, in order

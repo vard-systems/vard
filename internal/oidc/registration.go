@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // Dynamic client registration (RFC 7591). Registering is not open: it takes

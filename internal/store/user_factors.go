@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // UserFactors are a user's second factors, confirmed or still being set up,

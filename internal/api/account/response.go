@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/oidc"
+	"vard/internal/api/kit/respond"
+	"vard/internal/oidc"
 )
 
 var (

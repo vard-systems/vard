@@ -14,10 +14,10 @@ type Link = { id: string; label: string; description: string; icon: IconName; hr
 
 export const BRAND = {
 	/** What a person reads. Never translated. */
-	name: 'Loginer',
+	name: 'Vard',
 
 	/** What the names below are built from: lower-case letters and digits, as the server's. */
-	slug: 'loginer',
+	slug: 'vard',
 
 	/** The mark drawn where there is no logo: a Remix Icon class. */
 	icon: 'ri-shield-keyhole-line',
@@ -32,7 +32,7 @@ export const BRAND = {
 			label: 'GitHub',
 			description: 'Source, issues and releases',
 			icon: 'ri-github-fill',
-			href: 'https://github.com/loginer/loginer'
+			href: 'https://github.com/vard-systems/vard'
 		}
 	] satisfies Link[]
 } as const;

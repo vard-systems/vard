@@ -3,7 +3,7 @@ package steps
 import (
 	"strings"
 
-	"loginer/internal/api/kit/validate"
+	"vard/internal/api/kit/validate"
 )
 
 func (r *stepRequest) validate() error {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/config"
+	"vard/internal/config"
 )
 
 func init() {

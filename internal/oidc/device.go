@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // The device authorization grant (RFC 8628).

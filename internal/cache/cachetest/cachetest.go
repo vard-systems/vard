@@ -16,12 +16,12 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"loginer/internal/brand"
-	"loginer/internal/cache"
-	"loginer/internal/config"
+	"vard/internal/brand"
+	"vard/internal/cache"
+	"vard/internal/config"
 )
 
-const Env = "LOGINER_TEST_REDIS"
+const Env = "VARD_TEST_REDIS"
 
 func Open(t *testing.T) *cache.Redis {
 	t.Helper()
@@ -47,8 +47,8 @@ func Open(t *testing.T) *cache.Redis {
 		Port:      number,
 		CacheDB:   14,
 		SessionDB: 15,
-		Username:  os.Getenv("LOGINER_REDIS_USERNAME"),
-		Password:  os.Getenv("LOGINER_REDIS_PASSWORD"),
+		Username:  os.Getenv("VARD_REDIS_USERNAME"),
+		Password:  os.Getenv("VARD_REDIS_PASSWORD"),
 		Prefix:    brand.Slug + "_test_" + hex.EncodeToString(suffix) + ":",
 	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/mail"
 
-	"loginer/internal/config"
-	"loginer/internal/model"
+	"vard/internal/config"
+	"vard/internal/model"
 )
 
 type Store interface {

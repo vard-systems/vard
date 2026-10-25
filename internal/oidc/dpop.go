@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
+	"vard/internal/jose"
+	"vard/internal/model"
 )
 
 // DPoP (RFC 9449): a client proves, with each request, that it holds a key,

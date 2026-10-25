@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
+	"vard/internal/jose"
+	"vard/internal/model"
 )
 
 type oidcDiscovery struct {

@@ -19,21 +19,21 @@ import (
 
 	"gorm.io/gorm"
 
-	"loginer/internal/cache"
-	"loginer/internal/cache/cachetest"
-	"loginer/internal/config"
-	"loginer/internal/database/databasetest"
-	"loginer/internal/jose"
-	"loginer/internal/mail"
-	"loginer/internal/oidc"
-	"loginer/internal/store"
+	"vard/internal/cache"
+	"vard/internal/cache/cachetest"
+	"vard/internal/config"
+	"vard/internal/database/databasetest"
+	"vard/internal/jose"
+	"vard/internal/mail"
+	"vard/internal/oidc"
+	"vard/internal/store"
 )
 
 // These tests run the whole server — routes, permission checks, store and
 // migrations — against a real Postgres. They need a database server to make
-// throwaway databases on, named by LOGINER_TEST_DB_DSN:
+// throwaway databases on, named by VARD_TEST_DB_DSN:
 //
-//	LOGINER_TEST_DB_DSN=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable go test ./internal/api/
+//	VARD_TEST_DB_DSN=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable go test ./internal/api/
 //
 // Without it they are skipped, so `go test ./...` still passes anywhere.
 
@@ -188,7 +188,7 @@ func startNode(t *testing.T, db *gorm.DB, dbCfg config.DB, shared *cache.Redis, 
 	}
 	change(&serverCfg)
 
-	// With LOGINER_TEST_REDIS the whole server runs with its cache, under a
+	// With VARD_TEST_REDIS the whole server runs with its cache, under a
 	// prefix of its own, so every test here also proves that a write is seen
 	// by the next read through the cache.
 	st := store.New(db).WithCache(shared)

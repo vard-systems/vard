@@ -12,7 +12,7 @@ import (
 	"github.com/crewjam/saml"
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 func TestCheckSAMLAlgorithms(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // reference names another row: enough to show it and to send it back.

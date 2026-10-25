@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"loginer/internal/brand"
+	"vard/internal/brand"
 )
 
 type MailSettings struct {

@@ -8,8 +8,8 @@ import (
 
 	"github.com/crewjam/saml"
 
-	"loginer/internal/model"
-	"loginer/internal/oidc"
+	"vard/internal/model"
+	"vard/internal/oidc"
 )
 
 // connectionResponse is a connection as the panel shows it: settings without

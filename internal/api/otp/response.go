@@ -1,7 +1,7 @@
 package otp
 
 import (
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // settingsResponse is the settings as the panel sees them, built by hand so

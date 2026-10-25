@@ -152,7 +152,7 @@ func TestCORSTellsAStrangerNothing(t *testing.T) {
 	}
 }
 
-// An empty entry in the list — a stray comma in LOGINER_CORS_ORIGINS — must
+// An empty entry in the list — a stray comma in VARD_CORS_ORIGINS — must
 // not turn every request without an Origin header into an allowed one.
 func TestCORSIgnoresAnEmptyEntry(t *testing.T) {
 	r := corsEngine("", panelOrigin)

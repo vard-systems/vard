@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/brand"
+	"vard/internal/brand"
 )
 
 type Organization struct {

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // The account a social sign-in lands on: the one already linked to the

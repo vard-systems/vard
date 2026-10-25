@@ -10,10 +10,10 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 
-	"loginer/internal/model"
-	"loginer/internal/recovery"
-	"loginer/internal/store"
-	"loginer/internal/totp"
+	"vard/internal/model"
+	"vard/internal/recovery"
+	"vard/internal/store"
+	"vard/internal/totp"
 )
 
 // A user's own two-step verification. It is theirs to turn on, from the

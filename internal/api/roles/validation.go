@@ -3,9 +3,9 @@ package roles
 import (
 	"net/http"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/validate"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/validate"
+	"vard/internal/model"
 )
 
 var (

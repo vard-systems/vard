@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 type Registration struct {

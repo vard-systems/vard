@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 func (s *Store) CreateRefreshToken(ctx context.Context, token *model.RefreshToken) error {

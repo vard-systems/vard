@@ -35,7 +35,7 @@ export async function toApi(event: RequestEvent): Promise<Response> {
 	for (const name of HOP_BY_HOP) headers.delete(name);
 
 	// The caller's address, resolved here and sent alone: the API believes
-	// X-Forwarded-For only from this server (LOGINER_TRUSTED_PROXIES), so a
+	// X-Forwarded-For only from this server (VARD_TRUSTED_PROXIES), so a
 	// client's own copy, and the other headers that could claim one, go.
 	headers.set('x-forwarded-for', event.getClientAddress());
 	headers.delete('x-real-ip');

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // codesAtOnce is how many codes each case types together: well past the

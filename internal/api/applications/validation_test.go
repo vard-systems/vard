@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/model"
 )
 
 func TestApplicationRequestApplyTo(t *testing.T) {

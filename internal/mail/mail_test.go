@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/brand"
-	"loginer/internal/config"
-	"loginer/internal/model"
+	"vard/internal/brand"
+	"vard/internal/config"
+	"vard/internal/model"
 )
 
 // A message has to leave here as a mail client expects to find it: headers

@@ -32,7 +32,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"loginer/internal/config"
+	"vard/internal/config"
 )
 
 const (
@@ -189,7 +189,7 @@ func open(ctx context.Context, cfg config.Redis, name string, number int, log *s
 
 	if err := client.Ping(ping).Err(); err != nil {
 		_ = client.Close()
-		return nil, fmt.Errorf("redis at %s (%s database %d) did not answer: %w; start it, or leave LOGINER_REDIS_HOST empty to run without it",
+		return nil, fmt.Errorf("redis at %s (%s database %d) did not answer: %w; start it, or leave VARD_REDIS_HOST empty to run without it",
 			cfg.Addr(), name, number, err)
 	}
 

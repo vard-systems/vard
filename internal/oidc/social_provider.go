@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
+	"vard/internal/jose"
+	"vard/internal/model"
 )
 
 // Talking to a social provider: trading the code for tokens, proving who the

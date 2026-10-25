@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/jose"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/jose"
+	"vard/internal/model"
 )
 
 func sealer(t *testing.T) *jose.Sealer {

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/mail"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/mail"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // ForgotPassword sends a reset link if the address has an account that may sign

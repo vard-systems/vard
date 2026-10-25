@@ -6,8 +6,8 @@ import (
 	"errors"
 	"strings"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // Pushed authorization requests (RFC 9126). A client sends its authorization

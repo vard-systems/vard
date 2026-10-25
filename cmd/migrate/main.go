@@ -9,8 +9,8 @@ import (
 
 	"github.com/pressly/goose/v3"
 
-	"loginer/internal/config"
-	"loginer/internal/database"
+	"vard/internal/config"
+	"vard/internal/database"
 )
 
 func main() {

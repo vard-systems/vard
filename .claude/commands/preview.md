@@ -12,25 +12,25 @@ reading. If something is, leave it alone and raise a throwaway instance beside
 it:
 
 1. A database of its own:
-   `psql "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable" -c "CREATE DATABASE loginer_preview;"`
+   `psql "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable" -c "CREATE DATABASE vard_preview;"`
 2. The API, built from the working tree into `bin/` (which is ignored), on
    spare ports, applying its migrations on start:
 
    ```sh
-   go build -o bin/loginer-preview ./cmd/loginer
-   LOGINER_ADDR=:8090 LOGINER_ADMIN_ADDR=:8091 \
-     LOGINER_DB_DSN="postgres://postgres:postgres@localhost:5432/loginer_preview?sslmode=disable" \
-     LOGINER_DB_DRIVER=postgres LOGINER_DB_MIGRATE=true LOGINER_DB_MIGRATE_DIR=./migrations \
-     LOGINER_ISSUER=http://localhost:5183 LOGINER_ACCOUNT_URL=http://localhost:5183 \
-     LOGINER_ADMIN_URL=http://localhost:5184 LOGINER_ADMIN_MFA=optional \
-     LOGINER_TRUSTED_PROXIES=127.0.0.1/32,::1/128 \
-     LOGINER_SECRET_KEY=preview-secret-key-0123456789abcdef \
-     LOGINER_REDIS_PREFIX=loginer-preview: \
-     bin/loginer-preview &
+   go build -o bin/vard-preview ./cmd/vard
+   VARD_ADDR=:8090 VARD_ADMIN_ADDR=:8091 \
+     VARD_DB_DSN="postgres://postgres:postgres@localhost:5432/vard_preview?sslmode=disable" \
+     VARD_DB_DRIVER=postgres VARD_DB_MIGRATE=true VARD_DB_MIGRATE_DIR=./migrations \
+     VARD_ISSUER=http://localhost:5183 VARD_ACCOUNT_URL=http://localhost:5183 \
+     VARD_ADMIN_URL=http://localhost:5184 VARD_ADMIN_MFA=optional \
+     VARD_TRUSTED_PROXIES=127.0.0.1/32,::1/128 \
+     VARD_SECRET_KEY=preview-secret-key-0123456789abcdef \
+     VARD_REDIS_PREFIX=vard-preview: \
+     bin/vard-preview &
    ```
 
-   `LOGINER_ADMIN_MFA=optional` is what makes signing in one step instead of
-   needing an authenticator. `LOGINER_REDIS_PREFIX` keeps its cache apart
+   `VARD_ADMIN_MFA=optional` is what makes signing in one step instead of
+   needing an authenticator. `VARD_REDIS_PREFIX` keeps its cache apart
    from the running stack's: the binary reads `.env`, so without it the two
    share one Redis, each reads the other's cached rows — an organisation
    whose id is not in its own database, say — and saves go wrong.
@@ -62,6 +62,6 @@ it:
 
 Then take it all down: stop every process you started — the API and the Vite
 servers, found by their spare ports, never the running stack's —
-`DROP DATABASE loginer_preview WITH (FORCE)`, clear its cache
-(`redis-cli --scan --pattern 'loginer-preview:*' | xargs redis-cli del`), and
+`DROP DATABASE vard_preview WITH (FORCE)`, clear its cache
+(`redis-cli --scan --pattern 'vard-preview:*' | xargs redis-cli del`), and
 close the tab. Say what you saw, and what you changed if you fixed something.

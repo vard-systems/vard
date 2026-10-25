@@ -3,7 +3,7 @@ package oidc
 import (
 	"context"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // PublicApplication is what anyone may know about an application: what its

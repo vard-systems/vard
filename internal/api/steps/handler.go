@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/signedin"
-	"loginer/internal/oidc"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/signedin"
+	"vard/internal/oidc"
 )
 
 type Handler struct {

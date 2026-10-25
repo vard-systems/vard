@@ -3,7 +3,7 @@ package applications
 import (
 	"testing"
 
-	"loginer/internal/api/kit/tstypes"
+	"vard/internal/api/kit/tstypes"
 )
 
 // The panel's types for these answers are written by hand in

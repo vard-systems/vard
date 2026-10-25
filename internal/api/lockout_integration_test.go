@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/config"
-	"loginer/internal/totp"
+	"vard/internal/config"
+	"vard/internal/totp"
 )
 
 // wrongCodeFor is a six-digit code no step the server accepts would give.

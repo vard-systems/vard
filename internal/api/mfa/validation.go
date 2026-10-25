@@ -3,7 +3,7 @@ package mfa
 import (
 	"net/http"
 
-	"loginer/internal/api/kit/respond"
+	"vard/internal/api/kit/respond"
 )
 
 var (

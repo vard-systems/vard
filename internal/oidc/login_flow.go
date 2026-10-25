@@ -3,7 +3,7 @@ package oidc
 import (
 	"context"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 func (s *Service) LoginOptions(ctx context.Context, handle string) (model.PublicLoginOptions, error) {

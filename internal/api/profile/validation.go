@@ -3,8 +3,8 @@ package profile
 import (
 	"strings"
 
-	"loginer/internal/api/kit/signedin"
-	"loginer/internal/api/kit/validate"
+	"vard/internal/api/kit/signedin"
+	"vard/internal/api/kit/validate"
 )
 
 func (r *profileRequest) validate() error {

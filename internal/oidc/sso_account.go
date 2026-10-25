@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // The account a single sign-on lands on, and what the enterprise's provider

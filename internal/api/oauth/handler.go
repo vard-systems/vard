@@ -17,11 +17,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/session"
-	"loginer/internal/brand"
-	"loginer/internal/model"
-	"loginer/internal/oidc"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/session"
+	"vard/internal/brand"
+	"vard/internal/model"
+	"vard/internal/oidc"
 )
 
 type Handler struct {

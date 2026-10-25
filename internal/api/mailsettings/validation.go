@@ -3,11 +3,11 @@ package mailsettings
 import (
 	"net/http"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/validate"
-	"loginer/internal/jose"
-	"loginer/internal/mail"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/validate"
+	"vard/internal/jose"
+	"vard/internal/mail"
+	"vard/internal/model"
 )
 
 func (r *settingsRequest) applyTo(settings *model.MailSettings, sealer *jose.Sealer) ([]string, error) {

@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/jose"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // OpenID Connect Back-Channel Logout 1.0.

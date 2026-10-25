@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/model"
 )
 
 func TestAPIRequestApplyTo(t *testing.T) {

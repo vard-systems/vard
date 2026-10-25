@@ -10,11 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/kit/audit"
-	"loginer/internal/api/kit/query"
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/validate"
-	"loginer/internal/store"
+	"vard/internal/api/kit/audit"
+	"vard/internal/api/kit/query"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/validate"
+	"vard/internal/store"
 )
 
 type Handler struct {

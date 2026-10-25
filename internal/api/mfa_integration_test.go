@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/config"
-	"loginer/internal/totp"
+	"vard/internal/config"
+	"vard/internal/totp"
 )
 
 // codeFor is the authenticator's code for a moment.

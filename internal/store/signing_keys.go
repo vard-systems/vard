@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"loginer/internal/brand"
-	"loginer/internal/model"
+	"vard/internal/brand"
+	"vard/internal/model"
 )
 
 func (s *Store) SigningKeys(ctx context.Context) ([]model.SigningKey, error) {

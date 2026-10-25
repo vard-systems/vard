@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // applicationResponse is an application as the panel sees it. The secret's

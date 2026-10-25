@@ -38,12 +38,12 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: loginer
-          POSTGRES_PASSWORD: loginer
-          POSTGRES_DB: loginer
+          POSTGRES_USER: vard
+          POSTGRES_PASSWORD: vard
+          POSTGRES_DB: vard
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U loginer" --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "pg_isready -U vard" --health-interval 5s --health-timeout 5s --health-retries 10
       redis:
         image: redis:7
         ports: ['6379:6379']
@@ -52,8 +52,8 @@ jobs:
     env:
       # The TestLive… tests create and drop a database of their own on this
       # server, so the user has to be allowed to create databases.
-      LOGINER_DB_DSN: postgres://loginer:loginer@localhost:5432/loginer?sslmode=disable
-      LOGINER_TEST_REDIS: localhost:6379
+      VARD_DB_DSN: postgres://vard:vard@localhost:5432/vard?sslmode=disable
+      VARD_TEST_REDIS: localhost:6379
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6

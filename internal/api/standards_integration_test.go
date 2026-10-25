@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // A pushed authorization request (RFC 9126) is sent server to server, and the

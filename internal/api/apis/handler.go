@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/kit/audit"
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/session"
-	"loginer/internal/model"
-	"loginer/internal/oidc"
-	"loginer/internal/store"
+	"vard/internal/api/kit/audit"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/session"
+	"vard/internal/model"
+	"vard/internal/oidc"
+	"vard/internal/store"
 )
 
 type Handler struct {
@@ -26,7 +26,7 @@ type Handler struct {
 	issuer string
 }
 
-// New returns a Handler. `issuer` is LOGINER_ISSUER, which tokens name the
+// New returns a Handler. `issuer` is VARD_ISSUER, which tokens name the
 // server by.
 func New(st *store.Store, recorder audit.Recorder, log *slog.Logger, issuer string) *Handler {
 	return &Handler{store: st, audit: recorder, log: log, issuer: issuer}

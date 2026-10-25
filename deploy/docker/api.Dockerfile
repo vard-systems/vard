@@ -1,7 +1,7 @@
-# The Loginer API server.
+# The Vard API server.
 # Build context: the repository root.
 #
-#   docker build -f deploy/docker/api.Dockerfile -t loginer .
+#   docker build -f deploy/docker/api.Dockerfile -t vard .
 
 FROM golang:1.27.3-alpine AS build
 WORKDIR /src
@@ -14,17 +14,17 @@ COPY migrations ./migrations
 # the JSON beside it, and internal/api/respond imports it.
 COPY i18n ./i18n
 ARG VERSION=dev
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/loginer ./cmd/loginer
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/vard ./cmd/vard
 
 FROM alpine:3.22
-RUN apk add --no-cache ca-certificates tzdata && adduser -D -H -u 10001 loginer
+RUN apk add --no-cache ca-certificates tzdata && adduser -D -H -u 10001 vard
 WORKDIR /app
-COPY --from=build /out/loginer ./loginer
+COPY --from=build /out/vard ./vard
 # The migrations are compiled in and applied on start; goose only needs the
 # directory it is pointed at to exist.
 RUN mkdir migrations
-USER loginer
-ENV GIN_MODE=release LOGINER_ADDR=:8080 LOGINER_ADMIN_ADDR=:8081
+USER vard
+ENV GIN_MODE=release VARD_ADDR=:8080 VARD_ADMIN_ADDR=:8081
 # 8080 public, 8081 admin: neither is published; the apps reach them.
 EXPOSE 8080 8081
-ENTRYPOINT ["/app/loginer"]
+ENTRYPOINT ["/app/vard"]

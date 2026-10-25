@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // roleRef names another role, and its scope: enough to show it and to send

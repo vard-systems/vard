@@ -11,10 +11,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/brand"
-	"loginer/internal/cache"
-	"loginer/internal/cache/cachetest"
-	"loginer/internal/model"
+	"vard/internal/brand"
+	"vard/internal/cache"
+	"vard/internal/cache/cachetest"
+	"vard/internal/model"
 )
 
 func TestLiveFirstAdminOnlyOnce(t *testing.T) {

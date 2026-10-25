@@ -16,7 +16,7 @@ import (
 // instances sharing one database and Redis. It fails on any error and on a
 // latency far past what a healthy server shows, and logs the numbers:
 //
-//	LOGINER_LOAD_REQUESTS=20000 make test-integration
+//	VARD_LOAD_REQUESTS=20000 make test-integration
 //
 // runs it harder. The default keeps the suite quick.
 func TestLiveLoad(t *testing.T) {
@@ -34,7 +34,7 @@ func TestLiveLoad(t *testing.T) {
 	accessToken := user.str("access_token")
 
 	requests := 600
-	if n, err := strconv.Atoi(os.Getenv("LOGINER_LOAD_REQUESTS")); err == nil && n > 0 {
+	if n, err := strconv.Atoi(os.Getenv("VARD_LOAD_REQUESTS")); err == nil && n > 0 {
 		requests = n
 	}
 	const workers = 32

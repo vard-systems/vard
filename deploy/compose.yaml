@@ -5,7 +5,7 @@
 #   cp deploy/.env.example deploy/.env    # fill it in
 #   make docker-up
 
-name: loginer
+name: vard
 
 # Every container's log is capped, so a server that records each sign-in
 # cannot fill the disk Postgres is on.
@@ -36,11 +36,11 @@ services:
     <<: *hardened
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: loginer
-      POSTGRES_USER: loginer
+      POSTGRES_DB: vard
+      POSTGRES_USER: vard
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
     healthcheck:
-      test: pg_isready -U loginer
+      test: pg_isready -U vard
       interval: 2s
       retries: 30
     volumes: [postgres:/var/lib/postgresql/data]
@@ -97,33 +97,33 @@ services:
       timeout: 3s
       retries: 24
     # The server gives requests under way 15s to finish (shutdownGrace in
-    # cmd/loginer/main.go); Docker's own default is 10s, which would SIGKILL
+    # cmd/vard/main.go); Docker's own default is 10s, which would SIGKILL
     # it half way through every deploy.
     stop_grace_period: 20s
     environment:
-      LOGINER_ISSUER: ${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}
-      LOGINER_ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in deploy/.env}
-      LOGINER_SECRET_KEY: ${LOGINER_SECRET_KEY:?set LOGINER_SECRET_KEY in deploy/.env}
-      LOGINER_DB_DSN: postgres://loginer:${POSTGRES_PASSWORD}@postgres:5432/loginer?sslmode=disable
-      LOGINER_REDIS_HOST: redis
-      LOGINER_REDIS_PORT: 6379
-      LOGINER_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      VARD_ISSUER: ${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}
+      VARD_ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in deploy/.env}
+      VARD_SECRET_KEY: ${VARD_SECRET_KEY:?set VARD_SECRET_KEY in deploy/.env}
+      VARD_DB_DSN: postgres://vard:${POSTGRES_PASSWORD}@postgres:5432/vard?sslmode=disable
+      VARD_REDIS_HOST: redis
+      VARD_REDIS_PORT: 6379
+      VARD_REDIS_PASSWORD: ${REDIS_PASSWORD}
       # A second factor for every administrator. The server's own default is
       # optional, so that a fresh installation can be got into at all; a
       # deployment that is going to face the internet starts the other way.
       # After the first start the setting lives in the database.
-      LOGINER_ADMIN_MFA: ${LOGINER_ADMIN_MFA:-required}
-      LOGINER_RATE_LIMIT: ${LOGINER_RATE_LIMIT:-20}
-      LOGINER_LOG_LEVEL: ${LOGINER_LOG_LEVEL:-info}
+      VARD_ADMIN_MFA: ${VARD_ADMIN_MFA:-required}
+      VARD_RATE_LIMIT: ${VARD_RATE_LIMIT:-20}
+      VARD_LOG_LEVEL: ${VARD_LOG_LEVEL:-info}
       # Only the two apps forward a caller's address, from their fixed
       # addresses below — not the whole subnet, which is also Postgres and
       # Redis.
-      LOGINER_TRUSTED_PROXIES: 172.30.0.2/32,172.30.0.3/32
-      LOGINER_SMTP_HOST: ${LOGINER_SMTP_HOST:-}
-      LOGINER_SMTP_PORT: ${LOGINER_SMTP_PORT:-587}
-      LOGINER_SMTP_USERNAME: ${LOGINER_SMTP_USERNAME:-}
-      LOGINER_SMTP_PASSWORD: ${LOGINER_SMTP_PASSWORD:-}
-      LOGINER_SMTP_FROM: ${LOGINER_SMTP_FROM:-}
+      VARD_TRUSTED_PROXIES: 172.30.0.2/32,172.30.0.3/32
+      VARD_SMTP_HOST: ${VARD_SMTP_HOST:-}
+      VARD_SMTP_PORT: ${VARD_SMTP_PORT:-587}
+      VARD_SMTP_USERNAME: ${VARD_SMTP_USERNAME:-}
+      VARD_SMTP_PASSWORD: ${VARD_SMTP_PASSWORD:-}
+      VARD_SMTP_FROM: ${VARD_SMTP_FROM:-}
     networks: [internal]
 
   # The users' site: the sign-in pages, with the provider and the account API

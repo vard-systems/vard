@@ -10,8 +10,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 type AuthorizeParams struct {

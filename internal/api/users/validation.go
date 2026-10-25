@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/validate"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/validate"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 var (

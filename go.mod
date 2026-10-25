@@ -1,4 +1,4 @@
-module loginer
+module vard
 
 go 1.27.3
 
