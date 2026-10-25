@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { Admin, OrganizationBrand } from '#lib/api/index.js';
+	import { organizationApi, type Admin, type OrganizationBrand } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import { IconButton, ThemeToggle, Thumb } from '#lib/components/ui/index.js';
 	import { useShell } from '#lib/state/shell.svelte.js';
@@ -16,6 +16,14 @@
 	const shell = useShell();
 
 	const name = $derived(organization.name.trim() || BRAND.name);
+
+	// The organization's app logo, or the panel's own until it uploads one.
+	const logo = $derived(organizationApi.logoUrl(organization.logo_version) || BRAND.logo);
+
+	// Only an organisation's own console needs to say what it runs on; the
+	// product's own would say its name twice.
+	const powered = $derived(name !== BRAND.name);
+	const label = $derived(powered ? `${name} console, powered by ${BRAND.name}` : `${name} console`);
 </script>
 
 <header class:mini={shell.collapsed}>
@@ -30,17 +38,16 @@
 	</div>
 
 	<div class="brand-column">
-		<a class="brand" href={resolve('/(panel)')} aria-label="{name} Console">
-			<Thumb
-				src={organization.logo_url}
-				text={initials(name)}
-				size="xs"
-				shape="circle"
-				tone="accent"
-				bare
-			/>
+		<a class="brand" href={resolve('/(panel)')} aria-label={label}>
+			<Thumb src={logo} text={initials(name)} size="sm" bare />
 
-			<span class="wordmark">Console</span>
+			<span class="title">
+				<span class="wordmark" title={name}>{name}</span>
+				{#if powered}
+					<span class="divider" aria-hidden="true">/</span>
+					<span class="product">{BRAND.name}</span>
+				{/if}
+			</span>
 		</a>
 	</div>
 
@@ -97,7 +104,8 @@
 		gap: 10px;
 		min-width: 0;
 		height: 100%;
-		padding: 0 var(--space-3) 0 14px;
+		/* Centres the 34px logo in a folded, 56px sidebar, so it stays put. */
+		padding: 0 var(--space-2) 0 11px;
 		color: var(--color-text);
 		text-decoration: none;
 		white-space: nowrap;
@@ -108,13 +116,45 @@
 		outline-offset: -4px;
 	}
 
-	.wordmark {
-		font-family: var(--font-display);
-		font-size: var(--text-xl);
-		font-weight: 600;
+	/* The organization's name, then, smaller and quieter, the product it runs
+	   on. A long name gives way; the product's stays whole. */
+	.title {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		min-width: 0;
 		line-height: 1;
-		letter-spacing: -0.03em;
 		transition: opacity var(--speed);
+	}
+
+	/* Tall enough for every letter's ascender and descender: the box clips
+	   whatever it does not hold, so a long name can end in an ellipsis. */
+	.wordmark {
+		overflow: hidden;
+		padding-block: 2px;
+		line-height: 1.3;
+		text-overflow: ellipsis;
+		color: var(--color-text);
+		font-size: var(--text-xl);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+	}
+
+	.divider,
+	.product {
+		flex-shrink: 0;
+		font-size: 10px;
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	.divider {
+		color: var(--color-text-disabled);
+	}
+
+	.product {
+		color: var(--color-text-hint);
 	}
 
 	.end {
@@ -137,7 +177,7 @@
 			display: none;
 		}
 
-		.mini .wordmark {
+		.mini .title {
 			opacity: 0;
 		}
 	}
@@ -166,6 +206,14 @@
 
 		.rule {
 			margin: 0 var(--space-1);
+		}
+	}
+
+	/* A phone's header has no room for the product beside the organization's name. */
+	@media (max-width: 40rem) {
+		.divider,
+		.product {
+			display: none;
 		}
 	}
 </style>

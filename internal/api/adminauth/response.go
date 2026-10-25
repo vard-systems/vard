@@ -93,13 +93,13 @@ func newSessionResponses(sessions []model.AdminSession, current uuid.UUID) []ses
 	return out
 }
 
-// organizationBrand is the header's name and logo, already public on the
-// sign-in pages.
+// organizationBrand is the header's name and app logo, already public on the
+// sign-in pages; the logo is named by its version, empty while there is none.
 type organizationBrand struct {
-	Name    string `json:"name"`
-	LogoURL string `json:"logo_url"`
+	Name        string `json:"name"`
+	LogoVersion string `json:"logo_version"`
 }
 
 func newOrganizationBrand(organization model.Organization) organizationBrand {
-	return organizationBrand{Name: organization.Name, LogoURL: organization.LogoURL}
+	return organizationBrand{Name: organization.Name, LogoVersion: organization.LogoVersion}
 }

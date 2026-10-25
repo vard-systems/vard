@@ -10,7 +10,6 @@
 		monospace;
 	--font-sans: 'Chirp', var(--font-system-sans);
 	--font-mono: 'Google Sans Code', var(--font-system-mono);
-	--font-display: 'Poppins', var(--font-system-sans);
 	--text-xs: 12px;
 	--text-sm: 13px;
 	--text-base: 14px;

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+#
 # A web app (web/console or web/id) as a Node server. Build context: the
 # repository root, and APP says which app to build.
 #
@@ -9,28 +11,38 @@
 # tree inside the image — /src/web/id — so that relative import still points
 # at /src/i18n.
 #
-# Runtime settings: API_URL (the API inside the network) and PORT (3000).
-# Nothing sits in front of it yet, so the address it is reached at and the
-# caller's address come from the connection itself.
+# Runtime settings, all from deploy/compose.yaml: API_URL (the API inside the
+# network), PORT (3000), and adapter-node's own — ADDRESS_HEADER, which header
+# names the caller once a proxy is in front, and BODY_SIZE_LIMIT.
 
 ARG APP=web/id
 
-FROM oven/bun:1-alpine AS build
+# Bun at the version the lockfiles were written with: --frozen-lockfile then
+# installs exactly what they say.
+FROM oven/bun:1.4.2-alpine AS build
 ARG APP
 WORKDIR /src/${APP}
 COPY ${APP}/package.json ${APP}/bun.lock ./
-RUN bun install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
 COPY i18n /src/i18n
 COPY ${APP} /src/${APP}
-RUN bun run build && rm -rf node_modules && bun install --frozen-lockfile --production --ignore-scripts
+RUN bun run build \
+	&& rm -rf node_modules \
+	&& bun install --frozen-lockfile --production --ignore-scripts
 
 FROM node:24-alpine
 ARG APP
+ARG VERSION=dev
+LABEL org.opencontainers.image.title="vard-${APP#web/}" \
+	org.opencontainers.image.version="${VERSION}" \
+	org.opencontainers.image.source="https://github.com/vard-systems/vard"
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000
-COPY --from=build /src/${APP}/package.json ./
-COPY --from=build /src/${APP}/node_modules ./node_modules
-COPY --from=build /src/${APP}/build ./build
+COPY --from=build --chown=root:root /src/${APP}/package.json ./
+COPY --from=build --chown=root:root /src/${APP}/node_modules ./node_modules
+COPY --from=build --chown=root:root /src/${APP}/build ./build
+# The files belong to root and the server runs as node, so it can read its
+# code and change none of it.
 USER node
 EXPOSE 3000
 CMD ["node", "build"]

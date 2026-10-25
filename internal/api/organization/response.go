@@ -9,9 +9,11 @@ import (
 // organizationResponse is built by hand to keep row bookkeeping out of a
 // settings record.
 type organizationResponse struct {
-	Name         string    `json:"name"`
-	Slug         string    `json:"slug"`
-	LogoURL      string    `json:"logo_url"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+	// LogoVersion names the uploaded app logo, empty while there is none;
+	// the panel loads it by its version.
+	LogoVersion  string    `json:"logo_version"`
 	SupportEmail string    `json:"support_email"`
 	SupportPhone string    `json:"support_phone"`
 	TermsURL     string    `json:"terms_url"`
@@ -29,7 +31,7 @@ func newResponse(organization model.Organization) response {
 		Organization: organizationResponse{
 			Name:         organization.Name,
 			Slug:         organization.Slug,
-			LogoURL:      organization.LogoURL,
+			LogoVersion:  organization.LogoVersion,
 			SupportEmail: organization.SupportEmail,
 			SupportPhone: organization.SupportPhone,
 			TermsURL:     organization.TermsURL,

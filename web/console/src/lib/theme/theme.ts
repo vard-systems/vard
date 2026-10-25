@@ -212,8 +212,9 @@ const dark: Partial<Record<ColorName, string>> = {
 
 export const theme: Theme<ColorName> = {
 	fonts: {
-		// Chirp, bundled from assets/fonts: weights 400, 500 and 700 (600 drawn from 700), Latin
-		// and Latin Extended. It is X's typeface, not an open font; see the README's Third-party assets
+		// Two faces and no others: Chirp for every word, the organization's name in the header
+		// included, and Google Sans Code for code. Chirp is bundled from assets/fonts: weights 400,
+		// 500 and 700 (600 drawn from 700), Latin and Latin Extended. It is X's typeface, not an open font; see the README's Third-party assets
 		// before shipping publicly.
 		baseUrl: '../../assets/fonts/',
 		subsets: {
@@ -241,13 +242,6 @@ export const theme: Theme<ColorName> = {
 				subsets: ['latin-ext', 'latin'],
 				file: (subset, weight) =>
 					`google-sans-code/google-sans-code-${subset}-${weight}-normal.woff2`
-			},
-			{
-				family: 'Poppins',
-				style: 'normal',
-				weights: [600],
-				subsets: ['latin'],
-				file: (subset, weight) => `poppins/poppins-${subset}-${weight}-normal.woff2`
 			}
 		]
 	},
@@ -259,8 +253,7 @@ export const theme: Theme<ColorName> = {
 				'system-sans': systemSans,
 				'system-mono': systemMono,
 				sans: "'Chirp', var(--font-system-sans)",
-				mono: "'Google Sans Code', var(--font-system-mono)",
-				display: "'Poppins', var(--font-system-sans)"
+				mono: "'Google Sans Code', var(--font-system-mono)"
 			}
 		},
 		{

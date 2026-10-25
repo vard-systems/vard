@@ -3,6 +3,7 @@ import { createRawSnippet } from 'svelte';
 import { describe, it } from 'vitest';
 import type { Admin } from '#lib/api/index.js';
 import { expectAccessible } from '#lib/testing/a11y.js';
+import LogoField from './organization/LogoField.svelte';
 import RoleCodes from './profile/RoleCodes.svelte';
 import Button from './ui/Button.svelte';
 import EmptyState from './ui/EmptyState.svelte';
@@ -30,6 +31,16 @@ const admin = {
 } satisfies Admin;
 
 describe('the panel is usable without seeing it', () => {
+	it('the logo picker with a logo uploaded', () =>
+		expectAccessible(LogoField, {
+			version: 'a1b2c3d4e5f60718',
+			editable: true,
+			onsaved: () => {}
+		}));
+
+	it('the logo picker showing the default, read only', () =>
+		expectAccessible(LogoField, { version: '', editable: false, onsaved: () => {} }));
+
 	it('a text input', () => expectAccessible(Input, { label: 'Name', value: '' }));
 
 	it('a text input with a hint and an error', () =>

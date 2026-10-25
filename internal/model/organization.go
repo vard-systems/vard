@@ -18,7 +18,9 @@ type Organization struct {
 
 	Slug string `gorm:"size:64;not null;uniqueIndex" json:"slug"`
 
-	LogoURL string `gorm:"size:512;not null;default:''" json:"logo_url"`
+	// LogoVersion names the uploaded app logo (OrganizationLogo), empty while
+	// there is none.
+	LogoVersion string `gorm:"size:16;not null;default:''" json:"logo_version"`
 
 	SupportEmail string `gorm:"size:255;not null;default:''" json:"support_email"`
 	SupportPhone string `gorm:"size:32;not null;default:''" json:"support_phone"`
@@ -100,7 +102,6 @@ func (o Organization) Validate() error {
 		field string
 		value string
 	}{
-		{"logo_url", o.LogoURL},
 		{"terms_url", o.TermsURL},
 		{"privacy_url", o.PrivacyURL},
 	} {

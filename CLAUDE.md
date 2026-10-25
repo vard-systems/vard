@@ -13,29 +13,31 @@ two SvelteKit apps under `web/`:
 One Go binary is the API: `:8080` (provider and account API) and `:8081`
 (admin API). Each app is a SvelteKit Node server in front of it that renders
 its pages and passes the API paths it calls on to it, so each app is one
-origin and the browser never reaches the API directly. Everything is plain
-http on localhost for now; TLS will come from a proxy in front.
+origin and the browser never reaches the API directly. Locally everything is
+plain http; on a server, nginx on the host ends TLS in front of the apps
+(`deploy/README.md`).
 Postgres holds everything; Redis is an optional cache. `README.md` is the
 overview for people; update it when a change makes a sentence in it untrue.
 
 ## Commands
 
-| What                               | Command                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------- |
-| Run everything (hot reload)        | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/`              |
-| Run everything (production builds) | `make start` — the API and both apps built, on the same ports; `env=dev` is `make dev` |
-| Run only the API                   | `make run`                                                                             |
-| Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                            |
-| Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                       |
-| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs)                             |
-| Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                               |
-| Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                 |
-| Console's generated files          | `make generate` (theme tokens, fonts)                                                  |
-| Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`              |
-| Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                              |
-| Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                        |
-| Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                     |
-| Everything else                    | `make` lists every target                                                              |
+| What                               | Command                                                                                       |
+| ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| Run everything (hot reload)        | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/`                     |
+| Run everything (production builds) | `make start` — the API and both apps built, on the same ports; `env=dev` is `make dev`        |
+| Run only the API                   | `make run`                                                                                    |
+| Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                                   |
+| Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                              |
+| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs)                                    |
+| Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                                      |
+| Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                           |
+| Console's generated files          | `make generate` (theme tokens, fonts)                                                         |
+| Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`                     |
+| Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                                     |
+| Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                               |
+| Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                            |
+| A server behind nginx              | `make docker-env`, `make docker-up`, `make nginx-config`, `make db-backup` (deploy/README.md) |
+| Everything else                    | `make` lists every target                                                                     |
 
 Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 (the app in a browser on spare ports), `/endpoint` (add an admin endpoint),
@@ -86,9 +88,11 @@ web/<app>/src/lib/brand.ts  the app's brand (name, slug, mark, favicon from
                          lib/assets/, cookie names; the console's links and
                          pageTitle)
 web/console/scripts/     theme.ts, the generator
-scripts/                 what the Makefile runs: setup, start, docker-local, db, rename;
+scripts/                 what the Makefile runs: setup, start, docker-local,
+                         docker-env, nginx-config, db, db-backup, rename;
                          lib.sh (load_env) is shared by all of them
-deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles
+deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles,
+                         nginx/ (the TLS proxy's template), README.md (a server)
 ```
 
 **Layering.** Nothing above `store` writes a query; nothing below `api` knows
@@ -102,8 +106,9 @@ in `validation.go` and the model.
 client sent there dropped. The same hook carries the browser's requests and
 the ones a load makes while a page is rendered, in `make dev` and in
 production alike. `TestEveryRouteIsReachableThroughItsApp` holds every route
-to those lists. In `deploy/compose.yaml` only the apps publish ports, the
-console's on the host's loopback only. Cookies are host-only and nothing is
+to those lists. In `deploy/compose.yaml` only the apps publish ports, on the
+host's loopback, for nginx; Postgres and Redis are on an internal network the
+apps are not on. Cookies are host-only and nothing is
 cross-origin.
 
 **The apps.** Rendered on the server (`adapter-node`, `node build`): every
@@ -175,9 +180,13 @@ code near it, and add a test when adding a case.
 - **Nothing internal reaches a browser.** Every answer is a defined problem;
   anything else goes through `respond.Failure`, which logs it and answers 500.
   The request log records the path, never the query string.
+- **An uploaded picture is what its bytes are.** The organisation's logo is
+  decoded by `model.NewOrganizationLogo` — PNG or JPEG only, never SVG, which
+  would run script on the apps' origin; at most 512 KB and 4096 pixels a
+  side — and served with its stored type and `nosniff`.
 - **Every response carries security headers** — the API's from
   `middleware.SecurityHeaders`, each app's (`Permissions-Policy` among them)
-  from `src/lib/server/headers.ts`. HSTS comes with the TLS proxy, later.
+  from `src/lib/server/headers.ts`. HSTS comes from nginx (`deploy/nginx/vard.conf.template`).
   A rendered page holds the reader's data, so every page is `no-store`.
 - **The apps run no script they did not ship.** Their Content Security Policy
   is SvelteKit's `csp` option in each `vite.config.ts`, sent as a header:
@@ -262,9 +271,11 @@ app's `BRAND` and is read as `BRAND.field`; a new asset goes in
 `src/lib/assets/` and is imported there, so a build fingerprints it. A new
 name for everything is `make rename name="New Name" slug=newslug`, which also
 rewrites what has to spell it (go.mod, `cmd/<slug>`, the environment prefix,
-scripts, `deploy/`, CI, docs). An installation's own name, logo, terms and
-privacy links are not a brand: an administrator sets them in Settings, and
-the sign-in pages show them first. Where the apps and the API are reached is
+scripts, `deploy/`, CI, docs). An installation's own name, app logo, terms
+and privacy links are not a brand: an administrator sets them in Settings
+(the logo is an uploaded file, `model.OrganizationLogo`, never an address),
+and they take the brand's place in the console's header and on the sign-in
+pages. Where the apps and the API are reached is
 configuration (`VARD_ISSUER`, `VARD_ACCOUNT_URL`, `VARD_ADMIN_URL`).
 
 **A language** (sign-in pages only; the panel is English). English is the
@@ -292,7 +303,9 @@ colour, a height or a hover state itself.
 
 **A colour, size or font in the panel.** `web/console/src/lib/theme/theme.ts`
 decides; `bun run theme` writes `lib/styles/tokens.css` and `fonts.css` (never
-edit those by hand).
+edit those by hand). Both apps use two faces and no others: Chirp for text,
+Google Sans Code for code; the sign-in pages' `lib/styles/fonts.css` declares
+the same two.
 
 **An icon** (both apps). The Remix Icon font, as PocketBase uses it: the root
 layout loads `remixicon/fonts/remixicon.css`, and an icon is its class on an
@@ -356,9 +369,11 @@ shield mark does.
   and `VARD_TRUSTED_PROXIES` over whatever `.env` says.
 - **The API trusts the apps' servers and nobody else** to say who the
   caller is: loopback under `make dev`, the two containers' fixed addresses
-  in `deploy/compose.yaml` — never a whole private range. When a TLS proxy
-  goes in front of the apps, adapter-node has to be told to read the caller
-  from it (`ADDRESS_HEADER`, `XFF_DEPTH`), and the API ports stay unpublished.
+  in `deploy/compose.yaml` — never a whole private range. Behind nginx the
+  apps read the caller from `X-Real-IP` (`ADDRESS_HEADER`), which nginx
+  overwrites; nothing else reaches their loopback ports, and the API's
+  ports are never published. adapter-node's `BODY_SIZE_LIMIT` is the API's
+  1 MiB, or it refuses a logo or a SAML response first.
 - **The scripts read `.env` with `load_env` (`scripts/lib.sh`), the server
   with viper,** and the scripts export what they read, which the server then
   believes. A difference between the two is a different value depending on

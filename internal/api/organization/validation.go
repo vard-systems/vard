@@ -1,6 +1,8 @@
 package organization
 
 import (
+	"encoding/base64"
+	"errors"
 	"net/http"
 	"slices"
 	"time"
@@ -14,7 +16,6 @@ func (r *organizationRequest) applyTo(organization *model.Organization) ([]strin
 	updated := *organization
 	updated.Name = validate.Text(r.Name, organization.Name)
 	updated.Slug = validate.Lower(r.Slug, organization.Slug)
-	updated.LogoURL = validate.Text(r.LogoURL, organization.LogoURL)
 	updated.SupportEmail = validate.Text(r.SupportEmail, organization.SupportEmail)
 	updated.SupportPhone = validate.Text(r.SupportPhone, organization.SupportPhone)
 	updated.TermsURL = validate.Text(r.TermsURL, organization.TermsURL)
@@ -33,7 +34,6 @@ func (r *organizationRequest) applyTo(organization *model.Organization) ([]strin
 	}{
 		{"name", organization.Name, updated.Name},
 		{"slug", organization.Slug, updated.Slug},
-		{"logo_url", organization.LogoURL, updated.LogoURL},
 		{"support_email", organization.SupportEmail, updated.SupportEmail},
 		{"support_phone", organization.SupportPhone, updated.SupportPhone},
 		{"terms_url", organization.TermsURL, updated.TermsURL},
@@ -54,4 +54,26 @@ func (r *organizationRequest) applyTo(organization *model.Organization) ([]strin
 	*organization = updated
 
 	return changed, nil
+}
+
+// logo is the logo in the request, checked by what its bytes are.
+func (r *logoRequest) logo() (model.OrganizationLogo, error) {
+	data, err := base64.StdEncoding.DecodeString(r.Data)
+	if err != nil || len(data) == 0 {
+		return model.OrganizationLogo{}, respond.InvalidBody.Fault(nil)
+	}
+
+	logo, err := model.NewOrganizationLogo(data)
+	switch {
+	case errors.Is(err, model.ErrLogoTooLarge):
+		return model.OrganizationLogo{}, logoTooLarge.Fault(nil)
+	case errors.Is(err, model.ErrLogoType):
+		return model.OrganizationLogo{}, logoType.Fault(nil)
+	case errors.Is(err, model.ErrLogoDimension):
+		return model.OrganizationLogo{}, logoDimension.Fault(nil)
+	case err != nil:
+		return model.OrganizationLogo{}, err
+	}
+
+	return logo, nil
 }

@@ -14,6 +14,7 @@
 	} from '#lib/components/ui/index.js';
 	import { ADMIN_DEPENDENCY } from '#lib/constants.js';
 	import { keys, organizationOptions } from '#lib/query/index.js';
+	import LogoField from './LogoField.svelte';
 	import OrganizationSummary from './OrganizationSummary.svelte';
 	import { changed, offsetOf, settingsOf, tidy, timezoneOptions } from './settings';
 
@@ -66,6 +67,13 @@
 		}
 	}));
 
+	// The logo is saved the moment it is chosen, apart from the form: the
+	// settings view takes the new version, and the header reloads its own.
+	async function logoSaved(saved: Organization) {
+		queryClient.setQueryData(keys.organization.settings, { organization: saved });
+		await invalidate(ADMIN_DEPENDENCY);
+	}
+
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
 
@@ -86,7 +94,7 @@
 	<fieldset disabled={!editable}>
 		<FormSection
 			title="Identity"
-			description="What the organization is called, and the mark the sign-in pages and this panel's header show."
+			description="What the organization is called, and the logo this panel's header and the sign-in pages show."
 			icon="ri-building-line"
 		>
 			<FieldGrid spacing="comfortable">
@@ -105,18 +113,9 @@
 					maxlength={64}
 					hint="Lower case letters, numbers and dashes."
 				/>
-
-				<div class="full">
-					<Input
-						label="Logo URL"
-						icon="ri-image-line"
-						bind:value={form.logo_url}
-						maxlength={512}
-						placeholder="https://example.com/logo.svg"
-						hint="A full address, previewed above. An application with a logo of its own keeps it."
-					/>
-				</div>
 			</FieldGrid>
+
+			<LogoField version={organization.logo_version} {editable} onsaved={logoSaved} />
 		</FormSection>
 
 		<FormSection

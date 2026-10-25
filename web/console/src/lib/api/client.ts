@@ -30,7 +30,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 	try {
 		// The admin API is on this app's own origin: this app's server passes
 		// /api/v1/admin on to it (src/hooks.server.ts).
-		response = await fetcher(`/api/v1${path}`, {
+		response = await fetcher(apiPath(path), {
 			method,
 			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/json' },
@@ -69,6 +69,11 @@ function failureOf(status: number, payload: unknown): ApiError {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** An admin API path on this app's own origin, for what is not fetched as JSON (an image's src). */
+export function apiPath(path: string): string {
+	return `/api/v1${path}`;
 }
 
 export const api = {

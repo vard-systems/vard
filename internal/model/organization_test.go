@@ -7,7 +7,6 @@ func TestOrganizationValidate(t *testing.T) {
 		return Organization{
 			Name:         "Acme",
 			Slug:         "acme-inc",
-			LogoURL:      "https://acme.example.com/logo.svg",
 			SupportEmail: "support@acme.example.com",
 			SupportPhone: "+996 555 123456",
 			TermsURL:     "https://acme.example.com/terms",
@@ -25,7 +24,6 @@ func TestOrganizationValidate(t *testing.T) {
 		{
 			name: "nothing optional filled in",
 			change: func(o *Organization) {
-				o.LogoURL = ""
 				o.SupportEmail, o.SupportPhone = "", ""
 				o.TermsURL, o.PrivacyURL = "", ""
 			},
@@ -55,15 +53,6 @@ func TestOrganizationValidate(t *testing.T) {
 			name:   "the server's own zone, which nobody chose",
 			change: func(o *Organization) { o.Timezone = "Local" },
 			want:   "timezone must be a zone such as Asia/Bishkek or UTC",
-		},
-		{
-			name:   "a logo over http",
-			change: func(o *Organization) { o.LogoURL = "http://acme.example.com/logo.png" },
-		},
-		{
-			name:   "a logo with no host",
-			change: func(o *Organization) { o.LogoURL = "https://" },
-			want:   "logo_url must be a full address starting with http:// or https://",
 		},
 		{
 			name:   "a number written for people to read",
