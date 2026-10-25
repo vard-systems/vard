@@ -50,6 +50,14 @@ func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, e
 		}
 	}
 
+	// A replaced refresh token's sealed successor is only for a retry within
+	// the grace; past it, it is a copy of a live token for no reason.
+	if err := s.db.WithContext(ctx).Model(&model.RefreshToken{}).
+		Where("successor_sealed IS NOT NULL AND revoked_at < ?", now.Add(-model.RefreshReuseGrace)).
+		Update("successor_sealed", nil).Error; err != nil {
+		return removed, err
+	}
+
 	if !auditBefore.IsZero() {
 		n, err := s.deleteInBatches(ctx, &model.AuditLog{}, "", "created_at < ?", auditBefore)
 		removed += n

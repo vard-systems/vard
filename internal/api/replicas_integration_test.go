@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"vard/internal/model"
 )
 
 // These tests run two servers on one database and one Redis, the way a
@@ -85,8 +87,10 @@ func TestLiveReplicasSpendACodeOnce(t *testing.T) {
 	}
 }
 
-// One refresh token, presented to both instances at once, rotates once; the
-// rest are replays, and a replay ends the family the winner's token is in.
+// One refresh token, presented to both instances at once, is one client
+// retrying: it rotates once, every request is given that same new token, and
+// once the grace is over the old one presented again is a replay that ends
+// the family.
 func TestLiveReplicasRotateARefreshTokenOnce(t *testing.T) {
 	f := newOAuthFixture(t)
 	nodes := []*oauthFixture{f, f.on(f.s.replica())}
@@ -106,25 +110,26 @@ func TestLiveReplicasRotateARefreshTokenOnce(t *testing.T) {
 	}
 	wg.Wait()
 
-	var winners []tokenResult
+	issued := map[string]bool{}
 	for _, r := range results {
-		switch r.status {
-		case http.StatusOK:
-			winners = append(winners, r)
-		case http.StatusBadRequest:
-		default:
-			t.Errorf("concurrent refresh = %d %v, want 200 or 400", r.status, r.body)
+		if r.status != http.StatusOK {
+			t.Errorf("concurrent refresh within the grace = %d %v, want tokens", r.status, r.body)
 		}
+		issued[r.str("refresh_token")] = true
 	}
-	if len(winners) != 1 {
-		t.Fatalf("%d of %d concurrent refreshes succeeded, want exactly one", len(winners), attempts)
+	if len(issued) != 1 {
+		t.Errorf("%d different refresh tokens for %d refreshes, want the one rotation's", len(issued), attempts)
+	}
+	if live := f.s.liveRefreshTokens(f.userID); live != 1 {
+		t.Fatalf("%d live refresh tokens, want exactly one", live)
 	}
 
-	after := f.token("/oauth2/token", f.clientID, f.clientSecret, url.Values{
-		"grant_type": {"refresh_token"}, "refresh_token": {winners[0].str("refresh_token")},
-	})
-	if after.status != http.StatusBadRequest {
-		t.Errorf("the winner's token after the replays = %d %v, want the family revoked", after.status, after.body)
+	f.s.agoRefreshRotations(model.RefreshReuseGrace)
+	if replay := f.refresh(first); replay.status != http.StatusBadRequest {
+		t.Errorf("the first token after the grace = %d %v, want a replay refused", replay.status, replay.body)
+	}
+	if live := f.s.liveRefreshTokens(f.userID); live != 0 {
+		t.Errorf("%d live refresh tokens after a replay, want the family revoked", live)
 	}
 }
 

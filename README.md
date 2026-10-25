@@ -11,8 +11,9 @@ with two web apps:
 **Features:** authorization code with PKCE (always, for clients without
 credentials), pushed authorization requests (PAR), the device authorization
 grant (sign-in on TVs and command lines), refresh token rotation with reuse
-detection, client credentials, DPoP-bound tokens, dynamic client registration,
-userinfo, introspection, revocation,
+detection and a short grace for a retried refresh, client credentials,
+DPoP-bound tokens, dynamic client registration, userinfo, introspection,
+revocation,
 logout (RP-initiated, back-channel and front-channel), a consent page, terms
 acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
 OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
@@ -120,6 +121,11 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - The admin API runs on its own listener and is never served on the public one.
 - Outbound calls to identity providers refuse private, link-local and cloud
   metadata addresses.
+- A refresh token presented again after it was replaced revokes its whole
+  family — unless it comes within 30 seconds, when it is a retry (a lost
+  answer, two tabs at once) and is given the same token that replaced it,
+  kept sealed only for those 30 seconds. Every copy a client holds stays
+  good, and the family still has exactly one live token.
 - **Consent is a login-flow step.** Without it, every application registered
   in the panel is trusted to sign users in, which is right for an
   organisation's own apps; a flow with the Consent step asks each user once

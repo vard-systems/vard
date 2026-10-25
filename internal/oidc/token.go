@@ -222,16 +222,23 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		return nil, oauthError(ErrInvalidGrant, "the refresh token was issued to another client")
 	}
 
+	var again string
 	if old.RevokedAt != nil {
-		// A replaced token presented again: one of the two presenters is not
-		// the client. The whole family goes, so the thief's copy dies too.
-		if err := s.store.RevokeRefreshFamily(ctx, old.FamilyID, now); err != nil {
+		if again, err = s.retried(ctx, old, now); err != nil {
 			return nil, err
 		}
-		return nil, oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+		if again == "" {
+			// A replaced token presented again: one of the two presenters is
+			// not the client. The whole family goes, so the thief's copy dies
+			// too.
+			if err := s.store.RevokeRefreshFamily(ctx, old.FamilyID, now); err != nil {
+				return nil, err
+			}
+			return nil, oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+		}
 	}
 
-	if !old.Usable(now) {
+	if !now.Before(old.ExpiresAt) {
 		return nil, oauthError(ErrInvalidGrant, "the refresh token has expired")
 	}
 
@@ -267,6 +274,7 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		authTime: old.AuthenticatedAt,
 		session:  old.SessionID,
 		replaces: old,
+		again:    again,
 		dpopKey:  p.dpopKey,
 		refusal:  ErrInvalidGrant,
 	})
@@ -296,6 +304,9 @@ type grant struct {
 	session  *uuid.UUID
 	codeID   *uuid.UUID
 	replaces *model.RefreshToken
+	// again is the refresh token a retry within the grace is given back:
+	// the one that already replaced `replaces`.
+	again string
 	// dpopKey binds the tokens to a key, when the request proved one.
 	dpopKey string
 	refusal string
@@ -371,7 +382,10 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 	// A refresh always rotates, even if offline_access was narrowed away, so a
 	// stolen token cannot be replayed without reaching reuse detection. Other
 	// grants get a refresh token only with offline_access.
-	if g.user != nil && (g.replaces != nil || slices.Contains(strings.Fields(granted), model.ScopeOfflineAccess)) {
+	switch {
+	case g.again != "":
+		response.RefreshToken = g.again
+	case g.user != nil && (g.replaces != nil || slices.Contains(strings.Fields(granted), model.ScopeOfflineAccess)):
 		token, err := s.newRefreshToken(ctx, g, granted)
 		if err != nil {
 			return nil, err
@@ -415,16 +429,68 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 	next.DPoPKey = g.replaces.DPoPKey
 	next.ExpiresAt = g.replaces.ExpiresAt
 
-	err = s.store.RotateRefreshToken(ctx, g.replaces, next, now)
-	if errors.Is(err, store.ErrAlreadyUsed) {
-		// Another request rotated it first: the same replay as above.
-		if err := s.store.RevokeRefreshFamily(ctx, g.replaces.FamilyID, now); err != nil {
-			return "", err
-		}
-		return "", oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+	if next.ID, err = uuid.NewV7(); err != nil {
+		return "", err
+	}
+	sealed, err := s.sealer.SealBytes([]byte(token))
+	if err != nil {
+		return "", err
 	}
 
-	return token, err
+	err = s.store.RotateRefreshToken(ctx, g.replaces, next, sealed, now)
+	if !errors.Is(err, store.ErrAlreadyUsed) {
+		return token, err
+	}
+
+	// Another request rotated it first: a retry racing the first, which gets
+	// what the first got, or the same replay as above.
+	current, err := s.store.RefreshToken(ctx, g.replaces.ID)
+	if err != nil {
+		return "", err
+	}
+	again, err := s.retried(ctx, current, now)
+	if err != nil || again != "" {
+		return again, err
+	}
+	if err := s.store.RevokeRefreshFamily(ctx, g.replaces.FamilyID, now); err != nil {
+		return "", err
+	}
+	return "", oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+}
+
+// maxRetryHops bounds how far retried follows a chain of replacements.
+const maxRetryHops = 8
+
+// retried is the refresh token a replaced one is answered with when it comes
+// within the grace: the token that replaced it, or, if that was itself
+// replaced within the grace, its replacement, as long as one is still live.
+// "" when there is none, which makes the presentation a replay.
+func (s *Service) retried(ctx context.Context, replaced *model.RefreshToken, now time.Time) (string, error) {
+	current := replaced
+	for range maxRetryHops {
+		if !current.InGrace(now) {
+			return "", nil
+		}
+
+		next, err := s.store.RefreshToken(ctx, *current.SuccessorID)
+		if errors.Is(err, store.ErrNotFound) {
+			return "", nil
+		}
+		if err != nil {
+			return "", err
+		}
+
+		if next.Usable(now) {
+			plain, err := s.sealer.OpenBytes(current.SuccessorSealed)
+			if err != nil {
+				return "", err
+			}
+			return string(plain), nil
+		}
+		current = next
+	}
+
+	return "", nil
 }
 
 // tokenType is Bearer, or DPoP for a token bound to a key.

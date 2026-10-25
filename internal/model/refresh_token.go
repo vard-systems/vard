@@ -7,7 +7,7 @@ import (
 )
 
 // RefreshToken rotates on use; presenting a replaced one revokes the whole
-// family (RFC 9700 4.14.2).
+// family (RFC 9700 4.14.2), unless it was replaced within RefreshReuseGrace.
 type RefreshToken struct {
 	Base
 
@@ -33,10 +33,33 @@ type RefreshToken struct {
 	// rotating cannot keep a session alive for ever.
 	ExpiresAt time.Time `gorm:"not null;index"`
 	RevokedAt *time.Time
+
+	// SuccessorID is the token that replaced this one. SuccessorSealed is
+	// that token itself, sealed with VARD_SECRET_KEY, so that a retry within
+	// RefreshReuseGrace is answered with the same token rather than a new
+	// one; the sweep clears it once the grace is over.
+	SuccessorID     *uuid.UUID `gorm:"type:uuid"`
+	SuccessorSealed []byte     `gorm:"type:bytea"`
 }
 
 func (RefreshToken) TableName() string {
 	return "refresh_tokens"
+}
+
+// RefreshReuseGrace is how long a replaced refresh token may still be
+// presented. A phone that loses the answer to a refresh retries with the
+// token it still holds, and two tabs may refresh at once; without the grace
+// either would look like theft and sign the person out. Inside it the retry
+// gets the token that replaced it — the same one, so every copy the client
+// keeps stays good — and a thief's copy still meets reuse detection once the
+// grace is over.
+const RefreshReuseGrace = 30 * time.Second
+
+// InGrace says a token replaced by rotation, not revoked, is still within
+// RefreshReuseGrace.
+func (t RefreshToken) InGrace(now time.Time) bool {
+	return t.RevokedAt != nil && t.SuccessorID != nil && len(t.SuccessorSealed) > 0 &&
+		now.Sub(*t.RevokedAt) < RefreshReuseGrace && now.Before(t.ExpiresAt)
 }
 
 func (t RefreshToken) Usable(now time.Time) bool {

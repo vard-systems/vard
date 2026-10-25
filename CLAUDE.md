@@ -128,7 +128,11 @@ code near it, and add a test when adding a case.
   seeds are sealed with `jose.Sealer`. Recovery codes are hashed.
 - **Single-use means one atomic `UPDATE … WHERE used_at IS NULL`** checked by
   `RowsAffected`, never read-then-write. A replayed code revokes what the
-  first use issued; a replayed refresh token revokes its family.
+  first use issued; a replayed refresh token revokes its family — unless it
+  was replaced less than `model.RefreshReuseGrace` (30 s) before, when it is
+  answered with the very token that replaced it, kept sealed for the grace
+  (`successor_sealed`, cleared by the sweep), so every copy a client holds
+  stays good and a family never has two live tokens.
 - **Session cookies are read through `session.Token`, `session.UserToken` or
   `session.SignInState`**, which treat a duplicated cookie (planted from a
   sibling subdomain) as none. Never `c.Cookie(...)` for a session.

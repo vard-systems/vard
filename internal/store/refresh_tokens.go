@@ -24,13 +24,15 @@ func (s *Store) RefreshTokenByHash(ctx context.Context, hash string) (*model.Ref
 	return &token, nil
 }
 
-// RotateRefreshToken revokes `old` and stores `next` in one transaction; if
-// `old` was already revoked it returns ErrAlreadyUsed.
-func (s *Store) RotateRefreshToken(ctx context.Context, old, next *model.RefreshToken, at time.Time) error {
+// RotateRefreshToken revokes `old`, naming `next` as what replaced it with
+// `sealed`, its token sealed, and stores `next`, in one transaction; if `old`
+// was already revoked it returns ErrAlreadyUsed. The family's sealed
+// successors older than the grace are cleared on the way.
+func (s *Store) RotateRefreshToken(ctx context.Context, old, next *model.RefreshToken, sealed []byte, at time.Time) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&model.RefreshToken{}).
 			Where("id = ? AND revoked_at IS NULL", old.ID).
-			Update("revoked_at", at)
+			Updates(map[string]any{"revoked_at": at, "successor_id": next.ID, "successor_sealed": sealed})
 		if result.Error != nil {
 			return result.Error
 		}
@@ -38,8 +40,24 @@ func (s *Store) RotateRefreshToken(ctx context.Context, old, next *model.Refresh
 			return ErrAlreadyUsed
 		}
 
+		if err := tx.Model(&model.RefreshToken{}).
+			Where("family_id = ? AND successor_sealed IS NOT NULL AND revoked_at < ?", old.FamilyID, at.Add(-model.RefreshReuseGrace)).
+			Update("successor_sealed", nil).Error; err != nil {
+			return err
+		}
+
 		return translate(tx.Omit(clause.Associations).Create(next).Error)
 	})
+}
+
+// RefreshToken is one refresh token by id.
+func (s *Store) RefreshToken(ctx context.Context, id uuid.UUID) (*model.RefreshToken, error) {
+	var token model.RefreshToken
+	if err := s.db.WithContext(ctx).First(&token, "id = ?", id).Error; err != nil {
+		return nil, translate(err)
+	}
+
+	return &token, nil
 }
 
 func (s *Store) RevokeRefreshFamily(ctx context.Context, family uuid.UUID, at time.Time) error {

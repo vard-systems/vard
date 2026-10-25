@@ -16,6 +16,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"vard/internal/model"
 )
 
 // These tests walk the provider the way a real application and a real browser
@@ -468,14 +470,16 @@ func TestLiveOAuthAuthorizationCodeFlow(t *testing.T) {
 		t.Errorf("userinfo with an ID token = %d %q, want 401 invalid_token", res.StatusCode, res.Header.Get("WWW-Authenticate"))
 	}
 
-	// Refreshing rotates the token; the old one presented again revokes the
-	// family, the new one included.
+	// Refreshing rotates the token; the old one presented again, once the
+	// grace for a lost answer is over, revokes the family, the new one
+	// included.
 	first := tokens.str("refresh_token")
 	refreshed := f.token("/oauth2/token", f.clientID, f.clientSecret, url.Values{"grant_type": {"refresh_token"}, "refresh_token": {first}})
 	if refreshed.status != http.StatusOK || refreshed.str("refresh_token") == "" || refreshed.str("refresh_token") == first {
 		t.Fatalf("refresh = %d %v", refreshed.status, refreshed.body)
 	}
 
+	f.s.agoRefreshRotations(model.RefreshReuseGrace)
 	replay := f.token("/oauth2/token", f.clientID, f.clientSecret, url.Values{"grant_type": {"refresh_token"}, "refresh_token": {first}})
 	if replay.status != http.StatusBadRequest || replay.str("error") != "invalid_grant" {
 		t.Errorf("replayed refresh token = %d %v", replay.status, replay.body)
@@ -561,8 +565,10 @@ func TestLiveOAuthRefreshRotatesEvenWhenScopeNarrows(t *testing.T) {
 		t.Fatalf("narrowed refresh returned %q, want a rotated token", next)
 	}
 
-	// The token it replaced is spent, and presenting it again takes the family
-	// with it — the new one included.
+	// The token it replaced is spent, and presenting it again once the grace
+	// for a lost answer is over takes the family with it — the new one
+	// included.
+	f.s.agoRefreshRotations(model.RefreshReuseGrace)
 	replay := f.token("/oauth2/token", f.clientID, f.clientSecret, url.Values{
 		"grant_type": {"refresh_token"}, "refresh_token": {first},
 	})
