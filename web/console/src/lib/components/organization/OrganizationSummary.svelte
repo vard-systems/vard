@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Organization, OrganizationSettings } from '#lib/api/index.js';
+	import { organizationApi, type Organization, type OrganizationSettings } from '#lib/api/index.js';
+	import { BRAND } from '#lib/brand.js';
 	import { Code, Tag, Thumb } from '#lib/components/ui/index.js';
 	import { formatDate, initials } from '#lib/utils/format.js';
 	import { publicDetails } from './settings';
@@ -12,15 +13,16 @@
 
 	let { input, saved }: Props = $props();
 
-	const logo = $derived(/^https?:\/\/\S+$/.test(input.logo_url) ? input.logo_url : '');
-	const details = $derived(publicDetails(input));
+	// What the header shows: the uploaded logo, or the panel's own.
+	const logo = $derived(organizationApi.logoUrl(saved.logo_version) || BRAND.logo);
+	const details = $derived(publicDetails(input, saved));
 	const filled = $derived(details.filter((detail) => detail.filled).length);
 	const missing = $derived(details.filter((detail) => !detail.filled));
 </script>
 
 <section class="summary" aria-label="Organization">
 	<div class="identity">
-		<Thumb src={logo} text={initials(input.name)} size="md" shape="circle" tone="accent" />
+		<Thumb src={logo} text={initials(input.name)} size="md" bare />
 
 		<div class="names">
 			<strong title={input.name}>{input.name || 'Unnamed organization'}</strong>

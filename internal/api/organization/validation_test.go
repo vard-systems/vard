@@ -14,7 +14,6 @@ func stored() model.Organization {
 	return model.Organization{
 		Name:         "Acme",
 		Slug:         "acme",
-		LogoURL:      "https://acme.example/logo.svg",
 		SupportEmail: "support@acme.example",
 		SupportPhone: "+996 555 123456",
 		TermsURL:     "https://acme.example/terms",
@@ -65,8 +64,8 @@ func TestOrganizationRequestApplyTo(t *testing.T) {
 		},
 		{
 			name:    "an empty string clears a setting that may be empty",
-			request: organizationRequest{LogoURL: new(""), SupportPhone: new("")},
-			changed: []string{"logo_url", "support_phone"},
+			request: organizationRequest{SupportEmail: new(""), SupportPhone: new("")},
+			changed: []string{"support_email", "support_phone"},
 		},
 		{
 			name:    "the same values again are no change",
@@ -102,16 +101,6 @@ func TestOrganizationRequestApplyTo(t *testing.T) {
 			name:    "an address that is not one",
 			request: organizationRequest{SupportEmail: new("support at acme")},
 			want:    "support_email must be an email address",
-		},
-		{
-			name:    "a logo that is not a full address",
-			request: organizationRequest{LogoURL: new("/logo.svg")},
-			want:    "logo_url must be a full address starting with http:// or https://",
-		},
-		{
-			name:    "a logo that could run something",
-			request: organizationRequest{LogoURL: new("javascript:alert(1)")},
-			want:    "logo_url must be a full address starting with http:// or https://",
 		},
 		{
 			name:    "a support number nobody could dial",

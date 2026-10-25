@@ -15,6 +15,7 @@ export type Application = {
 
 export type Organization = {
 	name: string;
+	/** The app logo, on this app's own origin; "" while there is none. */
 	logo_url: string;
 	support_email: string;
 	support_phone: string;

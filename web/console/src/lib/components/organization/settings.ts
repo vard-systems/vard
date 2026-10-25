@@ -1,8 +1,14 @@
 import type { Organization, OrganizationSettings } from '#lib/api/index.js';
+import { ORGANIZATION_LOGO } from '#lib/constants.js';
 
 /** The part of the organization the form edits. */
-export function settingsOf({ created_at, ...settings }: Organization): OrganizationSettings {
+export function settingsOf({
+	created_at,
+	logo_version,
+	...settings
+}: Organization): OrganizationSettings {
 	void created_at;
+	void logo_version;
 	return settings;
 }
 
@@ -11,7 +17,6 @@ export function tidy(form: OrganizationSettings): OrganizationSettings {
 	return {
 		name: form.name.trim(),
 		slug: form.slug.trim().toLowerCase(),
-		logo_url: form.logo_url.trim(),
 		support_email: form.support_email.trim(),
 		support_phone: form.support_phone.trim(),
 		terms_url: form.terms_url.trim(),
@@ -28,9 +33,12 @@ export function changed(input: OrganizationSettings, saved: Organization): boole
 }
 
 /** The details the sign-in pages show only once they are filled in. */
-export function publicDetails(input: OrganizationSettings): { label: string; filled: boolean }[] {
+export function publicDetails(
+	input: OrganizationSettings,
+	saved: Organization
+): { label: string; filled: boolean }[] {
 	return [
-		{ label: 'Logo', filled: input.logo_url !== '' },
+		{ label: 'Logo', filled: saved.logo_version !== '' },
 		{ label: 'Support email', filled: input.support_email !== '' },
 		{ label: 'Support number', filled: input.support_phone !== '' },
 		{ label: 'Terms', filled: input.terms_url !== '' },
@@ -57,4 +65,17 @@ export function offsetOf(timezone: string, now = new Date()): string {
 	} catch {
 		return '';
 	}
+}
+
+/** Why a file cannot be the logo, before it is sent; "" when it may be. The server checks the
+ *  bytes themselves and has the last word. */
+export function logoProblem(file: Pick<File, 'type' | 'size'>): string {
+	if (!(ORGANIZATION_LOGO.types as readonly string[]).includes(file.type)) {
+		return 'Choose a PNG or JPEG file.';
+	}
+	if (file.size > ORGANIZATION_LOGO.maxBytes) {
+		return 'The file is larger than 512 KB. Choose a smaller one.';
+	}
+
+	return '';
 }

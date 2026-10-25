@@ -526,7 +526,8 @@ export type TokenPreview = {
 export type Organization = {
 	name: string;
 	slug: string;
-	logo_url: string;
+	/** The uploaded app logo's version, empty while there is none: `organizationApi.logoUrl`. */
+	logo_version: string;
 	support_email: string;
 	support_phone: string;
 	terms_url: string;
@@ -535,9 +536,10 @@ export type Organization = {
 	created_at: string;
 };
 
-export type OrganizationBrand = Pick<Organization, 'name' | 'logo_url'>;
+export type OrganizationBrand = Pick<Organization, 'name' | 'logo_version'>;
 
-export type OrganizationSettings = Omit<Organization, 'created_at'>;
+/** What the settings form edits: the logo is uploaded on its own. */
+export type OrganizationSettings = Omit<Organization, 'created_at' | 'logo_version'>;
 
 export type OrganizationInput = Partial<OrganizationSettings>;
 

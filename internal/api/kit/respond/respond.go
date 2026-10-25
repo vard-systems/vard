@@ -75,3 +75,29 @@ func Taken(c *gin.Context, log *slog.Logger, err error, taken Problem, note stri
 
 	Failure(c, log, err, note)
 }
+
+// Image sends a stored picture. Asked for by its current version, it is the
+// same bytes forever, so a browser keeps it (`private` behind a session, so no
+// shared cache does); asked for by any other, it is checked every time, and a
+// browser that already has it is told so without the bytes. The nosniff
+// header the API sends on everything keeps it an image.
+func Image(c *gin.Context, contentType string, data []byte, version string, private bool) {
+	cacheControl := "no-cache"
+	if c.Query("v") == version {
+		cacheControl = "public, max-age=31536000, immutable"
+		if private {
+			cacheControl = "private, max-age=31536000, immutable"
+		}
+	}
+
+	etag := `"` + version + `"`
+	c.Header("Cache-Control", cacheControl)
+	c.Header("ETag", etag)
+
+	if c.GetHeader("If-None-Match") == etag {
+		c.Status(http.StatusNotModified)
+		return
+	}
+
+	c.Data(http.StatusOK, contentType, data)
+}

@@ -5,7 +5,8 @@
  * the three to the same slug and to the cookie names the server reads back. `make rename` renames
  * all three.
  *
- * An installation's own name and logo are not here: an administrator sets them in Settings.
+ * An installation's own name and app logo are not here: an administrator sets them in Settings,
+ * and the header shows them, with `logo` until a logo is uploaded.
  */
 import type { IconName } from '#lib/components/ui/index.js';
 import favicon from '#lib/assets/favicon.svg';
@@ -24,6 +25,9 @@ export const BRAND = {
 
 	/** Imported, so Vite builds it into the app and the URL works in production. */
 	favicon,
+
+	/** The app logo the header shows until the organization uploads its own. */
+	logo: favicon,
 
 	/** The Help menu and the command palette offer these, in this order. */
 	links: [

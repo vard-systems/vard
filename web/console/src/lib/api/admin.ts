@@ -1,4 +1,4 @@
-import { api, type Fetch } from './client';
+import { api, apiPath, type Fetch } from './client';
 import type {
 	API,
 	LogFilter,
@@ -193,8 +193,31 @@ export const organizationApi = {
 	get: (fetcher?: Fetch) => api.get<{ organization: Organization }>('/admin/organization', fetcher),
 
 	update: (input: OrganizationInput) =>
-		api.patch<{ organization: Organization }>('/admin/organization', input)
+		api.patch<{ organization: Organization }>('/admin/organization', input),
+
+	/** Where the panel loads the app logo, by its version so the browser keeps it; "" while there
+	 *  is none. */
+	logoUrl: (version: string) =>
+		version ? apiPath(`/admin/organization/logo?v=${encodeURIComponent(version)}`) : '',
+
+	/** The file goes as base64 in JSON: the API takes no other body for a change. */
+	uploadLogo: async (file: File) =>
+		api.put<{ organization: Organization }>('/admin/organization/logo', {
+			data: await base64Of(file)
+		}),
+
+	removeLogo: () => api.delete<{ organization: Organization }>('/admin/organization/logo')
 };
+
+function base64Of(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () =>
+			resolve(String(reader.result).slice(String(reader.result).indexOf(',') + 1));
+		reader.onerror = () => reject(reader.error);
+		reader.readAsDataURL(file);
+	});
+}
 
 export const mailApi = {
 	get: (fetcher?: Fetch) => api.get<MailResponse>('/admin/mail', fetcher),

@@ -224,6 +224,10 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 	r.GET(oidc.PathSSOACS, h.limit, h.oauth.SSOAssertionReturn)
 	r.GET(oidc.PathSSOMetadata, h.oauth.SSOMetadata)
 
+	// The organisation's logo, for the sign-in pages: anyone may see it, and
+	// the path is the provider's, which puts it in their addresses.
+	r.GET(oidc.PathOrganizationLogo, h.account.OrganizationLogo)
+
 	// Everything under /api/v1 is called by the id app with the user's
 	// session cookie, so it only takes changes from the id app's origin.
 	v1 := r.Group("/api/v1", h.csrf)
@@ -302,6 +306,8 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 
 		signedIn := v1.Group("/admin", session.Require(service))
 		signedIn.GET("/me", h.auth.Me)
+		// Any administrator: the header shows the organisation's logo.
+		signedIn.GET("/organization/logo", h.organization.Logo)
 		signedIn.PATCH("/me", h.limit, h.auth.UpdateMe)
 		signedIn.POST("/me/password", h.limit, h.auth.ChangePassword)
 
@@ -347,6 +353,8 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 
 		managed.GET("/organization", session.Can(model.PermOrganizationRead), h.organization.Get)
 		managed.PATCH("/organization", session.Can(model.PermOrganizationWrite), h.organization.Update)
+		managed.PUT("/organization/logo", session.Can(model.PermOrganizationWrite), h.organization.SetLogo)
+		managed.DELETE("/organization/logo", session.Can(model.PermOrganizationWrite), h.organization.RemoveLogo)
 
 		readSocial := managed.Group("", session.Can(model.PermSocialRead))
 		readSocial.GET("/social-providers", h.social.List)

@@ -10,6 +10,10 @@ var (
 	UserNotFound        = Define(http.StatusNotFound, "user_not_found", Admin)
 	UserRoleNotFound    = Define(http.StatusNotFound, "user_role_not_found", Admin)
 
+	// OrganizationLogoNotFound is a logo the organisation has not uploaded; the
+	// panel and the sign-in pages both load it.
+	OrganizationLogoNotFound = Define(http.StatusNotFound, "organization_logo_not_found", Both)
+
 	AdminEmailTaken       = Define(http.StatusConflict, "admin_email_taken", Admin)
 	AdminPasswordRequired = Define(http.StatusBadRequest, "admin_password_required", Admin)
 	AdminPasswordTooShort = Define(http.StatusBadRequest, "admin_password_too_short", Admin)

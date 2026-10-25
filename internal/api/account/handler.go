@@ -73,6 +73,22 @@ func (h *Handler) Organization(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"organization": organization})
 }
 
+// OrganizationLogo sends the organisation's app logo to anyone: the sign-in
+// pages show it before anybody signs in.
+func (h *Handler) OrganizationLogo(c *gin.Context) {
+	logo, err := h.provider.OrganizationLogo(c.Request.Context())
+	if errors.Is(err, store.ErrNotFound) {
+		respond.Fail(c, respond.OrganizationLogoNotFound)
+		return
+	}
+	if err != nil {
+		h.fail(c, err, "loading the organization logo failed")
+		return
+	}
+
+	respond.Image(c, logo.ContentType, logo.Data, logo.Version, false)
+}
+
 // LoginOptions returns the options of the login flow for the sign-in handle
 // `request`, or the default flow.
 func (h *Handler) LoginOptions(c *gin.Context) {

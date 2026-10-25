@@ -17,6 +17,15 @@ import (
 // `change` edits the row and reports whether anything changed; nothing is
 // written when it did not, or when it fails, and its error is returned as is.
 func updateSettings[T any](ctx context.Context, s *Store, fallback func() T, change func(*T) (bool, error)) (*T, error) {
+	return updateSettingsWith(ctx, s, fallback, func(_ *gorm.DB, row *T) (bool, error) {
+		return change(row)
+	})
+}
+
+// updateSettingsWith is updateSettings for a change that writes other rows
+// too: it gets the transaction, so they are written with the settings row or
+// not at all.
+func updateSettingsWith[T any](ctx context.Context, s *Store, fallback func() T, change func(*gorm.DB, *T) (bool, error)) (*T, error) {
 	var row T
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -28,7 +37,7 @@ func updateSettings[T any](ctx context.Context, s *Store, fallback func() T, cha
 			return err
 		}
 
-		changed, err := change(&row)
+		changed, err := change(tx, &row)
 		if err != nil || !changed {
 			return err
 		}
