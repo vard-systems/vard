@@ -50,8 +50,8 @@ target.
 Every setting is an environment variable, read from `.env` (real environment
 variables win). `.env.example` documents all of them. The ones that matter most:
 
-| Variable                  | Purpose                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------- |
+| Variable               | Purpose                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
 | `VARD_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
 | `VARD_DB_DSN`          | PostgreSQL connection string.                                                            |
 | `VARD_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
@@ -70,15 +70,16 @@ The API is one binary (`make build-api` → `bin/vard`); it applies its
 migrations on start. Each app is a Node server (`make build-web`, then `node build`
 in its directory, with `API_URL` pointing at its listener).
 
-`deploy/` holds a production stack: Postgres, Redis, the API and the two apps,
-over plain http. Only the apps publish ports: the id app on `8080`, the
-console on `8081` on the host's loopback only, so it is reached over an SSH
-tunnel. The API is not published. There is no TLS yet: put a proxy in front
-of the apps for https.
+`deploy/` holds the production stack: Postgres, Redis, the API and the two
+apps, behind nginx on the host, which ends TLS. Only the apps publish ports,
+on the host's loopback; Postgres and Redis are on an internal network the
+apps cannot reach. [`deploy/README.md`](deploy/README.md) walks through a
+server from DNS to backups:
 
 ```sh
-cp deploy/.env.example deploy/.env   # URLs, secrets, SMTP
-make docker-up
+make docker-env public=https://id.example.com admin=https://admin.example.com
+make docker-up       # build and start; waits until everything is healthy
+make nginx-config    # the TLS proxy's configuration for those addresses
 ```
 
 To try the same stack on one machine (served on `http://localhost:8080` and
@@ -98,10 +99,11 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - [ ] The admin host is reachable only from staff networks or a VPN.
 - [ ] `VARD_SECRET_KEY` is stored in a secret manager.
 - [ ] SMTP is configured, or reset emails only reach the log.
-- [ ] Postgres is backed up.
-- [ ] A TLS proxy is in front of the apps, and only it publishes a port.
-- [ ] The apps' Node servers read the caller from that proxy (`ADDRESS_HEADER`,
-      `XFF_DEPTH`), and the API trusts only the apps (`VARD_TRUSTED_PROXIES`).
+- [ ] Postgres is backed up (`make db-backup` from cron), and the dumps leave
+      the machine.
+- [ ] nginx serves both sites over https (`make nginx-config`), and the apps
+      publish on loopback only (`ID_PUBLISH`, `CONSOLE_PUBLISH`).
+- [ ] The firewall lets in 22, 80 and 443 only.
 - [ ] `VARD_ADMIN_MFA=required`, and at least two super admins exist.
 - [ ] Applications register `https` redirect URIs.
 
@@ -152,24 +154,24 @@ i18n/                      the English that ships: sign-in pages, API messages
 web/id, web/console        the two SvelteKit apps; each keeps its own brand in
                            src/lib/brand.ts, the server in internal/brand, and
                            `make rename` renames all three
-deploy/                    the Docker stack
+deploy/                    the Docker stack, the nginx configuration, the server guide
 scripts/                   what the Makefile runs
 ```
 
 ## Third-party assets
 
-- The sign-in pages bundle Roboto and Roboto Mono, and the console Google Sans
-  Code and Poppins, all under the SIL Open Font License 1.1 (the licence is
-  beside each font).
+- Both apps bundle two typefaces and no others: Chirp for text and Google Sans
+  Code for code. Google Sans Code is under the SIL Open Font License 1.1 (the
+  licence is beside the files).
 - Both apps' icons are the [Remix Icon](https://remixicon.com) font, version
   4.8.0, under the Apache License 2.0 (later versions use the Remix Icon
   License); the sign-in providers' marks in it remain their owners'
   trademarks.
 - The favicons (`internal/brand/favicon.svg`, `web/*/src/lib/assets/favicon.svg`)
   are the Svelte logo, a placeholder until the project has its own mark.
-- **The console also bundles Chirp, X's proprietary typeface, which is not open
-  source**: replace it, or confirm you have a licence, before distributing the
-  console publicly.
+- **Chirp is X's proprietary typeface, not an open font**, and both apps serve
+  it, the sign-in pages to anyone: replace it, or confirm you have a licence,
+  before distributing either publicly.
 
 ## License
 
