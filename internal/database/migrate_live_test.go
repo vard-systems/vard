@@ -12,8 +12,9 @@ import (
 	"vard/internal/store"
 )
 
-// A database made before these changes is stepped forward with its rows as
-// they were, and each down step takes its columns away again.
+// A database made before these changes is stepped forward with its
+// applications as they were — no development redirects — and each down step
+// takes its columns away again.
 func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 	db, cfg := databasetest.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -41,6 +42,7 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		name    string
 		columns []column
 	}{
+		{"development redirects", []column{{"applications", "allow_development_redirects"}}},
 		{"refresh successor", []column{{"refresh_tokens", "successor_id"}, {"refresh_tokens", "successor_sealed"}}},
 	}
 
@@ -66,7 +68,11 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		}
 	}
 
-	if _, err := store.New(db).Application(ctx, app.ID); err != nil {
-		t.Errorf("the application made before = %v, want it read as it was", err)
+	upgraded, err := store.New(db).Application(ctx, app.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if upgraded.AllowDevelopmentRedirects {
+		t.Errorf("upgraded application = %+v, want no development redirects", upgraded)
 	}
 }

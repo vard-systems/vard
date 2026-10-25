@@ -47,7 +47,11 @@ type Application struct {
 	GrantTypes             []string `gorm:"type:text;serializer:json" json:"grant_types"`
 	RedirectURIs           []string `gorm:"type:text;serializer:json" json:"redirect_uris"`
 	PostLogoutRedirectURIs []string `gorm:"type:text;serializer:json" json:"post_logout_redirect_uris"`
-	Scopes                 []string `gorm:"type:text;serializer:json" json:"scopes"`
+	// AllowDevelopmentRedirects lets a native app register Expo Go's exp://
+	// addresses while it is developed. They name a developer's machine on
+	// their network, so a released app turns it off.
+	AllowDevelopmentRedirects bool     `gorm:"not null;default:false" json:"allow_development_redirects"`
+	Scopes                    []string `gorm:"type:text;serializer:json" json:"scopes"`
 
 	// BackchannelLogoutURI is told, server to server, when a session the
 	// application signed someone in through ends (OpenID Connect
@@ -167,6 +171,38 @@ func (a Application) MustUsePKCE() bool {
 	return a.RequirePKCE || a.TokenAuthMethod == AuthNone
 }
 
+// AllowsRedirect is whether uri is one of the application's redirect URIs.
+// Matching is exact, but a native app's loopback URI matches on any port: the
+// app opens whichever port is free when it signs in (RFC 8252 §7.3).
+// localhost is taken as well as 127.0.0.1 and [::1], though RFC 8252 §8.3
+// advises against it, since a resolver may point it elsewhere; the docs and
+// the SDKs use the addresses.
+func (a Application) AllowsRedirect(uri string) bool {
+	if slices.Contains(a.RedirectURIs, uri) {
+		return true
+	}
+	if a.Type != AppNative {
+		return false
+	}
+
+	sent, err := url.Parse(uri)
+	if err != nil || sent.Scheme != "http" || !loopback(sent.Hostname()) {
+		return false
+	}
+
+	for _, registered := range a.RedirectURIs {
+		want, err := url.Parse(registered)
+		if err != nil || want.Scheme != "http" || !loopback(want.Hostname()) {
+			continue
+		}
+		if want.Hostname() == sent.Hostname() && want.Path == sent.Path && want.RawQuery == sent.RawQuery && sent.User == nil && sent.Fragment == "" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (a *Application) Normalize() {
 	switch {
 	case a.Type.Public():
@@ -174,6 +210,10 @@ func (a *Application) Normalize() {
 		a.RequirePKCE = true
 	case a.TokenAuthMethod == "" || a.TokenAuthMethod == AuthNone:
 		a.TokenAuthMethod = AuthClientSecretBasic
+	}
+
+	if a.Type != AppNative {
+		a.AllowDevelopmentRedirects = false
 	}
 
 	if a.Type == AppM2M {
@@ -243,13 +283,13 @@ func (a Application) Validate() error {
 	}
 
 	for _, uri := range a.RedirectURIs {
-		if err := checkRedirectURI(uri, a.Type); err != nil {
+		if err := a.checkRedirectURI(uri); err != nil {
 			return fmt.Errorf("redirect_uris: %w", err)
 		}
 	}
 
 	for _, uri := range a.PostLogoutRedirectURIs {
-		if err := checkRedirectURI(uri, a.Type); err != nil {
+		if err := a.checkRedirectURI(uri); err != nil {
 			return fmt.Errorf("post_logout_redirect_uris: %w", err)
 		}
 	}
@@ -307,8 +347,11 @@ func (a Application) Validate() error {
 }
 
 // checkRedirectURI enforces RFC 9700: absolute, no fragment or wildcard, https
-// except on loopback, and for native apps a private-use scheme (RFC 8252).
-func checkRedirectURI(raw string, kind ApplicationType) error {
+// except on loopback, and for native apps a private-use scheme (RFC 8252), or
+// Expo Go's while they are developed.
+func (a Application) checkRedirectURI(raw string) error {
+	kind := a.Type
+
 	if strings.Contains(raw, "*") {
 		return fmt.Errorf("%q: wildcards are not allowed, redirect URIs are matched exactly", raw)
 	}
@@ -333,6 +376,18 @@ func checkRedirectURI(raw string, kind ApplicationType) error {
 			return nil
 		}
 		return fmt.Errorf("%q must use https, unless it is on localhost", raw)
+	case "exp", "exps":
+		// Expo Go, while a native app is developed: the scheme is Expo Go's
+		// own, and PKCE, which a native app always uses, keeps a code that
+		// reaches another app useless to it. The address is a developer's
+		// machine, so only an app marked as in development may have one.
+		switch {
+		case kind != AppNative:
+			return fmt.Errorf("%q must use https", raw)
+		case !a.AllowDevelopmentRedirects:
+			return fmt.Errorf("%q is Expo Go's, for development: allow development redirects on this application to register it, and turn them off before it is released", raw)
+		}
+		return nil
 	default:
 		// A private-use scheme is a reverse domain name, so it has a dot in
 		// it and cannot be mistaken for javascript: or data:.

@@ -12,8 +12,9 @@ with two web apps:
 credentials), pushed authorization requests (PAR), the device authorization
 grant (sign-in on TVs and command lines), refresh token rotation with reuse
 detection and a short grace for a retried refresh, client credentials,
-DPoP-bound tokens, dynamic client registration, userinfo, introspection,
-revocation,
+DPoP-bound tokens, native apps' redirects (private-use schemes, `127.0.0.1` /
+`[::1]` loopback on any port, Expo Go's `exp://` for an app marked as in
+development), dynamic client registration, userinfo, introspection, revocation,
 logout (RP-initiated, back-channel and front-channel), a consent page, terms
 acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
 OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
@@ -107,7 +108,8 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
       publish on loopback only (`ID_PUBLISH`, `CONSOLE_PUBLISH`).
 - [ ] The firewall lets in 22, 80 and 443 only.
 - [ ] `VARD_ADMIN_MFA=required`, and at least two super admins exist.
-- [ ] Applications register `https` redirect URIs.
+- [ ] Web applications register `https` redirect URIs; native apps a
+      private-use scheme (`com.example.app:/callback`) or loopback.
 
 ## Security model in brief
 

@@ -190,7 +190,7 @@ func (s *Service) redirectProblem(app *model.Application, p AuthorizeParams) str
 	switch {
 	case p.RedirectURI == "":
 		return "redirect_uri is required"
-	case !slices.Contains(app.RedirectURIs, p.RedirectURI):
+	case !app.AllowsRedirect(p.RedirectURI):
 		return "redirect_uri is not registered for this application; it has to match exactly"
 	}
 
@@ -314,7 +314,7 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, h
 
 	// Redirect URIs and PKCE are checked again: an administrator may have
 	// changed them since the request was made.
-	if !slices.Contains(app.RedirectURIs, req.RedirectURI) {
+	if !app.AllowsRedirect(req.RedirectURI) {
 		return s.errorPage(ErrInvalidRequest, "redirect_uri is no longer registered for this application"), nil
 	}
 	if app.MustUsePKCE() && req.CodeChallenge == "" {

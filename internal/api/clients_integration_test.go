@@ -13,8 +13,8 @@ import (
 )
 
 // These tests hold the provider to what client libraries rely on: PKCE for
-// every client without credentials, and a refresh that survives a lost
-// answer or two tabs at once.
+// every client without credentials, a refresh that survives a lost answer,
+// and a native app's redirect on whatever loopback port it opened.
 
 // agoRefreshRotations moves every replaced refresh token's replacement back
 // by d, as if that long had passed since.
@@ -228,5 +228,71 @@ func TestLivePKCECannotBeLeftOut(t *testing.T) {
 	// The failed attempt spent the code, as any wrong answer does.
 	if spent := f.exchange(code, verifier); spent.status != http.StatusBadRequest {
 		t.Errorf("the code after a failed exchange = %d %v, want it spent", spent.status, spent.body)
+	}
+}
+
+// A native app opens whichever loopback port is free and redirects there: it
+// registers the loopback URI without a port and is answered on any (RFC 8252
+// §7.3), but the path and everything else still match exactly.
+func TestLiveNativeAppRedirectsToAnyLoopbackPort(t *testing.T) {
+	f := newOAuthFixture(t)
+
+	nativeID, _, _ := f.register(map[string]any{
+		"name": "Desktop", "type": "native",
+		"grant_types":   []string{"authorization_code"},
+		"redirect_uris": []string{"http://127.0.0.1/callback", "com.example.desktop:/callback"},
+		"scopes":        []string{"openid"},
+	})
+
+	signIn := func(redirect string) (*url.URL, string) {
+		t.Helper()
+		verifier, challenge := pkce(t)
+		b := f.s.browser()
+		login := b.visit(f.s.root + "/oauth2/authorize?" + url.Values{
+			"response_type": {"code"}, "client_id": {nativeID}, "scope": {"openid"}, "redirect_uri": {redirect},
+			"state": {"s"}, "code_challenge": {challenge}, "code_challenge_method": {"S256"},
+		}.Encode())
+		if !strings.HasPrefix(login.String(), testAccountURL+"/login?") {
+			return login, verifier
+		}
+
+		var out struct {
+			RedirectTo string `json:"redirect_to"`
+		}
+		status := b.account(http.MethodPost, "/login", map[string]string{"request": login.Query().Get("request"), "email": adaEmail, "password": adaPassword}, &out)
+		if status != http.StatusOK {
+			t.Fatalf("login = %d", status)
+		}
+		back, err := url.Parse(out.RedirectTo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return back, verifier
+	}
+
+	for _, redirect := range []string{"http://127.0.0.1:53111/callback", "http://127.0.0.1:61999/callback", "com.example.desktop:/callback"} {
+		t.Run(redirect, func(t *testing.T) {
+			back, verifier := signIn(redirect)
+			if !strings.HasPrefix(back.String(), redirect+"?") || back.Query().Get("code") == "" {
+				t.Fatalf("signed in back to %s, want %s with a code", back, redirect)
+			}
+
+			tokens := f.token("/oauth2/token", nativeID, "", url.Values{
+				"grant_type": {"authorization_code"}, "code": {back.Query().Get("code")},
+				"redirect_uri": {redirect}, "code_verifier": {verifier},
+			})
+			if tokens.status != http.StatusOK || tokens.str("id_token") == "" {
+				t.Errorf("exchange = %d %v", tokens.status, tokens.body)
+			}
+		})
+	}
+
+	for _, redirect := range []string{"http://127.0.0.1:53111/other", "http://localhost:53111/callback", "http://127.0.0.1:53111/callback?x=1"} {
+		t.Run("refused: "+redirect, func(t *testing.T) {
+			back, _ := signIn(redirect)
+			if !strings.HasPrefix(back.String(), testAccountURL+"/error?") {
+				t.Errorf("an unregistered %s went to %s, want the error page", redirect, back)
+			}
+		})
 	}
 }

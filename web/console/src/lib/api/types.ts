@@ -163,6 +163,8 @@ export type Application = {
 	response_types: string[];
 	redirect_uris: string[];
 	post_logout_redirect_uris: string[];
+	/** A native app in development may register Expo Go's exp:// addresses. */
+	allow_development_redirects: boolean;
 	/** Where the server posts a logout token when a session the application
 	    signed someone in through ends; empty, it is not told. */
 	backchannel_logout_uri: string;
@@ -198,6 +200,7 @@ export type ApplicationInput = Pick<
 	| 'grant_types'
 	| 'redirect_uris'
 	| 'post_logout_redirect_uris'
+	| 'allow_development_redirects'
 	| 'backchannel_logout_uri'
 	| 'frontchannel_logout_uri'
 	| 'scopes'

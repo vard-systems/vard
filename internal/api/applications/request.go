@@ -39,9 +39,11 @@ type applicationRequest struct {
 	PostLogoutRedirectURIs []string `json:"post_logout_redirect_uris" validate:"dive,max=512"`
 	BackchannelLogoutURI   string   `json:"backchannel_logout_uri" validate:"max=512"`
 	FrontchannelLogoutURI  string   `json:"frontchannel_logout_uri" validate:"max=512"`
-	Scopes                 []string `json:"scopes"`
-	RequirePKCE            *bool    `json:"require_pkce"`
-	RequirePushedRequests  *bool    `json:"require_pushed_authorization_requests"`
+	// AllowDevelopmentRedirects lets a native app register exp:// addresses.
+	AllowDevelopmentRedirects *bool    `json:"allow_development_redirects"`
+	Scopes                    []string `json:"scopes"`
+	RequirePKCE               *bool    `json:"require_pkce"`
+	RequirePushedRequests     *bool    `json:"require_pushed_authorization_requests"`
 
 	AccessTokenLifetime  int `json:"access_token_lifetime"`
 	IDTokenLifetime      int `json:"id_token_lifetime"`

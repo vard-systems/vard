@@ -144,7 +144,7 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		return nil, oauthError(ErrInvalidGrant, "the authorization code has expired")
 	case p.RedirectURI != code.RedirectURI:
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri does not match the authorization request")
-	case !slices.Contains(app.RedirectURIs, code.RedirectURI):
+	case !app.AllowsRedirect(code.RedirectURI):
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri is no longer registered for this application")
 	case app.MustUsePKCE() && code.CodeChallenge == "":
 		return nil, oauthError(ErrInvalidGrant, "this application now requires PKCE")

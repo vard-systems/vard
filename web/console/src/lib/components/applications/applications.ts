@@ -89,6 +89,7 @@ export function blank(type: ApplicationType): ApplicationInput {
 		grant_types: type === 'm2m' ? ['client_credentials'] : ['authorization_code', 'refresh_token'],
 		redirect_uris: [],
 		post_logout_redirect_uris: [],
+		allow_development_redirects: false,
 		backchannel_logout_uri: '',
 		frontchannel_logout_uri: '',
 		scopes: type === 'm2m' ? [] : ['openid', 'profile', 'email'],

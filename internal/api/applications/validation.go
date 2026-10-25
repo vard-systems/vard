@@ -47,6 +47,7 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 	app.GrantTypes = r.GrantTypes
 	app.RedirectURIs = r.RedirectURIs
 	app.PostLogoutRedirectURIs = r.PostLogoutRedirectURIs
+	app.AllowDevelopmentRedirects = validate.Flag(r.AllowDevelopmentRedirects, app.AllowDevelopmentRedirects)
 	app.BackchannelLogoutURI = r.BackchannelLogoutURI
 	app.FrontchannelLogoutURI = r.FrontchannelLogoutURI
 	app.Scopes = r.Scopes

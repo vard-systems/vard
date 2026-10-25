@@ -140,7 +140,10 @@ code near it, and add a test when adding a case.
   metadata, back-channel logout) go through `newFederationClient` in
   `internal/oidc/outbound.go`, which refuses private, link-local and metadata
   addresses at dial time. A logout token follows no redirect.
-- **Redirect targets** are exact-matched redirect URIs, or a path checked by
+- **Redirect targets** are exact-matched redirect URIs
+  (`Application.AllowsRedirect`: a native app's loopback URI on any port, RFC
+  8252 §7.3, and nothing else loosened; Expo Go's `exp://` only for a native
+  app with `allow_development_redirects`), or a path checked by
   `safePath` (Go) / `safeNext` (`web/id`). Never redirect to a raw parameter.
 - **A second factor is guessed against the account's lockout.** Every answer
   is counted before it is checked, and a right password does not give its
