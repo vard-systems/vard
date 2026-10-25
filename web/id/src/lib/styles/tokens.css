@@ -3,7 +3,7 @@
    stands on its own. */
 
 :root {
-	/* The system's own faces, which Roboto falls back to: what is shown
+	/* The system's own faces, which Chirp falls back to: what is shown
 	   while it downloads (font-display: swap) and wherever it cannot load.
 	   Each platform's interface face in turn, then the emoji fonts, so an
 	   emoji in a name is drawn in colour rather than as a box. The same
@@ -15,8 +15,8 @@
 		ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', 'DejaVu Sans Mono',
 		monospace;
 
-	--font-sans: 'Roboto', var(--font-system-sans);
-	--font-mono: 'Roboto Mono', var(--font-system-mono);
+	--font-sans: 'Chirp', var(--font-system-sans);
+	--font-mono: 'Google Sans Code', var(--font-system-mono);
 
 	--text-xs: 12px;
 	--text-sm: 13px;
