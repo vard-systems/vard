@@ -134,7 +134,15 @@ export type AdminRoleInput = {
 
 export type ApplicationType = 'web' | 'spa' | 'native' | 'm2m';
 
-export type AuthMethod = 'client_secret_basic' | 'client_secret_post' | 'none';
+export type AuthMethod =
+	| 'client_secret_basic'
+	| 'client_secret_post'
+	| 'none'
+	| 'tls_client_auth'
+	| 'self_signed_tls_client_auth';
+
+/** The certificate field that names a tls_client_auth client (RFC 8705 §2.1.2); '' for other methods. */
+export type TLSSubjectKind = '' | 'subject_dn' | 'san_dns' | 'san_uri' | 'san_ip' | 'san_email';
 
 export type GrantType =
 	| 'authorization_code'
@@ -174,6 +182,12 @@ export type Application = {
 	require_pkce: boolean;
 	/** Authorization requests must be pushed first (RFC 9126). */
 	require_pushed_authorization_requests: boolean;
+	tls_subject_kind: TLSSubjectKind;
+	tls_subject: string;
+	/** PEM certificates of a self_signed_tls_client_auth client. */
+	tls_certificates: string[];
+	/** Access tokens are bound to the client's TLS certificate (RFC 8705 §3). */
+	tls_client_certificate_bound_access_tokens: boolean;
 	access_token_lifetime: number;
 	id_token_lifetime: number;
 	refresh_token_lifetime: number;
@@ -206,6 +220,10 @@ export type ApplicationInput = Pick<
 	| 'scopes'
 	| 'require_pkce'
 	| 'require_pushed_authorization_requests'
+	| 'tls_subject_kind'
+	| 'tls_subject'
+	| 'tls_certificates'
+	| 'tls_client_certificate_bound_access_tokens'
 	| 'access_token_lifetime'
 	| 'id_token_lifetime'
 	| 'refresh_token_lifetime'

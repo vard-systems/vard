@@ -13,8 +13,8 @@ import (
 )
 
 // A database made before these changes is stepped forward with its
-// applications as they were — no development redirects — and each down step
-// takes its columns away again.
+// applications as they were — no certificate method, nothing bound, no
+// development redirects — and each down step takes its columns away again.
 func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 	db, cfg := databasetest.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -42,6 +42,11 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		name    string
 		columns []column
 	}{
+		{"mutual TLS", []column{
+			{"applications", "tls_subject_kind"}, {"applications", "tls_subject"},
+			{"applications", "tls_certificates"}, {"applications", "certificate_bound_tokens"},
+			{"refresh_tokens", "certificate_thumbprint"},
+		}},
 		{"development redirects", []column{{"applications", "allow_development_redirects"}}},
 		{"refresh successor", []column{{"refresh_tokens", "successor_id"}, {"refresh_tokens", "successor_sealed"}}},
 	}
@@ -72,7 +77,8 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if upgraded.AllowDevelopmentRedirects {
-		t.Errorf("upgraded application = %+v, want no development redirects", upgraded)
+	if upgraded.TLSSubjectKind != "" || upgraded.TLSSubject != "" || len(upgraded.TLSCertificates) != 0 ||
+		upgraded.CertificateBoundTokens || upgraded.AllowDevelopmentRedirects {
+		t.Errorf("upgraded application = %+v, want no certificate, nothing bound, no development redirects", upgraded)
 	}
 }

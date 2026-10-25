@@ -45,6 +45,14 @@ type applicationRequest struct {
 	RequirePKCE               *bool    `json:"require_pkce"`
 	RequirePushedRequests     *bool    `json:"require_pushed_authorization_requests"`
 
+	// Mutual TLS (RFC 8705): the subject of a tls_client_auth certificate,
+	// the PEM certificates of a self_signed_tls_client_auth client, and
+	// whether access tokens are bound to the certificate.
+	TLSSubjectKind         string   `json:"tls_subject_kind"`
+	TLSSubject             string   `json:"tls_subject" validate:"max=512"`
+	TLSCertificates        []string `json:"tls_certificates" validate:"max=4,dive,max=8192"`
+	CertificateBoundTokens *bool    `json:"tls_client_certificate_bound_access_tokens"`
+
 	AccessTokenLifetime  int `json:"access_token_lifetime"`
 	IDTokenLifetime      int `json:"id_token_lifetime"`
 	RefreshTokenLifetime int `json:"refresh_token_lifetime"`
@@ -72,6 +80,8 @@ func (r *applicationRequest) clean() {
 	r.PrivacyURL = strings.TrimSpace(r.PrivacyURL)
 	r.TermsURL = strings.TrimSpace(r.TermsURL)
 	r.TokenAuthMethod = strings.TrimSpace(r.TokenAuthMethod)
+	r.TLSSubjectKind = strings.TrimSpace(r.TLSSubjectKind)
+	r.TLSSubject = strings.TrimSpace(r.TLSSubject)
 	r.BackchannelLogoutURI = strings.TrimSpace(r.BackchannelLogoutURI)
 	r.FrontchannelLogoutURI = strings.TrimSpace(r.FrontchannelLogoutURI)
 

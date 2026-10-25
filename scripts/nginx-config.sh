@@ -38,7 +38,23 @@ for upstream in "$id_upstream" "$console_upstream"; do
 		die "deploy/.env publishes an app on $upstream: anything but loopback is reached around the proxy"
 done
 
+# Mutual TLS has a host of its own, or every browser is asked for a
+# certificate; without it, its server block is left out.
+mtls="$(value MTLS_URL)" mtls_host=""
+if [[ -n $mtls ]]; then
+	[[ $mtls == https://* ]] || die "deploy/.env: MTLS_URL $mtls is not https"
+	mtls_host="$(host_of "$mtls")"
+	[[ $mtls_host != "$id_host" && $mtls_host != "$console_host" ]] ||
+		die "deploy/.env: MTLS_URL needs a host of its own"
+	mtls_block=(-e "/# {{MTLS_BEGIN}}/d" -e "/# {{MTLS_END}}/d")
+else
+	mtls_block=(-e "/# {{MTLS_BEGIN}}/,/# {{MTLS_END}}/d")
+fi
+
 sed \
+	"${mtls_block[@]}" \
+	-e "s|{{MTLS_SERVER_NAME}}|${mtls_host:+ $mtls_host}|g" \
+	-e "s|{{MTLS_HOST}}|$mtls_host|g" \
 	-e "s|{{ID_HOST}}|$id_host|g" \
 	-e "s|{{CONSOLE_HOST}}|$console_host|g" \
 	-e "s|{{CERT_NAME}}|$id_host|g" \
@@ -47,9 +63,9 @@ sed \
 	deploy/nginx/vard.conf.template >deploy/nginx/vard.conf
 
 cat <<EOF
-==> deploy/nginx/vard.conf: https://$id_host → $id_upstream, https://$console_host → $console_upstream
-    One certificate, named $id_host, covers both:
-      sudo certbot certonly --nginx --cert-name $id_host -d $id_host -d $console_host
+==> deploy/nginx/vard.conf: https://$id_host → $id_upstream, https://$console_host → $console_upstream${mtls_host:+, https://$mtls_host (mutual TLS) → $id_upstream}
+    One certificate, named $id_host, covers them all:
+      sudo certbot certonly --nginx --cert-name $id_host -d $id_host -d $console_host${mtls_host:+ -d $mtls_host}
     Then install the configuration:
       sudo cp deploy/nginx/vard-proxy.conf /etc/nginx/vard-proxy.conf
       sudo cp deploy/nginx/vard.conf /etc/nginx/conf.d/vard.conf

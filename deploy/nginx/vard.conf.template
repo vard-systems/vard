@@ -31,7 +31,7 @@ limit_req_zone $binary_remote_addr zone=vard_per_address:10m rate=20r/s;
 server {
 	listen 80;
 	listen [::]:80;
-	server_name {{ID_HOST}} {{CONSOLE_HOST}};
+	server_name {{ID_HOST}} {{CONSOLE_HOST}}{{MTLS_SERVER_NAME}};
 	server_tokens off;
 
 	location /.well-known/acme-challenge/ {
@@ -77,8 +77,57 @@ server {
 		include /etc/nginx/vard-proxy.conf;
 		# The app's own address, not whatever Host a client sent.
 		proxy_set_header Host {{ID_HOST}};
+		# A client certificate is only ever the mutual TLS host's to pass
+		# on; one a client wrote itself is dropped here.
+		proxy_set_header X-Client-Certificate "";
 	}
 }
+
+# {{MTLS_BEGIN}}
+# Mutual TLS (RFC 8705): the provider's endpoints a client calls with its
+# certificate, on a host of their own so that no browser on the sign-in
+# pages is ever asked to pick one. Only those endpoints are passed on.
+server {
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+	server_name {{MTLS_HOST}};
+	server_tokens off;
+
+	ssl_certificate /etc/letsencrypt/live/{{CERT_NAME}}/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/{{CERT_NAME}}/privkey.pem;
+	ssl_protocols TLSv1.2 TLSv1.3;
+	ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+	ssl_prefer_server_ciphers off;
+	ssl_session_timeout 1d;
+	ssl_session_cache shared:vard_mtls:10m;
+	ssl_session_tickets off;
+
+	# Ask for a certificate, and leave judging it to the API: a self-signed
+	# one is matched against the application's registered certificate, a
+	# CA-issued one against VARD_MTLS_CA_FILE. The handshake has already
+	# proved the client holds its key.
+	ssl_verify_client optional_no_ca;
+
+	add_header Strict-Transport-Security "max-age=63072000" always;
+	client_max_body_size 1m;
+
+	location ~ ^/oauth2/(token|par|revoke|introspect|userinfo|device_authorization)$ {
+		limit_req zone=vard_per_address burst=60 nodelay;
+		limit_req_status 429;
+
+		proxy_pass http://vard_id;
+		include /etc/nginx/vard-proxy.conf;
+		proxy_set_header Host {{ID_HOST}};
+		# The certificate this connection was made with, URL-encoded PEM, or
+		# none: an empty value is not sent, so a client's own is dropped.
+		proxy_set_header X-Client-Certificate $ssl_client_escaped_cert;
+	}
+
+	location / {
+		return 404;
+	}
+}
+# {{MTLS_END}}
 
 # The panel and the admin API: the staff site.
 server {
@@ -114,5 +163,8 @@ server {
 		proxy_pass http://vard_console;
 		include /etc/nginx/vard-proxy.conf;
 		proxy_set_header Host {{CONSOLE_HOST}};
+		# Nothing on this site reads a client certificate; one a client
+		# wrote itself is dropped all the same.
+		proxy_set_header X-Client-Certificate "";
 	}
 }

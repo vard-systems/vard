@@ -29,6 +29,16 @@ type Config struct {
 
 	AdminURL string
 
+	// MTLSURL is where clients reach the provider's endpoints with a TLS
+	// client certificate (RFC 8705 §5): a host of its own, so browsers on the
+	// sign-in pages are never asked for one. Empty, mutual TLS is off.
+	MTLSURL string
+
+	// MTLSCAFile holds the certificate authorities, in PEM, that a
+	// tls_client_auth client's certificate must chain to. Empty, only
+	// self-signed certificates are taken.
+	MTLSCAFile string
+
 	// CORSOrigins are extra origins allowed to call cookie-authenticated APIs
 	// with credentials. None by default: each listed origin can act as the
 	// signed-in user.
@@ -177,6 +187,7 @@ func Load() (Config, error) {
 		accountURL = issuer
 	}
 	adminURL := strings.TrimRight(v.GetString(env("ADMIN_URL")), "/")
+	mtlsURL := strings.TrimRight(v.GetString(env("MTLS_URL")), "/")
 
 	cfg := Config{
 		Addr:               v.GetString(env("ADDR")),
@@ -184,6 +195,8 @@ func Load() (Config, error) {
 		Issuer:             issuer,
 		AccountURL:         accountURL,
 		AdminURL:           adminURL,
+		MTLSURL:            mtlsURL,
+		MTLSCAFile:         strings.TrimSpace(v.GetString(env("MTLS_CA_FILE"))),
 		CORSOrigins:        splitList(v.GetString(env("CORS_ORIGINS"))),
 		SecureUserCookies:  strings.HasPrefix(accountURL, "https://"),
 		SecureAdminCookies: strings.HasPrefix(adminURL, "https://"),
@@ -246,6 +259,22 @@ func Load() (Config, error) {
 		if parsed, err := url.Parse(value); err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
 			return Config{}, fmt.Errorf("%s must be an http or https URL, got %q", name, value)
 		}
+	}
+
+	// A client certificate is only ever presented over TLS, so the alias is
+	// https, and on a host of its own: on the issuer's, every browser would
+	// be asked to choose a certificate.
+	if cfg.MTLSURL != "" {
+		parsed, err := url.Parse(cfg.MTLSURL)
+		switch {
+		case err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.Path != "":
+			return Config{}, fmt.Errorf("%s must be an https URL with no path, got %q", env("MTLS_URL"), cfg.MTLSURL)
+		case Origin(cfg.MTLSURL) == Origin(cfg.Issuer) || Origin(cfg.MTLSURL) == Origin(cfg.AccountURL):
+			return Config{}, errors.New(env("MTLS_URL") + " must be a host of its own, not the issuer's")
+		}
+	}
+	if cfg.MTLSCAFile != "" && cfg.MTLSURL == "" {
+		return Config{}, errors.New(env("MTLS_CA_FILE") + " needs " + env("MTLS_URL"))
 	}
 
 	// One listener for both would put the admin API back on the public one,

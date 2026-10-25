@@ -17,6 +17,7 @@ import (
 	"strings"
 	"testing"
 
+	"vard/internal/config"
 	"vard/internal/model"
 )
 
@@ -47,7 +48,13 @@ type oauthFixture struct {
 }
 
 func newOAuthFixture(t *testing.T) *oauthFixture {
-	s := newLiveServer(t)
+	return newOAuthFixtureWith(t, func(*config.Config) {})
+}
+
+// newOAuthFixtureWith is newOAuthFixture with the server's configuration
+// changed first.
+func newOAuthFixtureWith(t *testing.T, change func(*config.Config)) *oauthFixture {
+	s := newLiveServerWith(t, change)
 	f := &oauthFixture{s: s, super: s.superAdmin(), scopeIDs: map[string]string{}}
 
 	var api struct {

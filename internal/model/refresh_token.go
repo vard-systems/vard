@@ -24,6 +24,10 @@ type RefreshToken struct {
 	// DPoPKey is the thumbprint of the key a public client's family is bound
 	// to (RFC 9449 §5): a refresh needs a proof from that key. "" when unbound.
 	DPoPKey string `gorm:"column:dpop_key;size:64;not null;default:''"`
+	// CertificateThumbprint is the x5t#S256 of the TLS client certificate a
+	// public client's family is bound to (RFC 8705 §4): a refresh must come
+	// over a connection with that certificate. "" when unbound.
+	CertificateThumbprint string `gorm:"size:64;not null;default:''"`
 
 	Scope           string    `gorm:"type:text;not null"`
 	Audience        string    `gorm:"size:255;not null;default:''"`

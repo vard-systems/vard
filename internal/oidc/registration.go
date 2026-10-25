@@ -2,6 +2,8 @@ package oidc
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"slices"
 	"strings"
@@ -43,6 +45,28 @@ type ClientMetadata struct {
 	FrontchannelLogoutURI   string   `json:"frontchannel_logout_uri,omitempty"`
 
 	RequirePushedAuthorizationRequests bool `json:"require_pushed_authorization_requests,omitempty"`
+
+	// RFC 8705: the one subject a tls_client_auth certificate carries, the
+	// certificates of a self_signed_tls_client_auth client (as x5c in its
+	// jwks), and whether its access tokens are bound to the certificate.
+	TLSClientAuthSubjectDN                string      `json:"tls_client_auth_subject_dn,omitempty"`
+	TLSClientAuthSANDNS                   string      `json:"tls_client_auth_san_dns,omitempty"`
+	TLSClientAuthSANURI                   string      `json:"tls_client_auth_san_uri,omitempty"`
+	TLSClientAuthSANIP                    string      `json:"tls_client_auth_san_ip,omitempty"`
+	TLSClientAuthSANEmail                 string      `json:"tls_client_auth_san_email,omitempty"`
+	JWKS                                  *ClientKeys `json:"jwks,omitempty"`
+	JWKSURI                               string      `json:"jwks_uri,omitempty"`
+	TLSClientCertificateBoundAccessTokens bool        `json:"tls_client_certificate_bound_access_tokens,omitempty"`
+}
+
+// ClientKeys is a client's JSON Web Key Set as far as it is read here: the
+// certificate of each key (x5c), which a self-signed client registers.
+type ClientKeys struct {
+	Keys []ClientKey `json:"keys"`
+}
+
+type ClientKey struct {
+	X5C []string `json:"x5c,omitempty"`
 }
 
 // RegisteredClient is the answer: the client's id, its secret when it has
@@ -72,6 +96,12 @@ func (s *Service) RegisterClient(ctx context.Context, token string, m ClientMeta
 	app, err := applicationFrom(m)
 	if err != nil {
 		return nil, err
+	}
+	if (app.TokenAuthMethod.UsesCertificate() || app.CertificateBoundTokens) && !s.MutualTLS() {
+		return nil, oauthError(ErrInvalidClientMetadata, "mutual TLS is not offered by this server")
+	}
+	if app.TokenAuthMethod == model.AuthTLSClient && s.clientCAs == nil {
+		return nil, oauthError(ErrInvalidClientMetadata, "tls_client_auth is not offered by this server; use self_signed_tls_client_auth")
 	}
 
 	if app.ClientID, err = model.NewClientID(); err != nil {
@@ -134,6 +164,15 @@ func applicationFrom(m ClientMetadata) (*model.Application, error) {
 		kind = model.AppSPA
 	}
 
+	kindOfSubject, subject, err := tlsSubjectOf(m)
+	if err != nil {
+		return nil, err
+	}
+	certificates, err := certificatesOf(m)
+	if err != nil {
+		return nil, err
+	}
+
 	name := strings.TrimSpace(m.ClientName)
 	if name == "" {
 		name = "Registered client"
@@ -153,6 +192,10 @@ func applicationFrom(m ClientMetadata) (*model.Application, error) {
 		Scopes:                 strings.Fields(m.Scope),
 		BackchannelLogoutURI:   m.BackchannelLogoutURI,
 		FrontchannelLogoutURI:  m.FrontchannelLogoutURI,
+		TLSSubjectKind:         kindOfSubject,
+		TLSSubject:             subject,
+		TLSCertificates:        certificates,
+		CertificateBoundTokens: m.TLSClientCertificateBoundAccessTokens,
 		RequirePushedRequests:  m.RequirePushedAuthorizationRequests,
 		RequirePKCE:            true,
 		AssertRoles:            true,
@@ -177,13 +220,66 @@ func applicationFrom(m ClientMetadata) (*model.Application, error) {
 	return app, nil
 }
 
+// tlsSubjectOf is the one tls_client_auth subject the metadata names.
+func tlsSubjectOf(m ClientMetadata) (model.TLSSubjectKind, string, error) {
+	named := []struct {
+		kind  model.TLSSubjectKind
+		value string
+	}{
+		{model.TLSSubjectDN, m.TLSClientAuthSubjectDN},
+		{model.TLSSubjectDNS, m.TLSClientAuthSANDNS},
+		{model.TLSSubjectURI, m.TLSClientAuthSANURI},
+		{model.TLSSubjectIP, m.TLSClientAuthSANIP},
+		{model.TLSSubjectEmail, m.TLSClientAuthSANEmail},
+	}
+
+	var kind model.TLSSubjectKind
+	var value string
+	for _, entry := range named {
+		if entry.value == "" {
+			continue
+		}
+		if kind != "" {
+			return "", "", oauthError(ErrInvalidClientMetadata, "name one tls_client_auth subject, not several (RFC 8705 §2.1.2)")
+		}
+		kind, value = entry.kind, entry.value
+	}
+
+	return kind, value, nil
+}
+
+// certificatesOf is the PEM of the certificates in the metadata's jwks: each
+// key's own, the first of its x5c.
+func certificatesOf(m ClientMetadata) ([]string, error) {
+	if m.JWKSURI != "" {
+		return nil, oauthError(ErrInvalidClientMetadata, "jwks_uri is not offered; register the certificates in jwks")
+	}
+	if m.JWKS == nil {
+		return []string{}, nil
+	}
+
+	out := []string{}
+	for _, key := range m.JWKS.Keys {
+		if len(key.X5C) == 0 {
+			continue
+		}
+		der, err := base64.StdEncoding.DecodeString(key.X5C[0])
+		if err != nil {
+			return nil, oauthError(ErrInvalidClientMetadata, "jwks: an x5c is not base64")
+		}
+		out = append(out, string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})))
+	}
+
+	return out, nil
+}
+
 func metadataOf(app *model.Application) ClientMetadata {
 	kind := "web"
 	if app.Type == model.AppNative {
 		kind = "native"
 	}
 
-	return ClientMetadata{
+	m := ClientMetadata{
 		RedirectURIs:            app.RedirectURIs,
 		PostLogoutRedirectURIs:  app.PostLogoutRedirectURIs,
 		TokenEndpointAuthMethod: string(app.TokenAuthMethod),
@@ -199,6 +295,31 @@ func metadataOf(app *model.Application) ClientMetadata {
 		BackchannelLogoutURI:    app.BackchannelLogoutURI,
 		FrontchannelLogoutURI:   app.FrontchannelLogoutURI,
 
-		RequirePushedAuthorizationRequests: app.RequirePushedRequests,
+		RequirePushedAuthorizationRequests:    app.RequirePushedRequests,
+		TLSClientCertificateBoundAccessTokens: app.CertificateBoundTokens,
 	}
+
+	switch app.TLSSubjectKind {
+	case model.TLSSubjectDN:
+		m.TLSClientAuthSubjectDN = app.TLSSubject
+	case model.TLSSubjectDNS:
+		m.TLSClientAuthSANDNS = app.TLSSubject
+	case model.TLSSubjectURI:
+		m.TLSClientAuthSANURI = app.TLSSubject
+	case model.TLSSubjectIP:
+		m.TLSClientAuthSANIP = app.TLSSubject
+	case model.TLSSubjectEmail:
+		m.TLSClientAuthSANEmail = app.TLSSubject
+	}
+
+	if len(app.TLSCertificates) > 0 {
+		m.JWKS = &ClientKeys{Keys: []ClientKey{}}
+		for _, text := range app.TLSCertificates {
+			if block, _ := pem.Decode([]byte(text)); block != nil {
+				m.JWKS.Keys = append(m.JWKS.Keys, ClientKey{X5C: []string{base64.StdEncoding.EncodeToString(block.Bytes)}})
+			}
+		}
+	}
+
+	return m
 }

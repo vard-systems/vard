@@ -9,9 +9,12 @@ package oidc
 
 import (
 	"context"
+	"crypto/x509"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/go-webauthn/webauthn/webauthn"
@@ -52,6 +55,12 @@ type Service struct {
 	issuer     string
 	accountURL string
 
+	// mtlsURL is the mutual TLS alias of the provider's endpoints, "" when
+	// mutual TLS is off; clientCAs are what a tls_client_auth certificate
+	// must chain to, nil when only self-signed ones are taken.
+	mtlsURL   string
+	clientCAs *x509.CertPool
+
 	sealer   *jose.Sealer
 	social   *http.Client
 	ssoCache *ssoCache
@@ -73,6 +82,11 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 		return nil, err
 	}
 
+	clientCAs, err := loadClientCAs(cfg.MTLSCAFile)
+	if err != nil {
+		return nil, err
+	}
+
 	s := &Service{
 		store:      st,
 		keys:       keys,
@@ -80,6 +94,8 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 		log:        log,
 		issuer:     cfg.Issuer,
 		accountURL: cfg.AccountURL,
+		mtlsURL:    cfg.MTLSURL,
+		clientCAs:  clientCAs,
 		sealer:     sealer,
 		social:     newFederationClient(socialTimeout, onLoopback(cfg.Issuer)),
 		ssoCache:   newSSOCache(),
@@ -96,6 +112,32 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 	st.OnLogout(s.TellApplications)
 
 	return s, nil
+}
+
+// loadClientCAs reads the authorities tls_client_auth certificates chain to;
+// a file named but unreadable or empty stops the server rather than quietly
+// refusing every such client.
+func loadClientCAs(file string) (*x509.CertPool, error) {
+	if file == "" {
+		return nil, nil
+	}
+
+	text, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("mutual TLS CA file: %w", err)
+	}
+
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(text) {
+		return nil, fmt.Errorf("mutual TLS CA file %s holds no PEM certificate", file)
+	}
+
+	return pool, nil
+}
+
+// MutualTLS says clients can reach the provider with a TLS certificate.
+func (s *Service) MutualTLS() bool {
+	return s.mtlsURL != ""
 }
 
 func (s *Service) MaintainKeys(ctx context.Context) {
@@ -178,16 +220,52 @@ type Discovery struct {
 	OpTosURI    string `json:"op_tos_uri,omitempty"`
 	OpPolicyURI string `json:"op_policy_uri,omitempty"`
 
+	// RFC 8705, when mutual TLS is on: the endpoints a client reaches with
+	// its certificate, and access tokens bound to it.
+	TLSClientCertificateBoundAccessTokens bool                 `json:"tls_client_certificate_bound_access_tokens"`
+	MTLSEndpointAliases                   *MTLSEndpointAliases `json:"mtls_endpoint_aliases,omitempty"`
+
 	ClaimsParameterSupported     bool `json:"claims_parameter_supported"`
 	RequestParameterSupported    bool `json:"request_parameter_supported"`
 	RequestURIParameterSupported bool `json:"request_uri_parameter_supported"`
 }
 
+// MTLSEndpointAliases are the endpoints a client calls over mutual TLS (RFC
+// 8705 §5): the same paths on the mutual TLS host.
+type MTLSEndpointAliases struct {
+	TokenEndpoint                      string `json:"token_endpoint"`
+	RevocationEndpoint                 string `json:"revocation_endpoint"`
+	IntrospectionEndpoint              string `json:"introspection_endpoint"`
+	UserInfoEndpoint                   string `json:"userinfo_endpoint"`
+	PushedAuthorizationRequestEndpoint string `json:"pushed_authorization_request_endpoint"`
+	DeviceAuthorizationEndpoint        string `json:"device_authorization_endpoint"`
+}
+
+// MTLSPaths are the paths the mutual TLS host serves; its proxy passes no
+// other on (deploy/nginx).
+var MTLSPaths = []string{PathToken, PathRevoke, PathIntrospect, PathUserInfo, PathPushedAuthorization, PathDeviceAuthorization}
+
 // Discovery describes the provider from the model, so it cannot claim anything
 // the server does not offer. Terms and privacy links come from the database; if
 // it is unreachable they are left out and the rest is still served.
 func (s *Service) Discovery(ctx context.Context) Discovery {
-	secretMethods := []string{string(model.AuthClientSecretBasic), string(model.AuthClientSecretPost)}
+	clientMethods := []string{string(model.AuthClientSecretBasic), string(model.AuthClientSecretPost)}
+
+	var aliases *MTLSEndpointAliases
+	if s.MutualTLS() {
+		aliases = &MTLSEndpointAliases{
+			TokenEndpoint:                      s.mtlsURL + PathToken,
+			RevocationEndpoint:                 s.mtlsURL + PathRevoke,
+			IntrospectionEndpoint:              s.mtlsURL + PathIntrospect,
+			UserInfoEndpoint:                   s.mtlsURL + PathUserInfo,
+			PushedAuthorizationRequestEndpoint: s.mtlsURL + PathPushedAuthorization,
+			DeviceAuthorizationEndpoint:        s.mtlsURL + PathDeviceAuthorization,
+		}
+		if s.clientCAs != nil {
+			clientMethods = append(clientMethods, string(model.AuthTLSClient))
+		}
+		clientMethods = append(clientMethods, string(model.AuthSelfSignedTLSClient))
+	}
 
 	var tos, policy string
 	if organization, err := s.store.Organization(ctx); err == nil {
@@ -212,9 +290,9 @@ func (s *Service) Discovery(ctx context.Context) Discovery {
 		IDTokenSigningAlgValuesSupported:           []string{idTokenAlgorithm},
 		ScopesSupported:                            model.Scopes,
 		ClaimsSupported:                            claimsSupported,
-		TokenEndpointAuthMethodsSupported:          append(secretMethods, string(model.AuthNone)),
-		RevocationEndpointAuthMethodsSupported:     append(append([]string{}, secretMethods...), string(model.AuthNone)),
-		IntrospectionEndpointAuthMethodsSupported:  secretMethods,
+		TokenEndpointAuthMethodsSupported:          append(clientMethods, string(model.AuthNone)),
+		RevocationEndpointAuthMethodsSupported:     append(append([]string{}, clientMethods...), string(model.AuthNone)),
+		IntrospectionEndpointAuthMethodsSupported:  clientMethods,
 		CodeChallengeMethodsSupported:              []string{model.PKCES256},
 		PromptValuesSupported:                      []string{"none", "login", "consent"},
 		AuthorizationResponseIssParameterSupported: true,
@@ -226,6 +304,8 @@ func (s *Service) Discovery(ctx context.Context) Discovery {
 		DeviceAuthorizationEndpoint:                s.issuer + PathDeviceAuthorization,
 		RegistrationEndpoint:                       s.issuer + PathRegistration,
 		DPoPSigningAlgValuesSupported:              dpopAlgorithms,
+		TLSClientCertificateBoundAccessTokens:      s.MutualTLS(),
+		MTLSEndpointAliases:                        aliases,
 		OpTosURI:                                   tos,
 		OpPolicyURI:                                policy,
 	}

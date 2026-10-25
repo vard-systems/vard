@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { API_URL } from '$app/env/private';
+import { API_URL, CLIENT_CERT_HEADER } from '$app/env/private';
 
 /**
  * The paths the API answers. The browser calls them on this app's own origin, so cookies stay
@@ -7,6 +7,9 @@ import { API_URL } from '$app/env/private';
  * holds every route to this list.
  */
 const API_PATHS = ['/api/v1/account', '/oauth2', '/.well-known'];
+
+/** Where the API reads a TLS client certificate (internal/api/kit/clientcert). */
+const CLIENT_CERTIFICATE = 'x-client-certificate';
 
 // Headers about one connection rather than the request, which a proxy does not pass on.
 const HOP_BY_HOP = [
@@ -40,6 +43,13 @@ export async function toApi(event: RequestEvent): Promise<Response> {
 	headers.set('x-forwarded-for', event.getClientAddress());
 	headers.delete('x-real-ip');
 	headers.delete('forwarded');
+
+	// The TLS client certificate, likewise: only as the proxy in front named it, since the API
+	// believes this server's word that the caller holds the certificate's key.
+	const certificate = CLIENT_CERT_HEADER ? request.headers.get(CLIENT_CERT_HEADER) : null;
+	headers.delete(CLIENT_CERTIFICATE);
+	if (CLIENT_CERT_HEADER) headers.delete(CLIENT_CERT_HEADER);
+	if (certificate) headers.set(CLIENT_CERTIFICATE, certificate);
 
 	const body =
 		request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.arrayBuffer();

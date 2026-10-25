@@ -12,9 +12,11 @@ with two web apps:
 credentials), pushed authorization requests (PAR), the device authorization
 grant (sign-in on TVs and command lines), refresh token rotation with reuse
 detection and a short grace for a retried refresh, client credentials,
-DPoP-bound tokens, native apps' redirects (private-use schemes, `127.0.0.1` /
-`[::1]` loopback on any port, Expo Go's `exp://` for an app marked as in
-development), dynamic client registration, userinfo, introspection, revocation,
+DPoP-bound tokens, mutual TLS (`tls_client_auth`,
+`self_signed_tls_client_auth` and certificate-bound tokens), native apps'
+redirects (private-use schemes, `127.0.0.1` / `[::1]` loopback on any port,
+Expo Go's `exp://` for an app marked as in development),
+dynamic client registration, userinfo, introspection, revocation,
 logout (RP-initiated, back-channel and front-channel), a consent page, terms
 acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
 OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
@@ -128,6 +130,9 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   answer, two tabs at once) and is given the same token that replaced it,
   kept sealed only for those 30 seconds. Every copy a client holds stays
   good, and the family still has exactly one live token.
+- A client certificate is believed only as the TLS proxy passed it on, from
+  the mutual TLS host of its own (`VARD_MTLS_URL`); a token bound to one is
+  taken only over a connection with it.
 - **Consent is a login-flow step.** Without it, every application registered
   in the panel is trusted to sign users in, which is right for an
   organisation's own apps; a flow with the Consent step asks each user once

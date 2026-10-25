@@ -56,6 +56,39 @@ administrator, who is asked to set up an authenticator app straight away
 The panel can be closed to everyone but the staff: list their addresses in
 the `allow` lines of `deploy/nginx/vard.conf`'s second site.
 
+## Mutual TLS
+
+For clients that authenticate with a certificate (`tls_client_auth`,
+`self_signed_tls_client_auth`) or have their tokens bound to one (RFC 8705).
+It needs a third DNS name, such as `mtls.id.example.com`: nginx asks for a
+client certificate there and only there, so no browser on the sign-in pages
+is ever asked to pick one, and passes on only the token, PAR, revocation,
+introspection, device and userinfo endpoints.
+
+```sh
+# deploy/.env
+MTLS_URL=https://mtls.id.example.com
+# Only for tls_client_auth: the CAs clients' certificates chain to,
+# intermediates too, as a PEM file in deploy/mtls/.
+MTLS_CA_FILE=/etc/vard/mtls/clients-ca.pem
+
+make docker-up
+make nginx-config            # adds the mutual TLS site, and the name to the certificate
+sudo certbot certonly --nginx --cert-name id.example.com -d id.example.com -d admin.example.com -d mtls.id.example.com
+sudo cp deploy/nginx/vard.conf /etc/nginx/conf.d/vard.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+A `tls_client_auth` client is best named by a SAN (DNS name, URI, IP or
+email). Its subject DN works too, but is compared as text in the form RFC
+4514 writes it (`CN=app,O=Example`), not by full distinguished-name
+matching, so a certificate that encodes or spaces it otherwise does not
+match.
+
+The discovery document then lists the endpoints there as
+`mtls_endpoint_aliases`, and the panel's Credentials section offers the two
+certificate methods and binding tokens to the certificate.
+
 ## Updating
 
 ```sh

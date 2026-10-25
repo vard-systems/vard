@@ -159,10 +159,19 @@ code near it, and add a test when adding a case.
   recorded once. Device user codes are short, so they are kept as a keyed hash
   and entering them is rate-limited.
 - **A DPoP-bound access token is never taken as a bearer token.** Userinfo
-  checks its proof; the account and admin APIs, which do not, refuse it.
+  checks its proof; the account and admin APIs, which do not, refuse it. The
+  same goes for a certificate-bound one (`cnf.x5t#S256`).
 - **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
   whatever its `RequirePKCE` says, and a code asked for with a challenge is
   never exchanged without its verifier.
+- **A TLS client certificate is believed only as nginx passed it on.** nginx
+  asks for one on the mutual TLS host alone (`VARD_MTLS_URL`) and clears the
+  header everywhere else (`TestNginxPassesOnlyTheConnectionsCertificate`);
+  the id app passes it on only from
+  `CLIENT_CERT_HEADER`, and the API reads it (`api/kit/clientcert`) only with
+  mutual TLS on and from `VARD_TRUSTED_PROXIES`. A self-signed client is the
+  exact certificate it registered; a `tls_client_auth` one chains to
+  `VARD_MTLS_CA_FILE` and carries its one registered subject.
 - **Registering a client takes an initial access token** (an admin API token
   with `applications.write`); `/oauth2/register` is never open.
 - **Unknown accounts cost the same as wrong passwords** (`CompareDummyPassword`),

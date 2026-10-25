@@ -106,6 +106,8 @@
 		"application_too_many_uris": "An application may have at most {max} redirect URIs of each kind.",
 		"application_type_invalid": "The type must be one of: web, spa, native, m2m.",
 		"application_login_flow_unknown": "There is no such login flow.",
+		"application_mtls_off": "Mutual TLS is not set up on this server: set VARD_MTLS_URL, and a TLS proxy that asks for client certificates there, before an application uses a certificate.",
+		"application_tls_authorities_missing": "tls_client_auth needs the certificate authorities clients' certificates chain to (VARD_MTLS_CA_FILE); without them, use self_signed_tls_client_auth.",
 		"user_field_name_taken": "A field with this name already exists.",
 		"user_field_not_found": "There is no such field.",
 		"login_flow_slug_taken": "A flow with this identifier already exists.",

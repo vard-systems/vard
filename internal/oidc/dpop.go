@@ -40,6 +40,9 @@ type Presentation struct {
 	Proof  string
 	Method string
 	URL    string
+	// Certificate is the x5t#S256 of the TLS client certificate the request
+	// came with, "" when none.
+	Certificate string
 }
 
 type dpopClaims struct {
@@ -75,7 +78,7 @@ func (s *Service) checkDPoP(ctx context.Context, proof, method, target, accessTo
 		return refused("the DPoP proof needs a jti")
 	case claims.Method != method:
 		return refused("the DPoP proof is for another method")
-	case !sameTarget(claims.Target, target):
+	case !s.sameEndpoint(claims.Target, target):
 		return refused("the DPoP proof is for another address")
 	}
 
@@ -111,9 +114,14 @@ func (s *Service) checkDPoP(ctx context.Context, proof, method, target, accessTo
 	return thumbprint, nil
 }
 
-// presented checks that a token bound to a key came with a proof from it, and
-// that one not bound did not come as DPoP.
+// presented checks that a token bound to a certificate came over a
+// connection with it, that one bound to a key came with a proof from it, and
+// that one not bound to a key did not come as DPoP.
 func (s *Service) presented(ctx context.Context, token string, raw map[string]any, how Presentation) error {
+	if want := boundCertificate(raw); want != "" && how.Certificate != want {
+		return oauthError(ErrInvalidToken, "the access token is bound to a TLS client certificate: send it over a connection with that certificate")
+	}
+
 	bound := boundKey(raw)
 
 	switch {
@@ -141,6 +149,15 @@ func boundKey(raw map[string]any) string {
 	cnf, _ := raw["cnf"].(map[string]any)
 	jkt, _ := cnf["jkt"].(string)
 	return jkt
+}
+
+// sameEndpoint is sameTarget for one of the provider's own endpoints, which a
+// client may also have addressed at its mutual TLS alias.
+func (s *Service) sameEndpoint(claimed, target string) bool {
+	if sameTarget(claimed, target) {
+		return true
+	}
+	return s.mtlsURL != "" && strings.HasPrefix(target, s.issuer) && sameTarget(claimed, s.mtlsURL+strings.TrimPrefix(target, s.issuer))
 }
 
 // sameTarget compares the address a proof names with the one it was sent to,

@@ -170,14 +170,15 @@ func (s *Service) deviceToken(ctx context.Context, app *model.Application, p Tok
 	}
 
 	response, err := s.issue(ctx, grant{
-		app:      app,
-		user:     user,
-		scopes:   strings.Fields(device.Scope),
-		audience: device.Audience,
-		authTime: *device.AuthenticatedAt,
-		session:  device.SessionID,
-		dpopKey:  p.dpopKey,
-		refusal:  ErrInvalidGrant,
+		app:         app,
+		user:        user,
+		scopes:      strings.Fields(device.Scope),
+		audience:    device.Audience,
+		authTime:    *device.AuthenticatedAt,
+		session:     device.SessionID,
+		dpopKey:     p.dpopKey,
+		certificate: p.certificate,
+		refusal:     ErrInvalidGrant,
 	})
 	if err != nil {
 		return nil, err

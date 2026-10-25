@@ -20,7 +20,21 @@ var (
 	tooManyURIs            = respond.Define(http.StatusBadRequest, "application_too_many_uris", respond.Admin)
 	typeInvalid            = respond.Define(http.StatusBadRequest, "application_type_invalid", respond.Admin)
 	loginFlowUnknown       = respond.Define(http.StatusBadRequest, "application_login_flow_unknown", respond.Admin)
+	mtlsOff                = respond.Define(http.StatusBadRequest, "application_mtls_off", respond.Admin)
+	authoritiesMissing     = respond.Define(http.StatusBadRequest, "application_tls_authorities_missing", respond.Admin)
 )
+
+// check refuses what needs mutual TLS on a server that does not offer it:
+// the application could never get a token.
+func (m MutualTLS) check(app *model.Application) error {
+	switch {
+	case (app.TokenAuthMethod.UsesCertificate() || app.CertificateBoundTokens) && !m.On:
+		return mtlsOff.With()
+	case app.TokenAuthMethod == model.AuthTLSClient && !m.Authorities:
+		return authoritiesMissing.With()
+	}
+	return nil
+}
 
 func (r *applicationRequest) applyTo(app *model.Application, creating bool) error {
 	r.clean()
@@ -53,6 +67,10 @@ func (r *applicationRequest) applyTo(app *model.Application, creating bool) erro
 	app.Scopes = r.Scopes
 	app.RequirePKCE = validate.Flag(r.RequirePKCE, app.RequirePKCE)
 	app.RequirePushedRequests = validate.Flag(r.RequirePushedRequests, app.RequirePushedRequests)
+	app.TLSSubjectKind = model.TLSSubjectKind(r.TLSSubjectKind)
+	app.TLSSubject = r.TLSSubject
+	app.TLSCertificates = r.TLSCertificates
+	app.CertificateBoundTokens = validate.Flag(r.CertificateBoundTokens, app.CertificateBoundTokens)
 	app.AccessTokenLifetime = r.AccessTokenLifetime
 	app.IDTokenLifetime = r.IDTokenLifetime
 	app.RefreshTokenLifetime = r.RefreshTokenLifetime

@@ -44,6 +44,7 @@ set_value ADMIN_URL http://localhost:8081
 set_value ID_PUBLISH 127.0.0.1:8080
 set_value CONSOLE_PUBLISH 127.0.0.1:8081
 set_value APP_ADDRESS_HEADER ""
+set_value APP_CLIENT_CERT_HEADER ""
 
 # Redis keeps nothing on disk and reads its password at every start, so one
 # can be filled in at any time, including into a deploy/.env made before it

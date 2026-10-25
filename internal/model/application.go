@@ -44,6 +44,18 @@ type Application struct {
 
 	TokenAuthMethod AuthMethod `gorm:"type:varchar(32);not null" json:"token_auth_method"`
 
+	// How a client authenticating with a certificate is recognised (RFC 8705
+	// §2): tls_client_auth names the one subject its CA-issued certificate
+	// must carry; self_signed_tls_client_auth registers the certificates
+	// themselves, which are public.
+	TLSSubjectKind  TLSSubjectKind `gorm:"column:tls_subject_kind;type:varchar(16);not null;default:''" json:"tls_subject_kind"`
+	TLSSubject      string         `gorm:"column:tls_subject;size:512;not null;default:''" json:"tls_subject"`
+	TLSCertificates []string       `gorm:"column:tls_certificates;type:text;serializer:json" json:"tls_certificates"`
+	// CertificateBoundTokens binds its access tokens to the certificate the
+	// token request came with (RFC 8705 §3), so a copied token is no use
+	// without the certificate's key.
+	CertificateBoundTokens bool `gorm:"not null;default:false" json:"tls_client_certificate_bound_access_tokens"`
+
 	GrantTypes             []string `gorm:"type:text;serializer:json" json:"grant_types"`
 	RedirectURIs           []string `gorm:"type:text;serializer:json" json:"redirect_uris"`
 	PostLogoutRedirectURIs []string `gorm:"type:text;serializer:json" json:"post_logout_redirect_uris"`
@@ -109,7 +121,33 @@ const (
 	AuthClientSecretBasic AuthMethod = "client_secret_basic"
 	AuthClientSecretPost  AuthMethod = "client_secret_post"
 	AuthNone              AuthMethod = "none"
+	// AuthTLSClient and AuthSelfSignedTLSClient are mutual TLS (RFC 8705):
+	// the client proves itself with the certificate of its TLS connection.
+	AuthTLSClient           AuthMethod = "tls_client_auth"
+	AuthSelfSignedTLSClient AuthMethod = "self_signed_tls_client_auth"
 )
+
+var AuthMethods = []AuthMethod{AuthClientSecretBasic, AuthClientSecretPost, AuthNone, AuthTLSClient, AuthSelfSignedTLSClient}
+
+// UsesCertificate says the method authenticates with a TLS client
+// certificate rather than a secret.
+func (m AuthMethod) UsesCertificate() bool {
+	return m == AuthTLSClient || m == AuthSelfSignedTLSClient
+}
+
+// TLSSubjectKind is the one field of a CA-issued certificate that names the
+// client (RFC 8705 §2.1.2).
+type TLSSubjectKind string
+
+const (
+	TLSSubjectDN    TLSSubjectKind = "subject_dn"
+	TLSSubjectDNS   TLSSubjectKind = "san_dns"
+	TLSSubjectURI   TLSSubjectKind = "san_uri"
+	TLSSubjectIP    TLSSubjectKind = "san_ip"
+	TLSSubjectEmail TLSSubjectKind = "san_email"
+)
+
+var TLSSubjectKinds = []TLSSubjectKind{TLSSubjectDN, TLSSubjectDNS, TLSSubjectURI, TLSSubjectIP, TLSSubjectEmail}
 
 // The grants an application may use. The implicit and resource owner password
 // grants are left out on purpose: RFC 9700 says not to use them.
@@ -159,8 +197,9 @@ func (a Application) SignsUsersIn() bool {
 	return slices.Contains(a.GrantTypes, GrantAuthorizationCode) || slices.Contains(a.GrantTypes, GrantDeviceCode)
 }
 
+// HasSecret says the application authenticates with a client secret.
 func (a Application) HasSecret() bool {
-	return a.TokenAuthMethod != AuthNone
+	return a.TokenAuthMethod == AuthClientSecretBasic || a.TokenAuthMethod == AuthClientSecretPost
 }
 
 // MustUsePKCE is whether an authorization request has to carry a
@@ -212,6 +251,16 @@ func (a *Application) Normalize() {
 		a.TokenAuthMethod = AuthClientSecretBasic
 	}
 
+	if a.TokenAuthMethod != AuthTLSClient {
+		a.TLSSubjectKind = ""
+		a.TLSSubject = ""
+	}
+	if a.TokenAuthMethod != AuthSelfSignedTLSClient {
+		a.TLSCertificates = []string{}
+	}
+	a.TLSSubject = strings.TrimSpace(a.TLSSubject)
+	a.TLSCertificates = tidyCertificates(a.TLSCertificates)
+
 	if a.Type != AppNative {
 		a.AllowDevelopmentRedirects = false
 	}
@@ -242,10 +291,12 @@ func (a Application) Validate() error {
 		return fmt.Errorf("type must be one of: web, spa, native, m2m")
 	}
 
-	switch a.TokenAuthMethod {
-	case AuthClientSecretBasic, AuthClientSecretPost, AuthNone:
-	default:
-		return fmt.Errorf("token_auth_method must be one of: client_secret_basic, client_secret_post, none")
+	if !slices.Contains(AuthMethods, a.TokenAuthMethod) {
+		return fmt.Errorf("token_auth_method must be one of: client_secret_basic, client_secret_post, none, tls_client_auth, self_signed_tls_client_auth")
+	}
+
+	if err := a.validateCertificates(); err != nil {
+		return err
 	}
 
 	for _, grant := range a.GrantTypes {
