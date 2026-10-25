@@ -95,7 +95,9 @@ test-web: ## Run the apps' unit tests only
 
 test-integration: ## Run the TestLive… tests against Postgres and Redis (throwaway databases)
 	@. scripts/lib.sh && load_env && \
-		VARD_TEST_DB_DSN="$${DB_URL:-$$VARD_DB_DSN}" \
+		dsn="$${VARD_TEST_DB_DSN:-$${DB_URL:-$$VARD_DB_DSN}}" && \
+		{ [[ -n "$$dsn" ]] || { echo "test-integration: no database to test against: set VARD_DB_DSN in .env, or VARD_TEST_DB_DSN" >&2; exit 1; }; } && \
+		VARD_TEST_DB_DSN="$$dsn" \
 		VARD_TEST_REDIS="$${VARD_TEST_REDIS:-$${VARD_REDIS_HOST:+$$VARD_REDIS_HOST:$${VARD_REDIS_PORT:-6379}}}" \
 		go test -count=1 -run Live ./internal/...
 

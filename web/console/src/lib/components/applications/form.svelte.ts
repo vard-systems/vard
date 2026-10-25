@@ -5,7 +5,7 @@ import type {
 	GrantType,
 	Scope
 } from '#lib/api/index.js';
-import { blank, lines, types } from './applications';
+import { blank, certificates, lines, types } from './applications';
 
 const MINUTE = 60;
 const DAY = 24 * 60 * MINUTE;
@@ -17,6 +17,8 @@ export class ApplicationForm {
 	input = $state<ApplicationInput>(blank('web'));
 	redirects = $state('');
 	logoutRedirects = $state('');
+	/** A self-signed client's certificates, pasted as PEM one after another. */
+	certificates = $state('');
 	accessMinutes = $state('60');
 	idMinutes = $state('60');
 	refreshDays = $state('30');
@@ -36,8 +38,10 @@ export class ApplicationForm {
 			grant_types: [...input.grant_types],
 			scopes: [...input.scopes],
 			redirect_uris: [...input.redirect_uris],
-			post_logout_redirect_uris: [...input.post_logout_redirect_uris]
+			post_logout_redirect_uris: [...input.post_logout_redirect_uris],
+			tls_certificates: [...input.tls_certificates]
 		};
+		this.certificates = input.tls_certificates.join('\n');
 		this.redirects = input.redirect_uris.join('\n');
 		this.logoutRedirects = input.post_logout_redirect_uris.join('\n');
 		this.accessMinutes = String(Math.round(input.access_token_lifetime / MINUTE));
@@ -68,6 +72,8 @@ export class ApplicationForm {
 			frontchannel_logout_uri: this.input.frontchannel_logout_uri.trim(),
 			redirect_uris: lines(this.redirects),
 			post_logout_redirect_uris: lines(this.logoutRedirects),
+			tls_subject: this.input.tls_subject.trim(),
+			tls_certificates: certificates(this.certificates),
 			access_token_lifetime: Number(this.accessMinutes) * MINUTE,
 			id_token_lifetime: Number(this.idMinutes) * MINUTE,
 			refresh_token_lifetime: Number(this.refreshDays) * DAY

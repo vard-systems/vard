@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"maps"
@@ -24,6 +25,9 @@ type ClientAuth struct {
 	ID     string
 	Secret string
 	Method model.AuthMethod
+	// Certificate is the TLS client certificate the request came with, over
+	// the mutual TLS host; nil otherwise.
+	Certificate *x509.Certificate
 }
 
 func (s *Service) authenticate(ctx context.Context, auth ClientAuth) (*model.Application, error) {
@@ -41,6 +45,13 @@ func (s *Service) authenticate(ctx context.Context, auth ClientAuth) (*model.App
 
 	registered := app.TokenAuthMethod
 	switch {
+	case registered.UsesCertificate() && auth.Method != model.AuthNone:
+		return nil, oauthError(ErrInvalidClient, "this client authenticates with its TLS client certificate, not a secret")
+	case registered.UsesCertificate() && auth.Certificate == nil:
+		return nil, oauthError(ErrInvalidClient, "this client authenticates with a TLS client certificate: call the endpoint in mtls_endpoint_aliases")
+	case registered.UsesCertificate() && !app.MatchesCertificate(auth.Certificate, s.clientCAs, s.now()):
+		return nil, oauthError(ErrInvalidClient, "client authentication failed")
+	case registered.UsesCertificate():
 	case registered == model.AuthNone && auth.Method != model.AuthNone:
 		return nil, oauthError(ErrInvalidClient, "this is a public client: send client_id alone, with no secret")
 	case registered != model.AuthNone && auth.Method != registered:
@@ -71,6 +82,9 @@ type TokenParams struct {
 
 	// dpopKey is the thumbprint of the key the proof showed, once checked.
 	dpopKey string
+	// certificate is the x5t#S256 of the client certificate the tokens are
+	// bound to, when the application binds them.
+	certificate string
 }
 
 // TokenResponse is a successful token response (RFC 6749 section 5.1).
@@ -100,6 +114,13 @@ func (s *Service) Token(ctx context.Context, p TokenParams) (*TokenResponse, err
 		if p.dpopKey, err = s.checkDPoP(ctx, p.DPoP, "POST", s.issuer+PathToken, ""); err != nil {
 			return nil, err
 		}
+	}
+
+	if app.CertificateBoundTokens {
+		if p.Client.Certificate == nil {
+			return nil, oauthError(ErrInvalidRequest, "this application's tokens are bound to its TLS client certificate: call the endpoint in mtls_endpoint_aliases with one")
+		}
+		p.certificate = model.CertificateThumbprint(p.Client.Certificate)
 	}
 
 	switch p.GrantType {
@@ -144,9 +165,9 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		return nil, oauthError(ErrInvalidGrant, "the authorization code has expired")
 	case p.RedirectURI != code.RedirectURI:
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri does not match the authorization request")
-	case !slices.Contains(app.RedirectURIs, code.RedirectURI):
+	case !app.AllowsRedirect(code.RedirectURI):
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri is no longer registered for this application")
-	case app.RequirePKCE && code.CodeChallenge == "":
+	case app.MustUsePKCE() && code.CodeChallenge == "":
 		return nil, oauthError(ErrInvalidGrant, "this application now requires PKCE")
 	case code.CodeChallenge != "" && !model.VerifyPKCE(code.CodeChallenge, p.CodeVerifier):
 		return nil, oauthError(ErrInvalidGrant, "code_verifier does not match the code_challenge")
@@ -178,16 +199,17 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 	}
 
 	response, err := s.issue(ctx, grant{
-		app:      app,
-		user:     user,
-		scopes:   strings.Fields(code.Scope),
-		audience: code.Audience,
-		nonce:    code.Nonce,
-		authTime: code.AuthenticatedAt,
-		session:  code.SessionID,
-		codeID:   &code.ID,
-		dpopKey:  p.dpopKey,
-		refusal:  ErrInvalidGrant,
+		app:         app,
+		user:        user,
+		scopes:      strings.Fields(code.Scope),
+		audience:    code.Audience,
+		nonce:       code.Nonce,
+		authTime:    code.AuthenticatedAt,
+		session:     code.SessionID,
+		codeID:      &code.ID,
+		dpopKey:     p.dpopKey,
+		certificate: p.certificate,
+		refusal:     ErrInvalidGrant,
 	})
 	if err != nil {
 		return nil, err
@@ -222,22 +244,33 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		return nil, oauthError(ErrInvalidGrant, "the refresh token was issued to another client")
 	}
 
+	var again string
 	if old.RevokedAt != nil {
-		// A replaced token presented again: one of the two presenters is not
-		// the client. The whole family goes, so the thief's copy dies too.
-		if err := s.store.RevokeRefreshFamily(ctx, old.FamilyID, now); err != nil {
+		if again, err = s.retried(ctx, old, now); err != nil {
 			return nil, err
 		}
-		return nil, oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+		if again == "" {
+			// A replaced token presented again: one of the two presenters is
+			// not the client. The whole family goes, so the thief's copy dies
+			// too.
+			if err := s.store.RevokeRefreshFamily(ctx, old.FamilyID, now); err != nil {
+				return nil, err
+			}
+			return nil, oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+		}
 	}
 
-	if !old.Usable(now) {
+	if !now.Before(old.ExpiresAt) {
 		return nil, oauthError(ErrInvalidGrant, "the refresh token has expired")
 	}
 
-	// A family bound to a key goes on only with a proof from that key.
+	// A family bound to a key or a certificate goes on only with a proof of
+	// it.
 	if old.DPoPKey != "" && p.dpopKey != old.DPoPKey {
 		return nil, oauthError(ErrInvalidGrant, "the refresh token is bound to a DPoP key; send a proof from it")
+	}
+	if old.CertificateThumbprint != "" && p.certificate != old.CertificateThumbprint {
+		return nil, oauthError(ErrInvalidGrant, "the refresh token is bound to a TLS client certificate; send it over a connection with that certificate")
 	}
 
 	original := strings.Fields(old.Scope)
@@ -260,15 +293,17 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 	}
 
 	return s.issue(ctx, grant{
-		app:      app,
-		user:     user,
-		scopes:   scopes,
-		audience: old.Audience,
-		authTime: old.AuthenticatedAt,
-		session:  old.SessionID,
-		replaces: old,
-		dpopKey:  p.dpopKey,
-		refusal:  ErrInvalidGrant,
+		app:         app,
+		user:        user,
+		scopes:      scopes,
+		audience:    old.Audience,
+		authTime:    old.AuthenticatedAt,
+		session:     old.SessionID,
+		replaces:    old,
+		again:       again,
+		dpopKey:     p.dpopKey,
+		certificate: p.certificate,
+		refusal:     ErrInvalidGrant,
 	})
 }
 
@@ -278,11 +313,12 @@ func (s *Service) clientCredentials(ctx context.Context, app *model.Application,
 	}
 
 	return s.issue(ctx, grant{
-		app:      app,
-		scopes:   strings.Fields(p.Scope),
-		audience: p.Audience,
-		dpopKey:  p.dpopKey,
-		refusal:  ErrUnauthorizedClient,
+		app:         app,
+		scopes:      strings.Fields(p.Scope),
+		audience:    p.Audience,
+		dpopKey:     p.dpopKey,
+		certificate: p.certificate,
+		refusal:     ErrUnauthorizedClient,
 	})
 }
 
@@ -296,9 +332,14 @@ type grant struct {
 	session  *uuid.UUID
 	codeID   *uuid.UUID
 	replaces *model.RefreshToken
+	// again is the refresh token a retry within the grace is given back:
+	// the one that already replaced `replaces`.
+	again string
 	// dpopKey binds the tokens to a key, when the request proved one.
 	dpopKey string
-	refusal string
+	// certificate binds them to a TLS client certificate's x5t#S256.
+	certificate string
+	refusal     string
 }
 
 func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
@@ -317,8 +358,8 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 
 	access := evaluated.AccessToken
 	access["jti"] = jti.String()
-	if g.dpopKey != "" {
-		access["cnf"] = map[string]any{"jkt": g.dpopKey}
+	if cnf := confirmation(g); len(cnf) > 0 {
+		access["cnf"] = cnf
 	}
 	if g.user != nil {
 		access["auth_time"] = g.authTime.Unix()
@@ -371,7 +412,10 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 	// A refresh always rotates, even if offline_access was narrowed away, so a
 	// stolen token cannot be replayed without reaching reuse detection. Other
 	// grants get a refresh token only with offline_access.
-	if g.user != nil && (g.replaces != nil || slices.Contains(strings.Fields(granted), model.ScopeOfflineAccess)) {
+	switch {
+	case g.again != "":
+		response.RefreshToken = g.again
+	case g.user != nil && (g.replaces != nil || slices.Contains(strings.Fields(granted), model.ScopeOfflineAccess)):
 		token, err := s.newRefreshToken(ctx, g, granted)
 		if err != nil {
 			return nil, err
@@ -391,16 +435,17 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 	}
 
 	next := &model.RefreshToken{
-		TokenHash:       hash,
-		ApplicationID:   g.app.ID,
-		UserID:          g.user.ID,
-		CodeID:          g.codeID,
-		SessionID:       g.session,
-		DPoPKey:         refreshBinding(g),
-		Scope:           scope,
-		Audience:        g.audience,
-		AuthenticatedAt: g.authTime,
-		ExpiresAt:       now.Add(time.Duration(g.app.RefreshTokenLifetime) * time.Second),
+		TokenHash:             hash,
+		ApplicationID:         g.app.ID,
+		UserID:                g.user.ID,
+		CodeID:                g.codeID,
+		SessionID:             g.session,
+		DPoPKey:               refreshBinding(g, g.dpopKey),
+		CertificateThumbprint: refreshBinding(g, g.certificate),
+		Scope:                 scope,
+		Audience:              g.audience,
+		AuthenticatedAt:       g.authTime,
+		ExpiresAt:             now.Add(time.Duration(g.app.RefreshTokenLifetime) * time.Second),
 	}
 
 	if g.replaces == nil {
@@ -413,18 +458,77 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 	next.FamilyID = g.replaces.FamilyID
 	next.CodeID = g.replaces.CodeID
 	next.DPoPKey = g.replaces.DPoPKey
+	next.CertificateThumbprint = g.replaces.CertificateThumbprint
 	next.ExpiresAt = g.replaces.ExpiresAt
 
-	err = s.store.RotateRefreshToken(ctx, g.replaces, next, now)
-	if errors.Is(err, store.ErrAlreadyUsed) {
-		// Another request rotated it first: the same replay as above.
-		if err := s.store.RevokeRefreshFamily(ctx, g.replaces.FamilyID, now); err != nil {
-			return "", err
-		}
-		return "", oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+	if next.ID, err = uuid.NewV7(); err != nil {
+		return "", err
+	}
+	sealed, err := s.sealer.SealBytes([]byte(token))
+	if err != nil {
+		return "", err
 	}
 
-	return token, err
+	err = s.store.RotateRefreshToken(ctx, g.replaces, next, sealed, now)
+	if !errors.Is(err, store.ErrAlreadyUsed) {
+		return token, err
+	}
+
+	// Another request rotated it first: a retry racing the first, which gets
+	// what the first got, or the same replay as above.
+	current, err := s.store.RefreshToken(ctx, g.replaces.ID)
+	if err != nil {
+		return "", err
+	}
+	again, err := s.retried(ctx, current, now)
+	if err != nil || again != "" {
+		return again, err
+	}
+	if err := s.store.RevokeRefreshFamily(ctx, g.replaces.FamilyID, now); err != nil {
+		return "", err
+	}
+	return "", oauthError(ErrInvalidGrant, "the refresh token has been revoked")
+}
+
+// maxRetryHops bounds how far retried follows a chain of replacements.
+const maxRetryHops = 8
+
+// retried is the refresh token a replaced one is answered with when it comes
+// within the grace: the token that replaced it, or, if that was itself
+// replaced within the grace, its replacement, as long as one is still live.
+// "" when there is none, which makes the presentation a replay.
+func (s *Service) retried(ctx context.Context, replaced *model.RefreshToken, now time.Time) (string, error) {
+	current := replaced
+	for range maxRetryHops {
+		if !current.InGrace(now) {
+			// Read past its grace, a sealed copy is of no more use.
+			if len(current.SuccessorSealed) > 0 {
+				if err := s.store.ForgetRefreshSuccessor(ctx, current.ID); err != nil {
+					return "", err
+				}
+			}
+			return "", nil
+		}
+
+		next, err := s.store.RefreshToken(ctx, *current.SuccessorID)
+		if errors.Is(err, store.ErrNotFound) {
+			return "", nil
+		}
+		if err != nil {
+			return "", err
+		}
+
+		if next.Usable(now) {
+			plain, err := s.sealer.OpenBytes(current.SuccessorSealed)
+			if err != nil {
+				return "", err
+			}
+			return string(plain), nil
+		}
+		current = next
+	}
+
+	return "", nil
 }
 
 // tokenType is Bearer, or DPoP for a token bound to a key.
@@ -435,13 +539,27 @@ func tokenType(dpopKey string) string {
 	return "Bearer"
 }
 
-// refreshBinding is the key a new family is bound to: a public client's, since
-// a confidential one is bound by its own credentials (RFC 9449 §5).
-func refreshBinding(g grant) string {
+// refreshBinding is what a new family is bound to, of the key or certificate
+// the request proved: a public client's, since a confidential one is bound by
+// its own credentials (RFC 9449 §5, RFC 8705 §4).
+func refreshBinding(g grant, proved string) string {
 	if g.app.Type.Public() {
-		return g.dpopKey
+		return proved
 	}
 	return ""
+}
+
+// confirmation is an access token's cnf: the DPoP key and the TLS client
+// certificate it is bound to, as many as it is.
+func confirmation(g grant) map[string]any {
+	cnf := map[string]any{}
+	if g.dpopKey != "" {
+		cnf["jkt"] = g.dpopKey
+	}
+	if g.certificate != "" {
+		cnf[confirmationCertificate] = g.certificate
+	}
+	return cnf
 }
 
 type accessClaims struct {

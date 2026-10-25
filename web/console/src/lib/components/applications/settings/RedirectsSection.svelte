@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FormSection, Input, Textarea } from '#lib/components/ui/index.js';
+	import { FormSection, Input, Note, SwitchField, Textarea } from '#lib/components/ui/index.js';
 	import type { ApplicationForm } from '../form.svelte';
 
 	type Props = { form: ApplicationForm };
@@ -17,9 +17,23 @@
 		rows={3}
 		placeholder="https://shop.example.com/auth/callback"
 		hint={form.input.type === 'native'
-			? 'One per line. https, a loopback address, or a private-use scheme such as com.example.app:/callback.'
+			? 'One per line. https, a private-use scheme such as com.example.app:/callback, or a loopback address such as http://127.0.0.1/callback, which matches on any port.'
 			: 'One per line. https, or http on localhost.'}
 	/>
+
+	{#if form.input.type === 'native'}
+		<SwitchField
+			label="Allow development redirects"
+			description="Lets this app register Expo Go's exp:// addresses while it is developed."
+			bind:checked={form.input.allow_development_redirects}
+		/>
+		{#if form.input.allow_development_redirects}
+			<Note boxed>
+				exp:// addresses name a developer's machine on their network. Remove them and turn this off
+				before the app is released.
+			</Note>
+		{/if}
+	{/if}
 
 	<Textarea
 		label="Post-logout redirect URIs"

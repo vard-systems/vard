@@ -1,8 +1,16 @@
 <script lang="ts">
-	import type { Application } from '#lib/api/index.js';
-	import { Button, FormSection, Input, Note, Select } from '#lib/components/ui/index.js';
+	import type { Application, AuthMethod } from '#lib/api/index.js';
+	import {
+		Button,
+		FormSection,
+		Input,
+		Note,
+		Select,
+		SwitchField,
+		Textarea
+	} from '#lib/components/ui/index.js';
 	import { formatDateTime } from '#lib/utils/format.js';
-	import { authMethods } from '../applications';
+	import { authMethods, tlsSubjectKinds } from '../applications';
 	import type { ApplicationForm } from '../form.svelte';
 
 	type Props = {
@@ -19,6 +27,19 @@
 	const maskedSecret = $derived(
 		current?.has_secret ? `••••••••••••••••${current.secret_hint}` : 'No secret yet'
 	);
+
+	const method = $derived(form.input.token_auth_method);
+	const usesSecret = $derived(method === 'client_secret_basic' || method === 'client_secret_post');
+	const subjectKind = $derived(
+		tlsSubjectKinds.find((kind) => kind.value === form.input.tls_subject_kind)
+	);
+
+	/** tls_client_auth always names one subject; start it on the most common. */
+	function chosen(next: AuthMethod): void {
+		if (next === 'tls_client_auth' && form.input.tls_subject_kind === '') {
+			form.input.tls_subject_kind = 'subject_dn';
+		}
+	}
 </script>
 
 <FormSection
@@ -31,7 +52,9 @@
 		<Input label="Client ID" value={current.client_id} readOnly copyable />
 	{:else}
 		<Note boxed>
-			The client ID{form.kind.public ? '' : ' and secret'} are made when you create the application.
+			{usesSecret
+				? 'The client ID and secret are made when you create the application.'
+				: 'The client ID is made when you create the application.'}
 		</Note>
 	{/if}
 
@@ -40,9 +63,33 @@
 			label="Client authentication"
 			bind:value={form.input.token_auth_method}
 			options={authMethods}
+			onChange={chosen}
 		/>
 
-		{#if current}
+		{#if method === 'tls_client_auth'}
+			<Select
+				label="Certificate subject"
+				bind:value={form.input.tls_subject_kind}
+				options={tlsSubjectKinds}
+			/>
+			<Input
+				label={subjectKind?.label ?? 'Subject'}
+				bind:value={form.input.tls_subject}
+				hint={subjectKind?.description}
+				required
+			/>
+		{:else if method === 'self_signed_tls_client_auth'}
+			<Textarea
+				label="Certificates"
+				bind:value={form.certificates}
+				rows={6}
+				hint="PEM, one after another: the certificate in use, and the next one while it is rolled over."
+				spellcheck={false}
+				required
+			/>
+		{/if}
+
+		{#if current && usesSecret}
 			<div class="secret">
 				<Input
 					label="Client secret"
@@ -64,6 +111,12 @@
 			</div>
 		{/if}
 	{/if}
+
+	<SwitchField
+		label="Bind tokens to the client certificate"
+		description="Access tokens carry the certificate's thumbprint, and are taken only over mutual TLS with that certificate (RFC 8705). Needs mutual TLS on the server."
+		bind:checked={form.input.tls_client_certificate_bound_access_tokens}
+	/>
 </FormSection>
 
 <style>

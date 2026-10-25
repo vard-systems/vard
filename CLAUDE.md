@@ -28,7 +28,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Run only the API                   | `make run`                                                                                    |
 | Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                                   |
 | Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                              |
-| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs)                                    |
+| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs; fails with no database)            |
 | Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                                      |
 | Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                           |
 | Console's generated files          | `make generate` (theme tokens, fonts)                                                         |
@@ -125,10 +125,20 @@ code near it, and add a test when adding a case.
 - **Secrets are stored hashed or sealed, never plain.** Codes, refresh tokens,
   sessions and reset links are 256 random bits kept as a SHA-256
   (`model.NewSecret` / `HashSecret`). Provider secrets, SMTP passwords and TOTP
-  seeds are sealed with `jose.Sealer`. Recovery codes are hashed.
+  seeds are sealed with `jose.Sealer`. Recovery codes are hashed. The one
+  secret also kept recoverable is a refresh token that has just replaced
+  another: sealed on the replaced row (`successor_sealed`) for the grace
+  below, and cleared within one more — when read past it, at the family's
+  next rotation, and by `KeepSwept` every `model.RefreshReuseGrace`. Nothing
+  else may keep a token it hands out.
 - **Single-use means one atomic `UPDATE … WHERE used_at IS NULL`** checked by
   `RowsAffected`, never read-then-write. A replayed code revokes what the
-  first use issued; a replayed refresh token revokes its family.
+  first use issued; a replayed refresh token revokes its family — unless it
+  was replaced less than `model.RefreshReuseGrace` (30 s) before, when it is
+  answered with the very token that replaced it, so every copy a client holds
+  stays good and a family never has two live tokens. The retry is checked
+  like any refresh — client authentication, then DPoP key and certificate —
+  before it is given anything.
 - **Session cookies are read through `session.Token`, `session.UserToken` or
   `session.SignInState`**, which treat a duplicated cookie (planted from a
   sibling subdomain) as none. Never `c.Cookie(...)` for a session.
@@ -136,7 +146,10 @@ code near it, and add a test when adding a case.
   metadata, back-channel logout) go through `newFederationClient` in
   `internal/oidc/outbound.go`, which refuses private, link-local and metadata
   addresses at dial time. A logout token follows no redirect.
-- **Redirect targets** are exact-matched redirect URIs, or a path checked by
+- **Redirect targets** are exact-matched redirect URIs
+  (`Application.AllowsRedirect`: a native app's loopback URI on any port, RFC
+  8252 §7.3, and nothing else loosened; Expo Go's `exp://` only for a native
+  app with `allow_development_redirects`), or a path checked by
   `safePath` (Go) / `safeNext` (`web/id`). Never redirect to a raw parameter.
 - **A second factor is guessed against the account's lockout.** Every answer
   is counted before it is checked, and a right password does not give its
@@ -152,7 +165,19 @@ code near it, and add a test when adding a case.
   recorded once. Device user codes are short, so they are kept as a keyed hash
   and entering them is rate-limited.
 - **A DPoP-bound access token is never taken as a bearer token.** Userinfo
-  checks its proof; the account and admin APIs, which do not, refuse it.
+  checks its proof; the account and admin APIs, which do not, refuse it. The
+  same goes for a certificate-bound one (`cnf.x5t#S256`).
+- **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
+  whatever its `RequirePKCE` says, and a code asked for with a challenge is
+  never exchanged without its verifier.
+- **A TLS client certificate is believed only as nginx passed it on.** nginx
+  asks for one on the mutual TLS host alone (`VARD_MTLS_URL`) and clears the
+  header everywhere else (`TestNginxPassesOnlyTheConnectionsCertificate`);
+  the id app passes it on only from
+  `CLIENT_CERT_HEADER`, and the API reads it (`api/kit/clientcert`) only with
+  mutual TLS on and from `VARD_TRUSTED_PROXIES`. A self-signed client is the
+  exact certificate it registered; a `tls_client_auth` one chains to
+  `VARD_MTLS_CA_FILE` and carries its one registered subject.
 - **Registering a client takes an initial access token** (an admin API token
   with `applications.write`); `/oauth2/register` is never open.
 - **Unknown accounts cost the same as wrong passwords** (`CompareDummyPassword`),

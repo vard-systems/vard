@@ -27,12 +27,20 @@ type Handler struct {
 	log   *slog.Logger
 
 	issuer string
+	mtls   MutualTLS
+}
+
+// MutualTLS is what the server offers of RFC 8705: certificates at all
+// (VARD_MTLS_URL), and CA-issued ones (VARD_MTLS_CA_FILE).
+type MutualTLS struct {
+	On          bool
+	Authorities bool
 }
 
 // New returns a Handler. `issuer` is VARD_ISSUER, which tokens name the
 // server by.
-func New(st *store.Store, recorder audit.Recorder, log *slog.Logger, issuer string) *Handler {
-	return &Handler{store: st, audit: recorder, log: log, issuer: issuer}
+func New(st *store.Store, recorder audit.Recorder, log *slog.Logger, issuer string, mtls MutualTLS) *Handler {
+	return &Handler{store: st, audit: recorder, log: log, issuer: issuer, mtls: mtls}
 }
 
 // List returns a page of the applications the administrator can see, sorted
@@ -87,6 +95,10 @@ func (h *Handler) Create(c *gin.Context) {
 		respond.Failure(c, h.log, err, "checking an application failed")
 		return
 	}
+	if err := h.mtls.check(app); err != nil {
+		respond.Failure(c, h.log, err, "checking an application failed")
+		return
+	}
 
 	clientID, err := model.NewClientID()
 	if err != nil {
@@ -134,6 +146,10 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	if err := req.applyTo(app, false); err != nil {
+		respond.Failure(c, h.log, err, "checking an application failed")
+		return
+	}
+	if err := h.mtls.check(app); err != nil {
 		respond.Failure(c, h.log, err, "checking an application failed")
 		return
 	}

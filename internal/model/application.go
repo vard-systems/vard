@@ -44,10 +44,26 @@ type Application struct {
 
 	TokenAuthMethod AuthMethod `gorm:"type:varchar(32);not null" json:"token_auth_method"`
 
+	// How a client authenticating with a certificate is recognised (RFC 8705
+	// §2): tls_client_auth names the one subject its CA-issued certificate
+	// must carry; self_signed_tls_client_auth registers the certificates
+	// themselves, which are public.
+	TLSSubjectKind  TLSSubjectKind `gorm:"column:tls_subject_kind;type:varchar(16);not null;default:''" json:"tls_subject_kind"`
+	TLSSubject      string         `gorm:"column:tls_subject;size:512;not null;default:''" json:"tls_subject"`
+	TLSCertificates []string       `gorm:"column:tls_certificates;type:text;serializer:json" json:"tls_certificates"`
+	// CertificateBoundTokens binds its access tokens to the certificate the
+	// token request came with (RFC 8705 §3), so a copied token is no use
+	// without the certificate's key.
+	CertificateBoundTokens bool `gorm:"not null;default:false" json:"tls_client_certificate_bound_access_tokens"`
+
 	GrantTypes             []string `gorm:"type:text;serializer:json" json:"grant_types"`
 	RedirectURIs           []string `gorm:"type:text;serializer:json" json:"redirect_uris"`
 	PostLogoutRedirectURIs []string `gorm:"type:text;serializer:json" json:"post_logout_redirect_uris"`
-	Scopes                 []string `gorm:"type:text;serializer:json" json:"scopes"`
+	// AllowDevelopmentRedirects lets a native app register Expo Go's exp://
+	// addresses while it is developed. They name a developer's machine on
+	// their network, so a released app turns it off.
+	AllowDevelopmentRedirects bool     `gorm:"not null;default:false" json:"allow_development_redirects"`
+	Scopes                    []string `gorm:"type:text;serializer:json" json:"scopes"`
 
 	// BackchannelLogoutURI is told, server to server, when a session the
 	// application signed someone in through ends (OpenID Connect
@@ -105,7 +121,33 @@ const (
 	AuthClientSecretBasic AuthMethod = "client_secret_basic"
 	AuthClientSecretPost  AuthMethod = "client_secret_post"
 	AuthNone              AuthMethod = "none"
+	// AuthTLSClient and AuthSelfSignedTLSClient are mutual TLS (RFC 8705):
+	// the client proves itself with the certificate of its TLS connection.
+	AuthTLSClient           AuthMethod = "tls_client_auth"
+	AuthSelfSignedTLSClient AuthMethod = "self_signed_tls_client_auth"
 )
+
+var AuthMethods = []AuthMethod{AuthClientSecretBasic, AuthClientSecretPost, AuthNone, AuthTLSClient, AuthSelfSignedTLSClient}
+
+// UsesCertificate says the method authenticates with a TLS client
+// certificate rather than a secret.
+func (m AuthMethod) UsesCertificate() bool {
+	return m == AuthTLSClient || m == AuthSelfSignedTLSClient
+}
+
+// TLSSubjectKind is the one field of a CA-issued certificate that names the
+// client (RFC 8705 §2.1.2).
+type TLSSubjectKind string
+
+const (
+	TLSSubjectDN    TLSSubjectKind = "subject_dn"
+	TLSSubjectDNS   TLSSubjectKind = "san_dns"
+	TLSSubjectURI   TLSSubjectKind = "san_uri"
+	TLSSubjectIP    TLSSubjectKind = "san_ip"
+	TLSSubjectEmail TLSSubjectKind = "san_email"
+)
+
+var TLSSubjectKinds = []TLSSubjectKind{TLSSubjectDN, TLSSubjectDNS, TLSSubjectURI, TLSSubjectIP, TLSSubjectEmail}
 
 // The grants an application may use. The implicit and resource owner password
 // grants are left out on purpose: RFC 9700 says not to use them.
@@ -155,8 +197,49 @@ func (a Application) SignsUsersIn() bool {
 	return slices.Contains(a.GrantTypes, GrantAuthorizationCode) || slices.Contains(a.GrantTypes, GrantDeviceCode)
 }
 
+// HasSecret says the application authenticates with a client secret.
 func (a Application) HasSecret() bool {
-	return a.TokenAuthMethod != AuthNone
+	return a.TokenAuthMethod == AuthClientSecretBasic || a.TokenAuthMethod == AuthClientSecretPost
+}
+
+// MustUsePKCE is whether an authorization request has to carry a
+// code_challenge. A client with no credentials of its own always does
+// (RFC 9700 §2.1.1, OAuth 2.1): nothing else ties the code to the app that
+// asked for it, whatever RequirePKCE says.
+func (a Application) MustUsePKCE() bool {
+	return a.RequirePKCE || a.TokenAuthMethod == AuthNone
+}
+
+// AllowsRedirect is whether uri is one of the application's redirect URIs.
+// Matching is exact, but a native app's loopback URI matches on any port: the
+// app opens whichever port is free when it signs in (RFC 8252 §7.3).
+// localhost is taken as well as 127.0.0.1 and [::1], though RFC 8252 §8.3
+// advises against it, since a resolver may point it elsewhere; the docs and
+// the SDKs use the addresses.
+func (a Application) AllowsRedirect(uri string) bool {
+	if slices.Contains(a.RedirectURIs, uri) {
+		return true
+	}
+	if a.Type != AppNative {
+		return false
+	}
+
+	sent, err := url.Parse(uri)
+	if err != nil || sent.Scheme != "http" || !loopback(sent.Hostname()) {
+		return false
+	}
+
+	for _, registered := range a.RedirectURIs {
+		want, err := url.Parse(registered)
+		if err != nil || want.Scheme != "http" || !loopback(want.Hostname()) {
+			continue
+		}
+		if want.Hostname() == sent.Hostname() && want.Path == sent.Path && want.RawQuery == sent.RawQuery && sent.User == nil && sent.Fragment == "" {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (a *Application) Normalize() {
@@ -166,6 +249,20 @@ func (a *Application) Normalize() {
 		a.RequirePKCE = true
 	case a.TokenAuthMethod == "" || a.TokenAuthMethod == AuthNone:
 		a.TokenAuthMethod = AuthClientSecretBasic
+	}
+
+	if a.TokenAuthMethod != AuthTLSClient {
+		a.TLSSubjectKind = ""
+		a.TLSSubject = ""
+	}
+	if a.TokenAuthMethod != AuthSelfSignedTLSClient {
+		a.TLSCertificates = []string{}
+	}
+	a.TLSSubject = strings.TrimSpace(a.TLSSubject)
+	a.TLSCertificates = tidyCertificates(a.TLSCertificates)
+
+	if a.Type != AppNative {
+		a.AllowDevelopmentRedirects = false
 	}
 
 	if a.Type == AppM2M {
@@ -194,10 +291,12 @@ func (a Application) Validate() error {
 		return fmt.Errorf("type must be one of: web, spa, native, m2m")
 	}
 
-	switch a.TokenAuthMethod {
-	case AuthClientSecretBasic, AuthClientSecretPost, AuthNone:
-	default:
-		return fmt.Errorf("token_auth_method must be one of: client_secret_basic, client_secret_post, none")
+	if !slices.Contains(AuthMethods, a.TokenAuthMethod) {
+		return fmt.Errorf("token_auth_method must be one of: client_secret_basic, client_secret_post, none, tls_client_auth, self_signed_tls_client_auth")
+	}
+
+	if err := a.validateCertificates(); err != nil {
+		return err
 	}
 
 	for _, grant := range a.GrantTypes {
@@ -235,13 +334,13 @@ func (a Application) Validate() error {
 	}
 
 	for _, uri := range a.RedirectURIs {
-		if err := checkRedirectURI(uri, a.Type); err != nil {
+		if err := a.checkRedirectURI(uri); err != nil {
 			return fmt.Errorf("redirect_uris: %w", err)
 		}
 	}
 
 	for _, uri := range a.PostLogoutRedirectURIs {
-		if err := checkRedirectURI(uri, a.Type); err != nil {
+		if err := a.checkRedirectURI(uri); err != nil {
 			return fmt.Errorf("post_logout_redirect_uris: %w", err)
 		}
 	}
@@ -299,8 +398,11 @@ func (a Application) Validate() error {
 }
 
 // checkRedirectURI enforces RFC 9700: absolute, no fragment or wildcard, https
-// except on loopback, and for native apps a private-use scheme (RFC 8252).
-func checkRedirectURI(raw string, kind ApplicationType) error {
+// except on loopback, and for native apps a private-use scheme (RFC 8252), or
+// Expo Go's while they are developed.
+func (a Application) checkRedirectURI(raw string) error {
+	kind := a.Type
+
 	if strings.Contains(raw, "*") {
 		return fmt.Errorf("%q: wildcards are not allowed, redirect URIs are matched exactly", raw)
 	}
@@ -325,6 +427,18 @@ func checkRedirectURI(raw string, kind ApplicationType) error {
 			return nil
 		}
 		return fmt.Errorf("%q must use https, unless it is on localhost", raw)
+	case "exp", "exps":
+		// Expo Go, while a native app is developed: the scheme is Expo Go's
+		// own, and PKCE, which a native app always uses, keeps a code that
+		// reaches another app useless to it. The address is a developer's
+		// machine, so only an app marked as in development may have one.
+		switch {
+		case kind != AppNative:
+			return fmt.Errorf("%q must use https", raw)
+		case !a.AllowDevelopmentRedirects:
+			return fmt.Errorf("%q is Expo Go's, for development: allow development redirects on this application to register it, and turn them off before it is released", raw)
+		}
+		return nil
 	default:
 		// A private-use scheme is a reverse domain name, so it has a dot in
 		// it and cannot be mistaken for javascript: or data:.

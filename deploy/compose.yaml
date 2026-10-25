@@ -134,6 +134,10 @@ services:
     environment:
       VARD_ISSUER: ${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}
       VARD_ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in deploy/.env}
+      # Mutual TLS, off unless deploy/.env names its host; the CAs a
+      # tls_client_auth certificate chains to are a file in deploy/mtls.
+      VARD_MTLS_URL: ${MTLS_URL:-}
+      VARD_MTLS_CA_FILE: ${MTLS_CA_FILE:-}
       VARD_SECRET_KEY: ${VARD_SECRET_KEY:?set VARD_SECRET_KEY in deploy/.env}
       VARD_DB_DSN: postgres://vard:${POSTGRES_PASSWORD}@postgres:5432/vard?sslmode=disable
       VARD_REDIS_HOST: redis
@@ -154,6 +158,7 @@ services:
       VARD_SMTP_USERNAME: ${VARD_SMTP_USERNAME:-}
       VARD_SMTP_PASSWORD: ${VARD_SMTP_PASSWORD:-}
       VARD_SMTP_FROM: ${VARD_SMTP_FROM:-}
+    volumes: ["./mtls:/etc/vard/mtls:ro"]
     networks: [edge, data]
 
   # The users' site: the sign-in pages, with the provider and the account API
@@ -168,6 +173,10 @@ services:
     environment:
       <<: *web-environment
       API_URL: http://api:8080
+      # The proxy names a client's TLS certificate in this header on the
+      # mutual TLS host, and clears it everywhere else; `make docker-local`,
+      # with no proxy, sets it empty, and no certificate is passed on.
+      CLIENT_CERT_HEADER: ${APP_CLIENT_CERT_HEADER-x-client-certificate}
     ports: ["${ID_PUBLISH:-127.0.0.1:3000}:3000"]
     networks:
       edge: { ipv4_address: 172.30.0.2 }

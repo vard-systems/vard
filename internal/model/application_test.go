@@ -303,3 +303,114 @@ func TestNewClientID(t *testing.T) {
 		t.Errorf("client ids %q and %q: want 32 hex characters, different each time", a, b)
 	}
 }
+
+// A client with no credentials of its own has nothing but PKCE to tie a code
+// to the app that asked for it, so it always uses PKCE, whatever its
+// RequirePKCE flag says (RFC 9700 §2.1.1).
+func TestApplicationMustUsePKCE(t *testing.T) {
+	tests := []struct {
+		name   string
+		method AuthMethod
+		flag   bool
+		want   bool
+	}{
+		{"a public client with the flag off", AuthNone, false, true},
+		{"a public client with the flag on", AuthNone, true, true},
+		{"a confidential client with the flag off", AuthClientSecretBasic, false, false},
+		{"a confidential client with the flag on", AuthClientSecretBasic, true, true},
+		{"a mutual TLS client with the flag off", AuthTLSClient, false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := Application{TokenAuthMethod: tt.method, RequirePKCE: tt.flag}
+			if got := a.MustUsePKCE(); got != tt.want {
+				t.Errorf("MustUsePKCE() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// Redirect URIs match exactly, except that a native app's loopback one
+// matches on any port, since the app opens whichever is free (RFC 8252
+// §7.3). Nothing else about it may differ, and no other kind of app gets it.
+func TestApplicationAllowsRedirect(t *testing.T) {
+	registered := []string{
+		"http://127.0.0.1/callback",
+		"http://[::1]:8080/callback",
+		"com.example.shop:/callback",
+		"https://shop.example.com/callback",
+	}
+
+	tests := []struct {
+		name string
+		kind ApplicationType
+		uri  string
+		want bool
+	}{
+		{"exactly a registered one", AppNative, "https://shop.example.com/callback", true},
+		{"a private-use scheme, exactly", AppNative, "com.example.shop:/callback", true},
+		{"loopback on the port it was registered without", AppNative, "http://127.0.0.1/callback", true},
+		{"loopback on another port", AppNative, "http://127.0.0.1:51234/callback", true},
+		{"IPv6 loopback on another port", AppNative, "http://[::1]:61000/callback", true},
+		{"loopback with another path", AppNative, "http://127.0.0.1:51234/other", false},
+		{"loopback with a query added", AppNative, "http://127.0.0.1:51234/callback?next=x", false},
+		{"loopback with a user in it", AppNative, "http://evil@127.0.0.1:51234/callback", false},
+		{"another loopback address than registered", AppNative, "http://[::1]:51234/other", false},
+		{"https on another port", AppNative, "https://shop.example.com:8443/callback", false},
+		{"a host that is not loopback", AppNative, "http://127.0.0.1.evil.test:51234/callback", false},
+		{"a web app's loopback on another port", AppWeb, "http://127.0.0.1:51234/callback", false},
+		{"a single-page app's loopback on another port", AppSPA, "http://127.0.0.1:51234/callback", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := Application{Type: tt.kind, RedirectURIs: registered}
+			if got := a.AllowsRedirect(tt.uri); got != tt.want {
+				t.Errorf("AllowsRedirect(%q) = %v, want %v", tt.uri, got, tt.want)
+			}
+		})
+	}
+}
+
+// Expo Go is how a native app is developed, and it answers on exp://. Those
+// addresses name a developer's machine, so only a native app marked as in
+// development may register one, and no other kind of application at all.
+func TestApplicationExpoRedirect(t *testing.T) {
+	tests := []struct {
+		name        string
+		kind        ApplicationType
+		development bool
+		uri         string
+		want        string
+	}{
+		{"a native app in development, in Expo Go", AppNative, true, "exp://192.168.1.20:8081/--/callback", ""},
+		{"a native app in development, in Expo Go over https", AppNative, true, "exps://u.expo.dev/abc/--/callback", ""},
+		{"a released native app", AppNative, false, "exp://192.168.1.20:8081/--/callback", "for development"},
+		{"a released native app, as a post-logout redirect", AppNative, false, "", "for development"},
+		{"a single-page app", AppSPA, true, "exp://192.168.1.20:8081/--/callback", "must use https"},
+		{"a web app", AppWeb, true, "exp://192.168.1.20:8081/--/callback", "must use https"},
+		{"a native app with a scheme that is no domain", AppNative, true, "myapp://callback", "must use https"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := app(tt.kind)
+			a.AllowDevelopmentRedirects = tt.development
+			a.RedirectURIs = []string{tt.uri}
+			if tt.uri == "" {
+				a.PostLogoutRedirectURIs = []string{"exp://192.168.1.20:8081/--/"}
+				a.RedirectURIs = []string{"com.example.shop:/callback"}
+			}
+			a.Normalize()
+
+			err := a.Validate()
+			if tt.want == "" && err != nil {
+				t.Fatalf("Validate() = %v, want nothing", err)
+			}
+			if tt.want != "" && (err == nil || !strings.Contains(err.Error(), tt.want)) {
+				t.Fatalf("Validate() = %v, want it to say %q", err, tt.want)
+			}
+		})
+	}
+}

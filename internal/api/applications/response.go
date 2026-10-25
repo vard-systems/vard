@@ -28,16 +28,21 @@ type applicationResponse struct {
 	SecretHint       string     `json:"secret_hint"`
 	SecretCreatedAt  *time.Time `json:"secret_created_at"`
 
-	TokenAuthMethod        model.AuthMethod `json:"token_auth_method"`
-	GrantTypes             []string         `json:"grant_types"`
-	ResponseTypes          []string         `json:"response_types"`
-	RedirectURIs           []string         `json:"redirect_uris"`
-	PostLogoutRedirectURIs []string         `json:"post_logout_redirect_uris"`
-	BackchannelLogoutURI   string           `json:"backchannel_logout_uri"`
-	FrontchannelLogoutURI  string           `json:"frontchannel_logout_uri"`
-	Scopes                 []string         `json:"scopes"`
-	RequirePKCE            bool             `json:"require_pkce"`
-	RequirePushedRequests  bool             `json:"require_pushed_authorization_requests"`
+	TokenAuthMethod           model.AuthMethod `json:"token_auth_method"`
+	GrantTypes                []string         `json:"grant_types"`
+	ResponseTypes             []string         `json:"response_types"`
+	RedirectURIs              []string         `json:"redirect_uris"`
+	PostLogoutRedirectURIs    []string         `json:"post_logout_redirect_uris"`
+	AllowDevelopmentRedirects bool             `json:"allow_development_redirects"`
+	BackchannelLogoutURI      string           `json:"backchannel_logout_uri"`
+	FrontchannelLogoutURI     string           `json:"frontchannel_logout_uri"`
+	Scopes                    []string         `json:"scopes"`
+	RequirePKCE               bool             `json:"require_pkce"`
+	RequirePushedRequests     bool             `json:"require_pushed_authorization_requests"`
+	TLSSubjectKind            string           `json:"tls_subject_kind"`
+	TLSSubject                string           `json:"tls_subject"`
+	TLSCertificates           []string         `json:"tls_certificates"`
+	CertificateBoundTokens    bool             `json:"tls_client_certificate_bound_access_tokens"`
 
 	AccessTokenLifetime  int `json:"access_token_lifetime"`
 	IDTokenLifetime      int `json:"id_token_lifetime"`
@@ -59,40 +64,45 @@ type applicationResponse struct {
 
 func newApplicationResponse(app model.Application, roles int64) applicationResponse {
 	return applicationResponse{
-		ID:                     app.ID,
-		Name:                   app.Name,
-		Description:            app.Description,
-		Type:                   app.Type,
-		LogoURL:                app.LogoURL,
-		WebsiteURL:             app.WebsiteURL,
-		PrivacyURL:             app.PrivacyURL,
-		TermsURL:               app.TermsURL,
-		ClientID:               app.ClientID,
-		ClientIDIssuedAt:       app.CreatedAt.Unix(),
-		HasSecret:              app.HasSecret() && app.ClientSecretHash != "",
-		SecretHint:             app.SecretHint,
-		SecretCreatedAt:        app.SecretCreatedAt,
-		TokenAuthMethod:        app.TokenAuthMethod,
-		GrantTypes:             nonNil(app.GrantTypes),
-		ResponseTypes:          app.ResponseTypes(),
-		RedirectURIs:           nonNil(app.RedirectURIs),
-		PostLogoutRedirectURIs: nonNil(app.PostLogoutRedirectURIs),
-		BackchannelLogoutURI:   app.BackchannelLogoutURI,
-		FrontchannelLogoutURI:  app.FrontchannelLogoutURI,
-		Scopes:                 nonNil(app.Scopes),
-		RequirePKCE:            app.RequirePKCE,
-		RequirePushedRequests:  app.RequirePushedRequests,
-		AccessTokenLifetime:    app.AccessTokenLifetime,
-		IDTokenLifetime:        app.IDTokenLifetime,
-		RefreshTokenLifetime:   app.RefreshTokenLifetime,
-		AssertRoles:            app.AssertRoles,
-		RequireRoleAssignment:  app.RequireRoleAssignment,
-		IsEnabled:              app.IsEnabled,
-		AllowRegistration:      app.AllowRegistration,
-		LoginFlowID:            app.LoginFlowID,
-		RoleCount:              roles,
-		CreatedAt:              app.CreatedAt,
-		UpdatedAt:              app.UpdatedAt,
+		ID:                        app.ID,
+		Name:                      app.Name,
+		Description:               app.Description,
+		Type:                      app.Type,
+		LogoURL:                   app.LogoURL,
+		WebsiteURL:                app.WebsiteURL,
+		PrivacyURL:                app.PrivacyURL,
+		TermsURL:                  app.TermsURL,
+		ClientID:                  app.ClientID,
+		ClientIDIssuedAt:          app.CreatedAt.Unix(),
+		HasSecret:                 app.HasSecret() && app.ClientSecretHash != "",
+		SecretHint:                app.SecretHint,
+		SecretCreatedAt:           app.SecretCreatedAt,
+		TokenAuthMethod:           app.TokenAuthMethod,
+		GrantTypes:                nonNil(app.GrantTypes),
+		ResponseTypes:             app.ResponseTypes(),
+		RedirectURIs:              nonNil(app.RedirectURIs),
+		PostLogoutRedirectURIs:    nonNil(app.PostLogoutRedirectURIs),
+		AllowDevelopmentRedirects: app.AllowDevelopmentRedirects,
+		BackchannelLogoutURI:      app.BackchannelLogoutURI,
+		FrontchannelLogoutURI:     app.FrontchannelLogoutURI,
+		Scopes:                    nonNil(app.Scopes),
+		RequirePKCE:               app.RequirePKCE,
+		RequirePushedRequests:     app.RequirePushedRequests,
+		TLSSubjectKind:            string(app.TLSSubjectKind),
+		TLSSubject:                app.TLSSubject,
+		TLSCertificates:           nonNil(app.TLSCertificates),
+		CertificateBoundTokens:    app.CertificateBoundTokens,
+		AccessTokenLifetime:       app.AccessTokenLifetime,
+		IDTokenLifetime:           app.IDTokenLifetime,
+		RefreshTokenLifetime:      app.RefreshTokenLifetime,
+		AssertRoles:               app.AssertRoles,
+		RequireRoleAssignment:     app.RequireRoleAssignment,
+		IsEnabled:                 app.IsEnabled,
+		AllowRegistration:         app.AllowRegistration,
+		LoginFlowID:               app.LoginFlowID,
+		RoleCount:                 roles,
+		CreatedAt:                 app.CreatedAt,
+		UpdatedAt:                 app.UpdatedAt,
 	}
 }
 

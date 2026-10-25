@@ -107,9 +107,10 @@ func (s *Service) caller(ctx context.Context, token, audience string) (*accessCl
 		return nil, nil, ErrTokenRefused
 	}
 
-	// These APIs do not check DPoP proofs, so a token bound to a key is not
-	// taken here as a plain bearer token: that would undo the binding.
-	if boundKey(raw) != "" {
+	// These APIs check neither DPoP proofs nor client certificates, so a
+	// token bound to a key or a certificate is not taken here as a plain
+	// bearer token: that would undo the binding.
+	if boundKey(raw) != "" || boundCertificate(raw) != "" {
 		return nil, nil, ErrTokenRefused
 	}
 

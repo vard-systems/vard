@@ -238,6 +238,16 @@ func TestLiveDynamicClientRegistration(t *testing.T) {
 		t.Errorf("registering a native client = %d %v, want a public client with no secret", status, body)
 	}
 
+	// A client may register that it pushes every request (RFC 9126 §6), and
+	// is told so back.
+	pushed := map[string]any{
+		"client_name": "Pushed", "redirect_uris": []string{"https://partner.example.com/callback"},
+		"require_pushed_authorization_requests": true,
+	}
+	if status, body := register(token, pushed); status != http.StatusCreated || body["require_pushed_authorization_requests"] != true {
+		t.Errorf("registering a client that must push its requests = %d %v", status, body)
+	}
+
 	// What the panel refuses, registration refuses.
 	bad := map[string]any{"redirect_uris": []string{"http://partner.example.com/callback"}}
 	if status, body := register(token, bad); status != http.StatusBadRequest || body["error"] != "invalid_redirect_uri" {

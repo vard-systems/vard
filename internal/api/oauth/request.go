@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"vard/internal/api/kit/clientcert"
 	"vard/internal/model"
 	"vard/internal/oidc"
 )
@@ -149,9 +150,17 @@ func readForm(c *gin.Context) (url.Values, error) {
 	return c.Request.PostForm, nil
 }
 
-// clientAuth reads how the client identified itself. Basic credentials are
-// form-decoded (RFC 6749 2.3.1); using both methods at once is refused.
+// clientAuth reads how the client identified itself, and the TLS client
+// certificate it came with, if any.
 func clientAuth(c *gin.Context, form url.Values) (oidc.ClientAuth, error) {
+	auth, err := credentials(c, form)
+	auth.Certificate = clientcert.From(c)
+	return auth, err
+}
+
+// credentials reads the client's id and secret. Basic credentials are
+// form-decoded (RFC 6749 2.3.1); using both methods at once is refused.
+func credentials(c *gin.Context, form url.Values) (oidc.ClientAuth, error) {
 	if id, secret, ok := c.Request.BasicAuth(); ok {
 		if form.Get("client_secret") != "" {
 			return oidc.ClientAuth{}, invalidRequest("send the client secret one way, not in both the header and the body")
@@ -230,7 +239,7 @@ func dpopProof(c *gin.Context) (string, error) {
 // presentation reads a protected request's token, as Bearer or as DPoP with
 // its proof, for the address the client sent it to.
 func presentation(c *gin.Context, target string) (string, oidc.Presentation, error) {
-	how := oidc.Presentation{Method: c.Request.Method, URL: target, Scheme: "Bearer"}
+	how := oidc.Presentation{Method: c.Request.Method, URL: target, Scheme: "Bearer", Certificate: clientcert.Thumbprint(c)}
 
 	if header := c.GetHeader("Authorization"); header != "" {
 		scheme, token, found := strings.Cut(header, " ")
