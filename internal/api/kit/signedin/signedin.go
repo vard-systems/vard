@@ -11,8 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/oidc"
+	"vard/internal/api/kit/respond"
+	"vard/internal/oidc"
 )
 
 const sessionKey = "user_session"

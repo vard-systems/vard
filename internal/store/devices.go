@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // CreateDeviceAuthorization stores a device's sign-in. ErrDuplicate when its

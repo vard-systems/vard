@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The database named by LOGINER_DB_DSN (.env), or by DB_URL when set.
+# The database named by VARD_DB_DSN (.env), or by DB_URL when set.
 #
 #   scripts/db.sh create    create it if it is missing
 #   scripts/db.sh reset     drop every table and migrate from scratch (asks first)
@@ -12,8 +12,8 @@ set -euo pipefail
 need psql "install the PostgreSQL client tools"
 load_env
 
-url="${DB_URL:-${LOGINER_DB_DSN:-}}"
-[[ -n $url ]] || die "set LOGINER_DB_DSN in .env, or pass DB_URL"
+url="${DB_URL:-${VARD_DB_DSN:-}}"
+[[ -n $url ]] || die "set VARD_DB_DSN in .env, or pass DB_URL"
 name="$(sed -E 's|.*/([^/?]+)(\?.*)?$|\1|' <<<"$url")"
 server="$(sed -E 's|/[^/?]+(\?.*)?$|/postgres\1|' <<<"$url")" # creating needs another database
 
@@ -29,7 +29,7 @@ reset)
 	read -rp "Delete every table in \"$name\"? Type yes: " answer
 	[[ $answer == yes ]] || die "cancelled"
 	psql "$url" -qc "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-	LOGINER_DB_DSN="$url" go run ./cmd/migrate up
+	VARD_DB_DSN="$url" go run ./cmd/migrate up
 	;;
 psql) exec psql "$url" ;;
 *) die "usage: scripts/db.sh create|reset|psql" ;;

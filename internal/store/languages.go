@@ -11,9 +11,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/i18n"
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/i18n"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 var ErrProtectedLanguage = errors.New("this language cannot be removed")

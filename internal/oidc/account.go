@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 var ErrWrongPassword = problem("wrong_password")

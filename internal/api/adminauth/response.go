@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // adminResponse is built by hand so new columns are never published by

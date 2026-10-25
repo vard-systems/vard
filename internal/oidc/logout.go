@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"slices"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/jose"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 type LogoutParams struct {

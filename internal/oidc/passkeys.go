@@ -13,8 +13,8 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"loginer/internal/brand"
-	"loginer/internal/model"
+	"vard/internal/brand"
+	"vard/internal/model"
 )
 
 // Passkeys, through go-webauthn, and keeping factors sealed: a passkey's

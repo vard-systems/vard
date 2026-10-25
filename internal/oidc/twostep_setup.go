@@ -11,11 +11,11 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"loginer/internal/brand"
-	"loginer/internal/model"
-	"loginer/internal/recovery"
-	"loginer/internal/store"
-	"loginer/internal/totp"
+	"vard/internal/brand"
+	"vard/internal/model"
+	"vard/internal/recovery"
+	"vard/internal/store"
+	"vard/internal/totp"
 )
 
 // Two-step verification from the account page: what the user has, adding an

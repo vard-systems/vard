@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/brand"
+	"vard/internal/brand"
 )
 
 // receiver is an application's back-channel logout endpoint: it keeps every

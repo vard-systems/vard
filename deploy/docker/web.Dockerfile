@@ -1,7 +1,7 @@
 # A web app (web/console or web/id) as a Node server. Build context: the
 # repository root, and APP says which app to build.
 #
-#   docker build -f deploy/docker/web.Dockerfile --build-arg APP=web/id -t loginer-id .
+#   docker build -f deploy/docker/web.Dockerfile --build-arg APP=web/id -t vard-id .
 #
 # The context is the repository and not the app's own directory because the
 # apps import the shipped translations from i18n/ at the top of it

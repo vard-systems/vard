@@ -3,7 +3,7 @@ package usersessions
 import (
 	"net/http"
 
-	"loginer/internal/api/kit/respond"
+	"vard/internal/api/kit/respond"
 )
 
 // targetType is what the activity log records these actions against: the

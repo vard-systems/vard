@@ -3,7 +3,7 @@ package sso
 import (
 	"net/http"
 
-	"loginer/internal/api/kit/respond"
+	"vard/internal/api/kit/respond"
 )
 
 // targetType is what a connection is called in the activity log.

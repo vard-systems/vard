@@ -3,8 +3,8 @@ package twostep
 import (
 	"strings"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/validate"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/validate"
 )
 
 // maxPasskeyResponse is far more than any authenticator's answer, and keeps a

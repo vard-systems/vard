@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"loginer/internal/jose"
+	"vard/internal/jose"
 )
 
 // Count is how many codes are handed out at once.

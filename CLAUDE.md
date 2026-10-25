@@ -29,7 +29,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                       |
 | Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs)                             |
 | Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                               |
-| Build                              | `make build` (`build-api` → `bin/loginer`, `build-web` → `node build`)                 |
+| Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                 |
 | Console's generated files          | `make generate` (theme tokens, fonts)                                                  |
 | Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`              |
 | Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                              |
@@ -44,7 +44,7 @@ Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 ## Architecture
 
 ```
-cmd/loginer/main.go      startup, in order, in one function
+cmd/vard/main.go      startup, in order, in one function
 cmd/migrate              the migration runner
 internal/config          reads .env: deployment settings (addresses, mail, log level)
 internal/brand           the server's brand: name, slug, favicon, and every name
@@ -265,7 +265,7 @@ rewrites what has to spell it (go.mod, `cmd/<slug>`, the environment prefix,
 scripts, `deploy/`, CI, docs). An installation's own name, logo, terms and
 privacy links are not a brand: an administrator sets them in Settings, and
 the sign-in pages show them first. Where the apps and the API are reached is
-configuration (`LOGINER_ISSUER`, `LOGINER_ACCOUNT_URL`, `LOGINER_ADMIN_URL`).
+configuration (`VARD_ISSUER`, `VARD_ACCOUNT_URL`, `VARD_ADMIN_URL`).
 
 **A language** (sign-in pages only; the panel is English). English is the
 only one that ships, and the default on a fresh installation. Every other is
@@ -333,7 +333,7 @@ shield mark does.
   `Organization`), prose may be British.
 - **Tests** are table-driven and named for what they prove ("a slug with
   spaces", not "TestCase3"). Tests needing Postgres are named `TestLive…` and
-  skip without `LOGINER_TEST_DB_DSN`. A new component that people use goes in
+  skip without `VARD_TEST_DB_DSN`. A new component that people use goes in
   the app's `components/a11y.spec.ts`, which runs axe on it in jsdom
   (`expectAccessible` from `#lib/testing/a11y.js`).
 - **Formatting is enforced.** The hook in `.claude/hooks/format.sh` runs gofmt
@@ -352,8 +352,8 @@ shield mark does.
   (issuer, admin URL) are the apps', and a path the API answers reaches it
   only if it is in that app's `API_PATHS`.
 - **The local URLs are fixed by `scripts/start.sh`** (`make dev`, `make start`),
-  which exports `LOGINER_ISSUER`, `LOGINER_ACCOUNT_URL`, `LOGINER_ADMIN_URL`,
-  and `LOGINER_TRUSTED_PROXIES` over whatever `.env` says.
+  which exports `VARD_ISSUER`, `VARD_ACCOUNT_URL`, `VARD_ADMIN_URL`,
+  and `VARD_TRUSTED_PROXIES` over whatever `.env` says.
 - **The API trusts the apps' servers and nobody else** to say who the
   caller is: loopback under `make dev`, the two containers' fixed addresses
   in `deploy/compose.yaml` — never a whole private range. When a TLS proxy
@@ -362,7 +362,7 @@ shield mark does.
 - **The scripts read `.env` with `load_env` (`scripts/lib.sh`), the server
   with viper,** and the scripts export what they read, which the server then
   believes. A difference between the two is a different value depending on
-  how the server was started — for `LOGINER_SECRET_KEY`, signing keys one of
+  how the server was started — for `VARD_SECRET_KEY`, signing keys one of
   them cannot open. `TestTheScriptsReadDotEnvLikeTheServer` holds them
   together; change both or neither.
 - **Redis is optional.** Every path must work with a nil cache, and Redis is

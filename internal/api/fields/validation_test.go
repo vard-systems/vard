@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/model"
 )
 
 // status is the status a fault carries, or 0 when the error is not one.

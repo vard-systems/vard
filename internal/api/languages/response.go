@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/i18n"
-	"loginer/internal/model"
+	"vard/i18n"
+	"vard/internal/model"
 )
 
 // languageResponse is one language as the panel sees it: its settings, and

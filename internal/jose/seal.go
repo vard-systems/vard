@@ -76,7 +76,7 @@ func (s *Sealer) OpenBytes(sealed []byte) ([]byte, error) {
 	return plain, nil
 }
 
-var ErrWrongSecret = errors.New("jose: a signing key could not be decrypted; is LOGINER_SECRET_KEY the one it was made with?")
+var ErrWrongSecret = errors.New("jose: a signing key could not be decrypted; is VARD_SECRET_KEY the one it was made with?")
 
 func (s *Sealer) Open(sealed []byte) (crypto.Signer, error) {
 	der, err := s.OpenBytes(sealed)

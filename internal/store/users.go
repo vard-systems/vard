@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 type UserQuery struct {

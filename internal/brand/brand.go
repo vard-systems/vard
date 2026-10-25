@@ -19,13 +19,13 @@ import (
 const (
 	// Name is what a person reads: logs, mail, authenticator apps, passkey
 	// prompts.
-	Name = "Loginer"
+	Name = "Vard"
 
 	// Slug is what identifiers are built from: lower-case letters and digits,
 	// so it is a valid cookie, Redis, URN, Postgres and environment name.
-	Slug = "loginer"
+	Slug = "vard"
 
-	EnvPrefix = "LOGINER_"
+	EnvPrefix = "VARD_"
 )
 
 const (

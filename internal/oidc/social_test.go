@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // unsignedIDToken is a JWT with these claims and nothing else worth reading:

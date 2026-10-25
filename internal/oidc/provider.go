@@ -16,12 +16,12 @@ import (
 
 	"github.com/go-webauthn/webauthn/webauthn"
 
-	"loginer/internal/brand"
-	"loginer/internal/config"
-	"loginer/internal/jose"
-	"loginer/internal/mail"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/brand"
+	"vard/internal/config"
+	"vard/internal/jose"
+	"vard/internal/mail"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 const (

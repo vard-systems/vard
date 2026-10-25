@@ -3,9 +3,9 @@ package oidc
 import (
 	"context"
 
-	"loginer/i18n"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/i18n"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // PublicLanguage is one language in the picker: its code and its English and

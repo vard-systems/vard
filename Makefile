@@ -1,4 +1,4 @@
-# Loginer — run `make` for the list of targets.
+# Vard — run `make` for the list of targets.
 
 SHELL         := bash
 .SHELLFLAGS   := -eu -o pipefail -c
@@ -47,14 +47,14 @@ start: ## Start the API and both apps from production builds — `make start env
 	@scripts/start.sh $(or $(env),prod)
 
 run: ## Start only the API — :8080 public, :8081 admin
-	go run ./cmd/loginer
+	go run ./cmd/vard
 
 ## Build
 
 build: build-api build-web ## Build the API and both apps
 
-build-api: ## Build the API into bin/loginer
-	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o bin/loginer ./cmd/loginer
+build-api: ## Build the API into bin/vard
+	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o bin/vard ./cmd/vard
 
 build-web: ## Build both apps into web/*/build (run each with `node build`)
 	@$(call each-app,bun install --frozen-lockfile && bun run build)
@@ -95,8 +95,8 @@ test-web: ## Run the apps' unit tests only
 
 test-integration: ## Run the TestLive… tests against Postgres and Redis (throwaway databases)
 	@. scripts/lib.sh && load_env && \
-		LOGINER_TEST_DB_DSN="$${DB_URL:-$$LOGINER_DB_DSN}" \
-		LOGINER_TEST_REDIS="$${LOGINER_TEST_REDIS:-$${LOGINER_REDIS_HOST:+$$LOGINER_REDIS_HOST:$${LOGINER_REDIS_PORT:-6379}}}" \
+		VARD_TEST_DB_DSN="$${DB_URL:-$$VARD_DB_DSN}" \
+		VARD_TEST_REDIS="$${VARD_TEST_REDIS:-$${VARD_REDIS_HOST:+$$VARD_REDIS_HOST:$${VARD_REDIS_PORT:-6379}}}" \
 		go test -count=1 -run Live ./internal/...
 
 bench: ## Run the Go benchmarks
@@ -157,5 +157,5 @@ docker-ps: ## Show the stack's containers and their health
 	$(COMPOSE) ps
 
 docker-config: ## Validate deploy/compose.yaml, with placeholders for what deploy/.env would say
-	@PUBLIC_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 LOGINER_SECRET_KEY=x \
+	@PUBLIC_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 VARD_SECRET_KEY=x \
 		POSTGRES_PASSWORD=x REDIS_PASSWORD=x $(COMPOSE) config -q && echo "deploy/compose.yaml is valid"

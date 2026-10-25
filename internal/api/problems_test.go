@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/i18n"
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/oidc"
+	"vard/i18n"
+	"vard/internal/api/kit/respond"
+	"vard/internal/oidc"
 )
 
 // clientCodes are the `error.*` keys an app says about a request that never

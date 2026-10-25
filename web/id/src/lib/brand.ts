@@ -11,10 +11,10 @@ import favicon from '#lib/assets/favicon.svg';
 
 export const BRAND = {
 	/** What a person reads: "Secured by …", and the recovery codes' file name. */
-	name: 'Loginer',
+	name: 'Vard',
 
 	/** What the names below are built from: lower-case letters and digits, as the server's. */
-	slug: 'loginer',
+	slug: 'vard',
 
 	/** The mark drawn where there is no logo: a Remix Icon class. */
 	icon: 'ri-shield-keyhole-line',

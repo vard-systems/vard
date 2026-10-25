@@ -20,9 +20,9 @@ import (
 	"github.com/crewjam/saml/samlsp"
 	dsig "github.com/russellhaering/goxmldsig"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/jose"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 func ParseSAMLMetadata(metadata []byte) (*saml.EntityDescriptor, error) {

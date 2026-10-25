@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // The Agreements and Consent steps run after the user is known and before a

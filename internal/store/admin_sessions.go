@@ -8,8 +8,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 // Administrator sessions are cached by token hash. Every write puts the changed

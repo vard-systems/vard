@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // The emails are a super admin's, on the Mail page: the reset email puts a

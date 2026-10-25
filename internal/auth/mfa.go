@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/model"
-	"loginer/internal/recovery"
-	"loginer/internal/totp"
+	"vard/internal/model"
+	"vard/internal/recovery"
+	"vard/internal/totp"
 )
 
 var (

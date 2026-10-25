@@ -3,8 +3,8 @@ package users
 import (
 	"testing"
 
-	"loginer/internal/api/kit/tstypes"
-	"loginer/internal/model"
+	"vard/internal/api/kit/tstypes"
+	"vard/internal/model"
 )
 
 // The panel's types for these answers are written by hand in

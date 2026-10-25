@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"loginer/internal/api/kit/respond"
+	"vard/internal/api/kit/respond"
 )
 
 // fault is the fault an error carries, and whether it carried one at all.

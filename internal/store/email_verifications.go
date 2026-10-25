@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // pendingEmailChangesUsed cancels pending address changes wherever access is

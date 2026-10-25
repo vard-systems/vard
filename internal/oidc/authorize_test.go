@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // A session made by one flow is accepted at /oauth2/authorize for an

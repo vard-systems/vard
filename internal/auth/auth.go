@@ -11,9 +11,9 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/jose"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 const SessionLifetime = 12 * time.Hour

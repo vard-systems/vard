@@ -7,8 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/cache"
+	"vard/internal/api/kit/respond"
+	"vard/internal/cache"
 )
 
 var (

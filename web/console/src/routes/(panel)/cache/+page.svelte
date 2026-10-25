@@ -140,7 +140,7 @@
 {#if !overview.data.configured}
 	<Alert tone="info">
 		This server runs without Redis: every page is read from the database, and each server process
-		keeps its own rate limits. Set LOGINER_REDIS_HOST to give it one.
+		keeps its own rate limits. Set VARD_REDIS_HOST to give it one.
 	</Alert>
 {:else}
 	<Toolbar>

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Run the whole stack: the Loginer API and the id and console apps. Each app
+# Run the whole stack: the Vard API and the id and console apps. Each app
 # renders its pages and passes its API paths on to the API
 # (src/hooks.server.ts), so the browser talks to one origin per app:
 #
@@ -9,7 +9,7 @@
 #
 #   scripts/start.sh dev   the apps as Vite dev servers, with hot reload
 #   scripts/start.sh prod  the API and the apps built, and run as they are
-#                          deployed: bin/loginer and `node build`
+#                          deployed: bin/vard and `node build`
 #
 # The production stack in containers runs with `make docker-local`.
 #
@@ -30,14 +30,14 @@ need bun "https://bun.sh"
 # it hands out, and decides which origins it believes, from them. The apps'
 # servers, on this machine, are the one proxy it trusts: they send it the
 # caller's address.
-export LOGINER_ISSUER=http://localhost:5173
-export LOGINER_ACCOUNT_URL=http://localhost:5173
-export LOGINER_ADMIN_URL=http://localhost:5174
-export LOGINER_TRUSTED_PROXIES=127.0.0.1/32,::1/128
+export VARD_ISSUER=http://localhost:5173
+export VARD_ACCOUNT_URL=http://localhost:5173
+export VARD_ADMIN_URL=http://localhost:5174
+export VARD_TRUSTED_PROXIES=127.0.0.1/32,::1/128
 load_env
 
-api_port="${LOGINER_ADDR:-:8080}" api_port="${api_port##*:}"
-admin_port="${LOGINER_ADMIN_ADDR:-:8081}" admin_port="${admin_port##*:}"
+api_port="${VARD_ADDR:-:8080}" api_port="${api_port##*:}"
+admin_port="${VARD_ADMIN_ADDR:-:8081}" admin_port="${admin_port##*:}"
 
 # name  port  API it calls
 apps=(
@@ -75,7 +75,7 @@ ready() {
 
 echo "==> building ($mode)"
 if [[ $mode == prod ]]; then
-	go build -trimpath -o bin/loginer ./cmd/loginer
+	go build -trimpath -o bin/vard ./cmd/vard
 	for app in "${apps[@]}"; do
 		read -r name _ <<<"$app"
 		(cd "web/$name" && bun run build) >"$logs/$name.log" 2>&1 || {
@@ -84,7 +84,7 @@ if [[ $mode == prod ]]; then
 		}
 	done
 else
-	go build -o bin/loginer ./cmd/loginer
+	go build -o bin/vard ./cmd/vard
 fi
 
 for app in "${apps[@]}"; do
@@ -102,7 +102,7 @@ for app in "${apps[@]}"; do
 	pids+=($!)
 done
 
-echo "==> Loginer ($mode) — open http://localhost:5174/login — logs in .logs/"
-bin/loginer &
+echo "==> Vard ($mode) — open http://localhost:5174/login — logs in .logs/"
+bin/vard &
 pids+=($!)
 wait $!

@@ -1,6 +1,6 @@
 package setup
 
-import "loginer/internal/model"
+import "vard/internal/model"
 
 // statusResponse says whether the panel still needs an administrator.
 type statusResponse struct {

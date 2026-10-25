@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // WriteAudit adds a line to the activity log, first fitting outside input to

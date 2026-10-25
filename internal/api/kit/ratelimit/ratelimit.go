@@ -12,8 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/cache"
+	"vard/internal/api/kit/respond"
+	"vard/internal/cache"
 )
 
 var RateLimited = respond.Define(http.StatusTooManyRequests, "rate_limited", respond.Both)
@@ -119,7 +119,7 @@ func (l *Limiter) sweep(now time.Time) {
 }
 
 // Middleware answers 429 with Retry-After over the limit. It keys on Gin's
-// ClientIP, so behind a proxy LOGINER_TRUSTED_PROXIES must name it.
+// ClientIP, so behind a proxy VARD_TRUSTED_PROXIES must name it.
 func (l *Limiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ok, wait := l.Allow(c.Request.Context(), bucketFor(c.ClientIP()))

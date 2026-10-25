@@ -18,7 +18,7 @@ set_value() {
 	sed -i.bak "s|^$1=.*|$1=$2|" deploy/.env && rm -f deploy/.env.bak
 }
 
-# An existing deploy/.env is left alone: its LOGINER_SECRET_KEY is what the
+# An existing deploy/.env is left alone: its VARD_SECRET_KEY is what the
 # stored signing keys are sealed with, and its POSTGRES_PASSWORD is the one
 # the database was initialised with — Postgres reads that only once, on an
 # empty data directory, so replacing it here would lock the API out.
@@ -26,11 +26,11 @@ if [[ ! -f deploy/.env ]]; then
 	umask 077
 	cp deploy/.env.example deploy/.env
 
-	set_value LOGINER_SECRET_KEY "$(openssl rand -base64 32)"
+	set_value VARD_SECRET_KEY "$(openssl rand -base64 32)"
 	set_value POSTGRES_PASSWORD "$(openssl rand -hex 32)"
 	# So the first administrator can be created without an authenticator app.
 	# A server runs this as required; deploy/compose.yaml asks for that.
-	set_value LOGINER_ADMIN_MFA optional
+	set_value VARD_ADMIN_MFA optional
 
 	echo "created deploy/.env for http://localhost:8080 — it is gitignored"
 fi

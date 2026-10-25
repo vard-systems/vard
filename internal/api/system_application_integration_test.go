@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // adminCLI is the id of the application the server made for itself at

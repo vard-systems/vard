@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 func scopesByName(db *gorm.DB) *gorm.DB {

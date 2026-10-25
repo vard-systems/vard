@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"loginer/internal/jose"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/jose"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // Signing key lifecycle: a key is published keyPublishLead before it signs, so

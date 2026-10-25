@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"time"
 
-	"loginer/internal/mail"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/mail"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 func (s *Service) sendVerification(ctx context.Context, user *model.User, request string, client Client) error {

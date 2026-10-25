@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // roleResponse is one admin role as the panel sees it.

@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 func (s *Store) EnsureSystemAPIs(ctx context.Context) error {

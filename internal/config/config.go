@@ -13,7 +13,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"loginer/internal/brand"
+	"vard/internal/brand"
 )
 
 type Config struct {

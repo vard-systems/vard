@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/brand"
+	"vard/internal/brand"
 )
 
 type API struct {

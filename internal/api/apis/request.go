@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // maxLogEntries caps how many log entries one request returns.

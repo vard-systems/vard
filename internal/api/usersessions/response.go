@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/store"
+	"vard/internal/store"
 )
 
 type sessionUser struct {

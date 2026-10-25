@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/database/databasetest"
-	"loginer/internal/jose"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/database/databasetest"
+	"vard/internal/jose"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 const (

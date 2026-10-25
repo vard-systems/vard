@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	"loginer/internal/brand"
-	"loginer/internal/model"
+	"vard/internal/brand"
+	"vard/internal/model"
 )
 
 // These tests call this server's own two APIs the way other software does:

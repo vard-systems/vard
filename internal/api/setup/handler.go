@@ -11,9 +11,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/api/kit/respond"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 type Handler struct {

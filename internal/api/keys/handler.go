@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api/kit/audit"
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/oidc"
+	"vard/internal/api/kit/audit"
+	"vard/internal/api/kit/respond"
+	"vard/internal/oidc"
 )
 
 type Handler struct {

@@ -19,7 +19,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 func init() {

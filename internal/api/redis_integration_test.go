@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/cache/cachetest"
+	"vard/internal/cache/cachetest"
 )
 
 // The session database keeps administrators without their password, so a

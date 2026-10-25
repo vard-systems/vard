@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"loginer/i18n"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/i18n"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // Enterprise SSO over OpenID Connect or SAML 2.0 (model.SSOConnection). This

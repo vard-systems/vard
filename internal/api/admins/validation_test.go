@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/api/kit/respond"
+	"vard/internal/api/kit/respond"
 )
 
 // TestAdminRequestValidate covers the form an administrator is made and

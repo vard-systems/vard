@@ -3,7 +3,7 @@ package organization
 import (
 	"time"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // organizationResponse is built by hand to keep row bookkeeping out of a

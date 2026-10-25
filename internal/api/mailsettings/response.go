@@ -3,8 +3,8 @@ package mailsettings
 import (
 	"net/http"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/model"
 )
 
 // The problems these endpoints answer with.

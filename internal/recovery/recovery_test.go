@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"loginer/internal/jose"
+	"vard/internal/jose"
 )
 
 const purpose = "test recovery code"

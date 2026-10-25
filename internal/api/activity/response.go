@@ -3,8 +3,8 @@ package activity
 import (
 	"time"
 
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // targetResponse is what an entry happened to. Name is left out when the

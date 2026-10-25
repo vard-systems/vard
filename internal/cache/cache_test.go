@@ -13,15 +13,15 @@ import (
 	"testing"
 	"time"
 
-	"loginer/internal/brand"
-	"loginer/internal/config"
+	"vard/internal/brand"
+	"vard/internal/config"
 )
 
-// The tests that need a Redis name it in LOGINER_TEST_REDIS, as host:port,
+// The tests that need a Redis name it in VARD_TEST_REDIS, as host:port,
 // and skip without it, the way the database tests do with
-// LOGINER_TEST_DB_DSN. Each runs under a prefix of its own and removes its
+// VARD_TEST_DB_DSN. Each runs under a prefix of its own and removes its
 // keys afterwards, so they can share a Redis with a running server.
-const testRedisEnv = "LOGINER_TEST_REDIS"
+const testRedisEnv = "VARD_TEST_REDIS"
 
 func liveRedis(t *testing.T) *Redis {
 	t.Helper()

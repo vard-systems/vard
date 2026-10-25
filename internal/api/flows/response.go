@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // flowResponse is a flow plus how many applications use it and whether all its

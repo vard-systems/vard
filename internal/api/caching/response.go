@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strconv"
 
-	"loginer/internal/cache"
+	"vard/internal/cache"
 )
 
 // overviewResponse is both databases, or neither when there is no Redis.

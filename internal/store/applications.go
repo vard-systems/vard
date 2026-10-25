@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"loginer/internal/cache"
-	"loginer/internal/model"
+	"vard/internal/cache"
+	"vard/internal/model"
 )
 
 type ApplicationQuery struct {

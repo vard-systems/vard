@@ -5,9 +5,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"loginer/internal/api/kit/respond"
-	"loginer/internal/api/kit/validate"
-	"loginer/internal/model"
+	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/validate"
+	"vard/internal/model"
 )
 
 var (

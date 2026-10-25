@@ -3,7 +3,7 @@ package oidc
 import (
 	"context"
 
-	"loginer/internal/model"
+	"vard/internal/model"
 )
 
 // PublicOrganization is what the sign-in pages show about the organisation. It

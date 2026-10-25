@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"loginer/internal/api/kit/query"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/api/kit/query"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 const targetType = "application"

@@ -1,4 +1,4 @@
-// Command loginer runs the server: the provider and account API on one listener,
+// Command vard runs the server: the provider and account API on one listener,
 // the admin API on the other, until it is told to stop.
 package main
 
@@ -15,15 +15,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"loginer/internal/api"
-	"loginer/internal/brand"
-	"loginer/internal/cache"
-	"loginer/internal/config"
-	"loginer/internal/database"
-	"loginer/internal/jose"
-	"loginer/internal/mail"
-	"loginer/internal/oidc"
-	"loginer/internal/store"
+	"vard/internal/api"
+	"vard/internal/brand"
+	"vard/internal/cache"
+	"vard/internal/config"
+	"vard/internal/database"
+	"vard/internal/jose"
+	"vard/internal/mail"
+	"vard/internal/oidc"
+	"vard/internal/store"
 )
 
 // version is set at build time (-ldflags "-X main.version=…", from
@@ -59,7 +59,7 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 	level.Set(cfg.LogLevel)
 
 	if config.SecretKeyLooksWeak(cfg.SecretKey) {
-		log.Warn("LOGINER_SECRET_KEY does not look like 32 random bytes; a low-entropy key can be brute-forced against a database dump to recover sealed secrets — generate one with: openssl rand -base64 32")
+		log.Warn("VARD_SECRET_KEY does not look like 32 random bytes; a low-entropy key can be brute-forced against a database dump to recover sealed secrets — generate one with: openssl rand -base64 32")
 	}
 
 	db, err := database.Open(cfg.DB)
@@ -118,7 +118,7 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 
 	mailer := mail.New(mail.FromStore(st, sealer), log)
 
-	// Load or create signing keys before serving, so a wrong LOGINER_SECRET_KEY
+	// Load or create signing keys before serving, so a wrong VARD_SECRET_KEY
 	// stops startup here.
 	provider, err := oidc.New(context.Background(), cfg, st, sealer, mailer, log)
 	if err != nil {

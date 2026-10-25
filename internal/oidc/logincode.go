@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"loginer/internal/mail"
-	"loginer/internal/model"
-	"loginer/internal/store"
+	"vard/internal/mail"
+	"vard/internal/model"
+	"vard/internal/store"
 )
 
 // The emailed code step: after the password is accepted, a code is sent to the

@@ -9,8 +9,8 @@ import (
 	"github.com/pressly/goose/v3"
 	"gorm.io/gorm"
 
-	"loginer/internal/config"
-	_ "loginer/migrations"
+	"vard/internal/config"
+	_ "vard/migrations"
 )
 
 func Migrate(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
