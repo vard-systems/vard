@@ -9,54 +9,56 @@ import (
 	"testing"
 )
 
-// The name is written in three places and nowhere else: the constants in this
-// package, the module path on the first line of go.mod, and one brand.ts in
-// each app. These two tests are what make that true rather than merely
-// intended — the first checks the three copies still agree, and the second
-// fails on a fourth.
+// Each application keeps its own brand: this package for the server, and
+// src/lib/brand.ts in each app. They may call the product, draw its mark and
+// pick their favicon as they like, but they build cookie names from one slug,
+// and the server reads back what the apps' cookies are called. These tests keep
+// those agreeing, and the name out of everywhere else.
 
-// The names a browser and the server have to agree on are written in all three
-// places, so a rename that misses one is caught here rather than by a cookie
-// that quietly stops being sent.
-func TestTheAppsSpellTheSameNames(t *testing.T) {
+// brands are the apps' brand files, and the cookies each one names that the
+// server reads back: the console's admin session, the sign-in pages' user
+// session and language.
+var brands = map[string][]string{
+	"web/console/src/lib/brand.ts": {AdminSessionCookie},
+	"web/id/src/lib/brand.ts":      {UserSessionCookie, LanguageCookie},
+}
+
+// The slug becomes cookie, Redis, URN, Postgres and environment names.
+func TestTheSlugIsAnIdentifier(t *testing.T) {
+	if !regexp.MustCompile(`^[a-z][a-z0-9]*$`).MatchString(Slug) {
+		t.Errorf("Slug = %q, want lower-case letters and digits, starting with a letter", Slug)
+	}
+	if EnvPrefix != strings.ToUpper(Slug)+"_" {
+		t.Errorf("EnvPrefix = %q, want the slug in capitals and an underscore", EnvPrefix)
+	}
+}
+
+// A change to one side that misses the other is caught here rather than by a
+// cookie that quietly stops being sent.
+func TestTheAppsBuildTheSameNames(t *testing.T) {
 	root := repoRoot(t)
 
-	// What each app has to carry, beside the name and the slug every app has:
-	// the console knows the admin session and where the project lives, and the
-	// sign-in pages know the two the provider reads back.
-	want := map[string][]string{
-		"web/console/src/lib/brand.ts": {AdminSessionCookie, GitHubURL},
-		"web/id/src/lib/brand.ts":      {UserSessionCookie, LanguageCookie},
-	}
-
-	for file, names := range want {
+	for file, cookies := range brands {
 		t.Run(file, func(t *testing.T) {
 			source := read(t, filepath.Join(root, filepath.FromSlash(file)))
 
-			// The apps build their names from the slug and the name the way
-			// this package does, so resolving the template literals first
-			// compares what a browser would actually hold against what the
-			// server would look for.
-			resolved := strings.NewReplacer(
-				"${BRAND.slug}", Slug,
-				"${BRAND.name}", Name,
-			).Replace(source)
+			if !strings.Contains(source, "slug: '"+Slug+"'") {
+				t.Errorf("%s has no slug: '%s', which the server has", file, Slug)
+			}
 
-			for _, expected := range append([]string{Name, Slug}, names...) {
-				// The name and the addresses are written as they are; the names
-				// built from the slug are template literals, so they arrive
-				// here already resolved and quoted with backticks.
-				if !strings.Contains(resolved, "'"+expected+"'") &&
-					!strings.Contains(resolved, "`"+expected+"`") {
-					t.Errorf("%s does not spell %q, which this package spells %q",
-						file, expected, expected)
+			// Resolving the template literals first compares what a browser
+			// would hold against what the server would look for.
+			resolved := strings.ReplaceAll(source, "${BRAND.slug}", Slug)
+			for _, cookie := range cookies {
+				if !strings.Contains(resolved, "`"+cookie+"`") {
+					t.Errorf("%s does not build %q, which the server reads back", file, cookie)
 				}
 			}
 		})
 	}
 }
 
-// Nothing outside the brand files may spell the name. A wordmark in a page
+// Nothing else may spell the name. A wordmark in a page
 // title, a cookie in a handler, a product name in a comment, a fixture in a
 // test: each of them is a copy that a rename would leave behind, and each of
 // them is invisible until somebody looks for it.
@@ -68,30 +70,20 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 	// out before looking at what is left.
 	isImport := regexp.MustCompile(`"` + Slug + `/`)
 
+	// Go asks a command's doc comment to open with its name, which is its
+	// directory's: cmd/<slug>/.
+	isCommandDoc := regexp.MustCompile(`(?m)^// Command ` + Slug + `\b`)
+
 	// The two spellings of the name: the slug an identifier is built from, and
 	// the name a person reads. The environment prefix is deliberately not one
 	// of them — brand.EnvPrefix is its own constant, config reads every setting
 	// through it, and a comment may name the variable it is talking about.
 	spellings := []string{Slug, Name}
 
-	// The files allowed to spell the name: this package, and the one brand
-	// module in each app.
-	allowed := map[string]bool{
-		filepath.FromSlash("web/console/src/lib/brand.ts"): true,
-		filepath.FromSlash("web/id/src/lib/brand.ts"):      true,
-	}
-
 	skipped := map[string]bool{
 		".git": true, ".logs": true, ".svelte-kit": true,
 		"bin": true, "build": true, "node_modules": true,
 	}
-
-	// A command is named by its directory, so the project's own command spells
-	// the name in cmd/<name>/ and has to: that is where `go run ./cmd/…` and
-	// the build recipes find it. Renaming it is a `git mv` of the directory
-	// beside the three edits, which is why the allowance is for whatever is
-	// directly under cmd/ rather than for one name.
-	command := filepath.FromSlash("cmd") + string(filepath.Separator)
 
 	scanned := 0
 
@@ -113,20 +105,19 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 			return err
 		}
 
-		// brand.go and brand_test.go, which this directory is.
-		if strings.HasPrefix(relative, filepath.FromSlash("internal"+string(filepath.Separator)+"brand")) {
+		// The brands themselves: this package, and each app's brand file.
+		if strings.HasPrefix(relative, filepath.FromSlash("internal/brand/")) {
 			return nil
 		}
-		if allowed[relative] {
-			return nil
-		}
-		if rest, under := strings.CutPrefix(relative, command); under &&
-			strings.Count(rest, string(filepath.Separator)) == 1 {
+		if _, isBrand := brands[filepath.ToSlash(relative)]; isBrand {
 			return nil
 		}
 
+		// What the code is made of. The scripts, deploy/, CI and the docs
+		// spell the name too, where a tool needs it written out: scripts/rename.sh
+		// rewrites those.
 		switch filepath.Ext(name) {
-		case ".go", ".ts", ".svelte":
+		case ".go", ".ts", ".svelte", ".js", ".json", ".html", ".css", ".svg":
 		default:
 			return nil
 		}
@@ -135,10 +126,11 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 
 		source := read(t, path)
 		source = isImport.ReplaceAllString(source, `""`)
+		source = isCommandDoc.ReplaceAllString(source, "")
 
 		for _, spelling := range spellings {
 			if strings.Contains(source, spelling) {
-				t.Errorf("%s spells %q; the name belongs in internal/brand and the apps' brand.ts",
+				t.Errorf("%s spells %q; the name belongs in the brands: internal/brand and each app's src/lib/brand.ts",
 					filepath.ToSlash(relative), spelling)
 			}
 		}
@@ -156,9 +148,8 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 	}
 }
 
-// repoRoot is the module's directory, which is where the two brand.ts files
-// and every file the naming rule is about live. This package is two
-// directories down from it, but walking up is what keeps that from mattering.
+// repoRoot is the module's directory, where the apps and every file the
+// naming rule is about live.
 func repoRoot(t *testing.T) string {
 	t.Helper()
 

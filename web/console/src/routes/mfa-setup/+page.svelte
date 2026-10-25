@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { adminApi } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import GateShell from '#lib/components/layout/GateShell.svelte';
 	import TotpSetup from '#lib/components/mfa/TotpSetup.svelte';
 
@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>Set up two-factor sign-in · {BRAND.name}</title>
+	<title>{pageTitle('Set up two-factor sign-in')}</title>
 </svelte:head>
 
 <GateShell

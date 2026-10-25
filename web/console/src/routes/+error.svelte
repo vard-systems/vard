@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 </script>
 
 <svelte:head>
-	<title>{page.status} · {BRAND.name}</title>
+	<title>{pageTitle(String(page.status))}</title>
 </svelte:head>
 
 <main>

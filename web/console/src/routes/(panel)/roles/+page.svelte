@@ -6,7 +6,7 @@
 		useQueryClient
 	} from '@tanstack/svelte-query';
 	import { rolesApi, type Role } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import {
 		applicationChoicesOptions,
 		keys,
@@ -176,7 +176,7 @@
 	];
 </script>
 
-<svelte:head><title>Roles · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Roles')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Roles']}

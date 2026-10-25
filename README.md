@@ -149,7 +149,9 @@ internal/                  the Go code: api (HTTP handlers), oidc (the provider)
                            store (every query), model (the schema), and the rest
 migrations/                the schema and every change to it, in order
 i18n/                      the English that ships: sign-in pages, API messages
-web/id, web/console        the two SvelteKit apps
+web/id, web/console        the two SvelteKit apps; each keeps its own brand in
+                           src/lib/brand.ts, the server in internal/brand, and
+                           `make rename` renames all three
 deploy/                    the Docker stack
 scripts/                   what the Makefile runs
 ```
@@ -163,6 +165,8 @@ scripts/                   what the Makefile runs
   4.8.0, under the Apache License 2.0 (later versions use the Remix Icon
   License); the sign-in providers' marks in it remain their owners'
   trademarks.
+- The favicons (`internal/brand/favicon.svg`, `web/*/src/lib/assets/favicon.svg`)
+  are the Svelte logo, a placeholder until the project has its own mark.
 - **The console also bundles Chirp, X's proprietary typeface, which is not open
   source**: replace it, or confirm you have a licence, before distributing the
   console publicly.

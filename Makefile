@@ -21,7 +21,7 @@ each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)) |
 	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \
 	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
 	docker-up docker-local docker-down docker-reset docker-logs docker-build docker-ps docker-config \
-	clean
+	clean rename
 
 help: ## Show this help
 	@awk -F ':.*## ' '/^## / {printf "\n\033[1m%s\033[0m\n", substr($$0, 4)} /^[a-z -]+:.*## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -64,6 +64,10 @@ generate: ## Rewrite the console's generated files: theme tokens and fonts
 
 clean: ## Remove build output and logs
 	rm -rf bin .logs $(foreach app,$(APPS),web/$(app)/build web/$(app)/.svelte-kit)
+
+rename: ## Rename the project — make rename name="Acme ID" slug=acme (each brand: internal/brand, web/*/src/lib/brand.ts)
+	@[[ -n "$(name)" && -n "$(slug)" ]] || { echo 'usage: make rename name="Acme ID" slug=acme'; exit 1; }
+	@scripts/rename.sh "$(name)" "$(slug)"
 
 ## Quality
 

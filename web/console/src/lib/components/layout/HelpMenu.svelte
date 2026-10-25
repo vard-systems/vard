@@ -15,13 +15,15 @@
 		></i>{/snippet}
 
 	<MenuGroup label="Resources">
-		<MenuItem
-			value="github"
-			icon="ri-github-fill"
-			label="GitHub"
-			description="Source, issues and releases"
-			href={BRAND.githubUrl}
-		/>
+		{#each BRAND.links as link (link.id)}
+			<MenuItem
+				value={link.id}
+				icon={link.icon}
+				label={link.label}
+				description={link.description}
+				href={link.href}
+			/>
+		{/each}
 	</MenuGroup>
 
 	<MenuSeparator />

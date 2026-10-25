@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { apisApi, type API } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { apisOptions, firstPage, keys, LIST_PAGE_SIZE } from '#lib/query/index.js';
 	import { can } from '#lib/permissions.js';
 	import {
@@ -102,7 +102,7 @@
 	}));
 </script>
 
-<svelte:head><title>APIs · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('APIs')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'APIs']}

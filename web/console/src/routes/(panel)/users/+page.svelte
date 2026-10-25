@@ -6,7 +6,7 @@
 		useQueryClient
 	} from '@tanstack/svelte-query';
 	import { usersApi, type UserRecord } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import {
 		applicationChoicesOptions,
 		keys,
@@ -142,7 +142,7 @@
 	];
 </script>
 
-<svelte:head><title>Users · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Users')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Users']}

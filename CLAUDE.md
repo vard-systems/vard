@@ -33,6 +33,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Console's generated files          | `make generate` (theme tokens, fonts)                                                  |
 | Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`              |
 | Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                              |
+| Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                        |
 | Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                     |
 | Everything else                    | `make` lists every target                                                              |
 
@@ -45,8 +46,9 @@ Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 ```
 cmd/loginer/main.go      startup, in order, in one function
 cmd/migrate              the migration runner
-internal/brand           the project's name and every name built from it
-internal/config          reads .env
+internal/config          reads .env: deployment settings (addresses, mail, log level)
+internal/brand           the server's brand: name, slug, favicon, and every name
+                         built from them (each app has its own, lib/brand.ts)
 internal/model           one file per table; every model listed in model.All
 internal/store           every query in the project, one file per subject
 internal/cache           Redis: the cache and session databases, rate-limit counts
@@ -80,8 +82,11 @@ web/id/src/lib/          api/, i18n/, state/, components/ui/ (primitives),
                          components/auth|account|layout/, constants.ts (the
                          API's field limits)
 web/<app>/src/lib/testing/  expectAccessible: axe on a mounted component
+web/<app>/src/lib/brand.ts  the app's brand (name, slug, mark, favicon from
+                         lib/assets/, cookie names; the console's links and
+                         pageTitle)
 web/console/scripts/     theme.ts, the generator
-scripts/                 what the Makefile runs: setup, start, docker-local, db;
+scripts/                 what the Makefile runs: setup, start, docker-local, db, rename;
                          lib.sh (load_env) is shared by all of them
 deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles
 ```
@@ -246,6 +251,22 @@ commits. Cache a projection, never a model carrying a secret, and add it to
 `TestCachedTypesSurviveJSON`. Never cache users, codes or refresh tokens.
 Everything must work with a nil cache.
 
+**A brand.** Each application has its own: the server's in `internal/brand`
+(Go constants and `favicon.svg`), each app's in `src/lib/brand.ts` (`BRAND`,
+the cookie names built from `BRAND.slug`; the console's Help links and
+`pageTitle` too) with its favicon in `src/lib/assets/favicon.svg`. Each may
+name the product, draw its mark and pick its favicon as it likes; the slug
+must be the same in all three, because the server reads back cookies the apps
+name, which `TestTheAppsBuildTheSameNames` checks. A new field goes in the
+app's `BRAND` and is read as `BRAND.field`; a new asset goes in
+`src/lib/assets/` and is imported there, so a build fingerprints it. A new
+name for everything is `make rename name="New Name" slug=newslug`, which also
+rewrites what has to spell it (go.mod, `cmd/<slug>`, the environment prefix,
+scripts, `deploy/`, CI, docs). An installation's own name, logo, terms and
+privacy links are not a brand: an administrator sets them in Settings, and
+the sign-in pages show them first. Where the apps and the API are reached is
+configuration (`LOGINER_ISSUER`, `LOGINER_ACCOUNT_URL`, `LOGINER_ADMIN_URL`).
+
 **A language** (sign-in pages only; the panel is English). English is the
 only one that ships, and the default on a fresh installation. Every other is
 added on the panel's Languages page (Settings), translated there, and offered
@@ -291,11 +312,12 @@ shield mark does.
   `t('area.thing', { param })`, the key added to its group in `i18n/id/*.en.json`.
   Panel: the opposite — English in the markup; an error shown is the sentence
   the API sent (`messageOf` from `#lib/api/index.js`).
-- **The project's own name is never spelled out.** `internal/brand` holds it
-  for the server and `web/<app>/src/lib/brand.ts` for each app;
-  `TestNothingElseSpellsTheName` fails on a hand-written one.
+- **The project's own name is never spelled out.** It is written only in the
+  brands: `internal/brand` and each app's `src/lib/brand.ts`
+  (`import { BRAND, pageTitle } from '#lib/brand.js'`).
+  `TestNothingElseSpellsTheName` fails on it anywhere else in the code.
 - **SvelteKit 3.** Imports from `src/lib` use `#lib` and name the file
-  (`import { BRAND } from '#lib/brand.js'`); there is no `$lib` and no
+  (`import { COOKIES } from '#lib/brand.js'`); there is no `$lib` and no
   `svelte.config.js` — configuration is `sveltekit({...})` in `vite.config.ts`.
   `resolve()` reads a leading slash as a route id, groups included
   (`resolve('/(panel)/users')`). `page.url` is read-only. Reload

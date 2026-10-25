@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { IconButton, PageContainer, PageHeader, Tabs } from '#lib/components/ui/index.js';
 	import LanguageSettings from '#lib/components/languages/LanguageSettings.svelte';
 	import OrganizationSettings from '#lib/components/organization/OrganizationSettings.svelte';
@@ -28,7 +28,7 @@
 	}
 </script>
 
-<svelte:head><title>Settings · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Settings')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Settings']}

@@ -6,7 +6,7 @@
 		useQueryClient
 	} from '@tanstack/svelte-query';
 	import { cacheApi, type CacheDatabaseName, type CacheKey } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { cacheKeysOptions, cacheOverviewOptions, keys } from '#lib/query/index.js';
 	import {
 		Alert,
@@ -110,7 +110,7 @@
 	const label = $derived(databases[data.database].label);
 </script>
 
-<svelte:head><title>Cache · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Cache')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Cache']}

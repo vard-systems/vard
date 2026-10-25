@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createInfiniteQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { applicationsApi, type Application } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { applicationsOptions, keys, uniqueById } from '#lib/query/index.js';
 	import { can } from '#lib/permissions.js';
 	import {
@@ -108,7 +108,7 @@
 	];
 </script>
 
-<svelte:head><title>Applications · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Applications')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Applications']}

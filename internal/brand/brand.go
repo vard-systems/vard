@@ -1,20 +1,31 @@
-// Package brand is what this project calls itself, and every name built from
-// it: cookies, the Redis prefix, locks. Each app keeps the same list in its
-// brand.ts, and brand_test.go checks the two sides agree.
+// Package brand is the server's own record of what the project calls itself,
+// and every name built from it: cookies, the Redis prefix, locks, the API
+// identifiers.
 //
-// Renaming the project is these constants, the module path in go.mod, each
-// app's brand.ts, and a `git mv` of cmd/<name>. A test fails on the name
-// spelled anywhere else.
+// Each app keeps its own brand in src/lib/brand.ts, which the server never
+// reads. They may name the product and pick a favicon as they like; what has
+// to agree, the slug and the cookie names the server reads back, brand_test.go
+// holds together.
+//
+// What changes with a deployment (addresses, mail sender) is configuration,
+// in internal/config. `make rename` renames the project everywhere.
 package brand
 
+import (
+	_ "embed"
+	"encoding/base64"
+)
+
 const (
+	// Name is what a person reads: logs, mail, authenticator apps, passkey
+	// prompts.
 	Name = "Loginer"
 
+	// Slug is what identifiers are built from: lower-case letters and digits,
+	// so it is a valid cookie, Redis, URN, Postgres and environment name.
 	Slug = "loginer"
 
 	EnvPrefix = "LOGINER_"
-
-	GitHubURL = "https://github.com/loginer/loginer"
 )
 
 const (
@@ -43,14 +54,20 @@ const RedisPrefix = Slug + ":"
 
 const Realm = Name
 
-// FlowSchema is the $schema of exported login flows; changing it orphans every
-// exported file.
-const FlowSchema = Slug + ".login-flow/1"
-
 const (
+	// AdminLock is a number, not a name, so a rename leaves it as it is.
 	AdminLock int64 = 0x6c6f67696e6572
 
 	// SigningKeysLock is named rather than numbered, because this one is worth
 	// being able to read in pg_locks.
 	SigningKeysLock = Slug + "_signing_keys"
 )
+
+// favicon is the server's own, for the pages it renders itself.
+//
+//go:embed favicon.svg
+var favicon string
+
+// FaviconURL is the favicon as a data: URL: the server's pages have no asset
+// of their own to point at.
+var FaviconURL = "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(favicon))

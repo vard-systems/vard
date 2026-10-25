@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { socialApi, type SocialProvider } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import {
 		Button,
 		ConfirmDialog,
@@ -161,7 +161,7 @@
 	];
 </script>
 
-<svelte:head><title>Social · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Social')}</title></svelte:head>
 
 <PageHeader crumbs={['Dashboard', 'Social']} count={social.data.providers.length}>
 	{#snippet secondary()}

@@ -36,14 +36,14 @@
 				href: resolve(item.route)
 			}))
 		),
-		{
-			id: 'github',
-			label: 'GitHub',
+		...BRAND.links.map((link) => ({
+			id: link.id,
+			label: link.label,
 			group: 'Help',
-			icon: 'ri-github-fill',
-			href: BRAND.githubUrl,
+			icon: link.icon,
+			href: link.href,
 			external: true
-		}
+		}))
 	]);
 
 	const matches = $derived(commands.filter((command) => fuzzy(command, query)));

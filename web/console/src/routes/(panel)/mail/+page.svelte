@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { IconButton, PageContainer, PageHeader, Tabs } from '#lib/components/ui/index.js';
 	import MailContent from '#lib/components/mail/MailContent.svelte';
 	import MailServer from '#lib/components/mail/MailServer.svelte';
@@ -26,7 +26,7 @@
 	}
 </script>
 
-<svelte:head><title>Mail · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Mail')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Mail']}

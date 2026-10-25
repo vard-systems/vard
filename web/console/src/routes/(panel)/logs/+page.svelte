@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createInfiniteQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { activityApi } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import ActivityTable from '#lib/components/activity/ActivityTable.svelte';
 	import { actionsIn } from '#lib/components/activity/actions.js';
 	import { kindLabels, type Kind } from '#lib/components/activity/filters.js';
@@ -68,7 +68,7 @@
 </script>
 
 <svelte:head>
-	<title>Logs · {BRAND.name}</title>
+	<title>{pageTitle('Logs')}</title>
 </svelte:head>
 
 <PageHeader

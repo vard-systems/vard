@@ -6,7 +6,7 @@
 		useQueryClient
 	} from '@tanstack/svelte-query';
 	import { adminsApi, type AdminRecord } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import {
 		adminPermissionsOptions,
 		adminRolesOptions,
@@ -120,7 +120,7 @@
 	];
 </script>
 
-<svelte:head><title>Administrators · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Administrators')}</title></svelte:head>
 
 <PageHeader crumbs={['Dashboard', 'Administrators']} count={total}>
 	{#snippet secondary()}

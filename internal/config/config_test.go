@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -131,6 +132,9 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.DB.MigrateDir != "./migrations" {
 		t.Errorf("MigrateDir = %q, want the default ./migrations", cfg.DB.MigrateDir)
 	}
+	if cfg.LogLevel != slog.LevelInfo {
+		t.Errorf("LogLevel = %v, want the default info", cfg.LogLevel)
+	}
 	if cfg.AuditRetention != 365*24*time.Hour || cfg.DB.MaxConns != 25 {
 		t.Errorf("AuditRetention, MaxConns = %v, %d, want a year and 25", cfg.AuditRetention, cfg.DB.MaxConns)
 	}
@@ -150,6 +154,8 @@ func TestLoadRefusesLimitsThatCannotWork(t *testing.T) {
 		{name: "a retention that is negative", env: base + "LOGINER_AUDIT_RETENTION_DAYS=-1\n", wantErr: true},
 		{name: "one connection", env: base + "LOGINER_DB_MAX_CONNS=1\n"},
 		{name: "no connections at all", env: base + "LOGINER_DB_MAX_CONNS=0\n", wantErr: true},
+		{name: "a log level in any case", env: base + "LOGINER_LOG_LEVEL=Debug\n"},
+		{name: "a log level slog does not have", env: base + "LOGINER_LOG_LEVEL=verbose\n", wantErr: true},
 	}
 
 	for _, tt := range tests {

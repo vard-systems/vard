@@ -2,7 +2,7 @@
 	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { adminApi, ApiError, messageOf } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { BRAND, pageTitle } from '#lib/brand.js';
 	import GateShell from '#lib/components/layout/GateShell.svelte';
 	import { Alert, Button, Input, PasswordInput } from '#lib/components/ui/index.js';
 
@@ -83,7 +83,7 @@
 </script>
 
 <svelte:head>
-	<title>Sign in · {BRAND.name}</title>
+	<title>{pageTitle('Sign in')}</title>
 </svelte:head>
 
 {#if step === 'code'}

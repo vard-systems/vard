@@ -31,7 +31,11 @@ import (
 var version = "dev"
 
 func main() {
-	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	// The level is the configuration's, which is read inside run: until then,
+	// and for a configuration that does not load, it is info.
+	level := new(slog.LevelVar)
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})).
+		With("service", brand.Slug)
 
 	// Gin defaults to debug mode, which a bare binary under systemd would run
 	// in production; GIN_MODE=debug still turns it on.
@@ -39,19 +43,20 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	if err := run(log); err != nil {
+	if err := run(log, level); err != nil {
 		log.Error("fatal", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(log *slog.Logger) error {
-	log.Info(brand.Name+" starting", "version", version)
+func run(log *slog.Logger, level *slog.LevelVar) error {
+	log.Info("starting", "version", version)
 
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
+	level.Set(cfg.LogLevel)
 
 	if config.SecretKeyLooksWeak(cfg.SecretKey) {
 		log.Warn("LOGINER_SECRET_KEY does not look like 32 random bytes; a low-entropy key can be brute-forced against a database dump to recover sealed secrets — generate one with: openssl rand -base64 32")

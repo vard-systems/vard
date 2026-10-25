@@ -114,6 +114,7 @@ services:
       # After the first start the setting lives in the database.
       LOGINER_ADMIN_MFA: ${LOGINER_ADMIN_MFA:-required}
       LOGINER_RATE_LIMIT: ${LOGINER_RATE_LIMIT:-20}
+      LOGINER_LOG_LEVEL: ${LOGINER_LOG_LEVEL:-info}
       # Only the two apps forward a caller's address, from their fixed
       # addresses below — not the whole subnet, which is also Postgres and
       # Redis.

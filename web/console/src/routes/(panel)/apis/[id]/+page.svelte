@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { Badge, CopyButton, Note, PageHeader, Tabs } from '#lib/components/ui/index.js';
 	import { can } from '#lib/permissions.js';
 	import { apiOptions } from '#lib/query/index.js';
@@ -55,7 +55,7 @@
 	]);
 </script>
 
-<svelte:head><title>{api.name} · APIs · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle(api.name, 'APIs')}</title></svelte:head>
 
 <div class="page">
 	<div class="heading">

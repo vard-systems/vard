@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { IconButton, PageContainer, PageHeader } from '#lib/components/ui/index.js';
 	import OtpSettings from '#lib/components/otp/OtpSettings.svelte';
 	import { keys, otpOptions } from '#lib/query/index.js';
@@ -13,7 +13,7 @@
 	const settings = createQuery(() => otpOptions(data.otp));
 </script>
 
-<svelte:head><title>One-time codes · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('One-time codes')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'One-time codes']}

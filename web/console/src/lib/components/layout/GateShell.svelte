@@ -12,13 +12,7 @@
 		children: Snippet;
 	};
 
-	let {
-		title,
-		description,
-		icon = 'ri-shield-keyhole-line',
-		width = 'sm',
-		children
-	}: Props = $props();
+	let { title, description, icon = BRAND.icon, width = 'sm', children }: Props = $props();
 </script>
 
 <!-- A page outside the panel: signing in, or setting up what signing in needs. -->

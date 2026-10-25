@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { SSOConnection } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import {
 		Button,
 		EmptyState,
@@ -65,7 +65,7 @@
 	}
 </script>
 
-<svelte:head><title>SSO integrations · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('SSO integrations')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'SSO integrations']}

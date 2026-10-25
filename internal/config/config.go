@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -43,6 +44,10 @@ type Config struct {
 	AdminMFARequired bool
 
 	RateLimit int
+
+	// LogLevel is the least severe line the server writes: debug, info, warn
+	// or error.
+	LogLevel slog.Level
 
 	// TrustedProxies are the proxies whose X-Forwarded-For is believed. Empty
 	// believes no one. Behind a proxy it must be set, or every request (and the
@@ -147,6 +152,7 @@ func Load() (Config, error) {
 	v.SetDefault(env("CORS_ORIGINS"), "")
 	v.SetDefault(env("TRUSTED_PROXIES"), "")
 	v.SetDefault(env("RATE_LIMIT"), 20)
+	v.SetDefault(env("LOG_LEVEL"), "info")
 	v.SetDefault(env("ADMIN_MFA"), "optional")
 	v.SetDefault(env("KEY_ROTATION_DAYS"), 90)
 	v.SetDefault(env("AUDIT_RETENTION_DAYS"), 365)
@@ -254,6 +260,10 @@ func Load() (Config, error) {
 
 	if cfg.KeyRotation < 0 {
 		return Config{}, errors.New(env("KEY_ROTATION_DAYS") + " must be zero or more")
+	}
+
+	if err := cfg.LogLevel.UnmarshalText([]byte(v.GetString(env("LOG_LEVEL")))); err != nil {
+		return Config{}, fmt.Errorf("%s must be debug, info, warn or error, got %q", env("LOG_LEVEL"), v.GetString(env("LOG_LEVEL")))
 	}
 
 	if cfg.RateLimit < 0 {

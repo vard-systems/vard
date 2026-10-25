@@ -1,6 +1,7 @@
 package api
 
 import (
+	"html"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"loginer/internal/brand"
 )
 
 // receiver is an application's back-channel logout endpoint: it keeps every
@@ -293,6 +296,9 @@ func TestLiveFrontchannelLogout(t *testing.T) {
 	policy := res.Header.Get("Content-Security-Policy")
 	if !strings.Contains(policy, "frame-src https://shop.example.com;") || strings.Contains(policy, "unsafe") {
 		t.Errorf("the page's policy is %q, want it to frame the application and nothing else", policy)
+	}
+	if !strings.Contains(policy, "img-src data:;") || !strings.Contains(html.UnescapeString(string(page)), `<link rel="icon" href="`+brand.FaviconURL+`"`) {
+		t.Errorf("the page does not carry its favicon, or its policy %q lets in images other than data: URLs", policy)
 	}
 	want := url.Values{"iss": {f.s.cfg.Issuer}, "sid": {id["sid"].(string)}}.Encode()
 	if !strings.Contains(string(page), "frontchannel-logout?from=idp&amp;"+strings.ReplaceAll(want, "&", "&amp;")) {

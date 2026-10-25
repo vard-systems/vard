@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { adminsApi, type AdminRole } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import {
 		adminPermissionsOptions,
 		adminRolesOptions,
@@ -105,7 +105,7 @@
 	}));
 </script>
 
-<svelte:head><title>Admin roles · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Admin roles')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Admin roles']}

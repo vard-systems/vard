@@ -513,11 +513,11 @@ func (h *Handler) FrontchannelLogout(c *gin.Context) {
 
 	c.Header("Cache-Control", "no-store")
 	c.Header("Content-Security-Policy", "default-src 'none'; frame-src "+strings.Join(origins, " ")+
-		"; style-src 'nonce-"+nonce+"'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+		"; style-src 'nonce-"+nonce+"'; img-src data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 	c.Status(http.StatusOK)
 	c.Header("Content-Type", "text/html; charset=utf-8")
 
-	if err := frontchannelTemplate.Execute(c.Writer, frontchannelView{FrontchannelPage: page, Nonce: nonce}); err != nil {
+	if err := frontchannelTemplate.Execute(c.Writer, frontchannelView{FrontchannelPage: page, Nonce: nonce, Favicon: template.URL(brand.FaviconURL)}); err != nil {
 		h.log.Error("writing a front-channel logout page failed", "error", err)
 	}
 }
@@ -525,6 +525,10 @@ func (h *Handler) FrontchannelLogout(c *gin.Context) {
 type frontchannelView struct {
 	*oidc.FrontchannelPage
 	Nonce string
+
+	// Favicon is the server's own data: URL, which html/template would
+	// otherwise refuse in an href.
+	Favicon template.URL
 }
 
 func newNonce() (string, error) {
@@ -544,6 +548,7 @@ var frontchannelTemplate = template.Must(template.New("frontchannel").Parse(`<!d
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="refresh" content="2;url={{.Next}}">
 <title>{{.Title}}</title>
+<link rel="icon" href="{{.Favicon}}" type="image/svg+xml">
 <style nonce="{{.Nonce}}">
 body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;color:#25272d;background:#f5f6f8}
 main{text-align:center;padding:24px}

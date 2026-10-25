@@ -1,6 +1,6 @@
 import type { IconName } from '#lib/components/ui/index.js';
 import type { LoginStep, LoginStepSpec } from '#lib/api/index.js';
-import { BRAND } from '#lib/brand.js';
+import { FLOW_SCHEMA } from '#lib/brand.js';
 
 const marks: Record<LoginStep, IconName> = {
 	identifier: 'ri-at-line',
@@ -175,8 +175,6 @@ export const TEMPLATES: FlowTemplate[] = [
 		draft: { ...base, name: '', slug: '', steps: ['identifier', 'password'] }
 	}
 ];
-
-const FLOW_SCHEMA = `${BRAND.slug}.login-flow/1`;
 
 export type FlowFile = Omit<FlowDraft, 'is_default'> & { $schema: typeof FLOW_SCHEMA };
 

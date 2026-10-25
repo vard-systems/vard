@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createInfiniteQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { sessionsApi, type UserSessionRecord } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { keys, sessionsOptions } from '#lib/query/index.js';
 	import {
 		ConfirmDialog,
@@ -80,7 +80,7 @@
 	}));
 </script>
 
-<svelte:head><title>Sessions · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Sessions')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Sessions']}

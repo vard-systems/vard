@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { BRAND } from '#lib/brand.js';
 	import { useTranslator } from '#lib/i18n/index.js';
 
 	type Props = {
@@ -27,7 +28,7 @@
 {:else}
 	<span class="mark initial" style="--size: {size}px" aria-hidden="true">
 		{#if initial}{initial}{:else}<i
-				class="ri-shield-keyhole-line"
+				class={BRAND.icon}
 				style:font-size="{size * 0.45}px"
 				aria-hidden="true"
 			></i>{/if}

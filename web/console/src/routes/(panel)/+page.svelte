@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import type { OverviewDays } from '#lib/api/index.js';
 	import { countOf } from '#lib/utils/format.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import { logsHref } from '#lib/components/activity/filters.js';
 	import ActivityChart from '#lib/components/activity/ActivityChart.svelte';
 	import ActivityFeed from '#lib/components/activity/ActivityFeed.svelte';
@@ -108,7 +108,7 @@
 </script>
 
 <svelte:head>
-	<title>Activity · {BRAND.name}</title>
+	<title>{pageTitle('Activity')}</title>
 </svelte:head>
 
 <div class="page">

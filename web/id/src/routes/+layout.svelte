@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { beforeNavigate } from '$app/navigation';
 	import { updated } from '$app/state';
+	import { BRAND } from '#lib/brand.js';
 	import { Toaster } from '#lib/components/ui/index.js';
 	import { provideTranslator, translator } from '#lib/i18n/index.js';
 	import 'remixicon/fonts/remixicon.css';
@@ -26,6 +27,10 @@
 		if (updated.current && !willUnload && to?.url) location.href = to.url.href;
 	});
 </script>
+
+<svelte:head>
+	<link rel="icon" href={BRAND.favicon} type="image/svg+xml" />
+</svelte:head>
 
 {@render children()}
 

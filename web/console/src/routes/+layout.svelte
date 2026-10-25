@@ -2,6 +2,7 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { updated } from '$app/state';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import { BRAND } from '#lib/brand.js';
 	import NavigationProgress from '#lib/components/layout/NavigationProgress.svelte';
 	import { Toaster } from '#lib/components/ui/index.js';
 	import { createQueryClient } from '#lib/query/index.js';
@@ -20,6 +21,10 @@
 		if (updated.current && !willUnload && to?.url) location.href = to.url.href;
 	});
 </script>
+
+<svelte:head>
+	<link rel="icon" href={BRAND.favicon} type="image/svg+xml" />
+</svelte:head>
 
 <NavigationProgress />
 

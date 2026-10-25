@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { flowsApi, type LoginFlow } from '#lib/api/index.js';
-	import { BRAND } from '#lib/brand.js';
+	import { pageTitle } from '#lib/brand.js';
 	import {
 		Button,
 		IconButton,
@@ -104,7 +104,7 @@
 	}
 </script>
 
-<svelte:head><title>Login flows · {BRAND.name}</title></svelte:head>
+<svelte:head><title>{pageTitle('Login flows')}</title></svelte:head>
 
 <PageHeader
 	crumbs={['Dashboard', 'Login flows']}
