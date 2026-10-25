@@ -41,6 +41,8 @@ type ClientMetadata struct {
 	Scope                   string   `json:"scope,omitempty"`
 	BackchannelLogoutURI    string   `json:"backchannel_logout_uri,omitempty"`
 	FrontchannelLogoutURI   string   `json:"frontchannel_logout_uri,omitempty"`
+
+	RequirePushedAuthorizationRequests bool `json:"require_pushed_authorization_requests,omitempty"`
 }
 
 // RegisteredClient is the answer: the client's id, its secret when it has
@@ -151,6 +153,7 @@ func applicationFrom(m ClientMetadata) (*model.Application, error) {
 		Scopes:                 strings.Fields(m.Scope),
 		BackchannelLogoutURI:   m.BackchannelLogoutURI,
 		FrontchannelLogoutURI:  m.FrontchannelLogoutURI,
+		RequirePushedRequests:  m.RequirePushedAuthorizationRequests,
 		RequirePKCE:            true,
 		AssertRoles:            true,
 		IsEnabled:              true,
@@ -195,5 +198,7 @@ func metadataOf(app *model.Application) ClientMetadata {
 		Scope:                   strings.Join(app.Scopes, " "),
 		BackchannelLogoutURI:    app.BackchannelLogoutURI,
 		FrontchannelLogoutURI:   app.FrontchannelLogoutURI,
+
+		RequirePushedAuthorizationRequests: app.RequirePushedRequests,
 	}
 }
