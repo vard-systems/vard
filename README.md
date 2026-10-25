@@ -8,10 +8,11 @@ with two web apps:
 | `web/id`      | Hosted sign-in pages and each user's own account |
 | `web/console` | The admin panel                                  |
 
-**Features:** authorization code with PKCE, pushed authorization requests
-(PAR), the device authorization grant (sign-in on TVs and command lines),
-refresh token rotation with reuse detection, client credentials, DPoP-bound
-tokens, dynamic client registration, userinfo, introspection, revocation,
+**Features:** authorization code with PKCE (always, for clients without
+credentials), pushed authorization requests (PAR), the device authorization
+grant (sign-in on TVs and command lines), refresh token rotation with reuse
+detection, client credentials, DPoP-bound tokens, dynamic client registration,
+userinfo, introspection, revocation,
 logout (RP-initiated, back-channel and front-channel), a consent page, terms
 acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
 OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),

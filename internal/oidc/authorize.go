@@ -212,7 +212,7 @@ func (s *Service) requestProblem(ctx context.Context, app *model.Application, p 
 		return ErrInvalidRequest, "response_mode must be query", nil
 	case !slices.Contains(app.GrantTypes, model.GrantAuthorizationCode):
 		return ErrUnauthorizedClient, "the application does not have the authorization_code grant", nil
-	case p.CodeChallenge == "" && app.RequirePKCE:
+	case p.CodeChallenge == "" && app.MustUsePKCE():
 		return ErrInvalidRequest, "code_challenge is required: this application must use PKCE", nil
 	case p.CodeChallenge != "" && p.CodeChallengeMethod != model.PKCES256:
 		return ErrInvalidRequest, "code_challenge_method must be S256", nil
@@ -317,7 +317,7 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, h
 	if !slices.Contains(app.RedirectURIs, req.RedirectURI) {
 		return s.errorPage(ErrInvalidRequest, "redirect_uri is no longer registered for this application"), nil
 	}
-	if app.RequirePKCE && req.CodeChallenge == "" {
+	if app.MustUsePKCE() && req.CodeChallenge == "" {
 		return s.redirectError(req.RedirectURI, req.State, ErrInvalidRequest, "this application now requires PKCE; start the sign-in again"), nil
 	}
 

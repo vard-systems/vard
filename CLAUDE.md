@@ -153,6 +153,9 @@ code near it, and add a test when adding a case.
   and entering them is rate-limited.
 - **A DPoP-bound access token is never taken as a bearer token.** Userinfo
   checks its proof; the account and admin APIs, which do not, refuse it.
+- **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
+  whatever its `RequirePKCE` says, and a code asked for with a challenge is
+  never exchanged without its verifier.
 - **Registering a client takes an initial access token** (an admin API token
   with `applications.write`); `/oauth2/register` is never open.
 - **Unknown accounts cost the same as wrong passwords** (`CompareDummyPassword`),

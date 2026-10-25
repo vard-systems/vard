@@ -159,6 +159,14 @@ func (a Application) HasSecret() bool {
 	return a.TokenAuthMethod != AuthNone
 }
 
+// MustUsePKCE is whether an authorization request has to carry a
+// code_challenge. A client with no credentials of its own always does
+// (RFC 9700 §2.1.1, OAuth 2.1): nothing else ties the code to the app that
+// asked for it, whatever RequirePKCE says.
+func (a Application) MustUsePKCE() bool {
+	return a.RequirePKCE || a.TokenAuthMethod == AuthNone
+}
+
 func (a *Application) Normalize() {
 	switch {
 	case a.Type.Public():

@@ -146,7 +146,7 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri does not match the authorization request")
 	case !slices.Contains(app.RedirectURIs, code.RedirectURI):
 		return nil, oauthError(ErrInvalidGrant, "redirect_uri is no longer registered for this application")
-	case app.RequirePKCE && code.CodeChallenge == "":
+	case app.MustUsePKCE() && code.CodeChallenge == "":
 		return nil, oauthError(ErrInvalidGrant, "this application now requires PKCE")
 	case code.CodeChallenge != "" && !model.VerifyPKCE(code.CodeChallenge, p.CodeVerifier):
 		return nil, oauthError(ErrInvalidGrant, "code_verifier does not match the code_challenge")
