@@ -90,10 +90,11 @@ fi
 for app in "${apps[@]}"; do
 	read -r name port api <<<"$app"
 	if [[ $mode == prod ]]; then
-		# adapter-node's server, on loopback like the dev server. ORIGIN is
-		# the address the browser uses, which it cannot tell from plain http.
+		# adapter-node's server, on loopback like the dev server, taking a
+		# body as large as the API does (a logo, a SAML response): its own
+		# default is 512K.
 		(cd "web/$name" && NODE_ENV=production HOST=127.0.0.1 PORT=$port \
-			ORIGIN=http://localhost:$port API_URL=$api exec node build) >>"$logs/$name.log" 2>&1 &
+			BODY_SIZE_LIMIT=1M API_URL=$api exec node build) >>"$logs/$name.log" 2>&1 &
 	else
 		(cd "web/$name" && API_URL=$api exec node_modules/.bin/vite dev) >"$logs/$name.log" 2>&1 &
 	fi

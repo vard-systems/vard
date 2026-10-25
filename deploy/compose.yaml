@@ -1,9 +1,15 @@
 # Production: Postgres, Redis, the API, and the two apps as Node servers in
-# front of it, over plain http. Only the apps publish ports: each renders its
-# pages and passes the API's paths on. See the repository README.
+# front of it. TLS ends at a proxy on the host (deploy/nginx/vard.conf.template),
+# which is the only thing the internet reaches: the apps publish on the host's
+# loopback alone, and nothing else publishes at all. See deploy/README.md.
 #
-#   cp deploy/.env.example deploy/.env    # fill it in
+#   make docker-env public=https://id.example.com admin=https://admin.example.com
 #   make docker-up
+#
+# Two networks. `edge` is the apps and the API: the apps pass the API's paths
+# on, and the API reaches out from it (mail, social and SSO providers,
+# back-channel logout). `data` is Postgres and Redis with the API, and is
+# internal: no route out, and nothing on it the apps can reach.
 
 name: vard
 
@@ -16,20 +22,40 @@ x-logging: &logging
 x-hardened: &hardened
   restart: unless-stopped
   logging: *logging
+  init: true
   security_opt: ["no-new-privileges:true"]
+
+# The images built here run as an unprivileged user, need no capability and
+# write nowhere but /tmp, so they are given none and a read-only filesystem.
+x-locked: &locked
+  <<: *hardened
+  cap_drop: [ALL]
+  read_only: true
+  tmpfs: ["/tmp:size=64m,mode=1777"]
 
 # What both apps share. They start once the API answers. Their healthcheck
 # asks for a static file, so it says the server is up without rendering a
 # page, and filling the API's log, every few seconds.
 x-web: &web
-  <<: *hardened
+  <<: *locked
   depends_on:
     api: { condition: service_healthy }
   healthcheck:
-    test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/favicon.svg"]
-    interval: 5s
+    test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/robots.txt"]
+    interval: 10s
     timeout: 3s
-    retries: 24
+    start_period: 20s
+    retries: 6
+  deploy: { resources: { limits: { memory: 512m, pids: 256 } } }
+
+x-web-environment: &web-environment
+  # The proxy in front names the caller in X-Real-IP, overwriting any a
+  # client sent; nothing else can reach the published port. `make
+  # docker-local`, with no proxy, sets this empty and the connection says.
+  ADDRESS_HEADER: ${APP_ADDRESS_HEADER-x-real-ip}
+  # The API's own limit (middleware.MaxBodyBytes): a body the API would take
+  # — a logo, a SAML response — is never refused here first.
+  BODY_SIZE_LIMIT: 1M
 
 services:
   postgres:
@@ -40,11 +66,14 @@ services:
       POSTGRES_USER: vard
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
     healthcheck:
-      test: pg_isready -U vard
-      interval: 2s
+      test: ["CMD-SHELL", "pg_isready -U vard -d vard"]
+      interval: 5s
+      timeout: 3s
       retries: 30
+    shm_size: 128m
+    deploy: { resources: { limits: { pids: 512 } } }
     volumes: [postgres:/var/lib/postgresql/data]
-    networks: [internal]
+    networks: [data]
 
   # The cache in front of Postgres, and the rate limit's shared counts.
   # Nothing in it is the only copy of anything, so it keeps nothing on disk.
@@ -55,8 +84,7 @@ services:
     <<: *hardened
     image: redis:8-alpine
     # A password, because what is in here decides who is signed in: a
-    # session put here is believed. Anything else on the network that was
-    # taken over — the proxy, say — could otherwise write one.
+    # session put here is believed.
     command:
       [
         "sh",
@@ -71,18 +99,19 @@ services:
           "CMD-SHELL",
           'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep -q PONG',
         ]
-      interval: 2s
+      interval: 5s
+      timeout: 3s
       retries: 30
-    networks: [internal]
+    deploy: { resources: { limits: { memory: 384m, pids: 128 } } }
+    networks: [data]
 
   api:
-    <<: *hardened
+    <<: *locked
+    image: vard-api:${VERSION:-dev}
     build:
-      {
-        context: ..,
-        dockerfile: deploy/docker/api.Dockerfile,
-        args: { VERSION: "${VERSION:-dev}" },
-      }
+      context: ..
+      dockerfile: deploy/docker/api.Dockerfile
+      args: { VERSION: "${VERSION:-dev}" }
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -91,15 +120,17 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget -qO- http://127.0.0.1:8080/healthz && wget -qO- http://127.0.0.1:8081/healthz",
+          "wget -qO /dev/null http://127.0.0.1:8080/healthz && wget -qO /dev/null http://127.0.0.1:8081/healthz",
         ]
-      interval: 5s
+      interval: 10s
       timeout: 3s
-      retries: 24
+      start_period: 30s
+      retries: 6
     # The server gives requests under way 15s to finish (shutdownGrace in
     # cmd/vard/main.go); Docker's own default is 10s, which would SIGKILL
     # it half way through every deploy.
     stop_grace_period: 20s
+    deploy: { resources: { limits: { memory: 512m, pids: 256 } } }
     environment:
       VARD_ISSUER: ${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}
       VARD_ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in deploy/.env}
@@ -116,52 +147,50 @@ services:
       VARD_RATE_LIMIT: ${VARD_RATE_LIMIT:-20}
       VARD_LOG_LEVEL: ${VARD_LOG_LEVEL:-info}
       # Only the two apps forward a caller's address, from their fixed
-      # addresses below — not the whole subnet, which is also Postgres and
-      # Redis.
+      # addresses below — not the whole subnet, which is also the API.
       VARD_TRUSTED_PROXIES: 172.30.0.2/32,172.30.0.3/32
       VARD_SMTP_HOST: ${VARD_SMTP_HOST:-}
       VARD_SMTP_PORT: ${VARD_SMTP_PORT:-587}
       VARD_SMTP_USERNAME: ${VARD_SMTP_USERNAME:-}
       VARD_SMTP_PASSWORD: ${VARD_SMTP_PASSWORD:-}
       VARD_SMTP_FROM: ${VARD_SMTP_FROM:-}
-    networks: [internal]
+    networks: [edge, data]
 
   # The users' site: the sign-in pages, with the provider and the account API
   # passed on to the public listener.
   id:
     <<: *web
+    image: vard-id:${VERSION:-dev}
     build:
-      {
-        context: ..,
-        dockerfile: deploy/docker/web.Dockerfile,
-        args: { APP: web/id },
-      }
+      context: ..
+      dockerfile: deploy/docker/web.Dockerfile
+      args: { APP: web/id, VERSION: "${VERSION:-dev}" }
     environment:
+      <<: *web-environment
       API_URL: http://api:8080
-    ports: ["8080:3000"]
+    ports: ["${ID_PUBLISH:-127.0.0.1:3000}:3000"]
     networks:
-      internal: { ipv4_address: 172.30.0.2 }
+      edge: { ipv4_address: 172.30.0.2 }
 
   # The staff site: the panel, with the admin API passed on to the admin
-  # listener. Published on this machine's loopback only, so the panel and the
-  # admin API are not on the network; reach it over an SSH tunnel
-  # (ssh -L 8081:localhost:8081 server).
+  # listener. The proxy may limit who reaches it (deploy/nginx); without one,
+  # reach it over an SSH tunnel (ssh -L 3001:localhost:3001 server).
   console:
     <<: *web
+    image: vard-console:${VERSION:-dev}
     build:
-      {
-        context: ..,
-        dockerfile: deploy/docker/web.Dockerfile,
-        args: { APP: web/console },
-      }
+      context: ..
+      dockerfile: deploy/docker/web.Dockerfile
+      args: { APP: web/console, VERSION: "${VERSION:-dev}" }
     environment:
+      <<: *web-environment
       API_URL: http://api:8081
-    ports: ["127.0.0.1:8081:3000"]
+    ports: ["${CONSOLE_PUBLISH:-127.0.0.1:3001}:3000"]
     networks:
-      internal: { ipv4_address: 172.30.0.3 }
+      edge: { ipv4_address: 172.30.0.3 }
 
 networks:
-  internal:
+  edge:
     ipam:
       config:
         # The apps get .2 and .3 by name above; everything else is handed an
@@ -169,6 +198,8 @@ networks:
         # an address the API trusts.
         - subnet: 172.30.0.0/24
           ip_range: 172.30.0.128/25
+  data:
+    internal: true
 
 volumes:
   postgres:
