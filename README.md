@@ -116,7 +116,10 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 ## Security model in brief
 
 - Every secret handed out (codes, refresh tokens, session cookies, reset links)
-  is 256 random bits stored only as a hash.
+  is 256 random bits stored only as a hash — with one exception: a refresh
+  token that has just replaced another is also kept sealed with
+  `VARD_SECRET_KEY`, for the 30-second grace below and cleared within another
+  30 seconds.
 - Signing keys and stored secrets are sealed with `VARD_SECRET_KEY`.
 - Signing keys rotate automatically and stay published until their tokens expire.
 - Passwords use bcrypt; unknown accounts take as long to refuse as wrong passwords.
@@ -127,9 +130,10 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   metadata addresses.
 - A refresh token presented again after it was replaced revokes its whole
   family — unless it comes within 30 seconds, when it is a retry (a lost
-  answer, two tabs at once) and is given the same token that replaced it,
-  kept sealed only for those 30 seconds. Every copy a client holds stays
-  good, and the family still has exactly one live token.
+  answer, two tabs at once) and is given the same token that replaced it.
+  Every copy a client holds stays good, the retry is held to the same client
+  authentication and DPoP or certificate binding as any refresh, and the
+  family still has exactly one live token.
 - A client certificate is believed only as the TLS proxy passed it on, from
   the mutual TLS host of its own (`VARD_MTLS_URL`); a token bound to one is
   taken only over a connection with it.

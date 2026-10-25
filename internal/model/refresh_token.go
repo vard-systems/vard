@@ -36,12 +36,15 @@ type RefreshToken struct {
 	// ExpiresAt is the family's: a rotated token keeps its predecessor's, so
 	// rotating cannot keep a session alive for ever.
 	ExpiresAt time.Time `gorm:"not null;index"`
-	RevokedAt *time.Time
+	// The partial index finds the rows still holding a sealed successor, so
+	// clearing them every RefreshReuseGrace reads only those.
+	RevokedAt *time.Time `gorm:"index:idx_refresh_tokens_sealed,where:successor_sealed IS NOT NULL"`
 
 	// SuccessorID is the token that replaced this one. SuccessorSealed is
 	// that token itself, sealed with VARD_SECRET_KEY, so that a retry within
 	// RefreshReuseGrace is answered with the same token rather than a new
-	// one; the sweep clears it once the grace is over.
+	// one. It is cleared within one more grace: when read past it, at the
+	// family's next rotation, or by KeepSwept every RefreshReuseGrace.
 	SuccessorID     *uuid.UUID `gorm:"type:uuid"`
 	SuccessorSealed []byte     `gorm:"type:bytea"`
 }

@@ -468,3 +468,44 @@ func TestLiveMutualTLSIgnoresAForgedCertificateHeader(t *testing.T) {
 		})
 	}
 }
+
+// A retry within the grace from a public client whose tokens are bound to
+// its certificate must come over a connection with that certificate, like
+// any refresh; from another, or none, it is refused, not handed the sealed
+// token.
+func TestLiveMutualTLSRefreshGraceKeepsTheCertificate(t *testing.T) {
+	f := newMTLSFixture(t)
+	clientID, _, _ := f.register(map[string]any{
+		"name": "Kiosk", "type": "native",
+		"grant_types":   []string{"authorization_code", "refresh_token"},
+		"redirect_uris": []string{shopRedirect},
+		"scopes":        []string{"openid", "offline_access"},
+		"tls_client_certificate_bound_access_tokens": true,
+	})
+	held := certtest.SelfSigned(t, "kiosk")
+
+	verifier, challenge := pkce(t)
+	back := f.as(clientID).signInWith(f.s.browser(), challenge, url.Values{"scope": {"openid offline_access"}, "audience": {""}})
+	r1 := f.send("/oauth2/token", clientID, "", held, url.Values{
+		"grant_type": {"authorization_code"}, "code": {back.Query().Get("code")},
+		"redirect_uri": {shopRedirect}, "code_verifier": {verifier},
+	}).str("refresh_token")
+	retry := func(cert *x509.Certificate) tokenResult {
+		return f.send("/oauth2/token", clientID, "", cert, url.Values{"grant_type": {"refresh_token"}, "refresh_token": {r1}})
+	}
+
+	r2 := retry(held).str("refresh_token")
+	if r2 == "" {
+		t.Fatal("the first refresh gave no token")
+	}
+
+	if got := retry(certtest.SelfSigned(t, "kiosk")); got.str("refresh_token") != "" || got.str("error") != "invalid_grant" {
+		t.Errorf("a retry over another certificate = %d %v, want invalid_grant", got.status, got.body)
+	}
+	if got := retry(nil); got.str("refresh_token") != "" || got.str("error") != "invalid_request" {
+		t.Errorf("a retry with no certificate = %d %v, want invalid_request", got.status, got.body)
+	}
+	if got := retry(held); got.str("refresh_token") != r2 {
+		t.Errorf("the retry over the bound certificate = %d %v, want the token it already got", got.status, got.body)
+	}
+}

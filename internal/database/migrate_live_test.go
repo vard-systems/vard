@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"vard/internal/database"
@@ -41,14 +42,26 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 	steps := []struct {
 		name    string
 		columns []column
+		index   string
 	}{
+		{name: "sealed successor index", index: "idx_refresh_tokens_sealed"},
 		{"mutual TLS", []column{
 			{"applications", "tls_subject_kind"}, {"applications", "tls_subject"},
 			{"applications", "tls_certificates"}, {"applications", "certificate_bound_tokens"},
 			{"refresh_tokens", "certificate_thumbprint"},
-		}},
-		{"development redirects", []column{{"applications", "allow_development_redirects"}}},
-		{"refresh successor", []column{{"refresh_tokens", "successor_id"}, {"refresh_tokens", "successor_sealed"}}},
+		}, ""},
+		{"development redirects", []column{{"applications", "allow_development_redirects"}}, ""},
+		{"refresh successor", []column{{"refresh_tokens", "successor_id"}, {"refresh_tokens", "successor_sealed"}}, ""},
+	}
+
+	// A fresh database has the index from the models, as the migration makes
+	// it on an old one: on the rows still holding a sealed successor alone.
+	var definition string
+	if err := db.Raw("SELECT indexdef FROM pg_indexes WHERE indexname = 'idx_refresh_tokens_sealed'").Scan(&definition).Error; err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(definition, "WHERE (successor_sealed IS NOT NULL)") {
+		t.Errorf("a fresh database's index = %q, want it partial on successor_sealed", definition)
 	}
 
 	for _, step := range steps {
@@ -60,6 +73,9 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 				t.Errorf("after down %s, %s.%s is still there", step.name, c.table, c.name)
 			}
 		}
+		if step.index != "" && db.Migrator().HasIndex("refresh_tokens", step.index) {
+			t.Errorf("after down %s, %s is still there", step.name, step.index)
+		}
 	}
 
 	if err := database.Migrate(db, cfg, log); err != nil {
@@ -70,6 +86,9 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 			if !db.Migrator().HasColumn(c.table, c.name) {
 				t.Errorf("after up, %s.%s is missing", c.table, c.name)
 			}
+		}
+		if step.index != "" && !db.Migrator().HasIndex("refresh_tokens", step.index) {
+			t.Errorf("after up, %s is missing", step.index)
 		}
 	}
 

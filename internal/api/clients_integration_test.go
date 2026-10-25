@@ -296,3 +296,132 @@ func TestLiveNativeAppRedirectsToAnyLoopbackPort(t *testing.T) {
 		})
 	}
 }
+
+// sealedRefreshTokens is how many replaced refresh tokens still hold their
+// successor sealed.
+func (s *liveServer) sealedRefreshTokens() int64 {
+	s.t.Helper()
+
+	var count int64
+	if err := s.db.Model(&model.RefreshToken{}).Where("successor_sealed IS NOT NULL").Count(&count).Error; err != nil {
+		s.t.Fatal(err)
+	}
+	return count
+}
+
+// A retry within the grace is handed a live refresh token, so it is held to
+// everything a refresh is: the client must authenticate as the one the token
+// was issued to, and a family bound to a DPoP key goes on only with a proof
+// from that key. A retry that fails either is refused — not handed the
+// sealed token — and the client's own retry still gets it afterwards.
+func TestLiveRefreshGraceKeepsTheBindings(t *testing.T) {
+	t.Run("the client that holds it", func(t *testing.T) {
+		f := newOAuthFixture(t)
+		verifier, challenge := pkce(t)
+		t1 := f.exchange(f.signIn(f.s.browser(), challenge).Query().Get("code"), verifier).str("refresh_token")
+		t2 := f.refresh(t1).str("refresh_token")
+
+		otherID, otherSecret, _ := f.register(map[string]any{
+			"name": "Other", "type": "web", "grant_types": []string{"authorization_code", "refresh_token"},
+			"redirect_uris": []string{shopRedirect}, "scopes": []string{"openid"},
+		})
+		retry := url.Values{"grant_type": {"refresh_token"}, "refresh_token": {t1}}
+
+		if got := f.token("/oauth2/token", otherID, otherSecret, retry); got.str("refresh_token") != "" || got.str("error") != "invalid_grant" {
+			t.Errorf("another client's retry = %d %v, want invalid_grant", got.status, got.body)
+		}
+		if got := f.token("/oauth2/token", f.clientID, "not-the-secret", url.Values{"grant_type": {"refresh_token"}, "refresh_token": {t1}}); got.str("refresh_token") != "" || got.str("error") != "invalid_client" {
+			t.Errorf("a retry with the wrong secret = %d %v, want invalid_client", got.status, got.body)
+		}
+		if got := f.refresh(t1); got.str("refresh_token") != t2 {
+			t.Errorf("the client's own retry after those = %d %v, want the token it already got", got.status, got.body)
+		}
+	})
+
+	t.Run("the DPoP key it is bound to", func(t *testing.T) {
+		f := newOAuthFixture(t)
+		spaID, _, _ := f.register(map[string]any{
+			"name": "Single page", "type": "spa",
+			"grant_types":   []string{"authorization_code", "refresh_token"},
+			"redirect_uris": []string{shopRedirect},
+			"scopes":        []string{"openid", "offline_access"},
+		})
+		f.clientID, f.clientSecret = spaID, ""
+		tokenURL := f.s.cfg.Issuer + "/oauth2/token"
+		key := newDPoPKey(t)
+
+		verifier, challenge := pkce(t)
+		back := f.signInWith(f.s.browser(), challenge, url.Values{"scope": {"openid offline_access"}, "audience": {""}})
+		t1 := postToken(t, f, spaID, key.proof(t, "POST", tokenURL, ""), url.Values{
+			"grant_type": {"authorization_code"}, "code": {back.Query().Get("code")},
+			"redirect_uri": {shopRedirect}, "code_verifier": {verifier},
+		}).str("refresh_token")
+		retry := func(proof string) tokenResult {
+			return postToken(t, f, spaID, proof, url.Values{"grant_type": {"refresh_token"}, "refresh_token": {t1}})
+		}
+
+		t2 := retry(key.proof(t, "POST", tokenURL, "")).str("refresh_token")
+		if t2 == "" {
+			t.Fatal("the first refresh gave no token")
+		}
+
+		for name, proof := range map[string]string{
+			"with a proof from another key": newDPoPKey(t).proof(t, "POST", tokenURL, ""),
+			"with no proof":                 "",
+		} {
+			if got := retry(proof); got.str("refresh_token") != "" || got.str("error") != "invalid_grant" {
+				t.Errorf("a retry %s = %d %v, want invalid_grant", name, got.status, got.body)
+			}
+		}
+		if got := retry(key.proof(t, "POST", tokenURL, "")); got.str("refresh_token") != t2 || got.str("token_type") != "DPoP" {
+			t.Errorf("the retry with the bound key = %d %v, want the token it already got", got.status, got.body)
+		}
+	})
+}
+
+// The sealed copy of a token is a copy of a live token, kept only for the
+// grace: within it, nothing clears it; once it is over, reading it clears
+// it, and so does the sweep that runs every grace — whichever comes first.
+func TestLiveSealedRefreshTokensGoWithTheGrace(t *testing.T) {
+	f := newOAuthFixture(t)
+	ctx := t.Context()
+
+	signedIn := func() string {
+		verifier, challenge := pkce(t)
+		return f.exchange(f.signIn(f.s.browser(), challenge).Query().Get("code"), verifier).str("refresh_token")
+	}
+
+	read := signedIn()
+	f.refresh(read)
+	swept := signedIn()
+	f.refresh(swept)
+	if sealed := f.s.sealedRefreshTokens(); sealed != 2 {
+		t.Fatalf("%d sealed refresh tokens after two rotations, want 2", sealed)
+	}
+
+	if _, err := f.s.store.ForgetRefreshSuccessors(ctx, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if sealed := f.s.sealedRefreshTokens(); sealed != 2 {
+		t.Errorf("%d sealed refresh tokens after clearing within the grace, want both kept", sealed)
+	}
+
+	f.s.agoRefreshRotations(model.RefreshReuseGrace)
+
+	// Read past the grace: refused as a replay, and its copy cleared.
+	if got := f.refresh(read); got.status != http.StatusBadRequest {
+		t.Errorf("a replaced token past the grace = %d %v, want refused", got.status, got.body)
+	}
+	if sealed := f.s.sealedRefreshTokens(); sealed != 1 {
+		t.Errorf("%d sealed refresh tokens after one was read past the grace, want 1", sealed)
+	}
+
+	// Not read at all: the sweep that runs every grace clears it.
+	cleared, err := f.s.store.ForgetRefreshSuccessors(ctx, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cleared != 1 || f.s.sealedRefreshTokens() != 0 {
+		t.Errorf("the sweep cleared %d, leaving %d, want the last one gone", cleared, f.s.sealedRefreshTokens())
+	}
+}

@@ -50,11 +50,9 @@ func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, e
 		}
 	}
 
-	// A replaced refresh token's sealed successor is only for a retry within
-	// the grace; past it, it is a copy of a live token for no reason.
-	if err := s.db.WithContext(ctx).Model(&model.RefreshToken{}).
-		Where("successor_sealed IS NOT NULL AND revoked_at < ?", now.Add(-model.RefreshReuseGrace)).
-		Update("successor_sealed", nil).Error; err != nil {
+	// KeepSwept clears these every grace; this is for a server that sweeps
+	// only through here.
+	if _, err := s.ForgetRefreshSuccessors(ctx, now); err != nil {
 		return removed, err
 	}
 
@@ -141,12 +139,21 @@ func (s *Store) KeepSwept(ctx context.Context, retention time.Duration, log *slo
 	ticker := time.NewTicker(sweepInterval)
 	defer ticker.Stop()
 
+	// A replaced refresh token's sealed successor is a copy of a live token,
+	// kept only for a retry within the grace, so it goes within one more.
+	successors := time.NewTicker(model.RefreshReuseGrace)
+	defer successors.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			sweep()
+		case <-successors.C:
+			if _, err := s.ForgetRefreshSuccessors(ctx, time.Now()); err != nil && ctx.Err() == nil {
+				log.Error("clearing sealed refresh tokens failed", "error", err)
+			}
 		}
 	}
 }

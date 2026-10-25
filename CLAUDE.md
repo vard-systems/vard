@@ -125,14 +125,20 @@ code near it, and add a test when adding a case.
 - **Secrets are stored hashed or sealed, never plain.** Codes, refresh tokens,
   sessions and reset links are 256 random bits kept as a SHA-256
   (`model.NewSecret` / `HashSecret`). Provider secrets, SMTP passwords and TOTP
-  seeds are sealed with `jose.Sealer`. Recovery codes are hashed.
+  seeds are sealed with `jose.Sealer`. Recovery codes are hashed. The one
+  secret also kept recoverable is a refresh token that has just replaced
+  another: sealed on the replaced row (`successor_sealed`) for the grace
+  below, and cleared within one more — when read past it, at the family's
+  next rotation, and by `KeepSwept` every `model.RefreshReuseGrace`. Nothing
+  else may keep a token it hands out.
 - **Single-use means one atomic `UPDATE … WHERE used_at IS NULL`** checked by
   `RowsAffected`, never read-then-write. A replayed code revokes what the
   first use issued; a replayed refresh token revokes its family — unless it
   was replaced less than `model.RefreshReuseGrace` (30 s) before, when it is
-  answered with the very token that replaced it, kept sealed for the grace
-  (`successor_sealed`, cleared by the sweep), so every copy a client holds
-  stays good and a family never has two live tokens.
+  answered with the very token that replaced it, so every copy a client holds
+  stays good and a family never has two live tokens. The retry is checked
+  like any refresh — client authentication, then DPoP key and certificate —
+  before it is given anything.
 - **Session cookies are read through `session.Token`, `session.UserToken` or
   `session.SignInState`**, which treat a duplicated cookie (planted from a
   sibling subdomain) as none. Never `c.Cookie(...)` for a session.

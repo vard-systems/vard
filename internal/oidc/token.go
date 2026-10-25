@@ -501,6 +501,12 @@ func (s *Service) retried(ctx context.Context, replaced *model.RefreshToken, now
 	current := replaced
 	for range maxRetryHops {
 		if !current.InGrace(now) {
+			// Read past its grace, a sealed copy is of no more use.
+			if len(current.SuccessorSealed) > 0 {
+				if err := s.store.ForgetRefreshSuccessor(ctx, current.ID); err != nil {
+					return "", err
+				}
+			}
 			return "", nil
 		}
 

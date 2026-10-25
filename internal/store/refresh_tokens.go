@@ -50,6 +50,22 @@ func (s *Store) RotateRefreshToken(ctx context.Context, old, next *model.Refresh
 	})
 }
 
+// ForgetRefreshSuccessors clears every sealed successor whose grace is over,
+// and says how many it cleared.
+func (s *Store) ForgetRefreshSuccessors(ctx context.Context, now time.Time) (int64, error) {
+	result := s.db.WithContext(ctx).Model(&model.RefreshToken{}).
+		Where("successor_sealed IS NOT NULL AND revoked_at < ?", now.Add(-model.RefreshReuseGrace)).
+		Update("successor_sealed", nil)
+	return result.RowsAffected, result.Error
+}
+
+// ForgetRefreshSuccessor clears one replaced token's sealed successor.
+func (s *Store) ForgetRefreshSuccessor(ctx context.Context, id uuid.UUID) error {
+	return s.db.WithContext(ctx).Model(&model.RefreshToken{}).
+		Where("id = ?", id).
+		Update("successor_sealed", nil).Error
+}
+
 // RefreshToken is one refresh token by id.
 func (s *Store) RefreshToken(ctx context.Context, id uuid.UUID) (*model.RefreshToken, error) {
 	var token model.RefreshToken
