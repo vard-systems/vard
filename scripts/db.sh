@@ -29,7 +29,7 @@ reset)
 	read -rp "Delete every table in \"$name\"? Type yes: " answer
 	[[ $answer == yes ]] || die "cancelled"
 	psql "$url" -qc "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-	VARD_DB_DSN="$url" go run ./cmd/migrate up
+	VARD_DB_DSN="$url" go run ./cmd/vard migrate up
 	;;
 psql) exec psql "$url" ;;
 *) die "usage: scripts/db.sh create|reset|psql" ;;

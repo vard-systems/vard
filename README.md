@@ -164,7 +164,7 @@ kind of change is made, and the security invariants every change keeps.
 ## Project layout
 
 ```
-cmd/vard, cmd/migrate   the server, and the migration runner
+cmd/vard                the server, and the migration runner (vard migrate)
 internal/                  the Go code: api (HTTP handlers), oidc (the provider),
                            store (every query), model (the schema), and the rest
 migrations/                the schema and every change to it, in order

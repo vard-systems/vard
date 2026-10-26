@@ -38,7 +38,7 @@ fi
 
 go mod download
 scripts/db.sh create
-go run ./cmd/migrate up
+go run ./cmd/vard migrate up
 
 # The apps' dependencies.
 for app in console id; do (cd "web/$app" && bun install --frozen-lockfile); done

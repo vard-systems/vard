@@ -46,8 +46,9 @@ Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 ## Architecture
 
 ```
-cmd/vard/main.go      startup, in order, in one function
-cmd/migrate              the migration runner
+cmd/vard/main.go         the commands: serve (the default) and migrate
+cmd/vard/serve.go        startup, in order, in one function
+cmd/vard/migrate.go      the migration runner (up, down, status, new)
 internal/config          reads .env: deployment settings (addresses, mail, log level)
 internal/brand           the server's brand: name, slug, favicon, and every name
                          built from them (each app has its own, lib/brand.ts)

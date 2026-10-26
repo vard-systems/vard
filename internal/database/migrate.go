@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/pressly/goose/v3"
 	"gorm.io/gorm"
@@ -75,8 +76,10 @@ func MigrateStatus(db *gorm.DB, cfg config.DB) error {
 
 type printLogger struct{}
 
+// Printf ends every line, as the log package goose writes through by default
+// does; goose's own lines carry no newline, so a status would be one line.
 func (printLogger) Printf(format string, v ...any) {
-	fmt.Printf(format, v...)
+	fmt.Println(strings.TrimRight(fmt.Sprintf(format, v...), "\n"))
 }
 
 func (printLogger) Fatalf(format string, v ...any) {

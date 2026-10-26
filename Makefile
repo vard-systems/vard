@@ -114,17 +114,17 @@ ci: check test-integration docker-config ## Everything a CI run would do
 ## Database
 
 migrate-up: ## Apply pending migrations
-	go run ./cmd/migrate up
+	go run ./cmd/vard migrate up
 
 migrate-down: ## Roll back the newest migration
-	go run ./cmd/migrate down
+	go run ./cmd/vard migrate down
 
 migrate-status: ## Show which migrations have run
-	go run ./cmd/migrate status
+	go run ./cmd/vard migrate status
 
 migrate-new: ## Create a migration — make migrate-new name=add_x
 	@[[ -n "$(name)" ]] || { echo "usage: make migrate-new name=add_x"; exit 1; }
-	go run ./cmd/migrate new $(name)
+	go run ./cmd/vard migrate new $(name)
 
 db-create: ## Create the database in .env if it is missing
 	@scripts/db.sh create
