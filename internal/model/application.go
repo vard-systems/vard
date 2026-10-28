@@ -172,14 +172,21 @@ const (
 var Scopes = []string{ScopeOpenID, ScopeProfile, ScopeEmail, ScopeOfflineAccess, ScopeRoles}
 
 const (
-	DefaultAccessTokenLifetime  = 60 * 60
+	// DefaultAccessTokenLifetime is short: an API checks an access token on
+	// its own, so a revoked one is only refused by this server's endpoints
+	// until it expires.
+	DefaultAccessTokenLifetime  = 10 * 60
 	DefaultIDTokenLifetime      = 60 * 60
 	DefaultRefreshTokenLifetime = 30 * 24 * 60 * 60
 )
 
+// MaxAccessTokenLifetime is the longest an access token lives, an
+// application's or an API's: how long a revocation has to be remembered.
+const MaxAccessTokenLifetime = 24 * 60 * 60
+
 const (
 	minTokenLifetime        = 60
-	maxAccessTokenLifetime  = 24 * 60 * 60
+	maxAccessTokenLifetime  = MaxAccessTokenLifetime
 	maxRefreshTokenLifetime = 365 * 24 * 60 * 60
 )
 

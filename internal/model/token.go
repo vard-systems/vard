@@ -196,9 +196,11 @@ func EvaluateToken(r TokenRequest) TokenPreview {
 		subject = r.User.ID.String()
 	}
 
-	audience := []string{}
+	// Never empty (RFC 9068 §3): the API it was asked for, or, with none,
+	// the client itself, whose userinfo and introspection still take it.
+	audience := []string{app.ClientID}
 	if r.API != nil {
-		audience = append(audience, r.API.Identifier)
+		audience = []string{r.API.Identifier}
 	}
 
 	lifetime := app.AccessTokenLifetime

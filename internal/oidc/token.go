@@ -340,6 +340,10 @@ type grant struct {
 	// certificate binds them to a TLS client certificate's x5t#S256.
 	certificate string
 	refusal     string
+
+	// family is the refresh family the tokens belong to: the replaced
+	// token's, or a new one when this grant starts one; nil for none.
+	family *uuid.UUID
 }
 
 func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
@@ -356,8 +360,29 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 		return nil, err
 	}
 
+	// A refresh token is decided now, so the access token can name the family
+	// it belongs to: revoking the family ends it too.
+	refreshes := g.again != "" || g.user != nil &&
+		(g.replaces != nil || slices.Contains(strings.Fields(scopeOf(evaluated.AccessToken)), model.ScopeOfflineAccess))
+	switch {
+	case g.replaces != nil:
+		g.family = &g.replaces.FamilyID
+	case refreshes:
+		family, err := uuid.NewV7()
+		if err != nil {
+			return nil, err
+		}
+		g.family = &family
+	}
+
 	access := evaluated.AccessToken
 	access["jti"] = jti.String()
+	if g.session != nil {
+		access[claimSession] = g.session.String()
+	}
+	if g.family != nil {
+		access[claimFamily] = g.family.String()
+	}
 	if cnf := confirmation(g); len(cnf) > 0 {
 		access["cnf"] = cnf
 	}
@@ -415,7 +440,7 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 	switch {
 	case g.again != "":
 		response.RefreshToken = g.again
-	case g.user != nil && (g.replaces != nil || slices.Contains(strings.Fields(granted), model.ScopeOfflineAccess)):
+	case refreshes:
 		token, err := s.newRefreshToken(ctx, g, granted)
 		if err != nil {
 			return nil, err
@@ -449,9 +474,7 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 	}
 
 	if g.replaces == nil {
-		if next.FamilyID, err = uuid.NewV7(); err != nil {
-			return "", err
-		}
+		next.FamilyID = *g.family
 		return token, s.store.CreateRefreshToken(ctx, next)
 	}
 
@@ -562,6 +585,14 @@ func confirmation(g grant) map[string]any {
 	return cnf
 }
 
+// The claims an access token names what it was issued in by: the browser
+// session, and the refresh family. Revoking either ends the token at this
+// server's endpoints.
+const (
+	claimSession = "sid"
+	claimFamily  = "fid"
+)
+
 type accessClaims struct {
 	Issuer   string      `json:"iss"`
 	Subject  string      `json:"sub"`
@@ -570,6 +601,25 @@ type accessClaims struct {
 	Scope    string      `json:"scope"`
 	IssuedAt json.Number `json:"iat"`
 	Expiry   json.Number `json:"exp"`
+	JTI      string      `json:"jti"`
+	Session  string      `json:"sid"`
+	Family   string      `json:"fid"`
+}
+
+// revocationKeys are the keys an access token is looked up by in the
+// revocations: itself, its session, its family, and its user's grant.
+func (c accessClaims) revocationKeys() []string {
+	keys := []string{model.RevokedToken(c.JTI)}
+	if id, err := uuid.Parse(c.Session); err == nil {
+		keys = append(keys, model.RevokedSession(id))
+	}
+	if id, err := uuid.Parse(c.Family); err == nil {
+		keys = append(keys, model.RevokedFamily(id))
+	}
+	if user, err := uuid.Parse(c.Subject); err == nil && c.Subject != c.ClientID {
+		keys = append(keys, model.RevokedGrant(user, c.ClientID))
+	}
+	return keys
 }
 
 // verifyAccessToken checks an access token this server issued: signed by one of
@@ -593,6 +643,18 @@ func (s *Service) verifyAccessToken(ctx context.Context, token string) (*accessC
 
 	exp, err := claims.Expiry.Int64()
 	if err != nil || claims.Issuer != s.issuer || s.now().Unix() >= exp {
+		return nil, nil, jose.ErrInvalid
+	}
+
+	iat, err := claims.IssuedAt.Int64()
+	if err != nil {
+		return nil, nil, jose.ErrInvalid
+	}
+	revoked, err := s.store.AccessTokenRevoked(ctx, claims.revocationKeys(), time.Unix(iat, 0))
+	if err != nil {
+		return nil, nil, err
+	}
+	if revoked {
 		return nil, nil, jose.ErrInvalid
 	}
 
@@ -654,9 +716,10 @@ func (s *Service) UserInfo(ctx context.Context, accessToken string, how Presenta
 	return info, nil
 }
 
-// Revoke revokes a refresh token and its family (RFC 7009). Access tokens are
-// self-contained JWTs and simply expire; revoking one, or an unknown token,
-// still succeeds as the RFC requires.
+// Revoke revokes a refresh token and its family, or one access token (RFC
+// 7009). An access token is a JWT an API may check on its own, so it is
+// refused from then on by this server's endpoints and lives at most its
+// lifetime elsewhere. An unknown token still succeeds, as the RFC requires.
 func (s *Service) Revoke(ctx context.Context, client ClientAuth, token string) error {
 	app, err := s.authenticate(ctx, client)
 	if err != nil {
@@ -665,6 +728,15 @@ func (s *Service) Revoke(ctx context.Context, client ClientAuth, token string) e
 
 	if token == "" {
 		return oauthError(ErrInvalidRequest, "token is required")
+	}
+
+	if claims, _, err := s.verifyAccessToken(ctx, token); err == nil {
+		// Another client's token is left alone, and the answer does not
+		// say it exists.
+		if claims.ClientID != app.ClientID || claims.JTI == "" {
+			return nil
+		}
+		return s.store.RevokeAccessToken(ctx, claims.JTI, s.now())
 	}
 
 	refresh, err := s.store.RefreshTokenByHash(ctx, model.HashSecret(token))
@@ -761,4 +833,9 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 		"iat":        refresh.CreatedAt.Unix(),
 		"iss":        s.issuer,
 	}, nil
+}
+
+func scopeOf(claims map[string]any) string {
+	scope, _ := claims["scope"].(string)
+	return scope
 }

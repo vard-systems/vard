@@ -76,16 +76,34 @@ func (s *Store) RefreshToken(ctx context.Context, id uuid.UUID) (*model.RefreshT
 	return &token, nil
 }
 
+// RevokeRefreshFamily revokes a family's refresh tokens and the access tokens
+// issued with them.
 func (s *Store) RevokeRefreshFamily(ctx context.Context, family uuid.UUID, at time.Time) error {
-	return s.db.WithContext(ctx).Model(&model.RefreshToken{}).
-		Where("family_id = ? AND revoked_at IS NULL", family).
-		Update("revoked_at", at).Error
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := tx.Model(&model.RefreshToken{}).
+			Where("family_id = ? AND revoked_at IS NULL", family).
+			Update("revoked_at", at).Error
+		if err != nil {
+			return err
+		}
+
+		return revokeTokensIn(tx, at, model.RevokedFamily(family))
+	})
 }
 
+// RevokeRefreshTokensForCode revokes what a code's first exchange issued,
+// its access tokens included, once the code is presented again.
 func (s *Store) RevokeRefreshTokensForCode(ctx context.Context, code uuid.UUID, at time.Time) error {
-	return s.db.WithContext(ctx).Model(&model.RefreshToken{}).
-		Where("code_id = ? AND revoked_at IS NULL", code).
-		Update("revoked_at", at).Error
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := tx.Model(&model.RefreshToken{}).
+			Where("code_id = ? AND revoked_at IS NULL", code).
+			Update("revoked_at", at).Error
+		if err != nil {
+			return err
+		}
+
+		return familiesRevokedIn(tx, at, "code_id = ?", code)
+	})
 }
 
 func (s *Store) RevokeRefreshTokensForUser(ctx context.Context, user uuid.UUID, at time.Time) error {
@@ -155,10 +173,27 @@ func (s *Store) UserGrants(ctx context.Context, user uuid.UUID, now time.Time) (
 	return out, nil
 }
 
+// RevokeUserGrant takes back what a user allowed an application: its
+// refresh tokens, and every access token it holds for them.
 func (s *Store) RevokeUserGrant(ctx context.Context, user, application uuid.UUID, at time.Time) (int64, error) {
-	result := s.db.WithContext(ctx).Model(&model.RefreshToken{}).
-		Where("user_id = ? AND application_id = ? AND revoked_at IS NULL", user, application).
-		Update("revoked_at", at)
+	var revoked int64
 
-	return result.RowsAffected, result.Error
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.RefreshToken{}).
+			Where("user_id = ? AND application_id = ? AND revoked_at IS NULL", user, application).
+			Update("revoked_at", at)
+		if result.Error != nil {
+			return result.Error
+		}
+		revoked = result.RowsAffected
+
+		var clientID string
+		if err := tx.Model(&model.Application{}).Where("id = ?", application).Pluck("client_id", &clientID).Error; err != nil {
+			return err
+		}
+
+		return revokeTokensIn(tx, at, model.RevokedGrant(user, clientID))
+	})
+
+	return revoked, err
 }

@@ -76,13 +76,9 @@ func (s *Store) SignOutUser(ctx context.Context, user uuid.UUID, at time.Time) (
 		}
 		sessions = int64(len(ended.sessions))
 
-		result := tx.Model(&model.RefreshToken{}).
-			Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", user, at).
-			Update("revoked_at", at)
-		if result.Error != nil {
-			return result.Error
+		if tokens, err = revokeUserRefreshIn(tx, at, user); err != nil {
+			return err
 		}
-		tokens = result.RowsAffected
 
 		return tx.Exec(pendingEmailChangesUsed, map[string]any{"at": at, "user": user}).Error
 	})
@@ -251,8 +247,15 @@ func revokeUserSessionsIn(tx *gorm.DB, at time.Time, condition string, args ...a
 	}
 
 	ids := make([]uuid.UUID, len(ended.sessions))
+	keys := make([]string, len(ended.sessions))
 	for i, session := range ended.sessions {
 		ids[i] = session.ID
+		keys[i] = model.RevokedSession(session.ID)
+	}
+
+	// The access tokens issued in these sessions end with them.
+	if err := revokeTokensIn(tx, at, keys...); err != nil {
+		return ended, err
 	}
 
 	err = tx.Raw(`

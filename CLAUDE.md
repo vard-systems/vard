@@ -219,6 +219,13 @@ code near it, and add a test when adding a case.
   ends its sessions, refresh tokens, login codes and devices — whoever
   registered the address first may not have been its owner. Social sign-in
   never makes an account for an address the provider has not verified.
+- **An access token ends with what it was issued in.** It carries `sid`
+  and `fid`; whatever ends a session, a refresh family or a grant writes a
+  `token_revocations` row in the same transaction (`revokeTokensIn`,
+  `revokeUserRefreshIn`, `familiesRevokedIn`), and `verifyAccessToken` —
+  userinfo, introspection, the account and admin APIs — refuses a token any
+  of whose keys was revoked at or after its `iat`. Read from the database,
+  never a cache. `aud` is never empty.
 - **An administrator's session is new once its second factor passes.**
   `PassAdminSessionMFA` ends the session the password opened and starts its
   successor in one transaction, and the handler sets the new cookie, so a

@@ -127,6 +127,8 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   30 seconds.
 - Signing keys and stored secrets are sealed with `VARD_SECRET_KEY`.
 - Signing keys rotate automatically and stay published until their tokens expire.
+- Access tokens are short-lived JWTs that name the session and refresh family
+  they were issued in; ending either ends them at this server's endpoints.
 - Passwords use bcrypt; unknown accounts take as long to refuse as wrong passwords.
 - Lockouts and one-time-code guesses are counted atomically in the database, so
   parallel guessing cannot slip past them.
@@ -204,6 +206,22 @@ Migrations `00009` and `00010` run on start.
   their profile and sign in with them instead of a code.
 - **Networks**: `VARD_ADMIN_NETWORKS` holds the admin API to the networks
   named, by the caller's address as the console's server passes it on.
+
+### To the release with access-token revocation
+
+Migration `00011` runs on start.
+
+- **Access tokens** now live 10 minutes by default (applications set their
+  own, up to 24 hours); existing applications keep their stored lifetime.
+- **Audience**: a token asked for without an API carries the client's own
+  `client_id` as `aud`, never an empty list.
+- **Revocation**: signing out, disconnecting an application, a replayed
+  refresh token, revoking the refresh token or the access token itself
+  (`/oauth2/revoke`) end the access tokens issued with it at userinfo,
+  introspection and this server's own APIs. An API that checks the JWT on
+  its own still takes one until it expires, which is why lifetimes are
+  short. Tokens issued before the upgrade name no session or family, so
+  only revoking them by themselves reaches them.
 
 ## Development
 

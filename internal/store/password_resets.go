@@ -108,9 +108,11 @@ func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, u
 		}
 		ended.sessions = append(ended.sessions, more.sessions...)
 		ended.notices = append(ended.notices, more.notices...)
+		if _, err := revokeUserRefreshIn(tx, at, user.ID); err != nil {
+			return err
+		}
 
 		statements := []string{
-			"UPDATE refresh_tokens SET revoked_at = @at WHERE user_id = @user AND revoked_at IS NULL",
 			"UPDATE password_resets SET used_at = @at WHERE user_id = @user AND used_at IS NULL",
 			pendingEmailChangesUsed,
 		}

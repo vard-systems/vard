@@ -199,8 +199,11 @@ func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep u
 			return err
 		}
 
+		if _, err := revokeUserRefreshIn(tx, at, user.ID); err != nil {
+			return err
+		}
+
 		statements := []string{
-			"UPDATE refresh_tokens SET revoked_at = @at WHERE user_id = @user AND revoked_at IS NULL",
 			"UPDATE password_resets SET used_at = @at WHERE user_id = @user AND used_at IS NULL",
 			pendingEmailChangesUsed,
 		}

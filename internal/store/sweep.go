@@ -37,6 +37,8 @@ var expiring = []any{
 	&model.SSOLogin{},
 	&model.SAMLAssertion{},
 	&model.DPoPProof{},
+	&model.TokenRevocation{},
+	&model.SetupToken{},
 }
 
 func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, error) {

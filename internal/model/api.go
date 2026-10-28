@@ -107,7 +107,7 @@ var SigningAlgorithms = []string{AlgRS256, AlgPS256, AlgES256}
 
 const (
 	minAPITokenLifetime = 60
-	maxAPITokenLifetime = 24 * 60 * 60
+	maxAPITokenLifetime = MaxAccessTokenLifetime
 )
 
 func (APIScope) TableName() string {

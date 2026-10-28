@@ -23,7 +23,6 @@ var addressProofStatements = []string{
 	"DELETE FROM pending_sign_ins WHERE user_id = @user",
 	"UPDATE login_codes SET used_at = @at WHERE user_id = @user AND used_at IS NULL",
 	"UPDATE device_authorizations SET status = @denied WHERE user_id = @user AND used_at IS NULL",
-	"UPDATE refresh_tokens SET revoked_at = @at WHERE user_id = @user AND revoked_at IS NULL",
 }
 
 // firstProofIn locks the user's row and says whether its address is still
@@ -43,6 +42,9 @@ func firstProofIn(tx *gorm.DB, user uuid.UUID) (bool, error) {
 func clearBeforeProofIn(tx *gorm.DB, user uuid.UUID, at time.Time, entry model.AuditLog) (endedSessions, error) {
 	ended, err := revokeUserSessionsIn(tx, at, "user_id = ?", user)
 	if err != nil {
+		return ended, err
+	}
+	if _, err := revokeUserRefreshIn(tx, at, user); err != nil {
 		return ended, err
 	}
 
