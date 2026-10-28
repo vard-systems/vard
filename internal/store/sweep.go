@@ -38,6 +38,7 @@ var expiring = []any{
 	&model.SAMLAssertion{},
 	&model.DPoPProof{},
 	&model.TokenRevocation{},
+	&model.SignInThrottle{},
 	&model.SetupToken{},
 }
 

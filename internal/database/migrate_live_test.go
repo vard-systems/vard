@@ -45,6 +45,7 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		index   string
 		table   string
 	}{
+		{name: "sign-in throttles", table: "sign_in_throttles"},
 		{name: "token revocations", table: "token_revocations"},
 		{name: "admin passkeys", columns: []column{{"mfa_factors", "credential_id"}, {"admin_sessions", "passkey_ceremony"}}},
 		{name: "admin idle timeout", columns: []column{{"admin_security", "idle_timeout_minutes"}, {"admin_sessions", "last_seen_at"}}},

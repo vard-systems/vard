@@ -80,8 +80,9 @@ func TestLiveAdminCodeGuessesReachTheLockout(t *testing.T) {
 }
 
 // A session left open cannot be used to find the user's password: guesses at
-// the current one count like sign-in guesses, and once the account is locked
-// the right one is refused too.
+// the current one count like sign-in guesses, and once they have run out the
+// right one is refused too. They are counted against the browser they come
+// from, so the owner's other browsers are not shut out by them.
 func TestLiveUserCurrentPasswordGuessesLock(t *testing.T) {
 	f := newOAuthFixture(t)
 
@@ -104,11 +105,11 @@ func TestLiveUserCurrentPasswordGuessesLock(t *testing.T) {
 		laptop.account(http.MethodPost, "/password", map[string]string{"current_password": fmt.Sprintf("guess-%d-password", i), "new_password": "irrelevant-123"}, nil)
 	}
 
-	if status := f.s.browser().account(http.MethodPost, "/login", map[string]string{"email": adaEmail, "password": adaPassword}, nil); status == http.StatusOK {
-		t.Error("signing in after five wrong current passwords = 200, want the account locked")
-	}
 	if status := laptop.account(http.MethodPost, "/password", map[string]string{"current_password": adaPassword, "new_password": "taken-over-password"}, nil); status != http.StatusBadRequest {
-		t.Errorf("the right current password on a locked account = %d, want 400", status)
+		t.Errorf("the right current password after five wrong ones = %d, want 400", status)
+	}
+	if status := f.s.browser().account(http.MethodPost, "/login", map[string]string{"email": adaEmail, "password": adaPassword}, nil); status != http.StatusOK {
+		t.Errorf("the owner signing in elsewhere after the session's guesses = %d, want 200", status)
 	}
 }
 

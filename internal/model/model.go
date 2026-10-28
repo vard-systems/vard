@@ -70,6 +70,7 @@ func All() []any {
 		&AuthorizationCode{},
 		&RefreshToken{},
 		&TokenRevocation{},
+		&SignInThrottle{},
 		&UserSession{},
 		&SessionApplication{},
 		&FrontchannelLogout{},

@@ -76,14 +76,14 @@ func (s *Service) ChangePassword(ctx context.Context, session *Session, current,
 // counted before comparing, like a sign-in, so a session cannot be used to
 // find the password past the lockout.
 func (s *Service) checkCurrentPassword(ctx context.Context, user *model.User, password string, client Client) error {
-	now := s.now()
+	keys := s.keysFor(user.Email, client)
 
-	allowed, err := s.store.ReserveUserLogin(ctx, user, now, model.MaxFailedLogins, model.LockoutDuration)
+	allowed, err := s.reserve(ctx, keys, client)
 	if err != nil {
 		return err
 	}
 	if !allowed {
-		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "locked"})
+		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "throttled"})
 		return ErrWrongPassword
 	}
 
@@ -92,7 +92,7 @@ func (s *Service) checkCurrentPassword(ctx context.Context, user *model.User, pa
 		return ErrWrongPassword
 	}
 
-	return s.store.ClearUserFailedLogins(ctx, user, now)
+	return s.succeeded(ctx, keys)
 }
 
 // SessionInfo is one browser a user is signed in on.

@@ -29,6 +29,9 @@ type SignInResult struct {
 	SecondFactorHandle string
 	Request            string
 	Remember           bool
+	// KnownDevice is the browser's known-device cookie as this sign-in
+	// leaves it, naming this account too.
+	KnownDevice string
 }
 
 func (s *Session) InBrowser() bool {
@@ -71,8 +74,6 @@ func (s *Service) SessionFor(ctx context.Context, token string) (*Session, error
 }
 
 func (s *Service) SignIn(ctx context.Context, email, password, request string, remember bool, client Client) (*SignInResult, error) {
-	now := s.now()
-
 	// Domains that must use SSO are refused before any password check,
 	// revealing nothing about the account.
 	if err := s.ssoRequiredFor(ctx, email); err != nil {
@@ -89,6 +90,20 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return nil, ErrPasswordNotOffered
 	}
 
+	// Counted before anything is looked up, against the address typed
+	// whether or not anybody has it, so a throttled address tells nothing;
+	// a waiting attempt still pays a dummy hash for equal timing.
+	keys := s.keysFor(email, client)
+	allowed, err := s.reserve(ctx, keys, client)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		model.CompareDummyPassword(password)
+		s.record(ctx, nil, email, "user.login_blocked", client, map[string]any{"reason": "throttled"})
+		return nil, ErrInvalidCredentials
+	}
+
 	user, err := s.store.UserByEmail(ctx, email)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
@@ -97,18 +112,6 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return nil, ErrInvalidCredentials
 	case err != nil:
 		return nil, err
-	}
-
-	// Reserve the attempt before comparing, so parallel guesses cannot pass the
-	// lock; a locked account still pays a dummy hash for equal timing.
-	allowed, err := s.store.ReserveUserLogin(ctx, user, now, model.MaxFailedLogins, model.LockoutDuration)
-	if err != nil {
-		return nil, err
-	}
-	if !allowed {
-		model.CompareDummyPassword(password)
-		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "locked"})
-		return nil, ErrInvalidCredentials
 	}
 
 	if user.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
@@ -136,7 +139,7 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return nil, err
 	}
 	if !secondFactor {
-		if err := s.store.ClearUserFailedLogins(ctx, user, now); err != nil {
+		if err := s.succeeded(ctx, keys); err != nil {
 			return nil, err
 		}
 	}
@@ -270,11 +273,17 @@ func (s *Service) openSession(
 
 	s.record(ctx, user, user.Email, action, client, nil)
 
+	device, err := s.rememberDevice(client.Device, user.Email)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SignInResult{
-		Session:  &Session{Record: record, User: user},
-		Token:    token,
-		Request:  request,
-		Remember: remember && flow.AllowRememberMe,
+		Session:     &Session{Record: record, User: user},
+		Token:       token,
+		Request:     request,
+		Remember:    remember && flow.AllowRememberMe,
+		KnownDevice: device,
 	}, nil
 }
 

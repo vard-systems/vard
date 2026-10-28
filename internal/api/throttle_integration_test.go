@@ -1,0 +1,159 @@
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"testing"
+	"time"
+
+	"vard/internal/config"
+)
+
+// Users' sign-ins are throttled, not locked: past a few failures each attempt
+// waits longer, counted against the address typed whoever types it — and,
+// from a browser that has signed in to the account before, against that
+// browser instead, so a stranger cannot keep its owner out of it.
+
+// throttledFixture is an OAuth fixture whose server believes the caller's
+// address from X-Forwarded-For, as it does from the id app's server, so one
+// test can sign in from many addresses.
+func throttledFixture(t *testing.T) *oauthFixture {
+	return newOAuthFixtureWith(t, func(cfg *config.Config) {
+		cfg.TrustedProxies = []string{"127.0.0.1/32", "::1/128"}
+	})
+}
+
+// signInFrom posts a sign-in from `address` in this browser, and answers the
+// status and the problem's code.
+func (b *browser) signInFrom(address, email, password string) (int, string) {
+	b.t.Helper()
+
+	body, _ := json.Marshal(map[string]string{"email": email, "password": password})
+	req, err := http.NewRequest(http.MethodPost, b.s.root+"/api/v1/account/login", bytes.NewReader(body))
+	if err != nil {
+		b.t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", address)
+
+	res, err := b.http.Do(req)
+	if err != nil {
+		b.t.Fatal(err)
+	}
+	defer res.Body.Close()
+
+	var out struct {
+		Code string `json:"code"`
+	}
+	_ = json.NewDecoder(res.Body).Decode(&out)
+
+	return res.StatusCode, out.Code
+}
+
+// waitOver ends every wait, as time passing would.
+func (f *oauthFixture) waitOver(t *testing.T) {
+	t.Helper()
+	if err := f.s.db.Exec("UPDATE sign_in_throttles SET blocked_until = now() - interval '1 second'").Error; err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A guesser spreading one account's attempts over many addresses is held to
+// the account's count all the same, and the wait ends on its own.
+func TestLiveASprayFromManyAddressesIsThrottledPerAccount(t *testing.T) {
+	f := throttledFixture(t)
+
+	for i := range 6 {
+		if status, _ := f.s.browser().signInFrom(fmt.Sprintf("198.51.100.%d", i+1), adaEmail, "wrong-password"); status != http.StatusUnauthorized {
+			t.Fatalf("guess %d = %d, want 401", i+1, status)
+		}
+	}
+
+	if status, code := f.s.browser().signInFrom("198.51.100.99", adaEmail, adaPassword); status != http.StatusUnauthorized || code != "invalid_credentials" {
+		t.Errorf("the right password from a new address while throttled = %d %s, want 401 invalid_credentials", status, code)
+	}
+
+	f.waitOver(t)
+	if status, code := f.s.browser().signInFrom("198.51.100.100", adaEmail, adaPassword); status != http.StatusOK {
+		t.Errorf("the right password once the wait is over = %d %s, want 200", status, code)
+	}
+}
+
+// A stranger's guesses never shut the owner out of a browser they have signed
+// in on before; a browser that has not is held to the account's count.
+func TestLiveAStrangerCannotShutTheOwnerOutOfTheirKnownDevice(t *testing.T) {
+	f := throttledFixture(t)
+
+	owner := f.s.browser()
+	if status, code := owner.signInFrom("203.0.113.7", adaEmail, adaPassword); status != http.StatusOK {
+		t.Fatalf("the owner's first sign-in = %d %s", status, code)
+	}
+	owner.account(http.MethodPost, "/logout", map[string]any{}, nil)
+
+	for i := range 20 {
+		f.s.browser().signInFrom(fmt.Sprintf("198.51.100.%d", i+1), adaEmail, "wrong-password")
+	}
+
+	if status, code := owner.signInFrom("203.0.113.7", adaEmail, adaPassword); status != http.StatusOK {
+		t.Errorf("the owner on their known browser = %d %s, want 200", status, code)
+	}
+	if status, _ := f.s.browser().signInFrom("203.0.113.8", adaEmail, adaPassword); status != http.StatusUnauthorized {
+		t.Errorf("the right password from a browser the account has never used = %d, want 401 while throttled", status)
+	}
+}
+
+// Each wait past the free failures is longer than the last.
+func TestLiveEachWaitIsLongerThanTheLast(t *testing.T) {
+	f := throttledFixture(t)
+
+	wait := func() time.Duration {
+		t.Helper()
+		var seconds float64
+		err := f.s.db.Raw(`SELECT COALESCE(MAX(EXTRACT(EPOCH FROM blocked_until - now())), 0) FROM sign_in_throttles WHERE key LIKE 'email:%'`).Scan(&seconds).Error
+		if err != nil {
+			t.Fatal(err)
+		}
+		return time.Duration(seconds * float64(time.Second))
+	}
+
+	for range 6 {
+		f.s.browser().signInFrom("198.51.100.1", adaEmail, "wrong-password")
+	}
+	first := wait()
+
+	f.waitOver(t)
+	f.s.browser().signInFrom("198.51.100.1", adaEmail, "wrong-password")
+	second := wait()
+
+	if first < 20*time.Second || second < first+20*time.Second {
+		t.Errorf("waits = %v then %v, want about 30s then a minute", first, second)
+	}
+}
+
+// An address nobody has is answered and throttled exactly as one somebody
+// has, in wording and in time, so neither says which accounts exist.
+func TestLiveAnUnknownAddressIsThrottledLikeAKnownOne(t *testing.T) {
+	f := throttledFixture(t)
+
+	answers := map[string][]string{}
+	took := map[string]time.Duration{}
+	for _, email := range []string{adaEmail, "nobody@example.com"} {
+		for i := range 7 {
+			start := time.Now()
+			status, code := f.s.browser().signInFrom(fmt.Sprintf("198.51.100.%d", i+1), email, "wrong-password")
+			took[email] += time.Since(start)
+			answers[email] = append(answers[email], fmt.Sprintf("%d %s", status, code))
+		}
+	}
+
+	if fmt.Sprint(answers[adaEmail]) != fmt.Sprint(answers["nobody@example.com"]) {
+		t.Errorf("answers differ:\n  an account: %v\n  nobody:     %v", answers[adaEmail], answers["nobody@example.com"])
+	}
+
+	known, unknown := took[adaEmail], took["nobody@example.com"]
+	if ratio := float64(known) / float64(unknown); ratio < 0.5 || ratio > 2 {
+		t.Errorf("seven attempts took %v for an account and %v for nobody, want about the same", known, unknown)
+	}
+}

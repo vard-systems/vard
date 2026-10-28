@@ -69,6 +69,9 @@ type Service struct {
 	backchannel *backchannelLogout
 	webauthn    *webauthn.WebAuthn
 
+	// challenge is asked of sign-ins that have failed often.
+	challenge ChallengeHook
+
 	// lookupTXT reads a domain's TXT records, for proving SSO domains.
 	lookupTXT func(ctx context.Context, name string) ([]string, error)
 
@@ -109,6 +112,7 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 		},
 		webauthn:  passkeys,
 		lookupTXT: lookupTXT,
+		challenge: noChallenge{},
 		now:       time.Now,
 	}
 
@@ -337,6 +341,10 @@ type Client struct {
 	IP        string
 	UserAgent string
 	Language  string
+	// Device is the browser's known-device cookie, "" for none.
+	Device string
+	// Challenge is the sign-in form's answer to the challenge hook.
+	Challenge string
 }
 
 const LanguageCookie = brand.LanguageCookie

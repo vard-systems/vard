@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"vard/internal/jose"
 	"vard/internal/model"
 	"vard/internal/store"
 )
@@ -53,7 +54,11 @@ func TestLiveCodesTypedAtOnceAreEachCounted(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			st := testStore(t)
-			s := &Service{store: st, log: slog.New(slog.NewTextHandler(io.Discard, nil)), now: time.Now}
+			sealer, err := jose.NewSealer("login-code-test-secret-key-0123456789")
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := &Service{store: st, sealer: sealer, log: slog.New(slog.NewTextHandler(io.Discard, nil)), now: time.Now}
 
 			settings, err := st.OTPSettings(ctx)
 			if err != nil {

@@ -195,12 +195,13 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer 
 		return nil, ErrInvalidCredentials
 	}
 
-	allowed, err := s.store.ReserveUserLogin(ctx, user, now, model.MaxFailedLogins, model.LockoutDuration)
+	keys := s.keysFor(user.Email, client)
+	allowed, err := s.reserve(ctx, keys, client)
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
-		s.record(ctx, user, user.Email, "user.second_factor_failed", client, map[string]any{"reason": "locked"})
+		s.record(ctx, user, user.Email, "user.second_factor_failed", client, map[string]any{"reason": "throttled"})
 		return nil, ErrInvalidCredentials
 	}
 
@@ -221,7 +222,7 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer 
 		return nil, ErrSecondFactorExpired
 	}
 
-	if err := s.store.ClearUserFailedLogins(ctx, user, now); err != nil {
+	if err := s.succeeded(ctx, keys); err != nil {
 		return nil, err
 	}
 

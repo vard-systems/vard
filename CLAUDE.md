@@ -153,11 +153,18 @@ code near it, and add a test when adding a case.
   8252 §7.3, and nothing else loosened; Expo Go's `exp://` only for a native
   app with `allow_development_redirects`), or a path checked by
   `safePath` (Go) / `safeNext` (`web/id`). Never redirect to a raw parameter.
-- **A second factor is guessed against the account's lockout.** Every answer
-  is counted before it is checked, and a right password does not give its
-  attempt back while a second factor is still to come; only the right second
-  factor does. The waiting sign-in is named by an httpOnly cookie, never by
-  anything the page or the address holds.
+- **A user's sign-in is throttled, never locked, and a second factor is
+  guessed against the same count.** Every answer — password, second factor,
+  current password — is counted before it is checked (`ReserveSignIn`, rows
+  locked in key order) against the caller's network and the address typed,
+  keyed by a keyed hash so an address nobody has counts the same; past the
+  free failures each attempt waits longer (`model.ThrottleWait`). A browser
+  with a valid known-device cookie for the account is counted against
+  itself instead of the address typed. A right password does not clear the
+  count while a second factor is still to come; only the right second factor
+  does, and a success only gives the network its one attempt back. The
+  waiting sign-in is named by an httpOnly cookie, never by anything the page
+  or the address holds. Administrators keep the lock (`ReserveAdminLogin`).
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.

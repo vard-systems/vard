@@ -190,7 +190,10 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	result, err := h.provider.SignIn(c.Request.Context(), req.Email, req.Password, req.Request, req.Remember, signedin.Client(c))
+	client := signedin.Client(c)
+	client.Challenge = req.Challenge
+
+	result, err := h.provider.SignIn(c.Request.Context(), req.Email, req.Password, req.Request, req.Remember, client)
 	if err != nil {
 		h.fail(c, err, "signing a user in failed")
 		return
@@ -250,6 +253,9 @@ func (h *Handler) signedIn(c *gin.Context, request string, result *oidc.SignInRe
 	}
 
 	session.SetUser(c, result.Token, result.Session.Record.ExpiresAt, result.Remember, h.secure)
+	if result.KnownDevice != "" {
+		session.SetKnownDevice(c, result.KnownDevice, h.secure)
+	}
 
 	if request == "" {
 		c.JSON(http.StatusOK, signedInResponse{})

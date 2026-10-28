@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"vard/internal/api/kit/respond"
+	"vard/internal/api/kit/session"
 	"vard/internal/oidc"
 )
 
@@ -47,7 +48,10 @@ func Session(c *gin.Context) *oidc.Session {
 // Client is who is calling, as the provider records it.
 func Client(c *gin.Context) oidc.Client {
 	language, _ := c.Cookie(oidc.LanguageCookie)
-	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: language}
+	return oidc.Client{
+		IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: language,
+		Device: session.KnownDevice(c),
+	}
 }
 
 // Problem is the API problem a provider problem is answered with.

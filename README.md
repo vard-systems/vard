@@ -130,8 +130,11 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - Access tokens are short-lived JWTs that name the session and refresh family
   they were issued in; ending either ends them at this server's endpoints.
 - Passwords use bcrypt; unknown accounts take as long to refuse as wrong passwords.
-- Lockouts and one-time-code guesses are counted atomically in the database, so
-  parallel guessing cannot slip past them.
+- Sign-in attempts and one-time-code guesses are counted atomically in the
+  database, so parallel guessing cannot slip past them. A user's sign-in is
+  throttled — each attempt past a few failures waits longer — rather than
+  locked, and a browser the account has signed in on before is counted
+  apart, so nobody can keep its owner out by guessing.
 - The admin API runs on its own listener and is never served on the public one.
 - Outbound calls to identity providers refuse private, link-local and cloud
   metadata addresses.
@@ -222,6 +225,19 @@ Migration `00011` runs on start.
   its own still takes one until it expires, which is why lifetimes are
   short. Tokens issued before the upgrade name no session or family, so
   only revoking them by themselves reaches them.
+
+### To the release with sign-in throttling
+
+Migration `00012` runs on start.
+
+- **Users are throttled, not locked**: five failures against an address
+  typed, then waits of 30 seconds, a minute, two… up to 15 minutes; fifty
+  against one network. A user locked during the upgrade stays locked until
+  that lock runs out. A browser that has signed in before keeps a
+  known-device cookie and is counted apart. Administrators keep the lock.
+- **A challenge hook** (`oidc.ChallengeHook`, set with `UseChallenge`) can
+  ask a sign-in for a CAPTCHA or a proof of work after three failures; the
+  sign-in form sends its answer as `challenge`. None is set by default.
 
 ## Development
 

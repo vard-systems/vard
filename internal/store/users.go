@@ -154,35 +154,6 @@ func (s *Store) MarkUserSignedIn(ctx context.Context, user *model.User, at time.
 	}).Error
 }
 
-func (s *Store) ReserveUserLogin(ctx context.Context, user *model.User, at time.Time, max int, lockFor time.Duration) (bool, error) {
-	var rows []struct {
-		LockedUntil *time.Time
-	}
-
-	// The WHERE matches no row while locked, so nothing is counted; otherwise
-	// the attempt is counted and the `max`th locks.
-	err := s.db.WithContext(ctx).Raw(`
-		UPDATE users SET
-			locked_until = CASE WHEN failed_login_count + 1 >= @max THEN @until ELSE locked_until END,
-			failed_login_count = CASE WHEN failed_login_count + 1 >= @max THEN 0 ELSE failed_login_count + 1 END
-		WHERE id = @id AND (locked_until IS NULL OR locked_until <= @now)
-		RETURNING locked_until`,
-		map[string]any{"max": max, "until": at.Add(lockFor), "id": user.ID, "now": at},
-	).Scan(&rows).Error
-	if err != nil {
-		return false, err
-	}
-
-	return len(rows) > 0, nil
-}
-
-func (s *Store) ClearUserFailedLogins(ctx context.Context, user *model.User, at time.Time) error {
-	return s.db.WithContext(ctx).Model(user).Omit(clause.Associations).Updates(map[string]any{
-		"failed_login_count": 0,
-		"locked_until":       nil,
-	}).Error
-}
-
 func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep uuid.UUID, at time.Time) error {
 	var ended endedSessions
 
