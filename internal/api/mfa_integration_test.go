@@ -56,6 +56,7 @@ func TestLiveAdminMFARequired(t *testing.T) {
 	root := s.client()
 	root.must(http.StatusCreated, http.MethodPost, "/setup", map[string]string{
 		"email": superEmail, "password": superPassword, "first_name": "Root",
+		"setup_token": s.setupToken,
 	}, nil)
 
 	// The password alone only gets as far as setting up.

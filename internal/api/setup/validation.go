@@ -10,6 +10,8 @@ import (
 
 var (
 	alreadySetUp = respond.Define(http.StatusConflict, "setup_done", respond.Admin)
+	// tokenRefused answers a missing, wrong, used or expired setup token alike.
+	tokenRefused = respond.Define(http.StatusForbidden, "setup_token_invalid", respond.Admin)
 )
 
 func (r *setupRequest) validate() error {

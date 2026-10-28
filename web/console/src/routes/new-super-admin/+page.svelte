@@ -12,11 +12,16 @@
 	let lastName = $state('');
 	let email = $state('');
 	let password = $state('');
+	let setupToken = $state('');
 	let error = $state('');
 	let creating = $state(false);
 
 	const canSubmit = $derived(
-		firstName.trim() !== '' && email.trim() !== '' && longEnoughForAdmin(password) && !creating
+		setupToken.trim() !== '' &&
+			firstName.trim() !== '' &&
+			email.trim() !== '' &&
+			longEnoughForAdmin(password) &&
+			!creating
 	);
 
 	async function create(event: SubmitEvent) {
@@ -31,7 +36,8 @@
 				email: email.trim(),
 				password,
 				first_name: firstName.trim(),
-				last_name: lastName.trim()
+				last_name: lastName.trim(),
+				setup_token: setupToken.trim()
 			});
 
 			const result = await adminApi.login(email.trim(), password);
@@ -54,6 +60,17 @@
 >
 	<form onsubmit={create}>
 		{#if error}<Alert>{error}</Alert>{/if}
+
+		<Input
+			label="Setup token"
+			bind:value={setupToken}
+			autocomplete="off"
+			autocapitalize="none"
+			spellcheck={false}
+			hint="The server wrote it to its log when it started, as setup_token. Restarting the server writes a new one."
+			disabled={creating}
+			required
+		/>
 
 		<FieldGrid>
 			<Input label="First name" bind:value={firstName} disabled={creating} required />

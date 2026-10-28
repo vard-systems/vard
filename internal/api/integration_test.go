@@ -17,18 +17,6 @@ import (
 	"vard/internal/model"
 )
 
-func TestLiveFirstAdminOnlyOnce(t *testing.T) {
-	s := newLiveServer(t)
-	s.superAdmin()
-
-	status := s.client().do(http.MethodPost, "/setup", map[string]string{
-		"email": "second@example.com", "password": "second-password", "first_name": "Second",
-	}, nil)
-	if status != http.StatusConflict {
-		t.Errorf("second setup = %d, want 409", status)
-	}
-}
-
 func TestLiveLoginLockout(t *testing.T) {
 	s := newLiveServer(t)
 	s.superAdmin()

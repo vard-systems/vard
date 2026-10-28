@@ -42,6 +42,7 @@ func All() []any {
 		&Organization{},
 		&OrganizationLogo{},
 		&AdminSecurity{},
+		&SetupToken{},
 		&MailSettings{},
 		&OTPSettings{},
 		&LoginFlow{},

@@ -47,7 +47,10 @@ app is one origin and the browser never talks to the API directly.
 | console | http://localhost:5174/login   | http://localhost:8081/login     |
 | API     | `:8080` public, `:8081` admin | inside the stack, not published |
 
-Open the console and create the first administrator. Run `make` to see every
+Open the console and create the first administrator with the one-time setup
+token the API writes to its log at startup (`setup_token=…`, at WARN), or, on a
+server without a browser at hand, `bin/vard admin create -email you@example.com
+-first-name You` with the password on standard input. Run `make` to see every
 target.
 
 ## Configuration
@@ -137,6 +140,9 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - A client certificate is believed only as the TLS proxy passed it on, from
   the mutual TLS host of its own (`VARD_MTLS_URL`); a token bound to one is
   taken only over a connection with it.
+- Setting up a fresh panel takes the one-time token the server logged, not just
+  reaching the console first; it works once, and only while nobody is an
+  administrator.
 - An address is proved before an account is used: new login flows require a
   verified address, social sign-in makes no account for an address the
   provider has not verified, and the first proof of an address (a reset or
@@ -154,9 +160,11 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 
 ### To the release with setup tokens, address proofs and SSO domain proofs
 
-Migrations run on start. What changes for an installation
+Migration `00007` runs on start. What changes for an installation
 that already exists:
 
+- **First setup** needs the token the server logs while no administrator
+  exists. An installation that has one is unaffected.
 - **Verified addresses**: new login flows require one. Existing flows keep
   their setting; turn it on under Login flows → *Require a verified email*.
   Until it is on, an unverified account can still sign in, but the first
@@ -184,7 +192,8 @@ kind of change is made, and the security invariants every change keeps.
 ## Project layout
 
 ```
-cmd/vard                the server, and the migration runner (vard migrate)
+cmd/vard                the server, the migration runner (vard migrate), and
+                           the first administrator from the shell (vard admin create)
 internal/                  the Go code: api (HTTP handlers), oidc (the provider),
                            store (every query), model (the schema), and the rest
 migrations/                the schema and every change to it, in order

@@ -36,6 +36,7 @@ func TestLiveAdminCodeGuessesReachTheLockout(t *testing.T) {
 	root := s.client()
 	root.must(http.StatusCreated, http.MethodPost, "/setup", map[string]string{
 		"email": superEmail, "password": superPassword, "first_name": "Root",
+		"setup_token": s.setupToken,
 	}, nil)
 	root.loginAnswer(superEmail, superPassword)
 	var begun struct {

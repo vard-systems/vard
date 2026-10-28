@@ -74,7 +74,7 @@ func TestAuditLogBeforeCreateSetsID(t *testing.T) {
 // All feeds both the migration generator and AutoMigrate; a model missing
 // from it silently never gets a table.
 func TestAllListsEveryModel(t *testing.T) {
-	if got, want := len(All()), 47; got != want {
+	if got, want := len(All()), 48; got != want {
 		t.Errorf("All() has %d models, want %d — was a new model added without listing it here?", got, want)
 	}
 }

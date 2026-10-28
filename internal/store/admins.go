@@ -17,6 +17,10 @@ import (
 
 var ErrAdminExists = errors.New("an administrator already exists")
 
+// ErrSetupTokenInvalid is a setup token that is not one the server issued,
+// or has been used or has expired.
+var ErrSetupTokenInvalid = errors.New("the setup token is not valid")
+
 const firstAdminLock = brand.AdminLock
 
 func (s *Store) AdminsExist(ctx context.Context) (bool, error) {
@@ -28,7 +32,33 @@ func (s *Store) AdminsExist(ctx context.Context) (bool, error) {
 	return count > 0, nil
 }
 
-func (s *Store) CreateFirstAdmin(ctx context.Context, admin *model.Admin) error {
+// IssueSetupToken keeps a setup token's hash while no administrator exists,
+// and says whether it did: once one does, there is nothing to set up.
+func (s *Store) IssueSetupToken(ctx context.Context, token *model.SetupToken) (bool, error) {
+	issued := false
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", firstAdminLock).Error; err != nil {
+			return err
+		}
+
+		var count int64
+		if err := tx.Model(&model.Admin{}).Count(&count).Error; err != nil || count > 0 {
+			return err
+		}
+
+		issued = true
+
+		return tx.Create(token).Error
+	})
+
+	return issued, err
+}
+
+// CreateFirstAdmin makes the first administrator with a setup token the
+// server issued, spending it in the same transaction: a token works once, and
+// only while nobody is an administrator yet.
+func (s *Store) CreateFirstAdmin(ctx context.Context, admin *model.Admin, tokenHash string, at time.Time) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Without the lock, two concurrent setups would each count zero and
 		// both insert.
@@ -43,6 +73,16 @@ func (s *Store) CreateFirstAdmin(ctx context.Context, admin *model.Admin) error 
 
 		if count > 0 {
 			return ErrAdminExists
+		}
+
+		spent := tx.Model(&model.SetupToken{}).
+			Where("token_hash = ? AND used_at IS NULL AND expires_at > ?", tokenHash, at).
+			Update("used_at", at)
+		if spent.Error != nil {
+			return spent.Error
+		}
+		if spent.RowsAffected == 0 {
+			return ErrSetupTokenInvalid
 		}
 
 		var role model.AdminRole

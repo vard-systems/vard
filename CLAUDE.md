@@ -46,7 +46,8 @@ Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 ## Architecture
 
 ```
-cmd/vard/main.go         the commands: serve (the default) and migrate
+cmd/vard/main.go         the commands: serve (the default), migrate, and admin
+                         create (the first administrator from the shell)
 cmd/vard/serve.go        startup, in order, in one function
 cmd/vard/migrate.go      the migration runner (up, down, status, new)
 internal/config          reads .env: deployment settings (addresses, mail, log level)
@@ -210,6 +211,10 @@ code near it, and add a test when adding a case.
   ends its sessions, refresh tokens, login codes and devices — whoever
   registered the address first may not have been its owner. Social sign-in
   never makes an account for an address the provider has not verified.
+- **Setting up the panel takes the logged setup token.** While no
+  administrator exists, each start issues a 256-bit `setup_tokens` row
+  (hash only) and logs the token at WARN; `CreateFirstAdmin` spends it with
+  one conditional UPDATE in the transaction that makes the admin.
 - **Nothing internal reaches a browser.** Every answer is a defined problem;
   anything else goes through `respond.Failure`, which logs it and answers 500.
   The request log records the path, never the query string.

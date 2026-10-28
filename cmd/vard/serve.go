@@ -14,12 +14,14 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"vard/internal/api"
+	"vard/internal/auth"
 	"vard/internal/brand"
 	"vard/internal/cache"
 	"vard/internal/config"
 	"vard/internal/database"
 	"vard/internal/jose"
 	"vard/internal/mail"
+	"vard/internal/model"
 	"vard/internal/oidc"
 	"vard/internal/store"
 )
@@ -110,6 +112,18 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 
 	if err := st.EnsureSystemAPIs(context.Background()); err != nil {
 		return err
+	}
+
+	// Until someone is an administrator, setting the panel up takes a token
+	// only the server's log shows, not merely reaching the console first.
+	setupToken, err := auth.IssueSetupToken(context.Background(), st, time.Now())
+	if err != nil {
+		return err
+	}
+	if setupToken != "" {
+		log.Warn("no administrator exists yet: open the setup page and enter this one-time setup token",
+			"url", cfg.AdminURL+auth.SetupPage, "setup_token", setupToken,
+			"expires_in", model.SetupTokenLifetime.String())
 	}
 
 	mailer := mail.New(mail.FromStore(st, sealer), log)
