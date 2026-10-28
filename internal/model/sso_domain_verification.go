@@ -50,6 +50,13 @@ func (v SSODomainVerification) RecordValue() string {
 	return brand.Slug + "-domain-verification=" + v.Token
 }
 
+// Proved says the connection may link to existing accounts at the domain.
 func (v SSODomainVerification) Proved() bool {
 	return v.VerifiedAt != nil
+}
+
+// CarriedOver says the domain links only because the connection listed it
+// before proofs existed: nobody has proved it is the organisation's.
+func (v SSODomainVerification) CarriedOver() bool {
+	return v.Method == SSODomainHeldBefore
 }

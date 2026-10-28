@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	type Props = {
-		tone?: 'neutral' | 'success' | 'danger';
+		tone?: 'neutral' | 'success' | 'warning' | 'danger';
 		children: Snippet;
 	};
 
@@ -33,6 +33,11 @@
 	.success {
 		background: var(--surface-success);
 		color: var(--color-success);
+	}
+
+	.warning {
+		background: var(--surface-warning);
+		color: var(--color-warning);
 	}
 
 	.danger {

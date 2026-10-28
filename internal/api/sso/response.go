@@ -137,8 +137,11 @@ func certificateExpiry(data string) (time.Time, bool) {
 // domainProof is one of a connection's domains: whether it is proved, how,
 // and the TXT record that proves it.
 type domainProof struct {
-	Domain      string     `json:"domain"`
-	Proved      bool       `json:"proved"`
+	Domain string `json:"domain"`
+	Proved bool   `json:"proved"`
+	// CarriedOver is a domain that links only because the connection listed
+	// it before proofs existed: proved by nobody, and worth proving.
+	CarriedOver bool       `json:"carried_over"`
 	Method      string     `json:"method"`
 	RecordName  string     `json:"record_name"`
 	RecordValue string     `json:"record_value"`
@@ -148,7 +151,7 @@ type domainProof struct {
 
 func newDomainProof(v model.SSODomainVerification) domainProof {
 	return domainProof{
-		Domain: v.Domain, Proved: v.Proved(), Method: v.Method,
+		Domain: v.Domain, Proved: v.Proved(), CarriedOver: v.CarriedOver(), Method: v.Method,
 		RecordName: v.RecordName(), RecordValue: v.RecordValue(),
 		VerifiedAt: v.VerifiedAt, CheckedAt: v.CheckedAt,
 	}

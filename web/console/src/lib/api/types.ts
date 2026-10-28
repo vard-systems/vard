@@ -839,6 +839,8 @@ export type SSOTestResult = {
 export type SSODomainProof = {
 	domain: string;
 	proved: boolean;
+	/** Links only because the connection listed it before proofs existed. */
+	carried_over: boolean;
 	method: '' | 'dns' | 'existing';
 	record_name: string;
 	record_value: string;

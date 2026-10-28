@@ -44,12 +44,13 @@ describe('the panel is usable without seeing it', () => {
 
 	it('a text input', () => expectAccessible(Input, { label: 'Name', value: '' }));
 
-	it("a connection's domain proofs, one proved and one waiting for its record", () =>
+	it("a connection's domain proofs: proved, waiting for its record, and carried over", () =>
 		expectAccessible(DomainProofList, {
 			proofs: [
 				{
 					domain: 'acme.com',
 					proved: true,
+					carried_over: false,
 					method: 'dns',
 					record_name: '_x-challenge.acme.com',
 					record_value: 'x-domain-verification=abc',
@@ -59,10 +60,21 @@ describe('the panel is usable without seeing it', () => {
 				{
 					domain: 'acme.org',
 					proved: false,
+					carried_over: false,
 					method: '',
 					record_name: '_x-challenge.acme.org',
 					record_value: 'x-domain-verification=def',
 					verified_at: null,
+					checked_at: null
+				},
+				{
+					domain: 'acme.net',
+					proved: true,
+					carried_over: true,
+					method: 'existing',
+					record_name: '_x-challenge.acme.net',
+					record_value: 'x-domain-verification=ghi',
+					verified_at: '2026-10-01T00:00:00Z',
 					checked_at: null
 				}
 			],

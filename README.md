@@ -174,12 +174,14 @@ that already exists:
   proof of its address clears what it held before.
 - **Social sign-up** for an address the provider has not verified is refused
   (`social_email_unverified`); linking such an address was already refused.
-- **SSO domains**: every domain a connection already lists is carried over as
-  held, so it links as before. A domain added from now on is proved before
-  the connection links to existing accounts there: publish the TXT record
-  shown on the connection's *Domains & sign-in* tab and press *Check*. A
-  connection without domains no longer links to existing accounts at all,
-  and new ones are saved with *Refuse*.
+- **SSO domains**: every domain a connection already lists is carried over,
+  so it links as before — but nobody has proved it is the organisation's.
+  The connection's *Domains & sign-in* tab marks each one *Carried over, not
+  proved*, with a warning: **publish its TXT record and press *Check*, or
+  remove the domain.** A domain added from now on is proved the same way
+  before the connection links to existing accounts there. A connection
+  without domains no longer links to existing accounts at all, and new ones
+  are saved with *Refuse*.
 - **First SSO link**: when a connection is linked to an existing account that
   has a second factor, the person is asked for it once; later sign-ins
   through the link are not.
