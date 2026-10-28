@@ -28,17 +28,9 @@ func ClearUser(c *gin.Context, secure bool) {
 }
 
 func writeUser(c *gin.Context, value string, maxAge int, secure bool) {
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     UserCookie,
-		Value:    value,
-		Path:     "/",
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   secure,
-		// Lax: sent on the top-level navigation to the authorization endpoint,
-		// not on other sites' script requests.
-		SameSite: http.SameSiteLaxMode,
-	})
+	// Lax: sent on the top-level navigation to the authorization endpoint,
+	// not on other sites' script requests.
+	writeCookie(c, cookie{name: UserCookie, path: "/", sameSite: http.SameSiteLaxMode}, value, maxAge, secure)
 }
 
 // SignInStateCookie binds a provider sign-in to the browser that started it.
@@ -62,13 +54,13 @@ func ClearSignInState(c *gin.Context, secure bool) {
 // name (which a sibling subdomain can plant) count as none, so the sign-in
 // fails closed.
 func SignInState(c *gin.Context) string {
-	return single(c, SignInStateCookie)
+	return read(c, SignInStateCookie)
 }
 
 // UserToken is the user's session cookie, or "" when absent or duplicated (a
 // planted sibling-subdomain cookie cannot stand in).
 func UserToken(c *gin.Context) string {
-	return single(c, UserCookie)
+	return read(c, UserCookie)
 }
 
 func single(c *gin.Context, name string) string {
@@ -90,15 +82,7 @@ func writeSignInState(c *gin.Context, value string, maxAge int, secure bool) {
 		sameSite = http.SameSiteNoneMode
 	}
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     SignInStateCookie,
-		Value:    value,
-		Path:     signInStatePath,
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   secure,
-		SameSite: sameSite,
-	})
+	writeCookie(c, cookie{name: SignInStateCookie, path: signInStatePath, sameSite: sameSite}, value, maxAge, secure)
 }
 
 // SecondFactorCookie holds the handle of a sign-in waiting for its second
@@ -119,19 +103,11 @@ func ClearSecondFactor(c *gin.Context, secure bool) {
 // SecondFactor is the waiting sign-in's handle, or "" when absent or
 // duplicated (a planted sibling-subdomain cookie cannot stand in).
 func SecondFactor(c *gin.Context) string {
-	return single(c, SecondFactorCookie)
+	return read(c, SecondFactorCookie)
 }
 
 func writeSecondFactor(c *gin.Context, value string, maxAge int, secure bool) {
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     SecondFactorCookie,
-		Value:    value,
-		Path:     secondFactorPath,
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   secure,
-		SameSite: http.SameSiteLaxMode,
-	})
+	writeCookie(c, cookie{name: SecondFactorCookie, path: secondFactorPath, sameSite: http.SameSiteLaxMode}, value, maxAge, secure)
 }
 
 // KnownDeviceCookie is the accounts this browser has signed in to, which
@@ -148,17 +124,10 @@ const knownDeviceLifetime = 180 * 24 * time.Hour
 // KnownDevice is the browser's known-device cookie, or "" when absent or
 // duplicated.
 func KnownDevice(c *gin.Context) string {
-	return single(c, KnownDeviceCookie)
+	return read(c, KnownDeviceCookie)
 }
 
 func SetKnownDevice(c *gin.Context, value string, secure bool) {
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     KnownDeviceCookie,
-		Value:    value,
-		Path:     knownDevicePath,
-		MaxAge:   int(knownDeviceLifetime.Seconds()),
-		HttpOnly: true,
-		Secure:   secure,
-		SameSite: http.SameSiteLaxMode,
-	})
+	writeCookie(c, cookie{name: KnownDeviceCookie, path: knownDevicePath, sameSite: http.SameSiteLaxMode},
+		value, int(knownDeviceLifetime.Seconds()), secure)
 }

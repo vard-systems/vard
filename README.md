@@ -104,7 +104,8 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 
 ### Before going live
 
-- [ ] `PUBLIC_URL` and `ADMIN_URL` are `https` (session cookies become Secure).
+- [ ] `PUBLIC_URL` and `ADMIN_URL` are `https` (session cookies become Secure
+      `__Host-` cookies).
 - [ ] The admin host is reachable only from staff networks or a VPN, and
       `VARD_ADMIN_NETWORKS` names them.
 - [ ] `VARD_SECRET_KEY` is stored in a secret manager.
@@ -238,6 +239,15 @@ Migration `00012` runs on start.
 - **A challenge hook** (`oidc.ChallengeHook`, set with `UseChallenge`) can
   ask a sign-in for a CAPTCHA or a proof of work after three failures; the
   sign-in form sends its answer as `challenge`. None is set by default.
+
+### To the release with `__Host-` cookies
+
+- Over https, the session and sign-in cookies are renamed `__Host-…`
+  (Secure, the whole host, no Domain), so no other subdomain can plant or
+  overwrite them. Sessions under the old names keep working for this
+  release and are renamed at the next sign-in; the next release stops
+  reading the old names. Plain-http `make dev` keeps the old names, which a
+  browser requires there.
 
 ## Development
 

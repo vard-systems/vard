@@ -40,15 +40,49 @@ func Clear(c *gin.Context, secure bool) {
 }
 
 func write(c *gin.Context, value string, maxAge int, secure bool) {
+	writeCookie(c, cookie{name: Cookie, path: "/", sameSite: http.SameSiteLaxMode}, value, maxAge, secure)
+}
+
+// cookie is one of the session and sign-in cookies: its name without the
+// prefix, and the path and SameSite it is set with over plain http.
+type cookie struct {
+	name     string
+	path     string
+	sameSite http.SameSite
+}
+
+// writeCookie sets a session or sign-in cookie. Over https it is named with
+// brand.HostPrefix, which the browser holds to Secure, Path=/ and no Domain,
+// so no sibling subdomain can plant or overwrite it; the copy under the old
+// name is cleared on the way, so it is not read in its place.
+func writeCookie(c *gin.Context, which cookie, value string, maxAge int, secure bool) {
+	name, path := which.name, which.path
+	if secure {
+		name, path = brand.HostPrefix+which.name, "/"
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name: which.name, Path: which.path, MaxAge: -1, HttpOnly: true, Secure: true, SameSite: which.sameSite,
+		})
+	}
+
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     Cookie,
+		Name:     name,
 		Value:    value,
-		Path:     "/",
+		Path:     path,
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   secure,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: which.sameSite,
 	})
+}
+
+// read is a session or sign-in cookie's value: the prefixed one, or for one
+// release the one under the old name, so sessions from before the prefix
+// keep working. Either counts as none when the browser sent two.
+func read(c *gin.Context, name string) string {
+	if value := single(c, brand.HostPrefix+name); value != "" {
+		return value
+	}
+	return single(c, name)
 }
 
 // Require refuses the request unless it carries a session for an
@@ -122,7 +156,7 @@ func Bearer(c *gin.Context) string {
 // Token is the administrator's session cookie, or "" when absent or
 // duplicated: a cookie planted from a sibling subdomain cannot stand in for it.
 func Token(c *gin.Context) string {
-	return single(c, Cookie)
+	return read(c, Cookie)
 }
 
 // RequireSetup admits signed-in administrators and half-signed-in ones waiting

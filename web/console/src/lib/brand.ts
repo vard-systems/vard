@@ -48,8 +48,10 @@ export function pageTitle(...parts: (string | null | undefined)[]): string {
 
 export const COOKIES = {
 	/** The API's session. Set by the API itself, HttpOnly: the panel never
-	    reads it, it only passes it on from a server load. */
+	    reads it, it only passes it on from a server load. Over https it is
+	    the __Host- one, which no sibling subdomain can plant. */
 	session: `${BRAND.slug}_session`,
+	secureSession: `__Host-${BRAND.slug}_session`,
 
 	theme: `${BRAND.slug}-theme`,
 

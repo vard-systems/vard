@@ -25,8 +25,10 @@ export const BRAND = {
 
 export const COOKIES = {
 	/** The user's session at the server. Set by the API, HttpOnly: this app
-	    never reads it; the browser sends it with every API call. */
+	    never reads it; the browser sends it with every API call. Over https
+	    it is the __Host- one, which no sibling subdomain can plant. */
 	session: `${BRAND.slug}_user_session`,
+	secureSession: `__Host-${BRAND.slug}_user_session`,
 
 	theme: `${BRAND.slug}-account-theme`,
 

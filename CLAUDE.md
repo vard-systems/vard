@@ -143,7 +143,11 @@ code near it, and add a test when adding a case.
   before it is given anything.
 - **Session cookies are read through `session.Token`, `session.UserToken` or
   `session.SignInState`**, which treat a duplicated cookie (planted from a
-  sibling subdomain) as none. Never `c.Cookie(...)` for a session.
+  sibling subdomain) as none. Never `c.Cookie(...)` for a session. Over https
+  every session and sign-in cookie is written by `writeCookie` as a
+  `brand.HostPrefix` (`__Host-`) one — Secure, `Path=/`, no Domain — which no
+  sibling can set at all; the old name is read only as a fallback for the
+  release after the prefix, and is to be removed after it.
 - **Outbound requests to admin- or user-supplied URLs** (social, SSO, SAML
   metadata, back-channel logout) go through `newFederationClient` in
   `internal/oidc/outbound.go`, which refuses private, link-local and metadata
