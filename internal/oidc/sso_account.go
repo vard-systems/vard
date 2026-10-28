@@ -89,24 +89,37 @@ func (s *Service) signInThroughSSO(
 	case !errors.Is(err, store.ErrNotFound):
 		return nil, err
 	default:
-		if user, err = s.ssoAccountFor(ctx, connection, person, email, client); err != nil {
+		var existing bool
+		if user, existing, err = s.ssoAccountFor(ctx, connection, person, email, client); err != nil {
 			return nil, err
+		}
+		if !user.CanSignIn(now) {
+			return nil, s.ssoBlocked(ctx, user, connection, client)
 		}
 
 		identity := &model.SSOIdentity{
 			UserID: user.ID, ConnectionID: connection.ID, Subject: person.Subject,
 			Email: email, LastLoginAt: &now,
 		}
-		if err := s.store.CreateSSOIdentity(ctx, identity); err != nil {
+
+		// The provider's word that this is the account's owner is not taken
+		// alone the first time: an account with a second factor of its own is
+		// asked for it, and only then is the identity linked. Until it is,
+		// the provider changes nothing on the account.
+		if existing {
+			held, err := s.holdSSOLink(ctx, user, flow, identity, request, client)
+			if err != nil || held != nil {
+				return held, err
+			}
+		}
+
+		if err := s.linkSSOIdentity(ctx, user, connection.Name, identity, false, client); err != nil {
 			return nil, err
 		}
 	}
 
 	if !user.CanSignIn(now) {
-		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{
-			"reason": "inactive", "connection": connection.Name,
-		})
-		return nil, ErrInvalidCredentials
+		return nil, s.ssoBlocked(ctx, user, connection, client)
 	}
 
 	if err := s.syncFromSSO(ctx, connection, user, person, client); err != nil {
@@ -123,36 +136,44 @@ func (s *Service) signInThroughSSO(
 	return result, nil
 }
 
+// ssoAccountFor is the account a person new to the connection lands on, and
+// whether it already existed: one with their address, linked, or a new one.
 func (s *Service) ssoAccountFor(
 	ctx context.Context,
 	connection *model.SSOConnection,
 	person *ssoPerson,
 	email string,
 	client Client,
-) (*model.User, error) {
+) (*model.User, bool, error) {
 	user, err := s.store.UserByEmail(ctx, email)
 	switch {
 	case err == nil:
-		if connection.Matching != model.SSOMatchLink {
-			return nil, ErrSSOLinkRefused
+		// A connection without domains vouches for addresses nobody gave it,
+		// so it never takes an account over, whatever it was saved with.
+		if connection.Matching != model.SSOMatchLink || len(connection.Domains) == 0 {
+			return nil, false, ErrSSOLinkRefused
 		}
 		// Never link to an account that has not proved its address, or whoever
 		// pre-registered it would keep their password.
 		if !user.IsEmailVerified {
-			return nil, refused(ErrSSOLinkRefused, "the account for %s never verified its address, so it is not linked", email)
+			return nil, false, refused(ErrSSOLinkRefused, "the account for %s never verified its address, so it is not linked", email)
+		}
+		_, domain, _ := strings.Cut(email, "@")
+		proved, err := s.store.SSODomainProved(ctx, connection.ID, domain)
+		if err != nil {
+			return nil, false, err
+		}
+		if !proved {
+			return nil, false, refused(ErrSSOLinkRefused, "the connection has not proved it holds %s, so no existing account there is linked", domain)
 		}
 
-		s.record(ctx, user, user.Email, "user.identity_connected", client, map[string]any{
-			"provider": connection.Name,
-		})
-
-		return user, nil
+		return user, true, nil
 	case !errors.Is(err, store.ErrNotFound):
-		return nil, err
+		return nil, false, err
 	}
 
 	if !connection.CreateUsers {
-		return nil, ErrSSONoAccount
+		return nil, false, ErrSSONoAccount
 	}
 
 	// The provider owns the domain, so the address is as verified as it gets.
@@ -167,19 +188,51 @@ func (s *Service) ssoAccountFor(
 
 	roles, err := s.store.DefaultUserRoles(ctx)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	user.Roles = roles
 
 	if err := s.store.CreateUser(ctx, user); errors.Is(err, store.ErrDuplicate) {
-		return nil, ErrSSOExpired
+		return nil, false, ErrSSOExpired
 	} else if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	s.record(ctx, user, user.Email, "user.registered", client, map[string]any{"provider": connection.Name})
 
-	return user, nil
+	return user, false, nil
+}
+
+// linkSSOIdentity links a provider's identity to an account, and records it
+// with whether the account's own second factor was asked for first.
+func (s *Service) linkSSOIdentity(ctx context.Context, user *model.User, connection string, identity *model.SSOIdentity, stepped bool, client Client) error {
+	if err := s.store.CreateSSOIdentity(ctx, identity); err != nil {
+		return err
+	}
+
+	s.record(ctx, user, user.Email, "user.identity_connected", client, map[string]any{
+		"provider": connection, "second_factor": stepped,
+	})
+
+	return nil
+}
+
+// holdSSOLink keeps the first link to an account with a second factor
+// waiting for it, the identity to link held on the waiting sign-in; nil
+// when the account has none.
+func (s *Service) holdSSOLink(ctx context.Context, user *model.User, flow *model.LoginFlow, identity *model.SSOIdentity, request string, client Client) (*SignInResult, error) {
+	if err := s.admit(ctx, user, flow, request, client); err != nil {
+		return nil, err
+	}
+
+	return s.hold(ctx, user, request, true, identity)
+}
+
+func (s *Service) ssoBlocked(ctx context.Context, user *model.User, connection *model.SSOConnection, client Client) error {
+	s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{
+		"reason": "inactive", "connection": connection.Name,
+	})
+	return ErrInvalidCredentials
 }
 
 func (s *Service) syncFromSSO(ctx context.Context, connection *model.SSOConnection, user *model.User, person *ssoPerson, client Client) error {

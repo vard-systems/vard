@@ -204,6 +204,14 @@ code near it, and add a test when adding a case.
   (`saml_assertions`).
 - **An SSO connection signs in only addresses it may**: its own domains, or —
   without domains — any address at a domain no other connection holds.
+- **An SSO connection takes over an existing account only at a proved
+  domain.** Linking needs `matching = link`, listed domains (validation and
+  `ssoAccountFor` both refuse it without), and an `sso_domain_verifications`
+  row proved by its DNS TXT record (or carried over by migration `00008`).
+  The first link to an account with a second factor waits for that factor:
+  the identity is held on the pending sign-in (`link_connection_id`) and
+  made only by `SubmitSecondFactor`, and the provider syncs nothing until
+  then.
 - **The first proof of an address ends what came before it.** A reset or
   verification link that first marks an account verified also deletes, in
   the same transaction (`clearBeforeProofIn`), its social and SSO

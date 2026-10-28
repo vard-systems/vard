@@ -87,7 +87,8 @@ export const keys = {
 
 	sso: {
 		all: ['sso'] as const,
-		list: ['sso', 'list'] as const
+		list: ['sso', 'list'] as const,
+		domains: (id: string) => ['sso', 'domains', id] as const
 	},
 
 	languages: {

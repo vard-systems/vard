@@ -5,6 +5,7 @@ import type { Admin } from '#lib/api/index.js';
 import { expectAccessible } from '#lib/testing/a11y.js';
 import LogoField from './organization/LogoField.svelte';
 import RoleCodes from './profile/RoleCodes.svelte';
+import DomainProofList from './sso/DomainProofList.svelte';
 import Button from './ui/Button.svelte';
 import EmptyState from './ui/EmptyState.svelte';
 import Input from './ui/Input.svelte';
@@ -42,6 +43,32 @@ describe('the panel is usable without seeing it', () => {
 		expectAccessible(LogoField, { version: '', editable: false, onsaved: () => {} }));
 
 	it('a text input', () => expectAccessible(Input, { label: 'Name', value: '' }));
+
+	it("a connection's domain proofs, one proved and one waiting for its record", () =>
+		expectAccessible(DomainProofList, {
+			proofs: [
+				{
+					domain: 'acme.com',
+					proved: true,
+					method: 'dns',
+					record_name: '_x-challenge.acme.com',
+					record_value: 'x-domain-verification=abc',
+					verified_at: '2026-10-01T00:00:00Z',
+					checked_at: '2026-10-01T00:00:00Z'
+				},
+				{
+					domain: 'acme.org',
+					proved: false,
+					method: '',
+					record_name: '_x-challenge.acme.org',
+					record_value: 'x-domain-verification=def',
+					verified_at: null,
+					checked_at: null
+				}
+			],
+			canWrite: true,
+			oncheck: () => {}
+		}));
 
 	it('a text input with a hint and an error', () =>
 		expectAccessible(Input, {

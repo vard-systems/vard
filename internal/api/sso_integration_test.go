@@ -441,6 +441,12 @@ func TestLiveSSOMatchingAndProvisioning(t *testing.T) {
 		"email": "grace@acme.test", "first_name": "Grace", "is_email_verified": true,
 	}, nil)
 
+	// Nor at a domain the connection has not proved it holds.
+	if reason, _ := idp.signInOIDC(s.browser(), "acme").failed(); reason != "sso_link_refused" {
+		t.Errorf("linking at a domain not proved = %q, want sso_link_refused", reason)
+	}
+	s.provedDomain(t, created.Connection.ID, "acme.test")
+
 	b := s.browser()
 	if reason, failed := idp.signInOIDC(b, "acme").failed(); failed {
 		t.Fatalf("linking an existing account failed: %s", reason)
@@ -1099,7 +1105,7 @@ func TestLiveSSOWithoutDomainsLeavesOtherConnectionsDomainsAlone(t *testing.T) {
 	super.must(http.StatusCreated, http.MethodPost, "/sso-connections", map[string]any{
 		"protocol": "oidc", "name": "Partners", "issuer": partner.server.URL,
 		"client_id": fakeClientID, "client_secret": fakeClientSecret,
-		"show_on_login": true, "is_enabled": true, "matching": "link", "create_users": true,
+		"show_on_login": true, "is_enabled": true, "create_users": true,
 	}, nil)
 	super.must(http.StatusCreated, http.MethodPost, "/users", map[string]any{
 		"email": "ceo@acme.test", "first_name": "Ceo", "password": "ceo-password-1",
@@ -1283,6 +1289,7 @@ func TestLiveSSOForgetsIdentitiesOfAnotherProvider(t *testing.T) {
 	super.must(http.StatusOK, http.MethodPatch, "/sso-connections/"+created.Connection.ID, map[string]any{
 		"issuer": after.server.URL,
 	}, nil)
+	s.provedDomain(t, created.Connection.ID, "acme.test")
 
 	after.signs(map[string]any{"sub": "1", "email": "grace@acme.test"})
 	b := s.browser()

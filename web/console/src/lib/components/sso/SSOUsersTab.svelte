@@ -35,9 +35,15 @@
 >
 	<Select
 		label="An address that already has an account"
-		bind:value={form.matching}
+		bind:value={
+			() => (form.domains.length === 0 ? 'deny' : form.matching),
+			(value) => (form.matching = value as typeof form.matching)
+		}
 		options={matchings}
-		{readOnly}
+		hint={form.domains.length === 0
+			? 'A connection without domains never links to existing accounts: add its domains first.'
+			: 'It links only at a domain proved on Domains & sign-in.'}
+		readOnly={readOnly || form.domains.length === 0}
 	/>
 	<SwitchField
 		label="Create accounts on first sign-in"

@@ -21,6 +21,8 @@ var (
 	mappingInvalid   = respond.Define(http.StatusBadRequest, "sso_role_mapping_invalid", respond.Admin)
 	connectionAbsent = respond.Define(http.StatusNotFound, "sso_connection_not_found", respond.Admin)
 	unreachable      = respond.Define(http.StatusBadRequest, "sso_unreachable", respond.Admin)
+	linkNeedsDomains = respond.Define(http.StatusBadRequest, "sso_link_needs_domains", respond.Admin)
+	domainUnknown    = respond.Define(http.StatusNotFound, "sso_domain_not_listed", respond.Admin)
 )
 
 // connectionRequest is a PATCH: nil leaves a setting alone. Slug and protocol

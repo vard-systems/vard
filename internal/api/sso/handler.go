@@ -76,8 +76,8 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// Matching is left to settle: link with domains, deny without.
 	connection := &model.SSOConnection{
-		Matching:     model.SSOMatchLink,
 		CreateUsers:  true,
 		SyncProfile:  true,
 		NameIDFormat: model.SSONameIDEmail,
@@ -333,6 +333,54 @@ func (h *Handler) giveKey(connection *model.SSOConnection) error {
 	connection.SPKey, connection.SPCertificate = sealed, certificate
 
 	return nil
+}
+
+// Domains lists a connection's domains with whether each is proved, and the
+// TXT record that proves one.
+func (h *Handler) Domains(c *gin.Context) {
+	connection, ok := h.find(c)
+	if !ok {
+		return
+	}
+
+	verifications, err := h.store.SSODomainVerifications(c.Request.Context(), connection)
+	if err != nil {
+		respond.Failure(c, h.log, err, "listing an SSO connection's domains failed")
+		return
+	}
+
+	out := domainsResponse{Domains: make([]domainProof, 0, len(verifications))}
+	for _, verification := range verifications {
+		out.Domains = append(out.Domains, newDomainProof(verification))
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+// CheckDomain looks for a domain's TXT record now. Until it is found, the
+// connection makes new accounts there but links to no existing one.
+func (h *Handler) CheckDomain(c *gin.Context) {
+	connection, ok := h.find(c)
+	if !ok {
+		return
+	}
+
+	domain := model.NormalizeDomain(c.Param("domain"))
+	verification, err := h.provider.CheckSSODomain(c.Request.Context(), connection.ID, domain)
+	if errors.Is(err, oidc.ErrSSODomainUnknown) {
+		respond.Fail(c, domainUnknown)
+		return
+	}
+	if err != nil {
+		respond.Failure(c, h.log, err, "checking an SSO connection's domain failed")
+		return
+	}
+
+	h.audit.RecordWith(c, "sso_connection.domain_checked", targetType, connection.ID.String(), map[string]any{
+		"connection": connection.Name, "domain": domain, "proved": verification.Proved(),
+	})
+
+	c.JSON(http.StatusOK, domainResponse{Domain: newDomainProof(*verification)})
 }
 
 func (h *Handler) find(c *gin.Context) (*model.SSOConnection, bool) {

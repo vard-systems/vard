@@ -101,7 +101,105 @@ func (s *Store) SSODomainsTaken(ctx context.Context, domains []string, except uu
 }
 
 func (s *Store) CreateSSOConnection(ctx context.Context, connection *model.SSOConnection) error {
-	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Create(connection).Error), cache.SSOButtons)
+	return s.forgetting(ctx, s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := translate(tx.Create(connection).Error); err != nil {
+			return err
+		}
+
+		return challengeDomainsIn(tx, connection)
+	}), cache.SSOButtons)
+}
+
+// challengeDomainsIn keeps a connection's proofs in step with its domains: a
+// new domain gets a challenge to prove, a removed one loses its proof, so
+// adding it back is proved again.
+func challengeDomainsIn(tx *gorm.DB, connection *model.SSOConnection) error {
+	err := tx.Where("connection_id = ? AND domain NOT IN ?", connection.ID, append([]string{""}, connection.Domains...)).
+		Delete(&model.SSODomainVerification{}).Error
+	if err != nil {
+		return err
+	}
+
+	for _, domain := range connection.Domains {
+		_, token, err := model.NewSecret()
+		if err != nil {
+			return err
+		}
+
+		challenge := model.SSODomainVerification{ConnectionID: connection.ID, Domain: domain, Token: token}
+		err = tx.Omit(clause.Associations).
+			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "connection_id"}, {Name: "domain"}}, DoNothing: true}).
+			Create(&challenge).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// SSODomainVerifications are a connection's domains and whether each is
+// proved, in the order the connection lists them.
+func (s *Store) SSODomainVerifications(ctx context.Context, connection *model.SSOConnection) ([]model.SSODomainVerification, error) {
+	var found []model.SSODomainVerification
+	if err := s.db.WithContext(ctx).Where("connection_id = ?", connection.ID).Find(&found).Error; err != nil {
+		return nil, err
+	}
+
+	out := make([]model.SSODomainVerification, 0, len(found))
+	for _, domain := range connection.Domains {
+		for _, verification := range found {
+			if verification.Domain == domain {
+				out = append(out, verification)
+			}
+		}
+	}
+
+	return out, nil
+}
+
+// SSODomainVerification is one of a connection's domains with its proof.
+func (s *Store) SSODomainVerification(ctx context.Context, connection uuid.UUID, domain string) (*model.SSODomainVerification, error) {
+	var verification model.SSODomainVerification
+	err := s.db.WithContext(ctx).First(&verification, "connection_id = ? AND domain = ?", connection, domain).Error
+	if err != nil {
+		return nil, translate(err)
+	}
+
+	return &verification, nil
+}
+
+// CheckedSSODomain records a DNS check of a domain, and its proof when the
+// check found the record. A domain already proved stays proved.
+func (s *Store) CheckedSSODomain(ctx context.Context, verification *model.SSODomainVerification, proved bool, at time.Time) error {
+	changes := map[string]any{"checked_at": at}
+	if proved && !verification.Proved() {
+		changes["verified_at"] = at
+		changes["method"] = model.SSODomainProvedByDNS
+	}
+
+	err := s.db.WithContext(ctx).Model(&model.SSODomainVerification{}).Where("id = ?", verification.ID).Updates(changes).Error
+	if err != nil {
+		return err
+	}
+
+	verification.CheckedAt = &at
+	if proved && !verification.Proved() {
+		verification.VerifiedAt = &at
+		verification.Method = model.SSODomainProvedByDNS
+	}
+
+	return nil
+}
+
+// SSODomainProved says whether a connection has proved it holds a domain.
+func (s *Store) SSODomainProved(ctx context.Context, connection uuid.UUID, domain string) (bool, error) {
+	var count int64
+	err := s.db.WithContext(ctx).Model(&model.SSODomainVerification{}).
+		Where("connection_id = ? AND domain = ? AND verified_at IS NOT NULL", connection, domain).
+		Count(&count).Error
+
+	return count > 0, err
 }
 
 // SaveSSOConnection writes a connection back; with `newProvider` it also drops
@@ -116,7 +214,11 @@ func (s *Store) SaveSSOConnection(ctx context.Context, connection *model.SSOConn
 			}
 		}
 
-		return translate(tx.Save(connection).Error)
+		if err := translate(tx.Save(connection).Error); err != nil {
+			return err
+		}
+
+		return challengeDomainsIn(tx, connection)
 	}), cache.SSOButtons)
 }
 

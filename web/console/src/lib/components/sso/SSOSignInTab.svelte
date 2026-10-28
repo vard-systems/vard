@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { FormSection, SwitchField } from '#lib/components/ui/index.js';
+	import DomainProofs from './DomainProofs.svelte';
 	import DomainsField from './DomainsField.svelte';
 	import type { SSOForm } from './form.svelte';
 
 	type Props = {
 		form: SSOForm;
 		readOnly: boolean;
+		/** The saved connection's id; its domains are proved once it exists. */
+		connectionId?: string;
 	};
 
-	let { form, readOnly }: Props = $props();
+	let { form, readOnly, connectionId }: Props = $props();
 </script>
 
 <FormSection
@@ -20,6 +23,15 @@
 		{readOnly}
 	/>
 </FormSection>
+
+{#if connectionId && form.domains.length > 0}
+	<FormSection
+		title="Domain proofs"
+		description="Proof that the domains are the organisation's, before the provider may take over accounts there."
+	>
+		<DomainProofs {connectionId} canWrite={!readOnly} />
+	</FormSection>
+{/if}
 
 <FormSection title="Sign-in" description="How people at those domains reach it.">
 	<SwitchField

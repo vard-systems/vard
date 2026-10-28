@@ -833,6 +833,19 @@ export type SSOTestResult = {
 	metadata?: string;
 };
 
+/** One of a connection's domains and its proof. A connection links to an
+    existing account only at a proved domain: by a DNS TXT record, or because
+    it listed the domain before proofs existed (method 'existing'). */
+export type SSODomainProof = {
+	domain: string;
+	proved: boolean;
+	method: '' | 'dns' | 'existing';
+	record_name: string;
+	record_value: string;
+	verified_at: string | null;
+	checked_at: string | null;
+};
+
 /** How the connection to the mail server is protected. The names mirror the
     constants in internal/model/mail.go; change them together. */
 export type MailEncryption = 'starttls' | 'tls' | 'none';

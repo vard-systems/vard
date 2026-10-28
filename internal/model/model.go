@@ -84,6 +84,7 @@ func All() []any {
 		&SocialLogin{},
 		&SSOConnection{},
 		&SSOIdentity{},
+		&SSODomainVerification{},
 		&SSOLogin{},
 		&SAMLAssertion{},
 		&DPoPProof{},

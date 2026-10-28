@@ -28,7 +28,7 @@ export { apiApplicationsOptions, apiLogsOptions, apiOptions, apisOptions } from 
 export { SESSIONS_PAGE_SIZE, sessionsOptions, type SessionListParams } from './sessions';
 export { loginFlowChoicesOptions, loginFlowsOptions } from './flows';
 export { languagesOptions, translationOptions } from './languages';
-export { ssoOptions } from './sso';
+export { ssoDomainsOptions, ssoOptions } from './sso';
 export { organizationOptions } from './organization';
 export { mailContentOptions, mailOptions } from './mail';
 export { otpOptions } from './otp';

@@ -258,6 +258,8 @@ func (c SSOConnection) Validate() error {
 		return fmt.Errorf("a connection without domains needs its button, or nobody can reach it")
 	case c.Matching != SSOMatchLink && c.Matching != SSOMatchDeny:
 		return fmt.Errorf("matching must be link or deny")
+	case c.Matching == SSOMatchLink && len(c.Domains) == 0:
+		return fmt.Errorf("only a connection with domains can link to existing accounts")
 	}
 
 	for _, domain := range c.Domains {

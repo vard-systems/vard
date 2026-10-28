@@ -133,3 +133,31 @@ func certificateExpiry(data string) (time.Time, bool) {
 
 	return certificate.NotAfter, true
 }
+
+// domainProof is one of a connection's domains: whether it is proved, how,
+// and the TXT record that proves it.
+type domainProof struct {
+	Domain      string     `json:"domain"`
+	Proved      bool       `json:"proved"`
+	Method      string     `json:"method"`
+	RecordName  string     `json:"record_name"`
+	RecordValue string     `json:"record_value"`
+	VerifiedAt  *time.Time `json:"verified_at"`
+	CheckedAt   *time.Time `json:"checked_at"`
+}
+
+func newDomainProof(v model.SSODomainVerification) domainProof {
+	return domainProof{
+		Domain: v.Domain, Proved: v.Proved(), Method: v.Method,
+		RecordName: v.RecordName(), RecordValue: v.RecordValue(),
+		VerifiedAt: v.VerifiedAt, CheckedAt: v.CheckedAt,
+	}
+}
+
+type domainsResponse struct {
+	Domains []domainProof `json:"domains"`
+}
+
+type domainResponse struct {
+	Domain domainProof `json:"domain"`
+}

@@ -144,7 +144,7 @@
 				{:else if value === 'provider'}
 					<SSOServiceProviderTab {current} {canWrite} onrefreshed={(saved) => (current = saved)} />
 				{:else if value === 'signin'}
-					<SSOSignInTab {form} readOnly={!canWrite} />
+					<SSOSignInTab {form} readOnly={!canWrite} connectionId={current?.id} />
 				{:else}
 					<SSOUsersTab {form} {roles} {canReadRoles} readOnly={!canWrite} />
 				{/if}

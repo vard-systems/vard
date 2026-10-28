@@ -381,6 +381,7 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 		readSSO := managed.Group("", session.Can(model.PermSSORead))
 		readSSO.GET("/sso-connections", h.sso.List)
 		readSSO.GET("/sso-connections/:id", h.sso.Get)
+		readSSO.GET("/sso-connections/:id/domains", h.sso.Domains)
 
 		writeSSO := managed.Group("", session.Can(model.PermSSOWrite))
 		writeSSO.POST("/sso-connections", h.sso.Create)
@@ -388,6 +389,7 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 		writeSSO.PATCH("/sso-connections/:id", h.sso.Update)
 		writeSSO.DELETE("/sso-connections/:id", h.sso.Delete)
 		writeSSO.POST("/sso-connections/:id/refresh-metadata", h.sso.RefreshMetadata)
+		writeSSO.POST("/sso-connections/:id/domains/:domain/check", h.limit, h.sso.CheckDomain)
 
 		readFlows := managed.Group("", session.Can(model.PermLoginFlowsRead))
 		readFlows.GET("/login-flows", h.flows.List)

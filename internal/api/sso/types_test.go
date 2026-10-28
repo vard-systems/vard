@@ -14,4 +14,5 @@ func TestAnswersMatchThePanelsTypes(t *testing.T) {
 	tstypes.Match(t, "SSOConnection", connectionResponse{}, "sp_certificate")
 	tstypes.Match(t, "SSOIdentityProvider", identityProvider{})
 	tstypes.Match(t, "SSOTestResult", testResponse{})
+	tstypes.Match(t, "SSODomainProof", domainProof{})
 }

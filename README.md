@@ -149,6 +149,9 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   verification link) ends everything the account held before it — linked
   identities, second factors, recovery codes, consents, sessions and refresh
   tokens — so whoever registered somebody else's address first keeps nothing.
+- An SSO connection links to an existing account only at a domain it lists
+  and has proved with a DNS TXT record, and the first time it is linked to an
+  account with a second factor, that factor is asked for.
 - **Consent is a login-flow step.** Without it, every application registered
   in the panel is trusted to sign users in, which is right for an
   organisation's own apps; a flow with the Consent step asks each user once
@@ -160,7 +163,7 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 
 ### To the release with setup tokens, address proofs and SSO domain proofs
 
-Migration `00007` runs on start. What changes for an installation
+Migrations `00007` and `00008` run on start. What changes for an installation
 that already exists:
 
 - **First setup** needs the token the server logs while no administrator
@@ -171,6 +174,15 @@ that already exists:
   proof of its address clears what it held before.
 - **Social sign-up** for an address the provider has not verified is refused
   (`social_email_unverified`); linking such an address was already refused.
+- **SSO domains**: every domain a connection already lists is carried over as
+  held, so it links as before. A domain added from now on is proved before
+  the connection links to existing accounts there: publish the TXT record
+  shown on the connection's *Domains & sign-in* tab and press *Check*. A
+  connection without domains no longer links to existing accounts at all,
+  and new ones are saved with *Refuse*.
+- **First SSO link**: when a connection is linked to an existing account that
+  has a second factor, the person is asked for it once; later sign-ins
+  through the link are not.
 
 ## Development
 

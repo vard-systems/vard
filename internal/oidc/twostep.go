@@ -98,6 +98,12 @@ type AuthenticatorSetup struct {
 // holdForSecondFactor keeps a sign-in waiting when the user has a second
 // factor, and returns nil when they have none.
 func (s *Service) holdForSecondFactor(ctx context.Context, user *model.User, request string, remember bool) (*SignInResult, error) {
+	return s.hold(ctx, user, request, remember, nil)
+}
+
+// hold is holdForSecondFactor with, for a first single sign-on link, the
+// identity to link once the factor is answered.
+func (s *Service) hold(ctx context.Context, user *model.User, request string, remember bool, link *model.SSOIdentity) (*SignInResult, error) {
 	has, err := s.store.HasUserFactor(ctx, user.ID)
 	if err != nil || !has {
 		return nil, err
@@ -114,6 +120,11 @@ func (s *Service) holdForSecondFactor(ctx context.Context, user *model.User, req
 		Request:    request,
 		RememberMe: remember,
 		ExpiresAt:  s.now().Add(model.PendingSignInLifetime),
+	}
+	if link != nil {
+		pending.LinkConnectionID = &link.ConnectionID
+		pending.LinkSubject = link.Subject
+		pending.LinkEmail = link.Email
 	}
 	if err := s.store.CreatePendingSignIn(ctx, &pending); err != nil {
 		return nil, err
@@ -222,6 +233,10 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer 
 		return nil, err
 	}
 
+	if err := s.linkHeld(ctx, user, pending, client); err != nil {
+		return nil, err
+	}
+
 	return s.openSession(ctx, user, flow, pending.Request, pending.RememberMe, client, "user.login")
 }
 
@@ -292,4 +307,34 @@ func (s *Service) checkSecondFactor(ctx context.Context, user *model.User, pendi
 	}
 
 	return "", nil
+}
+
+// linkHeld links the single sign-on identity a waiting sign-in held, now that
+// the account's own second factor has been answered.
+func (s *Service) linkHeld(ctx context.Context, user *model.User, pending *model.PendingSignIn, client Client) error {
+	if pending.LinkConnectionID == nil {
+		return nil
+	}
+
+	connection, err := s.store.SSOConnection(ctx, *pending.LinkConnectionID)
+	if errors.Is(err, store.ErrNotFound) {
+		return ErrSecondFactorExpired
+	}
+	if err != nil {
+		return err
+	}
+
+	now := s.now()
+	identity := &model.SSOIdentity{
+		UserID: user.ID, ConnectionID: connection.ID, Subject: pending.LinkSubject,
+		Email: pending.LinkEmail, LastLoginAt: &now,
+	}
+
+	// Two waiting links racing: the first made it, which is what this one
+	// would have made.
+	if err := s.linkSSOIdentity(ctx, user, connection.Name, identity, true, client); err != nil && !errors.Is(err, store.ErrDuplicate) {
+		return err
+	}
+
+	return nil
 }

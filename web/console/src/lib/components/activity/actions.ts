@@ -574,6 +574,12 @@ const actions: Record<string, Action> = {
 		category: 'access',
 		icon: 'ri-shield-keyhole-line'
 	},
+	'sso_connection.domain_checked': {
+		label: 'SSO domain checked',
+		verb: 'checked the DNS proof of a domain for SSO connection',
+		category: 'access',
+		icon: 'ri-shield-check-line'
+	},
 	'sso_connection.deleted': {
 		label: 'SSO connection removed',
 		verb: 'removed SSO connection',

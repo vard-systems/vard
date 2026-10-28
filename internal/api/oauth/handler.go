@@ -247,9 +247,17 @@ func (h *Handler) ssoFinished(c *gin.Context, result *oidc.SocialResult, err err
 		return
 	}
 
+	c.Header("Cache-Control", "no-store")
+
+	// The first link to an account with a second factor waits for it.
+	if result.SignIn.SecondFactorHandle != "" {
+		session.SetSecondFactor(c, result.SignIn.SecondFactorHandle, time.Now().Add(model.PendingSignInLifetime), h.secure)
+		c.Redirect(http.StatusFound, h.provider.SecondFactorLanding(result))
+		return
+	}
+
 	session.SetUser(c, result.SignIn.Token, result.SignIn.Session.Record.ExpiresAt, result.SignIn.Remember, h.secure)
 
-	c.Header("Cache-Control", "no-store")
 	c.Redirect(http.StatusFound, h.provider.SocialLanding(c.Request.Context(), result))
 }
 

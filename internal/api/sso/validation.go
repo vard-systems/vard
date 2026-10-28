@@ -135,8 +135,16 @@ func settle(connection *model.SSOConnection) error {
 		}
 	}
 
-	if connection.Matching == "" {
+	// Linking takes accounts over, so only a connection that names the
+	// domains it answers for does it, and without a word that is the only
+	// one that links.
+	switch {
+	case connection.Matching == "" && len(connection.Domains) == 0:
+		connection.Matching = model.SSOMatchDeny
+	case connection.Matching == "":
 		connection.Matching = model.SSOMatchLink
+	case connection.Matching == model.SSOMatchLink && len(connection.Domains) == 0:
+		return linkNeedsDomains.Fault(nil)
 	}
 	if connection.Domains == nil {
 		connection.Domains = model.StringList{}

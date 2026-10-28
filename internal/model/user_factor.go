@@ -90,6 +90,15 @@ type PendingSignIn struct {
 	// answer; "" when the user has none.
 	Passkey string `gorm:"type:text;not null;default:''"`
 
+	// LinkConnectionID, LinkSubject and LinkEmail are a single sign-on
+	// identity to link to the account once its second factor is answered:
+	// the first link of a provider to an existing account is not made on the
+	// provider's word alone. LinkConnectionID is nil for any other sign-in.
+	LinkConnectionID *uuid.UUID     `gorm:"type:uuid"`
+	LinkConnection   *SSOConnection `gorm:"constraint:OnDelete:CASCADE"`
+	LinkSubject      string         `gorm:"size:512;not null;default:''"`
+	LinkEmail        string         `gorm:"size:255;not null;default:''"`
+
 	ExpiresAt time.Time `gorm:"not null;index"`
 	UsedAt    *time.Time
 }

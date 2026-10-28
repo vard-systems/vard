@@ -43,15 +43,20 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		name    string
 		columns []column
 		index   string
+		table   string
 	}{
+		{name: "SSO domain proofs", table: "sso_domain_verifications", columns: []column{
+			{"pending_sign_ins", "link_connection_id"}, {"pending_sign_ins", "link_subject"}, {"pending_sign_ins", "link_email"},
+		}},
+		{name: "setup tokens", table: "setup_tokens"},
 		{name: "sealed successor index", index: "idx_refresh_tokens_sealed"},
-		{"mutual TLS", []column{
+		{name: "mutual TLS", columns: []column{
 			{"applications", "tls_subject_kind"}, {"applications", "tls_subject"},
 			{"applications", "tls_certificates"}, {"applications", "certificate_bound_tokens"},
 			{"refresh_tokens", "certificate_thumbprint"},
-		}, ""},
-		{"development redirects", []column{{"applications", "allow_development_redirects"}}, ""},
-		{"refresh successor", []column{{"refresh_tokens", "successor_id"}, {"refresh_tokens", "successor_sealed"}}, ""},
+		}},
+		{name: "development redirects", columns: []column{{"applications", "allow_development_redirects"}}},
+		{name: "refresh successor", columns: []column{{"refresh_tokens", "successor_id"}, {"refresh_tokens", "successor_sealed"}}},
 	}
 
 	// A fresh database has the index from the models, as the migration makes
@@ -76,6 +81,20 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		if step.index != "" && db.Migrator().HasIndex("refresh_tokens", step.index) {
 			t.Errorf("after down %s, %s is still there", step.name, step.index)
 		}
+		if step.table != "" && db.Migrator().HasTable(step.table) {
+			t.Errorf("after down %s, %s is still there", step.name, step.table)
+		}
+	}
+
+	// A connection made before domains were proved keeps linking at the
+	// domains it listed: they are carried over as held.
+	before := &model.SSOConnection{
+		Slug: "acme", Name: "Acme", Protocol: model.SSOProtocolOIDC, Issuer: "https://idp.acme.test",
+		ClientID: "client", Domains: model.StringList{"acme.test", "acme.example"}, Matching: model.SSOMatchLink,
+		ShowOnLogin: true, Scopes: model.StringList{}, RoleMappings: model.SSORoleMappings{},
+	}
+	if err := db.Create(before).Error; err != nil {
+		t.Fatalf("a connection from before: %v", err)
 	}
 
 	if err := database.Migrate(db, cfg, log); err != nil {
@@ -90,6 +109,18 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		if step.index != "" && !db.Migrator().HasIndex("refresh_tokens", step.index) {
 			t.Errorf("after up, %s is missing", step.index)
 		}
+		if step.table != "" && !db.Migrator().HasTable(step.table) {
+			t.Errorf("after up, %s is missing", step.table)
+		}
+	}
+
+	var held int64
+	if err := db.Raw(`SELECT count(*) FROM sso_domain_verifications
+		WHERE method = 'existing' AND verified_at IS NOT NULL AND domain IN ('acme.test', 'acme.example')`).Scan(&held).Error; err != nil {
+		t.Fatal(err)
+	}
+	if held != 2 {
+		t.Errorf("%d of the existing connection's 2 domains were carried over as held", held)
 	}
 
 	upgraded, err := store.New(db).Application(ctx, app.ID)

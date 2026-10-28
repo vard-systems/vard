@@ -23,6 +23,8 @@
 		"translation_too_long": "The text of {key} must be at most {max} characters.",
 		"sso_connection_not_found": "There is no such connection.",
 		"sso_unreachable": "A connection without domains has to show its button on the sign-in page, and cannot be required: no address leads to it.",
+		"sso_link_needs_domains": "Only a connection with domains can link to existing accounts: list the domains it answers for, or set it to refuse addresses that already have an account.",
+		"sso_domain_not_listed": "This connection does not list that domain.",
 		"sso_slug_taken": "Another connection already uses the identifier {slug}.",
 		"sso_domain_taken": "{domain} already belongs to another connection.",
 		"sso_domain_invalid": "{domain} is not a domain.",

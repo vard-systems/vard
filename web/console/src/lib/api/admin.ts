@@ -62,6 +62,7 @@ import type {
 	SSOConnectionInput,
 	SSOTestInput,
 	SSOTestResult,
+	SSODomainProof,
 	Role,
 	RoleInput,
 	RoleMapping,
@@ -331,7 +332,15 @@ export const ssoApi = {
 	test: (input: SSOTestInput) => api.post<SSOTestResult>('/admin/sso-connections/test', input),
 
 	refreshMetadata: (id: string) =>
-		api.post<{ connection: SSOConnection }>(`/admin/sso-connections/${id}/refresh-metadata`)
+		api.post<{ connection: SSOConnection }>(`/admin/sso-connections/${id}/refresh-metadata`),
+
+	domains: (id: string, fetcher?: Fetch) =>
+		api.get<{ domains: SSODomainProof[] }>(`/admin/sso-connections/${id}/domains`, fetcher),
+
+	checkDomain: (id: string, domain: string) =>
+		api.post<{ domain: SSODomainProof }>(
+			`/admin/sso-connections/${id}/domains/${encodeURIComponent(domain)}/check`
+		)
 };
 
 export const rolesApi = {

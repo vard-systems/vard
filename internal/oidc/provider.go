@@ -68,6 +68,9 @@ type Service struct {
 	backchannel *backchannelLogout
 	webauthn    *webauthn.WebAuthn
 
+	// lookupTXT reads a domain's TXT records, for proving SSO domains.
+	lookupTXT func(ctx context.Context, name string) ([]string, error)
+
 	now func() time.Time
 }
 
@@ -103,8 +106,9 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 			client:   newBackchannelClient(onLoopback(cfg.Issuer)),
 			stopping: make(chan struct{}),
 		},
-		webauthn: passkeys,
-		now:      time.Now,
+		webauthn:  passkeys,
+		lookupTXT: lookupTXT,
+		now:       time.Now,
 	}
 
 	// Every path that ends sessions goes through the store; it finds the

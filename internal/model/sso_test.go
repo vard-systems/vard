@@ -42,8 +42,18 @@ func TestSSOConnectionValidate(t *testing.T) {
 		{
 			// With no domains it vouches for anybody, and only its button
 			// leads to it.
-			name:   "no domain, with a button",
-			change: func(c *SSOConnection) { c.Domains = nil; c.ShowOnLogin = true },
+			name: "no domain, with a button, refusing known addresses",
+			change: func(c *SSOConnection) {
+				c.Domains = nil
+				c.ShowOnLogin = true
+				c.Matching = SSOMatchDeny
+			},
+		},
+		{
+			// It would take over any account at a domain nobody else holds.
+			name:    "no domain, linking to existing accounts",
+			change:  func(c *SSOConnection) { c.Domains = nil; c.ShowOnLogin = true; c.Matching = SSOMatchLink },
+			wantErr: true,
 		},
 		{
 			name:    "no domain and no button, so nothing leads to it",

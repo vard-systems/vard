@@ -104,7 +104,8 @@ export class SSOForm {
 			domains: this.domains,
 			enforce_domains: this.enforced,
 			show_on_login: this.showOnLogin,
-			matching: this.matching,
+			// Without domains a connection never links to existing accounts.
+			matching: this.domains.length === 0 ? 'deny' : this.matching,
 			create_users: this.createUsers,
 			sync_profile: this.syncProfile,
 			email_attribute: this.emailAttribute.trim(),
