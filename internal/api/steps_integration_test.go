@@ -15,6 +15,16 @@ func (f *oauthFixture) withSteps(steps ...string) {
 	}, nil)
 }
 
+// allowUnverifiedAddresses lets the default flow sign in an address nobody
+// has proved, as an installation from before that was the default keeps
+// doing until an administrator turns it on.
+func allowUnverifiedAddresses(t *testing.T, super *client) {
+	t.Helper()
+	super.must(http.StatusOK, http.MethodPatch, "/login-flows/"+defaultFlow(t, super), map[string]any{
+		"require_verified_email": false,
+	}, nil)
+}
+
 // page asserts the browser was sent to a sign-in page of the id app and
 // returns the request it names.
 func page(t *testing.T, at *url.URL, path string) string {
@@ -190,6 +200,7 @@ func TestLiveAgreementsThenConsent(t *testing.T) {
 // so a new account is not asked twice.
 func TestLiveRegistrationAcceptsTheAgreements(t *testing.T) {
 	f := newOAuthFixture(t)
+	allowUnverifiedAddresses(t, f.super)
 	f.withSteps("identifier", "password", "terms")
 	f.super.must(http.StatusOK, http.MethodPatch, "/organization", map[string]any{"terms_url": "https://example.com/terms"}, nil)
 	f.super.must(http.StatusOK, http.MethodPatch, "/applications/"+f.appID, map[string]any{

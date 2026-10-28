@@ -137,12 +137,32 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - A client certificate is believed only as the TLS proxy passed it on, from
   the mutual TLS host of its own (`VARD_MTLS_URL`); a token bound to one is
   taken only over a connection with it.
+- An address is proved before an account is used: new login flows require a
+  verified address, social sign-in makes no account for an address the
+  provider has not verified, and the first proof of an address (a reset or
+  verification link) ends everything the account held before it — linked
+  identities, second factors, recovery codes, consents, sessions and refresh
+  tokens — so whoever registered somebody else's address first keeps nothing.
 - **Consent is a login-flow step.** Without it, every application registered
   in the panel is trusted to sign users in, which is right for an
   organisation's own apps; a flow with the Consent step asks each user once
   for what an application wants. Registering an application — in the panel or
   through `/oauth2/register` with an initial access token — is an admin
   permission either way.
+
+## Upgrading
+
+### To the release with setup tokens, address proofs and SSO domain proofs
+
+Migrations run on start. What changes for an installation
+that already exists:
+
+- **Verified addresses**: new login flows require one. Existing flows keep
+  their setting; turn it on under Login flows → *Require a verified email*.
+  Until it is on, an unverified account can still sign in, but the first
+  proof of its address clears what it held before.
+- **Social sign-up** for an address the provider has not verified is refused
+  (`social_email_unverified`); linking such an address was already refused.
 
 ## Development
 

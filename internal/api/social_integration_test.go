@@ -241,6 +241,7 @@ func TestLiveSocialSignInLinksAVerifiedAddress(t *testing.T) {
 // else's address could take over their account here.
 func TestLiveSocialSignInRefusesAnUnverifiedAddress(t *testing.T) {
 	f := newSocialFixture(t, nil)
+	allowUnverifiedAddresses(t, f.super)
 	f.user(t, false)
 
 	b := f.s.browser()

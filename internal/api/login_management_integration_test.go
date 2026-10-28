@@ -11,6 +11,7 @@ import (
 func TestLiveLoginSwitchesDecideWhatIsAllowed(t *testing.T) {
 	s := newLiveServer(t)
 	super := s.superAdmin()
+	allowUnverifiedAddresses(t, super)
 
 	flow := defaultFlow(t, super)
 	change := func(body map[string]any) {

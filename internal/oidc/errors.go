@@ -93,6 +93,7 @@ var (
 	ErrSocialUpstream           = problem("social_upstream")
 	ErrSocialNoEmail            = problem("social_no_email")
 	ErrSocialLinkRefused        = problem("social_link_refused")
+	ErrSocialEmailUnverified    = problem("social_email_unverified")
 	ErrSocialRegistrationClosed = problem("social_registration_closed")
 	ErrSocialSSORequired        = problem("social_sso_required")
 	ErrSocialBlocked            = problem("social_blocked")

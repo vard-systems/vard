@@ -102,7 +102,12 @@ func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) 
 		}
 	}
 
-	err = s.store.VerifyEmail(ctx, verification, s.now())
+	owner, err := s.store.User(ctx, verification.UserID)
+	if err != nil {
+		return err
+	}
+
+	err = s.store.VerifyEmail(ctx, verification, s.now(), proof(owner.Email, client))
 	switch {
 	case errors.Is(err, store.ErrAlreadyUsed):
 		return ErrVerificationInvalid
@@ -124,4 +129,10 @@ func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) 
 	s.record(ctx, user, user.Email, action, client, nil)
 
 	return nil
+}
+
+// proof is the activity log entry for the first proof of an address, which
+// the store writes in the transaction that clears what came before it.
+func proof(email string, client Client) model.AuditLog {
+	return model.AuditLog{ActorEmail: email, IP: client.IP, UserAgent: client.UserAgent}
 }

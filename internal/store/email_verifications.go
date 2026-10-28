@@ -29,8 +29,14 @@ func (s *Store) EmailVerificationByHash(ctx context.Context, hash string) (*mode
 	return &verification, nil
 }
 
-func (s *Store) VerifyEmail(ctx context.Context, verification *model.EmailVerification, at time.Time) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+// VerifyEmail marks the address proved, or moves the account to the new one.
+// The first proof of an account's own address clears what it held before, as
+// ResetPassword does, recorded as `proved`; a change of address is asked for
+// from a session and proves nothing about who made the account.
+func (s *Store) VerifyEmail(ctx context.Context, verification *model.EmailVerification, at time.Time, proved model.AuditLog) error {
+	var ended endedSessions
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&model.EmailVerification{}).
 			Where("id = ? AND used_at IS NULL", verification.ID).
 			Update("used_at", at)
@@ -51,10 +57,27 @@ func (s *Store) VerifyEmail(ctx context.Context, verification *model.EmailVerifi
 		changes := map[string]any{"is_email_verified": true}
 		if verification.IsChange() {
 			changes["email"] = model.NormalizeEmail(verification.NewEmail)
+		} else {
+			first, err := firstProofIn(tx, verification.UserID)
+			if err != nil {
+				return err
+			}
+			if first {
+				if ended, err = clearBeforeProofIn(tx, verification.UserID, at, proved); err != nil {
+					return err
+				}
+			}
 		}
 
 		err = tx.Model(&model.User{}).Where("id = ?", verification.UserID).Updates(changes).Error
 
 		return translate(err)
 	})
+	if err != nil {
+		return err
+	}
+
+	s.sessionsEnded(ctx, ended)
+
+	return nil
 }

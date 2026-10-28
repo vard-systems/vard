@@ -203,6 +203,13 @@ code near it, and add a test when adding a case.
   (`saml_assertions`).
 - **An SSO connection signs in only addresses it may**: its own domains, or —
   without domains — any address at a domain no other connection holds.
+- **The first proof of an address ends what came before it.** A reset or
+  verification link that first marks an account verified also deletes, in
+  the same transaction (`clearBeforeProofIn`), its social and SSO
+  identities, factors, recovery codes, consents and waiting sign-ins, and
+  ends its sessions, refresh tokens, login codes and devices — whoever
+  registered the address first may not have been its owner. Social sign-in
+  never makes an account for an address the provider has not verified.
 - **Nothing internal reaches a browser.** Every answer is a defined problem;
   anything else goes through `respond.Failure`, which logs it and answers 500.
   The request log records the path, never the query string.

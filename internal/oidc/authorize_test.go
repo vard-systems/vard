@@ -28,8 +28,14 @@ func TestSessionSatisfiesTheApplicationsFlow(t *testing.T) {
 		{
 			name:    "a fresh session on the default flow",
 			change:  func(*model.LoginFlow) {},
-			session: session(false, time.Hour),
+			session: session(true, time.Hour),
 			want:    true,
+		},
+		{
+			name:    "the default flow takes no unverified address",
+			change:  func(*model.LoginFlow) {},
+			session: session(false, time.Hour),
+			want:    false,
 		},
 		{
 			name:    "a flow with sign-ins closed takes no session",

@@ -760,6 +760,7 @@ func TestLiveOAuthLogoutWithoutAHintAsksFirst(t *testing.T) {
 
 func TestLiveOAuthRefusesUntrustedRequests(t *testing.T) {
 	f := newOAuthFixture(t)
+	allowUnverifiedAddresses(t, f.super)
 	b := f.s.browser()
 	_, challenge := pkce(t)
 
@@ -972,6 +973,7 @@ func TestLiveAccountSignsInWithAnAwkwardUserAgent(t *testing.T) {
 
 func TestLiveAccountRegisterAndResetPassword(t *testing.T) {
 	f := newOAuthFixture(t)
+	allowUnverifiedAddresses(t, f.super)
 	b := f.s.browser()
 	verifier, challenge := pkce(t)
 
@@ -1089,6 +1091,7 @@ func TestLiveAccountRegisterAndResetPassword(t *testing.T) {
 
 func TestLiveAccountManagement(t *testing.T) {
 	f := newOAuthFixture(t)
+	allowUnverifiedAddresses(t, f.super)
 
 	// Nothing without a session.
 	stranger := f.s.browser()

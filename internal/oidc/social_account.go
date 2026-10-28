@@ -99,13 +99,18 @@ func (s *Service) signInWithIdentity(
 	if !provider.AllowRegistration || !flow.AllowRegistration {
 		return nil, ErrSocialRegistrationClosed
 	}
+	// An account made for an address nobody proved would be held by whoever
+	// controls the provider's account, before the address's owner arrives.
+	if !who.EmailVerified {
+		return nil, ErrSocialEmailUnverified
+	}
 	if err := s.socialRegistrationAllowed(ctx, request); err != nil {
 		return nil, err
 	}
 
 	user = &model.User{
 		Email:           email,
-		IsEmailVerified: who.EmailVerified,
+		IsEmailVerified: true,
 		FirstName:       model.Truncate(who.FirstName, 100),
 		LastName:        model.Truncate(who.LastName, 100),
 		IsActive:        true,

@@ -14,6 +14,7 @@ import (
 func TestLiveEmailedCodeFinishesASignIn(t *testing.T) {
 	s := newLiveServer(t)
 	super := s.superAdmin()
+	allowUnverifiedAddresses(t, super)
 
 	// Six digits is the default; four makes the codes in this test shorter to
 	// read, and proves the setting is the one the server actually uses.
@@ -109,6 +110,7 @@ func TestLiveEmailedCodeFinishesASignIn(t *testing.T) {
 func TestLiveEmailedCodeRunsOutOfGuesses(t *testing.T) {
 	s := newLiveServer(t)
 	super := s.superAdmin()
+	allowUnverifiedAddresses(t, super)
 
 	super.must(http.StatusOK, http.MethodPatch, "/otp", map[string]any{
 		"code_length": 4, "max_attempts": 1,

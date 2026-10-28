@@ -159,7 +159,7 @@ func (s *Service) ResetPassword(ctx context.Context, token, password string, cli
 		return err
 	}
 
-	if err := s.store.ResetPassword(ctx, reset, user, s.now()); errors.Is(err, store.ErrAlreadyUsed) {
+	if err := s.store.ResetPassword(ctx, reset, user, s.now(), proof(user.Email, client)); errors.Is(err, store.ErrAlreadyUsed) {
 		return ErrResetInvalid
 	} else if err != nil {
 		return err

@@ -267,6 +267,7 @@ func IsSocialFailure(err error) bool {
 		ErrSocialUpstream,
 		ErrSocialNoEmail,
 		ErrSocialLinkRefused,
+		ErrSocialEmailUnverified,
 		ErrSocialRegistrationClosed,
 		ErrSocialSSORequired,
 		ErrInvalidCredentials,

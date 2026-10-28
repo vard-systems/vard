@@ -183,6 +183,13 @@ const actions: Record<string, Action> = {
 		tone: 'success',
 		icon: 'ri-mail-line'
 	},
+	'user.address_proved': {
+		label: 'Address proved',
+		verb: 'proved their email address for the first time, ending what the account held before',
+		category: 'access',
+		tone: 'warning',
+		icon: 'ri-shield-check-line'
+	},
 	'user.profile_updated': {
 		label: 'Profile updated',
 		verb: 'updated their profile',
@@ -754,6 +761,7 @@ const selfTargeted = new Set([
 	'user.email_changed',
 	'user.email_verification_sent',
 	'user.email_verified',
+	'user.address_proved',
 	'user.identity_connected',
 	'user.session_revoked',
 	'user.application_disconnected',

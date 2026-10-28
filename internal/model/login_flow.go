@@ -140,17 +140,20 @@ const maxSessionLifetimeHours = 24 * 90
 
 func DefaultLoginFlow() LoginFlow {
 	return LoginFlow{
-		Name:                 "Default sign-in",
-		Slug:                 "default",
-		Description:          "An email address and a password, with the registered providers beside them.",
-		IsDefault:            true,
-		IsEnabled:            true,
-		Steps:                StepList{StepIdentifier, StepPassword, StepSocial},
-		AllowSignIn:          true,
-		AllowRegistration:    true,
-		AllowPasswordReset:   true,
-		AllowRememberMe:      true,
-		RequireVerifiedEmail: false,
+		Name:               "Default sign-in",
+		Slug:               "default",
+		Description:        "An email address and a password, with the registered providers beside them.",
+		IsDefault:          true,
+		IsEnabled:          true,
+		Steps:              StepList{StepIdentifier, StepPassword, StepSocial},
+		AllowSignIn:        true,
+		AllowRegistration:  true,
+		AllowPasswordReset: true,
+		AllowRememberMe:    true,
+		// An unproved address may be somebody else's: it is proved before the
+		// account is used. Only seeds a fresh installation's flow and new
+		// ones; a stored flow keeps its own setting.
+		RequireVerifiedEmail: true,
 		SessionLifetimeHours: 24 * 14,
 	}
 }

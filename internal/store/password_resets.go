@@ -59,7 +59,11 @@ func (s *Store) PasswordResetByHash(ctx context.Context, hash string) (*model.Pa
 	return &reset, nil
 }
 
-func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, user *model.User, at time.Time) error {
+// ResetPassword sets the new password and ends every session and refresh
+// token. A reset is the first proof of an unverified address, unless it is a
+// temporary password's, and then what came before that proof goes as well,
+// recorded as `proved`.
+func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, user *model.User, at time.Time, proved model.AuditLog) error {
 	var ended endedSessions
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -82,6 +86,15 @@ func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, u
 		// An emailed link proves the address; the link a temporary password
 		// hands out does not.
 		if !user.IsPasswordTemporary {
+			first, err := firstProofIn(tx, user.ID)
+			if err != nil {
+				return err
+			}
+			if first {
+				if ended, err = clearBeforeProofIn(tx, user.ID, at, proved); err != nil {
+					return err
+				}
+			}
 			changes["is_email_verified"] = true
 		}
 		err := tx.Model(user).Updates(changes).Error
@@ -89,9 +102,12 @@ func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, u
 			return err
 		}
 
-		if ended, err = revokeUserSessionsIn(tx, at, "user_id = ?", user.ID); err != nil {
+		more, err := revokeUserSessionsIn(tx, at, "user_id = ?", user.ID)
+		if err != nil {
 			return err
 		}
+		ended.sessions = append(ended.sessions, more.sessions...)
+		ended.notices = append(ended.notices, more.notices...)
 
 		statements := []string{
 			"UPDATE refresh_tokens SET revoked_at = @at WHERE user_id = @user AND revoked_at IS NULL",

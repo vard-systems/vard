@@ -346,6 +346,7 @@ func TestLiveOverview(t *testing.T) {
 	s.client().login(superEmail, "wrong-password")
 	super.must(http.StatusCreated, http.MethodPost, "/users", map[string]any{
 		"email": "user@example.com", "password": "user-password-1", "confirm_password": "user-password-1",
+		"is_email_verified": true,
 	}, nil)
 	user := s.browser()
 	if status := user.account(http.MethodPost, "/login", map[string]string{

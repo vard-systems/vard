@@ -45,6 +45,7 @@
 		"social_upstream": "The provider could not complete this sign-in. Try again.",
 		"social_no_email": "The provider did not share an email address, so there is no account to sign in to.",
 		"social_link_refused": "An account with this email already exists. Sign in with your password, then connect this provider from your account.",
+		"social_email_unverified": "The provider has not confirmed this email address is yours, so no account was made with it. Confirm the address with the provider, or register with a password.",
 		"social_registration_closed": "This provider cannot create new accounts here.",
 		"social_blocked": "This account cannot sign in.",
 		"social_sso_required": "Your organisation signs you in through single sign-on. Go back to the sign-in page and use it.",
