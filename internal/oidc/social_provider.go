@@ -100,7 +100,7 @@ func (s *Service) exchangeSocialCode(ctx context.Context, provider *model.Social
 
 func (s *Service) socialClientSecret(provider *model.SocialProvider) (string, error) {
 	if !provider.Spec().SignedSecret {
-		secret, err := s.sealer.OpenBytes(provider.ClientSecret)
+		secret, _, err := s.sealer.OpenFor(provider.ClientSecretWhere(), provider.ClientSecret)
 		if err != nil {
 			return "", fmt.Errorf("unseal the client secret of %s: %w", provider.Slug, err)
 		}
@@ -112,7 +112,7 @@ func (s *Service) socialClientSecret(provider *model.SocialProvider) (string, er
 }
 
 func (s *Service) appleClientSecret(provider *model.SocialProvider) (string, error) {
-	pemBytes, err := s.sealer.OpenBytes(provider.PrivateKey)
+	pemBytes, _, err := s.sealer.OpenFor(provider.PrivateKeyWhere(), provider.PrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("unseal the signing key of %s: %w", provider.Slug, err)
 	}

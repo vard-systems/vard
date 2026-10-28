@@ -272,7 +272,7 @@ func (s *Service) checkSecondFactor(ctx context.Context, user *model.User, pendi
 	}
 
 	if recovery.Is(answer.Code) {
-		ok, err := s.store.ConsumeUserRecoveryCode(ctx, user.ID, recovery.Hash(s.sealer, userRecoveryPurpose, answer.Code), now)
+		ok, err := s.store.ConsumeUserRecoveryCode(ctx, user.ID, recovery.Hashes(s.sealer, userRecoveryPurpose, answer.Code), now)
 		if err != nil || !ok {
 			return "", err
 		}
@@ -289,7 +289,7 @@ func (s *Service) checkSecondFactor(ctx context.Context, user *model.User, pendi
 			continue
 		}
 
-		seed, err := s.unseal(factor.Secret)
+		seed, err := s.unseal(factor.ID, factor.Secret)
 		if err != nil {
 			return "", err
 		}

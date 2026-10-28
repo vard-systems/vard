@@ -72,6 +72,9 @@ type Config struct {
 	// SecretKey seals stored private keys and secrets. Losing it signs everyone
 	// out; leaking it with the database lets anyone sign tokens.
 	SecretKey string
+	// SecretKeyPrevious is the key SecretKey replaced: it opens what it
+	// sealed, and seals nothing. Empty once `secrets reseal` has run.
+	SecretKeyPrevious string
 
 	Mail Mail
 
@@ -213,6 +216,7 @@ func Load() (Config, error) {
 		TrustedProxies:     splitList(v.GetString(env("TRUSTED_PROXIES"))),
 		AdminNetworks:      splitList(v.GetString(env("ADMIN_NETWORKS"))),
 		SecretKey:          v.GetString(env("SECRET_KEY")),
+		SecretKeyPrevious:  v.GetString(env("SECRET_KEY_PREVIOUS")),
 		Mail: Mail{
 			Host:     v.GetString(env("SMTP_HOST")),
 			Port:     v.GetInt(env("SMTP_PORT")),

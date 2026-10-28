@@ -79,12 +79,17 @@ func (s *Service) BeginPasskey(ctx context.Context, admin *model.Admin, code str
 		return nil, err
 	}
 
-	sealed, err := s.sealJSON(ceremony)
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+	sealed, err := s.sealJSON(id, ceremony)
 	if err != nil {
 		return nil, err
 	}
 
 	factor := model.MFA{AdminID: admin.ID, Method: model.MFAMethodWebAuthn, Label: "Passkey", Secret: sealed}
+	factor.ID = id
 	if err := s.store.StartAdminPasskey(ctx, &factor); err != nil {
 		return nil, err
 	}
@@ -105,7 +110,7 @@ func (s *Service) FinishPasskey(ctx context.Context, admin *model.Admin, label s
 	factor := pending[index]
 
 	var ceremony webauthn.SessionData
-	if err := s.openJSON(factor.Secret, &ceremony); err != nil {
+	if err := s.openJSON(factor.ID, factor.Secret, &ceremony); err != nil {
 		return err
 	}
 
@@ -118,7 +123,7 @@ func (s *Service) FinishPasskey(ctx context.Context, admin *model.Admin, label s
 		return ErrPasskeyRefused
 	}
 
-	if factor.Secret, err = s.sealJSON(credential); err != nil {
+	if factor.Secret, err = s.sealJSON(factor.ID, credential); err != nil {
 		return err
 	}
 	now := s.now()
@@ -287,7 +292,7 @@ func (s *Service) passkeyAnswer(ctx context.Context, admin *model.Admin, ceremon
 		return nil, nil
 	}
 
-	sealed, err := s.sealJSON(credential)
+	sealed, err := s.sealJSON(factors[index].ID, credential)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +314,7 @@ func (s *Service) passkeys(ctx context.Context, admin *model.Admin) ([]model.MFA
 	credentials := make([]webauthn.Credential, 0, len(factors))
 	for _, factor := range factors {
 		var credential webauthn.Credential
-		if err := s.openJSON(factor.Secret, &credential); err != nil {
+		if err := s.openJSON(factor.ID, factor.Secret, &credential); err != nil {
 			return nil, nil, err
 		}
 		credentials = append(credentials, credential)
@@ -318,13 +323,13 @@ func (s *Service) passkeys(ctx context.Context, admin *model.Admin) ([]model.MFA
 	return factors, credentials, nil
 }
 
-func (s *Service) sealJSON(value any) (string, error) {
+func (s *Service) sealJSON(factor uuid.UUID, value any) (string, error) {
 	encoded, err := json.Marshal(value)
 	if err != nil {
 		return "", err
 	}
 
-	sealed, err := s.sealer.SealBytes(encoded)
+	sealed, err := s.sealer.SealFor(factorSecret(factor), encoded)
 	if err != nil {
 		return "", err
 	}
@@ -332,13 +337,13 @@ func (s *Service) sealJSON(value any) (string, error) {
 	return base64.StdEncoding.EncodeToString(sealed), nil
 }
 
-func (s *Service) openJSON(stored string, into any) error {
+func (s *Service) openJSON(factor uuid.UUID, stored string, into any) error {
 	sealed, err := base64.StdEncoding.DecodeString(stored)
 	if err != nil {
 		return err
 	}
 
-	plain, err := s.sealer.OpenBytes(sealed)
+	plain, _, err := s.sealer.OpenFor(factorSecret(factor), sealed)
 	if err != nil {
 		return err
 	}

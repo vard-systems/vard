@@ -12,6 +12,7 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
+	"vard/internal/jose"
 	"vard/internal/model"
 )
 
@@ -46,7 +47,7 @@ func (s *Service) passkeyCredentials(factors []model.UserFactor) ([]webauthn.Cre
 		}
 
 		var credential webauthn.Credential
-		if err := s.unsealJSON(factor.Secret, &credential); err != nil {
+		if err := s.unsealJSON(factor.ID, factor.Secret, &credential); err != nil {
 			return nil, err
 		}
 		credentials = append(credentials, credential)
@@ -97,7 +98,7 @@ func (s *Service) checkPasskey(ctx context.Context, user *model.User, pending *m
 		return false, nil
 	}
 
-	sealed, err := s.sealJSON(credential)
+	sealed, err := s.sealJSON(factors[index].ID, credential)
 	if err != nil {
 		return false, err
 	}
@@ -118,8 +119,13 @@ func isAuthenticator(factor model.UserFactor) bool {
 	return factor.Method == model.MFAMethodTOTP
 }
 
-func (s *Service) seal(plain []byte) (string, error) {
-	sealed, err := s.sealer.SealBytes(plain)
+// factorSecret is where a user's factor keeps its sealed secret.
+func factorSecret(factor uuid.UUID) jose.Context {
+	return model.UserFactor{Base: model.Base{ID: factor}}.SecretWhere()
+}
+
+func (s *Service) seal(factor uuid.UUID, plain []byte) (string, error) {
+	sealed, err := s.sealer.SealFor(factorSecret(factor), plain)
 	if err != nil {
 		return "", err
 	}
@@ -127,26 +133,27 @@ func (s *Service) seal(plain []byte) (string, error) {
 	return base64.StdEncoding.EncodeToString(sealed), nil
 }
 
-func (s *Service) unseal(stored string) ([]byte, error) {
+func (s *Service) unseal(factor uuid.UUID, stored string) ([]byte, error) {
 	sealed, err := base64.StdEncoding.DecodeString(stored)
 	if err != nil {
 		return nil, fmt.Errorf("oidc: a stored factor is not base64: %w", err)
 	}
 
-	return s.sealer.OpenBytes(sealed)
+	plain, _, err := s.sealer.OpenFor(factorSecret(factor), sealed)
+	return plain, err
 }
 
-func (s *Service) sealJSON(value any) (string, error) {
+func (s *Service) sealJSON(factor uuid.UUID, value any) (string, error) {
 	encoded, err := json.Marshal(value)
 	if err != nil {
 		return "", err
 	}
 
-	return s.seal(encoded)
+	return s.seal(factor, encoded)
 }
 
-func (s *Service) unsealJSON(stored string, into any) error {
-	plain, err := s.unseal(stored)
+func (s *Service) unsealJSON(factor uuid.UUID, stored string, into any) error {
+	plain, err := s.unseal(factor, stored)
 	if err != nil {
 		return err
 	}

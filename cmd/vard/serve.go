@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"vard/internal/api"
 	"vard/internal/auth"
@@ -95,7 +96,7 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 
 	st := store.New(db).WithCache(shared)
 
-	sealer, err := jose.NewSealer(cfg.SecretKey)
+	sealer, err := jose.NewSealer(cfg.SecretKey, cfg.SecretKeyPrevious)
 	if err != nil {
 		return err
 	}
@@ -167,8 +168,15 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 func ensureMailSettings(ctx context.Context, st *store.Store, sealer *jose.Sealer, cfg config.Mail) error {
 	settings, password := mail.Seed(cfg)
 
+	// Its id before it is stored, so the password is sealed to it.
+	id, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	settings.ID = id
+
 	if password != "" {
-		sealed, err := sealer.SealBytes([]byte(password))
+		sealed, err := sealer.SealFor(settings.PasswordWhere(), []byte(password))
 		if err != nil {
 			return err
 		}

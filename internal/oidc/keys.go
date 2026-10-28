@@ -97,18 +97,19 @@ func (ks *keySet) add(ctx context.Context, alg string, now time.Time) error {
 		return err
 	}
 
-	sealed, err := ks.sealer.Seal(private)
-	if err != nil {
-		return err
-	}
-
 	var suffix [6]byte
 	if _, err := rand.Read(suffix[:]); err != nil {
 		return err
 	}
+	kid := strings.ToLower(alg) + "-" + hex.EncodeToString(suffix[:])
+
+	sealed, err := ks.sealer.Seal(signingKeySecret(kid), private)
+	if err != nil {
+		return err
+	}
 
 	key := &model.SigningKey{
-		KID:        strings.ToLower(alg) + "-" + hex.EncodeToString(suffix[:]),
+		KID:        kid,
 		Algorithm:  alg,
 		PrivateKey: sealed,
 		CreatedAt:  now,
@@ -139,13 +140,14 @@ func (ks *keySet) Rotate(ctx context.Context, immediate, revoke bool) error {
 			return err
 		}
 
-		sealed, err := ks.sealer.Seal(private)
-		if err != nil {
-			return err
-		}
-
 		var suffix [6]byte
 		if _, err := rand.Read(suffix[:]); err != nil {
+			return err
+		}
+		kid := strings.ToLower(alg) + "-" + hex.EncodeToString(suffix[:])
+
+		sealed, err := ks.sealer.Seal(signingKeySecret(kid), private)
+		if err != nil {
 			return err
 		}
 
@@ -155,7 +157,7 @@ func (ks *keySet) Rotate(ctx context.Context, immediate, revoke bool) error {
 		}
 
 		key := &model.SigningKey{
-			KID:        strings.ToLower(alg) + "-" + hex.EncodeToString(suffix[:]),
+			KID:        kid,
 			Algorithm:  alg,
 			PrivateKey: sealed,
 			CreatedAt:  created,
@@ -191,7 +193,7 @@ func (ks *keySet) reload(ctx context.Context) error {
 	byID := make(map[string]jose.Key, len(stored))
 
 	for _, row := range stored {
-		private, err := ks.sealer.Open(row.PrivateKey)
+		private, _, err := ks.sealer.Open(signingKeySecret(row.KID), row.PrivateKey)
 		if err != nil {
 			return err
 		}
@@ -346,4 +348,9 @@ func (ks *keySet) describe() []KeyInfo {
 	}
 
 	return out
+}
+
+// signingKeySecret is where a signing key's sealed private half is kept.
+func signingKeySecret(kid string) jose.Context {
+	return model.SigningKey{KID: kid}.PrivateKeyWhere()
 }

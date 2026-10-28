@@ -77,12 +77,18 @@ func (s *Service) BeginAuthenticator(ctx context.Context, session *Session, pass
 	if err != nil {
 		return nil, err
 	}
-	sealed, err := s.seal([]byte(seed))
+	// The id is the factor's before it is stored, so the seed is sealed to it.
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+	sealed, err := s.seal(id, []byte(seed))
 	if err != nil {
 		return nil, err
 	}
 
 	factor := model.UserFactor{UserID: session.User.ID, Method: model.MFAMethodTOTP, Secret: sealed}
+	factor.ID = id
 	if err := s.store.StartUserFactor(ctx, &factor); err != nil {
 		return nil, err
 	}
@@ -115,7 +121,7 @@ func (s *Service) ConfirmAuthenticator(ctx context.Context, session *Session, co
 	}
 	factor := factors[index]
 
-	seed, err := s.unseal(factor.Secret)
+	seed, err := s.unseal(factor.ID, factor.Secret)
 	if err != nil {
 		return nil, err
 	}
@@ -164,12 +170,17 @@ func (s *Service) BeginPasskey(ctx context.Context, session *Session, password s
 		return nil, err
 	}
 
-	sealed, err := s.sealJSON(ceremony)
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+	sealed, err := s.sealJSON(id, ceremony)
 	if err != nil {
 		return nil, err
 	}
 
 	factor := model.UserFactor{UserID: session.User.ID, Method: model.MFAMethodWebAuthn, Secret: sealed}
+	factor.ID = id
 	if err := s.store.StartUserFactor(ctx, &factor); err != nil {
 		return nil, err
 	}
@@ -197,7 +208,7 @@ func (s *Service) FinishPasskey(ctx context.Context, session *Session, label str
 	factor := factors[index]
 
 	var ceremony webauthn.SessionData
-	if err := s.unsealJSON(factor.Secret, &ceremony); err != nil {
+	if err := s.unsealJSON(factor.ID, factor.Secret, &ceremony); err != nil {
 		return nil, err
 	}
 
@@ -211,7 +222,7 @@ func (s *Service) FinishPasskey(ctx context.Context, session *Session, label str
 		return nil, ErrPasskeyRefused
 	}
 
-	if factor.Secret, err = s.sealJSON(credential); err != nil {
+	if factor.Secret, err = s.sealJSON(factor.ID, credential); err != nil {
 		return nil, err
 	}
 	factor.CredentialID = base64.RawURLEncoding.EncodeToString(credential.ID)

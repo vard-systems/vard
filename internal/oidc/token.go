@@ -487,7 +487,7 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 	if next.ID, err = uuid.NewV7(); err != nil {
 		return "", err
 	}
-	sealed, err := s.sealer.SealBytes([]byte(token))
+	sealed, err := s.sealer.SealFor(g.replaces.SuccessorWhere(), []byte(token))
 	if err != nil {
 		return "", err
 	}
@@ -542,7 +542,7 @@ func (s *Service) retried(ctx context.Context, replaced *model.RefreshToken, now
 		}
 
 		if next.Usable(now) {
-			plain, err := s.sealer.OpenBytes(current.SuccessorSealed)
+			plain, _, err := s.sealer.OpenFor(current.SuccessorWhere(), current.SuccessorSealed)
 			if err != nil {
 				return "", err
 			}

@@ -135,7 +135,7 @@ func (s *Service) FinishPasskeySignIn(ctx context.Context, handle string, respon
 	if err != nil {
 		return nil, ErrPasskeySignInFailed
 	}
-	sealed, err := s.sealJSON(credential)
+	sealed, err := s.sealJSON(factor.ID, credential)
 	if err != nil {
 		return nil, err
 	}

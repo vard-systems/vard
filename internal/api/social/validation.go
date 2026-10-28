@@ -1,6 +1,7 @@
 package social
 
 import (
+	"github.com/google/uuid"
 	"net/http"
 	"strings"
 
@@ -26,6 +27,15 @@ func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.S
 
 		provider.Kind = kind
 		provider.Slug = lower(&r.Slug, string(kind))
+
+		// Its id before it is stored, so its secrets are sealed to it.
+		if provider.ID == uuid.Nil {
+			id, err := uuid.NewV7()
+			if err != nil {
+				return err
+			}
+			provider.ID = id
+		}
 	}
 
 	provider.Name = validate.Text(r.Name, provider.Name)
@@ -51,10 +61,10 @@ func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.S
 
 	// A sent secret replaces the stored one; an absent one keeps it; "" clears
 	// it.
-	if err := seal(sealer, r.ClientSecret, &provider.ClientSecret); err != nil {
+	if err := seal(sealer, provider.ClientSecretWhere(), r.ClientSecret, &provider.ClientSecret); err != nil {
 		return err
 	}
-	if err := seal(sealer, r.PrivateKey, &provider.PrivateKey); err != nil {
+	if err := seal(sealer, provider.PrivateKeyWhere(), r.PrivateKey, &provider.PrivateKey); err != nil {
 		return err
 	}
 
@@ -84,7 +94,7 @@ func cleanScopes(sent []string) model.StringList {
 	return scopes
 }
 
-func seal(sealer *jose.Sealer, sent *string, stored *[]byte) error {
+func seal(sealer *jose.Sealer, where jose.Context, sent *string, stored *[]byte) error {
 	if sent == nil {
 		return nil
 	}
@@ -95,7 +105,7 @@ func seal(sealer *jose.Sealer, sent *string, stored *[]byte) error {
 		return nil
 	}
 
-	sealed, err := sealer.SealBytes([]byte(value))
+	sealed, err := sealer.SealFor(where, []byte(value))
 	if err != nil {
 		return err
 	}

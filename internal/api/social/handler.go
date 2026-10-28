@@ -172,9 +172,9 @@ func (h *Handler) Secret(c *gin.Context) {
 		return
 	}
 
-	sealed, what := provider.ClientSecret, "client_secret"
+	sealed, what, where := provider.ClientSecret, "client_secret", provider.ClientSecretWhere()
 	if provider.Spec().SignedSecret {
-		sealed, what = provider.PrivateKey, "private_key"
+		sealed, what, where = provider.PrivateKey, "private_key", provider.PrivateKeyWhere()
 	}
 
 	if len(sealed) == 0 {
@@ -182,7 +182,7 @@ func (h *Handler) Secret(c *gin.Context) {
 		return
 	}
 
-	secret, err := h.sealer.OpenBytes(sealed)
+	secret, _, err := h.sealer.OpenFor(where, sealed)
 	if err != nil {
 		respond.Failure(c, h.log, err, "opening a social provider secret failed")
 		return

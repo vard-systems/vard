@@ -2,6 +2,7 @@ package social
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"reflect"
 	"testing"
 
@@ -138,12 +139,14 @@ func TestProviderRequestApplyToCreating(t *testing.T) {
 func TestProviderRequestUpdatesOnlyWhatItMentions(t *testing.T) {
 	seal := sealer(t)
 
-	stored, err := seal.SealBytes([]byte("the stored key"))
+	id := uuid.New()
+	stored, err := seal.SealFor(model.SocialProvider{Base: model.Base{ID: id}}.PrivateKeyWhere(), []byte("the stored key"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	apple := model.SocialProvider{
+		Base: model.Base{ID: id},
 		Kind: model.SocialApple, Slug: "apple", Name: "Apple",
 		ClientID: "com.example.service",
 		TeamID:   "TEAM123456", KeyID: "KEY1234567", PrivateKey: stored,
@@ -210,7 +213,7 @@ func TestProviderRequestReplacesSecrets(t *testing.T) {
 		t.Fatalf("applyTo() = %v", err)
 	}
 
-	opened, err := seal.OpenBytes(provider.ClientSecret)
+	opened, _, err := seal.OpenFor(provider.ClientSecretWhere(), provider.ClientSecret)
 	if err != nil {
 		t.Fatalf("the new secret cannot be opened: %v", err)
 	}

@@ -61,6 +61,7 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | Variable               | Purpose                                                                                  |
 | ---------------------- | ---------------------------------------------------------------------------------------- |
 | `VARD_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
+| `VARD_SECRET_KEY_PREVIOUS` | The key `VARD_SECRET_KEY` replaced, while rotating; it opens and never seals.        |
 | `VARD_DB_DSN`          | PostgreSQL connection string.                                                            |
 | `VARD_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
 | `VARD_ADMIN_URL`       | The console's URL; only this origin may change things via the admin API.                 |
@@ -126,7 +127,9 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   token that has just replaced another is also kept sealed with
   `VARD_SECRET_KEY`, for the 30-second grace below and cleared within another
   30 seconds.
-- Signing keys and stored secrets are sealed with `VARD_SECRET_KEY`.
+- Signing keys and stored secrets are sealed with a key derived from
+  `VARD_SECRET_KEY` (HKDF, AES-256-GCM), each bound to the table, column and
+  row it is kept in, and marked with its key, so the key can be rotated.
 - Signing keys rotate automatically and stay published until their tokens expire.
 - Access tokens are short-lived JWTs that name the session and refresh family
   they were issued in; ending either ends them at this server's endpoints.
@@ -248,6 +251,19 @@ Migration `00012` runs on start.
   release and are renamed at the next sign-in; the next release stops
   reading the old names. Plain-http `make dev` keeps the old names, which a
   browser requires there.
+
+### To the release with bound, rotatable secrets
+
+- Every secret is now sealed bound to where it is kept, under a key derived
+  from `VARD_SECRET_KEY` and marked with its id. Secrets sealed before still
+  open, and are written in the new form whenever they are next saved; run
+  `bin/vard secrets reseal` once after the upgrade to move all of them now.
+- **Rotating `VARD_SECRET_KEY`**: set the old value as
+  `VARD_SECRET_KEY_PREVIOUS` and a new one as `VARD_SECRET_KEY`, restart,
+  run `bin/vard secrets reseal`, then empty `VARD_SECRET_KEY_PREVIOUS` and
+  restart again. Recovery codes are one-way hashes and cannot be resealed:
+  codes made before a rotation work only while the previous key is still
+  set, so ask people to make new ones before you drop it.
 
 ## Development
 

@@ -4,7 +4,8 @@
 // listener and the admin API on the other until it is told to stop. migrate
 // up, down or status steps the database through migrations/, and migrate new
 // <name> writes a new, empty migration there. admin create makes the first
-// administrator from the command line.
+// administrator from the command line, and secrets reseal seals every stored
+// secret again under the current key.
 package main
 
 import (
@@ -22,6 +23,7 @@ const usage = `usage: %s [command]
   migrate   up, down or status of the database migrations, or new <name>
   admin     create the first administrator: admin create -email … -first-name …,
             with the password on standard input
+  secrets   reseal: every stored secret sealed again under VARD_SECRET_KEY
 `
 
 func main() {
@@ -38,6 +40,8 @@ func main() {
 		os.Exit(migrateCommand(args))
 	case "admin":
 		os.Exit(adminCommand(args))
+	case "secrets":
+		os.Exit(secretsCommand(args))
 	case "help", "-h", "-help", "--help":
 		fmt.Fprintf(os.Stdout, usage, os.Args[0])
 	default:

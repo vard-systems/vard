@@ -150,8 +150,14 @@ func (s *Service) knownDevice(cookie, account string) (string, bool) {
 			continue
 		}
 		device, mac, ok := strings.Cut(rest, ".")
-		if ok && hmac.Equal([]byte(mac), []byte(s.deviceMAC(account, device))) {
-			return device, true
+		if !ok {
+			continue
+		}
+		// Signed with the current key, or one rotated out since.
+		for _, tag := range s.sealer.Tags(devicePurpose, []byte(account+"."+device)) {
+			if hmac.Equal([]byte(mac), []byte(base64.RawURLEncoding.EncodeToString(tag[:16]))) {
+				return device, true
+			}
 		}
 	}
 	return "", false

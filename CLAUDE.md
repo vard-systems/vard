@@ -127,7 +127,13 @@ code near it, and add a test when adding a case.
 - **Secrets are stored hashed or sealed, never plain.** Codes, refresh tokens,
   sessions and reset links are 256 random bits kept as a SHA-256
   (`model.NewSecret` / `HashSecret`). Provider secrets, SMTP passwords and TOTP
-  seeds are sealed with `jose.Sealer`. Recovery codes are hashed. The one
+  seeds are sealed with `jose.Sealer`, always bound to where they are kept —
+  `SealFor(model.X.YWhere(), …)`, table, column and row, as AEAD additional
+  data — so a value moved to another column or row does not open; the row's
+  id is given before the value is sealed. A new sealed column gets its
+  `…Where` method in `internal/model/sealed.go` and a line in
+  `store.sealedColumns`, which `secrets reseal` walks. Recovery codes are
+  hashed (`Sealer.Tag`), and matched against every key's (`Tags`). The one
   secret also kept recoverable is a refresh token that has just replaced
   another: sealed on the replaced row (`successor_sealed`) for the grace
   below, and cleared within one more — when read past it, at the family's

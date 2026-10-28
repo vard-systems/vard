@@ -2,6 +2,7 @@ package mailsettings
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"reflect"
 	"testing"
 
@@ -27,12 +28,14 @@ func sealer(t *testing.T) *jose.Sealer {
 func stored(t *testing.T) model.MailSettings {
 	t.Helper()
 
-	password, err := sealer(t).SealBytes([]byte("the stored password"))
+	settings := model.MailSettings{Base: model.Base{ID: uuid.New()}}
+	password, err := sealer(t).SealFor(settings.PasswordWhere(), []byte("the stored password"))
 	if err != nil {
-		t.Fatalf("SealBytes() = %v", err)
+		t.Fatalf("SealFor() = %v", err)
 	}
 
 	return model.MailSettings{
+		Base:        settings.Base,
 		IsEnabled:   true,
 		Host:        "smtp.example.com",
 		Port:        587,

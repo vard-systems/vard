@@ -121,7 +121,7 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 
 	secret := ""
 	if len(connection.ClientSecret) > 0 {
-		plain, err := s.sealer.OpenBytes(connection.ClientSecret)
+		plain, _, err := s.sealer.OpenFor(connection.ClientSecretWhere(), connection.ClientSecret)
 		if err != nil {
 			return nil, err
 		}

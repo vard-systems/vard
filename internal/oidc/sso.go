@@ -230,12 +230,13 @@ func (s *Service) HoldSSOAssertion(ctx context.Context, slug string, r *http.Req
 	// Only the HTTP-POST binding is taken. A SAMLart would have this server
 	// resolve an artifact at an address from the metadata; what was sent is
 	// held as it is, and refused once the browser is known.
-	sealed, err := s.sealer.SealBytes([]byte(r.PostForm.Get("SAMLResponse")))
+	relayHash := model.HashSecret(relay)
+	sealed, err := s.sealer.SealFor(model.SAMLResponseWhere(relayHash), []byte(r.PostForm.Get("SAMLResponse")))
 	if err != nil {
 		return "", err
 	}
 
-	err = s.store.HoldSAMLResponse(ctx, connection.ID, model.HashSecret(relay),
+	err = s.store.HoldSAMLResponse(ctx, connection.ID, relayHash,
 		base64.RawStdEncoding.EncodeToString(sealed), s.now())
 	switch {
 	case errors.Is(err, store.ErrNotFound):
@@ -273,7 +274,7 @@ func (s *Service) CompleteSSOAssertion(ctx context.Context, slug, binding string
 	if err != nil {
 		return nil, err
 	}
-	response, err := s.sealer.OpenBytes(sealed)
+	response, _, err := s.sealer.OpenFor(model.SAMLResponseWhere(login.RelayHash), sealed)
 	if err != nil {
 		return nil, err
 	}

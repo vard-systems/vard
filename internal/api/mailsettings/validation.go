@@ -3,6 +3,8 @@ package mailsettings
 import (
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"vard/internal/api/kit/respond"
 	"vard/internal/api/kit/validate"
 	"vard/internal/jose"
@@ -12,6 +14,15 @@ import (
 
 func (r *settingsRequest) applyTo(settings *model.MailSettings, sealer *jose.Sealer) ([]string, error) {
 	updated := *settings
+	// A first save makes the row: its id is given now, so the password is
+	// sealed to it.
+	if updated.ID == uuid.Nil {
+		id, err := uuid.NewV7()
+		if err != nil {
+			return nil, err
+		}
+		updated.ID = id
+	}
 	updated.IsEnabled = validate.Flag(r.IsEnabled, settings.IsEnabled)
 	updated.Host = validate.Lower(r.Host, settings.Host)
 	updated.Port = validate.Number(r.Port, settings.Port)
@@ -31,7 +42,7 @@ func (r *settingsRequest) applyTo(settings *model.MailSettings, sealer *jose.Sea
 			passwordChanged = len(settings.Password) > 0
 			updated.Password = nil
 		default:
-			sealed, err := sealer.SealBytes([]byte(password))
+			sealed, err := sealer.SealFor(updated.PasswordWhere(), []byte(password))
 			if err != nil {
 				return nil, err
 			}
@@ -89,7 +100,7 @@ func (r *testRequest) settings(stored *model.MailSettings, sealer *jose.Sealer) 
 
 	password := ""
 	if len(stored.Password) > 0 {
-		plain, err := sealer.OpenBytes(stored.Password)
+		plain, _, err := sealer.OpenFor(stored.PasswordWhere(), stored.Password)
 		if err != nil {
 			return mail.Settings{}, err
 		}

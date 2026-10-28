@@ -178,12 +178,13 @@ func TestSealOpensOnlyWithTheSameSecret(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sealed, err := sealer.Seal(key.Private)
+	where := Bind("signing_keys", "private_key", "k")
+	sealed, err := sealer.Seal(where, key.Private)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	opened, err := sealer.Open(sealed)
+	opened, _, err := sealer.Open(where, sealed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +193,7 @@ func TestSealOpensOnlyWithTheSameSecret(t *testing.T) {
 	}
 
 	wrong, _ := NewSealer("another secret that is long enough!!")
-	if _, err := wrong.Open(sealed); err == nil {
+	if _, _, err := wrong.Open(where, sealed); err == nil {
 		t.Error("opened with the wrong secret")
 	}
 }

@@ -21,6 +21,15 @@ func (r *connectionRequest) applyTo(connection *model.SSOConnection, sealer *jos
 	}
 
 	if creating {
+		// Its id before it is stored, so its secrets are sealed to it.
+		if connection.ID == uuid.Nil {
+			id, err := uuid.NewV7()
+			if err != nil {
+				return err
+			}
+			connection.ID = id
+		}
+
 		connection.Protocol = model.SSOProtocol(validate.Text(r.Protocol, ""))
 		connection.Slug = slugFrom(validate.Text(r.Slug, ""), validate.Text(r.Name, ""))
 
@@ -56,7 +65,7 @@ func (r *connectionRequest) applyTo(connection *model.SSOConnection, sealer *jos
 	connection.ClientID = validate.Text(r.ClientID, connection.ClientID)
 
 	if r.ClientSecret != nil && strings.TrimSpace(*r.ClientSecret) != "" {
-		sealed, err := sealer.SealBytes([]byte(strings.TrimSpace(*r.ClientSecret)))
+		sealed, err := sealer.SealFor(connection.ClientSecretWhere(), []byte(strings.TrimSpace(*r.ClientSecret)))
 		if err != nil {
 			return err
 		}

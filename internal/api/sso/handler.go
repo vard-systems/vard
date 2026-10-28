@@ -325,7 +325,7 @@ func (h *Handler) giveKey(connection *model.SSOConnection) error {
 		return err
 	}
 
-	sealed, err := h.sealer.Seal(key)
+	sealed, err := h.sealer.Seal(connection.SPKeyWhere(), key)
 	if err != nil {
 		return err
 	}

@@ -7,9 +7,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"strings"
 	"time"
 
+	"vard/internal/jose"
 	"vard/internal/model"
 	"vard/internal/recovery"
 	"vard/internal/totp"
@@ -120,7 +122,12 @@ func (s *Service) BeginTOTP(ctx context.Context, admin *model.Admin, currentCode
 		return nil, err
 	}
 
-	sealed, err := s.sealer.SealBytes([]byte(secret))
+	// The id is the factor's before it is stored, so the seed is sealed to it.
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+	sealed, err := s.sealer.SealFor(factorSecret(id), []byte(secret))
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +138,7 @@ func (s *Service) BeginTOTP(ctx context.Context, admin *model.Admin, currentCode
 		Label:   "Authenticator app",
 		Secret:  base64.StdEncoding.EncodeToString(sealed),
 	}
+	factor.ID = id
 	if err := s.store.StartMFA(ctx, &factor); err != nil {
 		return nil, err
 	}
@@ -289,7 +297,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 	}
 
 	if recovery.Is(code) {
-		ok, err := s.store.ConsumeRecoveryCode(ctx, factor.ID, recovery.Hash(s.sealer, recoveryCodePurpose, code))
+		ok, err := s.store.ConsumeRecoveryCode(ctx, factor.ID, recovery.Hashes(s.sealer, recoveryCodePurpose, code)...)
 		if err != nil {
 			return "", err
 		}
@@ -355,12 +363,17 @@ func (s *Service) secretOf(factor model.MFA) (string, error) {
 		return "", fmt.Errorf("auth: stored TOTP secret is not base64: %w", err)
 	}
 
-	plain, err := s.sealer.OpenBytes(sealed)
+	plain, _, err := s.sealer.OpenFor(factorSecret(factor.ID), sealed)
 	if err != nil {
 		return "", err
 	}
 
 	return string(plain), nil
+}
+
+// factorSecret is where an administrator's factor keeps its sealed secret.
+func factorSecret(factor uuid.UUID) jose.Context {
+	return model.MFA{Base: model.Base{ID: factor}}.SecretWhere()
 }
 
 const recoveryCodePurpose = "admin recovery code"
