@@ -278,9 +278,12 @@ func (h *Handler) build(c *gin.Context, req *adminRequest, into *model.Admin) (*
 	}
 
 	if req.Password != "" {
+		if h.auth.PasswordBreached(c.Request.Context(), req.Password) {
+			return nil, respond.AdminPasswordBreached.Fault(nil)
+		}
 		err := admin.SetPassword(req.Password)
 		if errors.Is(err, model.ErrPasswordTooLong) {
-			return nil, respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
+			return nil, respond.AdminPasswordTooLong.Fault(nil)
 		}
 		if err != nil {
 			return nil, err

@@ -153,6 +153,9 @@ func (s *Service) ResetPassword(ctx context.Context, token, password string, cli
 		return err
 	}
 
+	if err := s.refuseBreached(ctx, password); err != nil {
+		return err
+	}
 	if err := user.SetPassword(password); errors.Is(err, model.ErrPasswordTooLong) {
 		return ErrPasswordTooLong
 	} else if err != nil {

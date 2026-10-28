@@ -62,6 +62,7 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | ---------------------- | ---------------------------------------------------------------------------------------- |
 | `VARD_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
 | `VARD_SECRET_KEY_PREVIOUS` | The key `VARD_SECRET_KEY` replaced, while rotating; it opens and never seals.        |
+| `VARD_PWNED_PASSWORDS_URL` | The Pwned Passwords range API new passwords are checked against; empty for none.     |
 | `VARD_DB_DSN`          | PostgreSQL connection string.                                                            |
 | `VARD_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
 | `VARD_ADMIN_URL`       | The console's URL; only this origin may change things via the admin API.                 |
@@ -133,7 +134,9 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - Signing keys rotate automatically and stay published until their tokens expire.
 - Access tokens are short-lived JWTs that name the session and refresh family
   they were issued in; ending either ends them at this server's endpoints.
-- Passwords use bcrypt; unknown accounts take as long to refuse as wrong passwords.
+- Passwords use Argon2id (OWASP's parameters), at least 12 characters (14 for
+  administrators) and at most 128; unknown accounts take as long to refuse
+  as wrong passwords. New ones can be checked against known breaches.
 - Sign-in attempts and one-time-code guesses are counted atomically in the
   database, so parallel guessing cannot slip past them. A user's sign-in is
   throttled — each attempt past a few failures waits longer — rather than
@@ -264,6 +267,17 @@ Migration `00012` runs on start.
   restart again. Recovery codes are one-way hashes and cannot be resealed:
   codes made before a rotation work only while the previous key is still
   set, so ask people to make new ones before you drop it.
+
+### To the release with Argon2id passwords
+
+- New passwords are hashed with Argon2id. A bcrypt hash keeps working and is
+  replaced with an Argon2id one at its owner's next sign-in; nothing is
+  rehashed in bulk.
+- Passwords set from now on are at least 12 characters (administrators 14)
+  and at most 128 characters, in any script. Existing passwords keep
+  signing in whatever their length.
+- Set `VARD_PWNED_PASSWORDS_URL=https://api.pwnedpasswords.com` to refuse
+  new passwords known from breaches.
 
 ## Development
 

@@ -1,13 +1,11 @@
 package model
 
 import (
-	"errors"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Admin struct {
@@ -42,15 +40,8 @@ func (Admin) TableName() string {
 	return "admins"
 }
 
-// MinAdminPasswordLength is stricter than a user's, since an admin account
-// opens the panel.
-const MinAdminPasswordLength = 10
-
 func (a *Admin) SetPassword(password string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
-		return ErrPasswordTooLong
-	}
+	hash, err := HashPassword(password)
 	if err != nil {
 		return err
 	}

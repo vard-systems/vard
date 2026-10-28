@@ -18,4 +18,5 @@ var (
 	AdminPasswordRequired = Define(http.StatusBadRequest, "admin_password_required", Admin)
 	AdminPasswordTooShort = Define(http.StatusBadRequest, "admin_password_too_short", Admin)
 	AdminPasswordTooLong  = Define(http.StatusBadRequest, "admin_password_too_long", Admin)
+	AdminPasswordBreached = Define(http.StatusBadRequest, "admin_password_breached", Admin)
 )

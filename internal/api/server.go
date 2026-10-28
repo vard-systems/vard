@@ -111,12 +111,13 @@ func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog
 	}
 
 	service := auth.New(st, sealer, log, adminIssuer(cfg.AdminURL), passkeys)
+	service.UseBreachCheck(provider.PasswordBreached)
 	recorder := audit.New(st, log)
 
 	registerAdminRoutes(r, service, provider, log, adminHandlers{
 		auth:         adminauth.New(service, st, recorder, log, cfg.SecureAdminCookies),
 		mfa:          mfa.New(service, log, cfg.SecureAdminCookies),
-		setup:        setup.New(st, log),
+		setup:        setup.New(st, service, log),
 		users:        users.New(st, recorder, log),
 		userSessions: usersessions.New(st, recorder, log),
 		fields:       fields.New(st, recorder, log),

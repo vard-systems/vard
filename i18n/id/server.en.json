@@ -35,6 +35,7 @@
 		"details_required": "Accounts here need details this page cannot ask for. Ask an administrator to create yours.",
 		"password_too_short": "The password must be at least {min} characters.",
 		"password_too_long": "The password is too long.",
+		"password_breached": "That password is known from a data breach, so it is among the first anybody would try. Choose another.",
 		"password_unchanged": "The new password has to be different from the current one.",
 		"wrong_password": "Your current password is not right.",
 		"current_session": "This is the session you are using. Sign out instead.",

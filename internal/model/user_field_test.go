@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 	"testing"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 // field builds a field of the given type for a test to use.
@@ -341,11 +339,11 @@ func TestUserSetPassword(t *testing.T) {
 		t.Fatalf("hash = %q, has password = %v; want a hash", user.PasswordHash, user.HasPassword)
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte("long-enough")) != nil {
+	if ok, _ := VerifyPassword(user.PasswordHash, "long-enough"); !ok {
 		t.Error("the hash does not match the password it was made from")
 	}
 
-	if err := user.SetPassword(strings.Repeat("p", 73)); !errors.Is(err, ErrPasswordTooLong) {
-		t.Errorf("SetPassword(73 bytes) = %v, want ErrPasswordTooLong", err)
+	if err := user.SetPassword(strings.Repeat("p", MaxPasswordLength+1)); !errors.Is(err, ErrPasswordTooLong) {
+		t.Errorf("SetPassword(%d characters) = %v, want ErrPasswordTooLong", MaxPasswordLength+1, err)
 	}
 }

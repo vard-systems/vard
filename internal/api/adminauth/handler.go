@@ -239,6 +239,9 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 	case errors.Is(err, auth.ErrWrongPassword):
 		respond.Fail(c, wrongPassword)
 		return
+	case errors.Is(err, auth.ErrPasswordBreached):
+		respond.Fail(c, respond.AdminPasswordBreached)
+		return
 	case errors.Is(err, model.ErrPasswordTooLong):
 		respond.Fail(c, respond.AdminPasswordTooLong)
 		return

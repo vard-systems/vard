@@ -194,3 +194,11 @@ func (s *Store) ChangeUserPassword(ctx context.Context, user *model.User, keep u
 
 	return nil
 }
+
+// UpgradeUserPasswordHash replaces a user's password hash with one made
+// again from the same password, unless the password changed meanwhile.
+func (s *Store) UpgradeUserPasswordHash(ctx context.Context, user uuid.UUID, was, now string) error {
+	return s.db.WithContext(ctx).Model(&model.User{}).
+		Where("id = ? AND password_hash = ?", user, was).
+		Update("password_hash", now).Error
+}

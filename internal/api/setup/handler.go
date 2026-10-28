@@ -13,17 +13,19 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"vard/internal/api/kit/respond"
+	"vard/internal/auth"
 	"vard/internal/model"
 	"vard/internal/store"
 )
 
 type Handler struct {
 	store *store.Store
+	auth  *auth.Service
 	log   *slog.Logger
 }
 
-func New(st *store.Store, log *slog.Logger) *Handler {
-	return &Handler{store: st, log: log}
+func New(st *store.Store, service *auth.Service, log *slog.Logger) *Handler {
+	return &Handler{store: st, auth: service, log: log}
 }
 
 // Status says whether the panel still needs its first administrator.
@@ -57,6 +59,10 @@ func (h *Handler) Create(c *gin.Context) {
 		FirstName: strings.TrimSpace(req.FirstName),
 		LastName:  strings.TrimSpace(req.LastName),
 		Status:    model.StatusActive,
+	}
+	if h.auth.PasswordBreached(c.Request.Context(), req.Password) {
+		respond.Fail(c, respond.AdminPasswordBreached)
+		return
 	}
 	if err := admin.SetPassword(req.Password); errors.Is(err, model.ErrPasswordTooLong) {
 		respond.Fail(c, respond.AdminPasswordTooLong)

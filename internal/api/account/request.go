@@ -19,7 +19,7 @@ type loginRequest struct {
 type registerRequest struct {
 	Request     string `json:"request" validate:"required,max=64"`
 	Email       string `json:"email" validate:"required,email,max=255"`
-	Password    string `json:"password" validate:"required,max=72"`
+	Password    string `json:"password" validate:"required,max=128"`
 	FirstName   string `json:"first_name" validate:"max=100"`
 	LastName    string `json:"last_name" validate:"max=100"`
 	AcceptTerms bool   `json:"accept_terms"`
@@ -58,7 +58,7 @@ type verifyRequest struct {
 
 type resetRequest struct {
 	Token    string `json:"token" validate:"required,max=64"`
-	Password string `json:"password" validate:"required,max=72"`
+	Password string `json:"password" validate:"required,max=128"`
 }
 
 // logoutRequest is the body of POST /account/logout, all of it optional: the

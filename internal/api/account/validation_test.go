@@ -7,7 +7,7 @@ import (
 
 func TestRegisterRequestRules(t *testing.T) {
 	good := func() registerRequest {
-		return registerRequest{Request: "handle", Email: "  Ada@Example.com ", Password: "long enough"}
+		return registerRequest{Request: "handle", Email: "  Ada@Example.com ", Password: "long enough now"}
 	}
 
 	req := good()
@@ -22,7 +22,7 @@ func TestRegisterRequestRules(t *testing.T) {
 		"no request":          func(r *registerRequest) { r.Request = "" },
 		"not an email":        func(r *registerRequest) { r.Email = "ada" },
 		"short password":      func(r *registerRequest) { r.Password = "short" },
-		"password too long":   func(r *registerRequest) { r.Password = strings.Repeat("é", 40) },
+		"password too long":   func(r *registerRequest) { r.Password = strings.Repeat("é", 129) },
 		"first name too long": func(r *registerRequest) { r.FirstName = strings.Repeat("a", 101) },
 	}
 
@@ -38,7 +38,7 @@ func TestRegisterRequestRules(t *testing.T) {
 }
 
 func TestResetRequestNeedsAToken(t *testing.T) {
-	req := resetRequest{Password: "long enough"}
+	req := resetRequest{Password: "long enough now"}
 	if err := req.validate(); err == nil {
 		t.Error("a reset without a token was accepted")
 	}

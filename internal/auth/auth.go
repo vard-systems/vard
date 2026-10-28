@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 
 	"vard/internal/jose"
 	"vard/internal/model"
@@ -47,6 +46,8 @@ type Service struct {
 	issuer string
 	// webauthn is the panel's passkey relying party.
 	webauthn *webauthn.WebAuthn
+	// breached says a new password is known from a breach.
+	breached func(ctx context.Context, password string) bool
 
 	// now is the clock every lifetime, lockout and expiry is measured by, so
 	// a test can move it instead of waiting.
@@ -102,10 +103,14 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 		return "", nil, StateNone, ErrInvalidCredentials
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(password)); err != nil {
+	ok, rehash := model.VerifyPassword(admin.PasswordHash, password)
+	if !ok {
 		s.record(ctx, &admin.ID, admin.Username, "admin.login_failed", req, "wrong password")
 
 		return "", nil, StateNone, ErrInvalidCredentials
+	}
+	if rehash {
+		s.rehash(ctx, admin, password)
 	}
 
 	if admin.Status != model.StatusActive {
@@ -320,4 +325,16 @@ func (s *Service) passMFA(ctx context.Context, current *model.AdminSession) (str
 	}
 
 	return token, nil
+}
+
+// rehash replaces a password hash made the old way, once the password has
+// proved itself; a failure only leaves the old one in place.
+func (s *Service) rehash(ctx context.Context, admin *model.Admin, password string) {
+	hash, err := model.HashPassword(password)
+	if err == nil {
+		err = s.store.UpgradeAdminPasswordHash(ctx, admin.ID, admin.PasswordHash, hash)
+	}
+	if err != nil {
+		s.log.Warn("making an administrator's password hash again failed", "admin", admin.ID, "error", err)
+	}
 }

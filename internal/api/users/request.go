@@ -39,7 +39,7 @@ type userRequest struct {
 
 	// Password is required when creating a user. When updating one it is
 	// optional: left empty, the password the user has is kept.
-	Password        string `json:"password" validate:"max=72"`
+	Password        string `json:"password" validate:"max=128"`
 	ConfirmPassword string `json:"confirm_password" validate:"eqfield=Password"`
 	// IsPasswordTemporary forces the user to replace the password. Left out:
 	// false for a new user, unchanged otherwise.

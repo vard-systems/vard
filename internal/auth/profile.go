@@ -5,12 +5,26 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 
 	"vard/internal/model"
 )
 
 var ErrWrongPassword = errors.New("the current password is not right")
+
+// ErrPasswordBreached is a new password known from a breach.
+var ErrPasswordBreached = errors.New("the password is known from a breach")
+
+// UseBreachCheck sets what says a new password is known from a breach; none
+// checks nothing.
+func (s *Service) UseBreachCheck(breached func(ctx context.Context, password string) bool) {
+	s.breached = breached
+}
+
+// PasswordBreached says whether a password an administrator is choosing is
+// known from a breach.
+func (s *Service) PasswordBreached(ctx context.Context, password string) bool {
+	return s.breached != nil && s.breached(ctx, password)
+}
 
 type Profile struct {
 	FirstName string
@@ -47,6 +61,9 @@ func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, sessio
 	if err := s.checkPassword(ctx, admin, current); err != nil {
 		return err
 	}
+	if s.PasswordBreached(ctx, next) {
+		return ErrPasswordBreached
+	}
 
 	if err := admin.SetPassword(next); err != nil {
 		return err
@@ -82,7 +99,7 @@ func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, passwor
 		return ErrWrongPassword
 	}
 
-	if password == "" || bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(password)) != nil {
+	if ok, _ := model.VerifyPassword(admin.PasswordHash, password); password == "" || !ok {
 		return ErrWrongPassword
 	}
 

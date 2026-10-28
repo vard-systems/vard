@@ -23,6 +23,7 @@
 		Tabs,
 		notify
 	} from '#lib/components/ui/index.js';
+	import { MIN_USER_PASSWORD } from '#lib/constants.js';
 	import { keys, roleMappingsOptions } from '#lib/query/index.js';
 	import RoleMappings from '#lib/components/roles/RoleMappings.svelte';
 	import { additional } from './fields';
@@ -199,7 +200,7 @@
 							? current?.has_password
 								? 'Leave both fields empty to keep the current password.'
 								: 'This user has no password yet.'
-							: 'At least 8 characters.'}
+							: `At least ${MIN_USER_PASSWORD} characters.`}
 					>
 						<FieldGrid>
 							<PasswordInput

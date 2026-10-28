@@ -150,15 +150,15 @@ func TestPasswordRequestValidate(t *testing.T) {
 	}{
 		{
 			name:    "a long enough new password",
-			request: passwordRequest{CurrentPassword: "old-password", NewPassword: "a-new-password"},
+			request: passwordRequest{CurrentPassword: "old-password", NewPassword: "a-new-password-1"},
 		},
 		{
 			name:    "exactly the shortest allowed",
-			request: passwordRequest{CurrentPassword: "old-password", NewPassword: "0123456789"},
+			request: passwordRequest{CurrentPassword: "old-password", NewPassword: "01234567890123"},
 		},
 		{
 			name:    "one character short",
-			request: passwordRequest{CurrentPassword: "old-password", NewPassword: "012345678"},
+			request: passwordRequest{CurrentPassword: "old-password", NewPassword: "0123456789012"},
 			want:    "admin_password_too_short",
 		},
 		{

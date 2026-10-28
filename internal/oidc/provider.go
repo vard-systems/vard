@@ -72,6 +72,11 @@ type Service struct {
 	// challenge is asked of sign-ins that have failed often.
 	challenge ChallengeHook
 
+	// pwnedURL is the breached-password range API, "" when the check is
+	// off; breachClient reaches it, held to the outbound rules.
+	pwnedURL     string
+	breachClient *http.Client
+
 	// lookupTXT reads a domain's TXT records, for proving SSO domains.
 	lookupTXT func(ctx context.Context, name string) ([]string, error)
 
@@ -113,7 +118,10 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 		webauthn:  passkeys,
 		lookupTXT: lookupTXT,
 		challenge: noChallenge{},
-		now:       time.Now,
+
+		pwnedURL:     cfg.PwnedPasswordsURL,
+		breachClient: newFederationClient(breachTimeout, onLoopback(cfg.Issuer)),
+		now:          time.Now,
 	}
 
 	// Every path that ends sessions goes through the store; it finds the

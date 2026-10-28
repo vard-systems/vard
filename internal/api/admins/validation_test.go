@@ -18,8 +18,8 @@ func TestAdminRequestValidate(t *testing.T) {
 			Email:           "  Mira@Example.com ",
 			FirstName:       " Mira ",
 			Status:          "active",
-			Password:        "long-enough-1",
-			ConfirmPassword: "long-enough-1",
+			Password:        "long-enough-pass-1",
+			ConfirmPassword: "long-enough-pass-1",
 		}
 	}
 
@@ -43,7 +43,7 @@ func TestAdminRequestValidate(t *testing.T) {
 		{
 			name:   "a short password",
 			change: func(r *adminRequest) { r.Password, r.ConfirmPassword = "short", "short" },
-			want:   "The password must be at least 10 characters.",
+			want:   "The password must be at least 14 characters.",
 		},
 		{
 			name:   "passwords that differ",

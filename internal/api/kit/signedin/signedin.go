@@ -13,6 +13,7 @@ import (
 
 	"vard/internal/api/kit/respond"
 	"vard/internal/api/kit/session"
+	"vard/internal/model"
 	"vard/internal/oidc"
 )
 
@@ -20,13 +21,13 @@ const sessionKey = "user_session"
 
 var passwordTooShort = respond.Define(http.StatusBadRequest, "password_too_short", respond.Public)
 
-// CheckPassword enforces length only; over 72 bytes is refused since bcrypt
-// would silently truncate.
+// CheckPassword enforces length only: what else a password must be is a rule
+// that pushes people to worse ones.
 func CheckPassword(password string) error {
 	switch {
-	case utf8.RuneCountInString(password) < oidc.MinPasswordLength:
-		return passwordTooShort.With("min", oidc.MinPasswordLength)
-	case len(password) > 72:
+	case utf8.RuneCountInString(password) < model.MinUserPasswordLength:
+		return passwordTooShort.With("min", model.MinUserPasswordLength)
+	case utf8.RuneCountInString(password) > model.MaxPasswordLength:
 		return Problem(oidc.ErrPasswordTooLong).Fault(nil)
 	}
 

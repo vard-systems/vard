@@ -52,7 +52,7 @@ func TestSetupRequestValidate(t *testing.T) {
 		{
 			name:   "a password anyone could guess the length of",
 			change: func(r *setupRequest) { r.Password = "short" },
-			want:   "password must be at least 10 characters.",
+			want:   "The password must be at least 14 characters.",
 		},
 		{
 			name:   "no name",

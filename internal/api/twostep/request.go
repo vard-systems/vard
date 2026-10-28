@@ -16,5 +16,5 @@ type finishPasskeyRequest struct {
 // presenceRequest carries the password that changes to how one signs in ask
 // for, when the account has one.
 type presenceRequest struct {
-	CurrentPassword string `json:"current_password" validate:"max=72"`
+	CurrentPassword string `json:"current_password" validate:"max=128"`
 }

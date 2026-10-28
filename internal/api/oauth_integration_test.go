@@ -1066,14 +1066,14 @@ func TestLiveAccountRegisterAndResetPassword(t *testing.T) {
 
 	// A temporary password an administrator set sends the user to choose one.
 	f.super.must(http.StatusOK, http.MethodPatch, "/users/"+f.userID, map[string]any{
-		"email": adaEmail, "password": "temporary-1", "confirm_password": "temporary-1", "is_password_temporary": true,
+		"email": adaEmail, "password": "temporary-pass-1", "confirm_password": "temporary-pass-1", "is_password_temporary": true,
 	}, nil)
 
 	var temporary struct {
 		PasswordChangeRequired bool   `json:"password_change_required"`
 		ResetToken             string `json:"reset_token"`
 	}
-	b.account(http.MethodPost, "/login", map[string]string{"email": adaEmail, "password": "temporary-1"}, &temporary)
+	b.account(http.MethodPost, "/login", map[string]string{"email": adaEmail, "password": "temporary-pass-1"}, &temporary)
 	if !temporary.PasswordChangeRequired || temporary.ResetToken == "" {
 		t.Errorf("temporary password login = %+v", temporary)
 	}

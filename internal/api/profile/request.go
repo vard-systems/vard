@@ -15,5 +15,5 @@ type emailRequest struct {
 
 type passwordRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required,max=128"`
-	NewPassword     string `json:"new_password" validate:"required,max=72"`
+	NewPassword     string `json:"new_password" validate:"required,max=128"`
 }

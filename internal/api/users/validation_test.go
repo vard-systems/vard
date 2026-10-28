@@ -88,35 +88,35 @@ func TestUserRequestPassword(t *testing.T) {
 		confirm  string
 		want     string // the message, or "" when the request is fine
 	}{
-		{name: "a new user with a password", creating: true, password: "long-enough", confirm: "long-enough"},
+		{name: "a new user with a password", creating: true, password: "long-enough-1", confirm: "long-enough-1"},
 		{name: "a new user without one", creating: true, want: "A password is required."},
 		{name: "an update keeping the password", creating: false},
-		{name: "an update changing it", creating: false, password: "long-enough", confirm: "long-enough"},
+		{name: "an update changing it", creating: false, password: "long-enough-1", confirm: "long-enough-1"},
 		{
 			name:     "too short",
 			creating: true,
 			password: "short",
 			confirm:  "short",
-			want:     "The password must be at least 8 characters.",
+			want:     "The password must be at least 12 characters.",
 		},
 		{
 			name:     "longer than bcrypt reads",
 			creating: true,
-			password: strings.Repeat("p", 73),
+			password: strings.Repeat("p", 129),
 			confirm:  strings.Repeat("p", 73),
-			want:     "password must be at most 72 characters.",
+			want:     "password must be at most 128 characters.",
 		},
 		{
 			name:     "typed differently the second time",
 			creating: false,
-			password: "long-enough",
+			password: "long-enough-1",
 			confirm:  "long-enougg",
 			want:     "confirm_password must match password.",
 		},
 		{
 			name:     "not confirmed",
 			creating: true,
-			password: "long-enough",
+			password: "long-enough-1",
 			want:     "confirm_password must match password.",
 		},
 	}

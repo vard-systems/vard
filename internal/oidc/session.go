@@ -6,13 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 
 	"vard/internal/model"
 	"vard/internal/store"
 )
-
-const MinPasswordLength = 8
 
 type Session struct {
 	Record model.UserSession
@@ -114,7 +111,8 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return nil, err
 	}
 
-	if user.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
+	ok, rehash := model.VerifyPassword(user.PasswordHash, password)
+	if !ok {
 		if user.PasswordHash == "" {
 			model.CompareDummyPassword(password)
 		}
@@ -128,6 +126,10 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "inactive"})
 
 		return nil, ErrInvalidCredentials
+	}
+
+	if rehash {
+		s.rehashPassword(ctx, user, password)
 	}
 
 	// A right password returns the attempt now, before any emailed code —
@@ -300,4 +302,16 @@ func (s *Service) SignOut(ctx context.Context, token string, client Client) erro
 	s.record(ctx, session.User, session.User.Email, "user.logout", client, nil)
 
 	return nil
+}
+
+// rehashPassword replaces a password hash made the old way, once the
+// password has proved itself; a failure only leaves the old one in place.
+func (s *Service) rehashPassword(ctx context.Context, user *model.User, password string) {
+	hash, err := model.HashPassword(password)
+	if err == nil {
+		err = s.store.UpgradeUserPasswordHash(ctx, user.ID, user.PasswordHash, hash)
+	}
+	if err != nil {
+		s.log.Warn("making a user's password hash again failed", "user", user.ID, "error", err)
+	}
 }

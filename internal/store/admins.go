@@ -321,3 +321,11 @@ func (s *Store) DeleteAdmin(ctx context.Context, admin *model.Admin) error {
 		return tx.Delete(admin).Error
 	}), cache.Admins)
 }
+
+// UpgradeAdminPasswordHash replaces an administrator's password hash with one
+// made again from the same password, unless the password changed meanwhile.
+func (s *Store) UpgradeAdminPasswordHash(ctx context.Context, admin uuid.UUID, was, now string) error {
+	return s.db.WithContext(ctx).Model(&model.Admin{}).
+		Where("id = ? AND password_hash = ?", admin, was).
+		Update("password_hash", now).Error
+}

@@ -1,13 +1,9 @@
 package model
 
 import (
-	"errors"
-	"fmt"
 	"strings"
-	"sync"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -57,10 +53,6 @@ func (User) TableName() string {
 	return "users"
 }
 
-// ErrPasswordTooLong is returned for a password bcrypt cannot hash: it reads
-// no further than 72 bytes, and refuses rather than quietly ignoring the rest.
-var ErrPasswordTooLong = errors.New("password must be at most 72 bytes")
-
 // Wrong passwords in a row that lock an account, an administrator's or a
 // user's, and for how long: long enough to stop guessing, short enough that an
 // attacker cannot keep the owner out.
@@ -68,21 +60,6 @@ const (
 	MaxFailedLogins = 5
 	LockoutDuration = 15 * time.Minute
 )
-
-var dummyHash = sync.OnceValue(func() []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte("not a password anyone has"), bcrypt.DefaultCost)
-	if err != nil {
-		panic(fmt.Sprintf("model: make the dummy hash: %v", err))
-	}
-	return hash
-})
-
-// CompareDummyPassword does the work of checking a password against nothing,
-// so refusing an unknown or locked account takes as long as a wrong password
-// and timing cannot tell which accounts exist.
-func CompareDummyPassword(password string) {
-	_ = bcrypt.CompareHashAndPassword(dummyHash(), []byte(password))
-}
 
 // NormalizeEmail trims and lower-cases an address, so the unique index on
 // users.email both finds users and stops "Ada@x" duplicating "ada@x".
@@ -101,10 +78,7 @@ func (u *User) AfterFind(*gorm.DB) error {
 }
 
 func (u *User) SetPassword(password string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
-		return ErrPasswordTooLong
-	}
+	hash, err := HashPassword(password)
 	if err != nil {
 		return err
 	}

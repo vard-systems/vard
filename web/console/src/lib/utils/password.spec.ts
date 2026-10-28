@@ -3,11 +3,11 @@ import { longEnoughForAdmin } from './password';
 
 describe('longEnoughForAdmin', () => {
 	it.each([
-		['nine ASCII characters', 'abcdefghi', false],
-		['ten ASCII characters', 'abcdefghij', true],
-		// The server counts runes: five emoji are five characters, though
-		// String.length says ten.
-		['five emoji', '🔑🔑🔑🔑🔑', false],
-		['ten emoji', '🔑🔑🔑🔑🔑🔑🔑🔑🔑🔑', true]
+		['thirteen ASCII characters', 'abcdefghijklm', false],
+		['fourteen ASCII characters', 'abcdefghijklmn', true],
+		// The server counts runes: seven emoji are seven characters, though
+		// String.length says fourteen.
+		['seven emoji', '🔑'.repeat(7), false],
+		['fourteen emoji', '🔑'.repeat(14), true]
 	])('%s', (_, password, expected) => expect(longEnoughForAdmin(password)).toBe(expected));
 });

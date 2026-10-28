@@ -3,9 +3,11 @@ package setup
 import (
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	"vard/internal/api/kit/respond"
 	"vard/internal/api/kit/validate"
+	"vard/internal/model"
 )
 
 var (
@@ -19,5 +21,12 @@ func (r *setupRequest) validate() error {
 	r.FirstName = strings.TrimSpace(r.FirstName)
 	r.LastName = strings.TrimSpace(r.LastName)
 
-	return validate.Struct(r)
+	if err := validate.Struct(r); err != nil {
+		return err
+	}
+	if utf8.RuneCountInString(r.Password) < model.MinAdminPasswordLength {
+		return respond.AdminPasswordTooShort.With("min", model.MinAdminPasswordLength)
+	}
+
+	return nil
 }

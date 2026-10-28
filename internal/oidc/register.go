@@ -66,6 +66,9 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 		Data:      map[string]any{},
 	}
 
+	if err := s.refuseBreached(ctx, r.Password); err != nil {
+		return nil, err
+	}
 	if err := user.SetPassword(r.Password); errors.Is(err, model.ErrPasswordTooLong) {
 		return nil, ErrPasswordTooLong
 	} else if err != nil {

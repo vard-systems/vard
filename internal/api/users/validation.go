@@ -23,7 +23,7 @@ var (
 	passwordTooShort = respond.Define(http.StatusBadRequest, "user_password_too_short", respond.Admin)
 )
 
-const minPasswordLength = 8
+const minPasswordLength = model.MinUserPasswordLength
 
 func (r *userRequest) validate(creating bool) error {
 	r.clean()

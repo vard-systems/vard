@@ -27,7 +27,7 @@ type adminRequest struct {
 
 	// Password is required when creating an administrator. When updating one
 	// it is optional: left empty, the password they have is kept.
-	Password        string `json:"password" validate:"max=72"`
+	Password        string `json:"password" validate:"max=128"`
 	ConfirmPassword string `json:"confirm_password" validate:"eqfield=Password"`
 
 	Assignments []assignmentRequest `json:"assignments"`

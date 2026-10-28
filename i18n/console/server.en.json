@@ -45,6 +45,7 @@
 		"admin_email_taken": "An administrator with this email already exists.",
 		"admin_password_too_short": "The password must be at least {min} characters.",
 		"admin_password_too_long": "The password is too long.",
+		"admin_password_breached": "That password is known from a data breach, so it is among the first anybody would try. Choose another.",
 		"redis_not_configured": "This server runs without Redis, so there is no cache to look after.",
 		"cache_database_not_found": "There is no such Redis database.",
 		"cache_group_not_found": "There is no such cache group.",

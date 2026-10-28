@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 
 	"vard/internal/model"
 	"vard/internal/store"
@@ -54,6 +53,9 @@ func (s *Service) ChangePassword(ctx context.Context, session *Session, current,
 	if current == next {
 		return ErrPasswordUnchanged
 	}
+	if err := s.refuseBreached(ctx, next); err != nil {
+		return err
+	}
 
 	if err := user.SetPassword(next); errors.Is(err, model.ErrPasswordTooLong) {
 		return ErrPasswordTooLong
@@ -87,7 +89,7 @@ func (s *Service) checkCurrentPassword(ctx context.Context, user *model.User, pa
 		return ErrWrongPassword
 	}
 
-	if user.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
+	if ok, _ := model.VerifyPassword(user.PasswordHash, password); !ok {
 		s.record(ctx, user, user.Email, "user.login_failed", client, map[string]any{"reason": "wrong current password"})
 		return ErrWrongPassword
 	}

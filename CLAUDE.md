@@ -199,6 +199,11 @@ code near it, and add a test when adding a case.
   `VARD_MTLS_CA_FILE` and carries its one registered subject.
 - **Registering a client takes an initial access token** (an admin API token
   with `applications.write`); `/oauth2/register` is never open.
+- **Passwords are Argon2id** (`model.HashPassword`; `VerifyPassword` takes
+  bcrypt too and asks for a rehash, done at sign-in with a conditional
+  UPDATE). Lengths are `model.MinUserPasswordLength`,
+  `MinAdminPasswordLength` and `MaxPasswordLength`, mirrored in both apps'
+  `constants.ts` (`TestThePagesKnowThePasswordLengths`).
 - **Unknown accounts cost the same as wrong passwords** (`CompareDummyPassword`),
   and sign-in failures give one answer, so timing and wording reveal nothing.
 - **Browsers are held to exact origin lists** (`api/kit/cors`, `api/kit/csrf`): no
