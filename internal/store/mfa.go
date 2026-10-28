@@ -130,17 +130,80 @@ func (s *Store) RemoveMFA(ctx context.Context, admin uuid.UUID, keep *uuid.UUID,
 	return nil
 }
 
-func (s *Store) PassSessionMFA(ctx context.Context, session uuid.UUID, expires time.Time) error {
-	var passed []model.AdminSession
-	err := s.db.WithContext(ctx).Model(&passed).
-		Clauses(clause.Returning{}).
-		Where("id = ? AND revoked_at IS NULL", session).
-		Updates(map[string]any{"is_mfa_passed": true, "expires_at": expires}).Error
-	if err != nil {
-		return err
+// StartAdminPasskey keeps a passkey being added, its ceremony in Secret,
+// removing any other passkey left half-added. The confirmed ones stay: an
+// administrator may have several.
+func (s *Store) StartAdminPasskey(ctx context.Context, factor *model.MFA) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := tx.Where("admin_id = ? AND method = ? AND confirmed_at IS NULL", factor.AdminID, model.MFAMethodWebAuthn).
+			Delete(&model.MFA{}).Error
+		if err != nil {
+			return err
+		}
+
+		return translate(tx.Omit(clause.Associations).Create(factor).Error)
+	})
+}
+
+// ConfirmAdminPasskey keeps the credential the browser made in place of the
+// ceremony, and turns the passkey on.
+func (s *Store) ConfirmAdminPasskey(ctx context.Context, factor *model.MFA) error {
+	err := s.db.WithContext(ctx).Model(&model.MFA{}).
+		Where("id = ? AND confirmed_at IS NULL", factor.ID).
+		Updates(map[string]any{
+			"secret": factor.Secret, "credential_id": factor.CredentialID,
+			"label": factor.Label, "confirmed_at": factor.ConfirmedAt,
+		}).Error
+	if err == nil {
+		s.forget(ctx, cache.Admins)
 	}
 
-	s.putAdminSessions(ctx, passed...)
+	return err
+}
 
-	return nil
+// UsedAdminPasskey keeps a passkey's credential as its last sign-in left it,
+// its counter moved on.
+func (s *Store) UsedAdminPasskey(ctx context.Context, factor uuid.UUID, sealed string, at time.Time) error {
+	return s.db.WithContext(ctx).Model(&model.MFA{}).
+		Where("id = ?", factor).
+		Updates(map[string]any{"secret": sealed, "last_used_at": at}).Error
+}
+
+// RemoveAdminPasskey removes one of an administrator's passkeys, and says
+// whether there was one.
+func (s *Store) RemoveAdminPasskey(ctx context.Context, admin, factor uuid.UUID) (bool, error) {
+	result := s.db.WithContext(ctx).
+		Where("id = ? AND admin_id = ? AND method = ?", factor, admin, model.MFAMethodWebAuthn).
+		Delete(&model.MFA{})
+	if result.Error == nil {
+		s.forget(ctx, cache.Admins)
+	}
+
+	return result.RowsAffected > 0, result.Error
+}
+
+// OfferAdminPasskey keeps the passkey ceremony offered to a session waiting
+// for its second factor, replacing any earlier one; TakeAdminPasskeyCeremony
+// takes it.
+func (s *Store) OfferAdminPasskey(ctx context.Context, session *model.AdminSession, ceremony string) error {
+	return s.db.WithContext(ctx).Model(&model.AdminSession{}).
+		Where("id = ? AND revoked_at IS NULL", session.ID).
+		Update("passkey_ceremony", ceremony).Error
+}
+
+// TakeAdminPasskeyCeremony takes the passkey ceremony a session was offered,
+// once: the first answer spends it, right or wrong. "" when there is none.
+// It is read from the database, never the cache, which does not keep it.
+func (s *Store) TakeAdminPasskeyCeremony(ctx context.Context, session uuid.UUID) (string, error) {
+	var taken []string
+	err := s.db.WithContext(ctx).Raw(`
+		UPDATE admin_sessions SET passkey_ceremony = ''
+		FROM (SELECT id, passkey_ceremony FROM admin_sessions WHERE id = ? FOR UPDATE) offered
+		WHERE admin_sessions.id = offered.id AND offered.passkey_ceremony <> '' AND admin_sessions.revoked_at IS NULL
+		RETURNING offered.passkey_ceremony`, session).Scan(&taken).Error
+	if err != nil || len(taken) == 0 {
+		return "", err
+	}
+
+	return taken[0], nil
 }

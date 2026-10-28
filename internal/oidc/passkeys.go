@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"slices"
 	"time"
 
@@ -13,28 +12,12 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"vard/internal/brand"
 	"vard/internal/model"
 )
 
 // Passkeys, through go-webauthn, and keeping factors sealed: a passkey's
 // credential and an authenticator's seed are both stored only as the Sealer
 // leaves them.
-
-// newWebAuthn is the passkey relying party: the sign-in pages' own host and
-// origin, which is where every ceremony runs.
-func newWebAuthn(accountURL string) (*webauthn.WebAuthn, error) {
-	parsed, err := url.Parse(accountURL)
-	if err != nil || parsed.Hostname() == "" {
-		return nil, fmt.Errorf("oidc: the account URL %q has no host for passkeys", accountURL)
-	}
-
-	return webauthn.New(&webauthn.Config{
-		RPID:          parsed.Hostname(),
-		RPDisplayName: brand.Name,
-		RPOrigins:     []string{parsed.Scheme + "://" + parsed.Host},
-	})
-}
 
 // passkeyUser is a user as go-webauthn asks for one.
 type passkeyUser struct {

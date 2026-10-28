@@ -260,6 +260,9 @@ type virtualKey struct {
 	// user is the handle it was made for, which a passkey sends back when it
 	// is the only thing that says who is signing in.
 	user string
+	// origin is the page the browser says it ran on: the sign-in pages',
+	// unless it is the panel's.
+	origin string
 }
 
 func newVirtualKey(t *testing.T) *virtualKey {
@@ -272,7 +275,7 @@ func newVirtualKey(t *testing.T) *virtualKey {
 	id := make([]byte, 32)
 	_, _ = rand.Read(id)
 
-	return &virtualKey{key: key, id: id}
+	return &virtualKey{key: key, id: id, origin: testAccountURL}
 }
 
 var b64 = base64.RawURLEncoding
@@ -281,7 +284,7 @@ func (k *virtualKey) clientData(t *testing.T, kind string, options map[string]an
 	t.Helper()
 
 	data, err := json.Marshal(map[string]any{
-		"type": kind, "challenge": options["challenge"], "origin": testAccountURL, "crossOrigin": false,
+		"type": kind, "challenge": options["challenge"], "origin": k.origin, "crossOrigin": false,
 	})
 	if err != nil {
 		t.Fatal(err)

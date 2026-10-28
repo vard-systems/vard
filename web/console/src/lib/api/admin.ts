@@ -1,3 +1,9 @@
+import type {
+	AuthenticationResponseJSON,
+	PublicKeyCredentialCreationOptionsJSON,
+	PublicKeyCredentialRequestOptionsJSON,
+	RegistrationResponseJSON
+} from '@simplewebauthn/browser';
 import { api, apiPath, type Fetch } from './client';
 import type {
 	API,
@@ -117,6 +123,13 @@ export const adminApi = {
 		api.get<{ state: SessionState; mfa_required: boolean }>('/admin/auth/session', fetcher),
 
 	verifyMfa: (code: string) => api.post<{ admin: Admin }>('/admin/auth/mfa', { code }),
+
+	/** Offers the waiting sign-in a passkey ceremony, for navigator.credentials.get. */
+	passkeyChallenge: () =>
+		api.post<{ passkey: PublicKeyCredentialRequestOptionsJSON }>('/admin/auth/mfa/passkey'),
+
+	verifyMfaPasskey: (passkey: AuthenticationResponseJSON) =>
+		api.post<{ admin: Admin }>('/admin/auth/mfa', { passkey }),
 
 	logout: () => api.post<{ status: string }>('/admin/auth/logout'),
 
@@ -390,6 +403,16 @@ export const mfaApi = {
 
 	disable: (code: string) => api.delete<void>('/admin/mfa/totp', { code }),
 
+	/** Starts adding a passkey, with a code from the authenticator. */
+	beginPasskey: (code: string) =>
+		api.post<{ passkey: PublicKeyCredentialCreationOptionsJSON }>('/admin/mfa/passkeys', { code }),
+
+	finishPasskey: (label: string, response: RegistrationResponseJSON) =>
+		api.post<void>('/admin/mfa/passkeys/finish', { label, response }),
+
+	removePasskey: (id: string, code: string) =>
+		api.delete<void>(`/admin/mfa/passkeys/${id}`, { code }),
+
 	recoveryCodes: (code: string) =>
 		api.post<{ recovery_codes: string[] }>('/admin/mfa/recovery-codes', { code })
 };
@@ -418,7 +441,7 @@ export const adminsApi = {
 
 	security: (fetcher?: Fetch) => api.get<AdminSecurity>('/admin/security', fetcher),
 
-	updateSecurity: (input: { require_mfa: boolean }) =>
+	updateSecurity: (input: { require_mfa?: boolean; idle_timeout_minutes?: number }) =>
 		api.patch<AdminSecurity>('/admin/security', input),
 
 	resetMfa: (id: string) => api.delete<{ admin: AdminRecord }>(`/admin/admins/${id}/mfa`),

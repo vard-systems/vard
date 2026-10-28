@@ -219,6 +219,14 @@ code near it, and add a test when adding a case.
   ends its sessions, refresh tokens, login codes and devices — whoever
   registered the address first may not have been its owner. Social sign-in
   never makes an account for an address the provider has not verified.
+- **An administrator's session is new once its second factor passes.**
+  `PassAdminSessionMFA` ends the session the password opened and starts its
+  successor in one transaction, and the handler sets the new cookie, so a
+  token seen before the second factor is worth nothing after it. A session
+  unused for `AdminSecurity.IdleTimeoutMinutes` is refused (`last_seen_at`,
+  written at most once a `model.SeenEvery`). A passkey answers only the
+  ceremony its session was offered (`passkey_ceremony`), spent on the first
+  answer, and is counted against the lockout as a code is.
 - **Setting up the panel takes the logged setup token.** While no
   administrator exists, each start issues a 256-bit `setup_tokens` row
   (hash only) and logs the token at WARN; `CreateFirstAdmin` spends it with

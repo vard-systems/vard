@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
+	import { onMount } from 'svelte';
 	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { adminApi, ApiError, messageOf } from '#lib/api/index.js';
@@ -17,6 +19,12 @@
 	let useRecovery = $state(false);
 	let error = $state('');
 	let submitting = $state(false);
+	// Known only in the browser; until then the passkey choice is not offered.
+	let passkeys = $state(false);
+
+	onMount(() => {
+		passkeys = browserSupportsWebAuthn();
+	});
 	// svelte-ignore state_referenced_locally
 	let step = $state<'password' | 'code'>(data.waitingForCode ? 'code' : 'password');
 
@@ -68,6 +76,23 @@
 		}
 	}
 
+	async function verifyWithPasskey() {
+		error = '';
+		submitting = true;
+
+		try {
+			const { passkey } = await adminApi.passkeyChallenge();
+			const answer = await startAuthentication({ optionsJSON: passkey });
+			await adminApi.verifyMfaPasskey(answer);
+			await goto(resolve('/(panel)'), { replace: true, refreshAll: true });
+		} catch (err) {
+			if (err instanceof ApiError && err.code === 'admin_sign_in_expired') step = 'password';
+			// Cancelling the browser's dialog is not a mistake worth a message.
+			if (!(err instanceof Error && err.name === 'NotAllowedError')) error = messageOf(err);
+			submitting = false;
+		}
+	}
+
 	function switchCode() {
 		useRecovery = !useRecovery;
 		code = '';
@@ -112,6 +137,13 @@
 			<Button type="submit" size="lg" loading={submitting} disabled={!canVerify}>
 				{submitting ? 'Verifying…' : 'Verify'}
 			</Button>
+
+			{#if passkeys}
+				<Button variant="subtle" size="lg" disabled={submitting} onclick={verifyWithPasskey}>
+					<i class="ri-fingerprint-line" aria-hidden="true"></i>
+					Use a passkey
+				</Button>
+			{/if}
 
 			<div class="links">
 				<Button variant="plain" size="sm" onclick={switchCode}>

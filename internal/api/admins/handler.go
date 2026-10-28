@@ -155,17 +155,25 @@ func (h *Handler) UpdateSecurity(c *gin.Context) {
 		return
 	}
 
-	was := security.RequireMFA
+	if t := req.IdleTimeoutMinutes; t != nil && (*t < model.MinAdminIdleTimeout || *t > model.MaxAdminIdleTimeout) {
+		respond.Fail(c, idleTimeoutOutOfRange, "min", model.MinAdminIdleTimeout, "max", model.MaxAdminIdleTimeout)
+		return
+	}
+
+	was, wasIdle := security.RequireMFA, security.IdleTimeoutMinutes
 	security.RequireMFA = validate.Flag(req.RequireMFA, security.RequireMFA)
+	if req.IdleTimeoutMinutes != nil {
+		security.IdleTimeoutMinutes = *req.IdleTimeoutMinutes
+	}
 
 	if err := h.store.SaveAdminSecurity(c.Request.Context(), security); err != nil {
 		respond.Failure(c, h.log, err, "saving the admin security settings failed")
 		return
 	}
 
-	if was != security.RequireMFA {
+	if was != security.RequireMFA || wasIdle != security.IdleTimeoutMinutes {
 		h.audit.RecordWith(c, "admin_security.updated", "admin_security", "", map[string]any{
-			"require_mfa": security.RequireMFA,
+			"require_mfa": security.RequireMFA, "idle_timeout_minutes": security.IdleTimeoutMinutes,
 		})
 	}
 

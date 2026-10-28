@@ -67,7 +67,8 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | `VARD_REDIS_HOST`      | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
 | `VARD_TRUSTED_PROXIES` | Who may say who the caller is: the apps' servers, and nothing else.                      |
 | `VARD_RATE_LIMIT`      | Attempts per minute per address on password and email endpoints.                         |
-| `VARD_ADMIN_MFA`       | `required` or `optional`, seeded on first start.                                         |
+| `VARD_ADMIN_MFA`       | `required` (the default) or `optional`, seeded on first start.                           |
+| `VARD_ADMIN_NETWORKS`  | CIDRs the admin API answers (office, VPN). Empty answers everyone.                       |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.
@@ -104,7 +105,8 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 ### Before going live
 
 - [ ] `PUBLIC_URL` and `ADMIN_URL` are `https` (session cookies become Secure).
-- [ ] The admin host is reachable only from staff networks or a VPN.
+- [ ] The admin host is reachable only from staff networks or a VPN, and
+      `VARD_ADMIN_NETWORKS` names them.
 - [ ] `VARD_SECRET_KEY` is stored in a secret manager.
 - [ ] SMTP is configured, or reset emails only reach the log.
 - [ ] Postgres is backed up (`make db-backup` from cron), and the dumps leave
@@ -185,6 +187,23 @@ that already exists:
 - **First SSO link**: when a connection is linked to an existing account that
   has a second factor, the person is asked for it once; later sign-ins
   through the link are not.
+
+### To the release with admin session hardening
+
+Migrations `00009` and `00010` run on start.
+
+- **Admin second factor**: `VARD_ADMIN_MFA` now defaults to `required`. It is
+  read only on the first start, so an existing installation keeps its
+  setting; turn it on under Administrators → *Require an authenticator*.
+- **Idle timeout**: an administrator's session ends after 30 minutes unused
+  (Administrators → *Sign out an idle session after*), within its 12 hours.
+  Sessions open during the upgrade count as used then.
+- **Session token**: passing the second factor now issues a new session
+  cookie and ends the one the password set.
+- **Passkeys**: administrators with an authenticator can add passkeys on
+  their profile and sign in with them instead of a code.
+- **Networks**: `VARD_ADMIN_NETWORKS` holds the admin API to the networks
+  named, by the caller's address as the console's server passes it on.
 
 ## Development
 

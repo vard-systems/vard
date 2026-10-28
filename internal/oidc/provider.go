@@ -24,6 +24,7 @@ import (
 	"vard/internal/jose"
 	"vard/internal/mail"
 	"vard/internal/model"
+	"vard/internal/passkey"
 	"vard/internal/store"
 )
 
@@ -80,7 +81,7 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 		return nil, err
 	}
 
-	passkeys, err := newWebAuthn(cfg.AccountURL)
+	passkeys, err := passkey.RelyingParty(cfg.AccountURL)
 	if err != nil {
 		return nil, err
 	}

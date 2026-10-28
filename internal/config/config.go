@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -58,6 +59,10 @@ type Config struct {
 	// LogLevel is the least severe line the server writes: debug, info, warn
 	// or error.
 	LogLevel slog.Level
+
+	// AdminNetworks are the networks the admin API answers, as CIDRs: anyone
+	// else is refused before anything is read. Empty answers everyone.
+	AdminNetworks []string
 
 	// TrustedProxies are the proxies whose X-Forwarded-For is believed. Empty
 	// believes no one. Behind a proxy it must be set, or every request (and the
@@ -163,7 +168,8 @@ func Load() (Config, error) {
 	v.SetDefault(env("TRUSTED_PROXIES"), "")
 	v.SetDefault(env("RATE_LIMIT"), 20)
 	v.SetDefault(env("LOG_LEVEL"), "info")
-	v.SetDefault(env("ADMIN_MFA"), "optional")
+	v.SetDefault(env("ADMIN_MFA"), "required")
+	v.SetDefault(env("ADMIN_NETWORKS"), "")
 	v.SetDefault(env("KEY_ROTATION_DAYS"), 90)
 	v.SetDefault(env("AUDIT_RETENTION_DAYS"), 365)
 	v.SetDefault(env("ISSUER"), "http://localhost:8080")
@@ -205,6 +211,7 @@ func Load() (Config, error) {
 		AuditRetention:     time.Duration(v.GetInt(env("AUDIT_RETENTION_DAYS"))) * 24 * time.Hour,
 		RateLimit:          v.GetInt(env("RATE_LIMIT")),
 		TrustedProxies:     splitList(v.GetString(env("TRUSTED_PROXIES"))),
+		AdminNetworks:      splitList(v.GetString(env("ADMIN_NETWORKS"))),
 		SecretKey:          v.GetString(env("SECRET_KEY")),
 		Mail: Mail{
 			Host:     v.GetString(env("SMTP_HOST")),
@@ -285,6 +292,12 @@ func Load() (Config, error) {
 
 	if mode := v.GetString(env("ADMIN_MFA")); mode != "required" && mode != "optional" {
 		return Config{}, fmt.Errorf("%s must be required or optional, got %q", env("ADMIN_MFA"), mode)
+	}
+
+	for _, network := range cfg.AdminNetworks {
+		if _, _, err := net.ParseCIDR(network); err != nil {
+			return Config{}, fmt.Errorf("%s holds %q, which is not a network such as 10.0.0.0/8", env("ADMIN_NETWORKS"), network)
+		}
 	}
 
 	if cfg.KeyRotation < 0 {

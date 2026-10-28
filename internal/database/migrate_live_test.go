@@ -45,6 +45,8 @@ func TestLiveTheNewColumnsUpgradeAnExistingDatabase(t *testing.T) {
 		index   string
 		table   string
 	}{
+		{name: "admin passkeys", columns: []column{{"mfa_factors", "credential_id"}, {"admin_sessions", "passkey_ceremony"}}},
+		{name: "admin idle timeout", columns: []column{{"admin_security", "idle_timeout_minutes"}, {"admin_sessions", "last_seen_at"}}},
 		{name: "SSO domain proofs", table: "sso_domain_verifications", columns: []column{
 			{"pending_sign_ins", "link_connection_id"}, {"pending_sign_ins", "link_subject"}, {"pending_sign_ins", "link_email"},
 		}},

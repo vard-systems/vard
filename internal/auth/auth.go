@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
@@ -44,14 +45,16 @@ type Service struct {
 	log    *slog.Logger
 
 	issuer string
+	// webauthn is the panel's passkey relying party.
+	webauthn *webauthn.WebAuthn
 
 	// now is the clock every lifetime, lockout and expiry is measured by, so
 	// a test can move it instead of waiting.
 	now func() time.Time
 }
 
-func New(st *store.Store, sealer *jose.Sealer, log *slog.Logger, issuer string) *Service {
-	return &Service{store: st, sealer: sealer, log: log, issuer: issuer, now: time.Now}
+func New(st *store.Store, sealer *jose.Sealer, log *slog.Logger, issuer string, passkeys *webauthn.WebAuthn) *Service {
+	return &Service{store: st, sealer: sealer, log: log, issuer: issuer, webauthn: passkeys, now: time.Now}
 }
 
 // MFARequired reports whether every administrator must use a second factor.
@@ -138,6 +141,7 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 		AdminID:     admin.ID,
 		TokenHash:   hash,
 		ExpiresAt:   s.now().Add(lifetime),
+		LastSeenAt:  s.now(),
 		IsMFAPassed: state == StateSignedIn,
 		UserAgent:   model.Truncate(req.UserAgent, 255),
 		IP:          model.Truncate(req.IP, 45),
@@ -181,6 +185,17 @@ func (s *Service) Session(ctx context.Context, token string) (*model.Admin, *mod
 	now := s.now()
 	if session.RevokedAt != nil || !now.Before(session.ExpiresAt) {
 		return nil, nil, StateNone, ErrNoSession
+	}
+
+	security, err := s.store.AdminSecurity(ctx)
+	if err != nil {
+		return nil, nil, StateNone, err
+	}
+	if session.Idle(now, security.IdleTimeout()) {
+		return nil, nil, StateNone, ErrNoSession
+	}
+	if err := s.store.TouchAdminSession(ctx, session, now); err != nil {
+		return nil, nil, StateNone, err
 	}
 
 	// The lockout applies to signing in, not to open sessions; otherwise five
@@ -278,4 +293,31 @@ func (s *Service) recordWith(ctx context.Context, adminID *uuid.UUID, actor, act
 	if err := s.store.WriteAudit(ctx, &entry); err != nil {
 		s.log.Error("writing the activity log failed", "error", err, "action", action)
 	}
+}
+
+// passMFA swaps the session a password opened for a new one with the second
+// factor passed, and returns the new one's token for the cookie.
+func (s *Service) passMFA(ctx context.Context, current *model.AdminSession) (string, error) {
+	token, hash, err := model.NewSecret()
+	if err != nil {
+		return "", err
+	}
+
+	now := s.now()
+	next := &model.AdminSession{
+		AdminID:    current.AdminID,
+		TokenHash:  hash,
+		ExpiresAt:  now.Add(SessionLifetime),
+		LastSeenAt: now,
+		UserAgent:  current.UserAgent,
+		IP:         current.IP,
+	}
+
+	if err := s.store.PassAdminSessionMFA(ctx, current, next, now); errors.Is(err, store.ErrAlreadyUsed) {
+		return "", ErrNoSession
+	} else if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

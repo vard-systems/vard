@@ -36,10 +36,11 @@ type MFAStatus struct {
 	ConfirmedAt       *time.Time `json:"confirmed_at"`
 	LastUsedAt        *time.Time `json:"last_used_at"`
 	RecoveryCodesLeft int        `json:"recovery_codes_left"`
+	Passkeys          []Passkey  `json:"passkeys"`
 }
 
 func (s *Service) Status(ctx context.Context, admin *model.Admin) (MFAStatus, error) {
-	status := MFAStatus{Required: s.MFARequired(ctx)}
+	status := MFAStatus{Required: s.MFARequired(ctx), Passkeys: []Passkey{}}
 
 	factor, err := s.confirmedFactor(ctx, admin)
 	if errors.Is(err, ErrMFADisabled) {
@@ -54,37 +55,50 @@ func (s *Service) Status(ctx context.Context, admin *model.Admin) (MFAStatus, er
 	status.LastUsedAt = factor.LastUsedAt
 	status.RecoveryCodesLeft = len(factor.RecoveryCodes)
 
+	passkeys, _, err := s.passkeys(ctx, admin)
+	if err != nil {
+		return status, err
+	}
+	for _, passkey := range passkeys {
+		status.Passkeys = append(status.Passkeys, Passkey{
+			ID: passkey.ID.String(), Label: passkey.Label, AddedAt: *passkey.ConfirmedAt, LastUsedAt: passkey.LastUsedAt,
+		})
+	}
+
 	return status, nil
 }
 
-func (s *Service) VerifySignIn(ctx context.Context, token, code string, req Request) (*model.Admin, error) {
+// VerifySignIn finishes a sign-in with its second factor, and returns the
+// new session token that replaces the one the password set.
+func (s *Service) VerifySignIn(ctx context.Context, token, code string, req Request) (*model.Admin, string, error) {
 	admin, session, state, err := s.Session(ctx, token)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if state != StateMFA {
-		return nil, ErrNoSession
+		return nil, "", ErrNoSession
 	}
 
 	factor, err := s.confirmedFactor(ctx, admin)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	method, err := s.check(ctx, admin, factor, code, req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	if err := s.store.PassSessionMFA(ctx, session.ID, s.now().Add(SessionLifetime)); err != nil {
-		return nil, err
+	next, err := s.passMFA(ctx, session)
+	if err != nil {
+		return nil, "", err
 	}
 
 	if err := s.signedIn(ctx, admin, req, method); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return admin, nil
+	return admin, next, nil
 }
 
 // BeginTOTP starts authenticator setup. Replacing an active one needs a code
@@ -124,10 +138,13 @@ func (s *Service) BeginTOTP(ctx context.Context, admin *model.Admin, currentCode
 	return &Enrolment{Secret: secret, URI: totp.URI(s.issuer, admin.Email, secret)}, nil
 }
 
-func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, code string, req Request) ([]string, error) {
+// ConfirmTOTP turns a pending authenticator on and returns its recovery
+// codes. A sign-in that was waiting to enrol is signed in by it, under a new
+// session token, returned as `next`; "" otherwise.
+func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, code string, req Request) (codes []string, next string, err error) {
 	factors, err := s.store.MFAFactors(ctx, admin.ID, model.MFAMethodTOTP)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var pending *model.MFA
@@ -138,23 +155,23 @@ func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, co
 		}
 	}
 	if pending == nil {
-		return nil, ErrNotEnrolling
+		return nil, "", ErrNotEnrolling
 	}
 
 	secret, err := s.secretOf(*pending)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	now := s.now()
 	step, ok := totp.Verify(secret, code, now, 0)
 	if !ok {
-		return nil, ErrInvalidCode
+		return nil, "", ErrInvalidCode
 	}
 
 	codes, hashes, err := recovery.New(s.sealer, recoveryCodePurpose)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	usedAt := time.Unix(step*int64(totp.Period/time.Second), 0)
@@ -169,7 +186,7 @@ func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, co
 	pending.LastUsedAt = &usedAt
 	pending.RecoveryCodes = hashes
 	if err := s.store.ConfirmMFA(ctx, pending); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	action := "admin.mfa_enabled"
@@ -182,22 +199,22 @@ func (s *Service) ConfirmTOTP(ctx context.Context, admin *model.Admin, token, co
 	// become fully signed in now that a factor exists.
 	if waiting != nil {
 		if _, err := s.store.RevokeOtherAdminSessionsFor(ctx, admin.ID, waiting.ID, now); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	} else if err := s.store.RevokeAdminSessionsFor(ctx, admin.ID, now); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if enrolling && !waiting.IsMFAPassed {
-		if err := s.store.PassSessionMFA(ctx, waiting.ID, now.Add(SessionLifetime)); err != nil {
-			return nil, err
+		if next, err = s.passMFA(ctx, waiting); err != nil {
+			return nil, "", err
 		}
 		if err := s.signedIn(ctx, admin, req, "totp"); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	}
 
-	return codes, nil
+	return codes, next, nil
 }
 
 func (s *Service) DisableTOTP(ctx context.Context, admin *model.Admin, token, code string, req Request) error {

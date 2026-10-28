@@ -14,6 +14,7 @@ var (
 	wrongCredentials = respond.Define(http.StatusUnauthorized, "admin_wrong_credentials", respond.Admin)
 	signInExpired    = respond.Define(http.StatusUnauthorized, "admin_sign_in_expired", respond.Admin)
 	signInCodeWrong  = respond.Define(http.StatusUnauthorized, "admin_sign_in_code_wrong", respond.Admin)
+	noPasskeys       = respond.Define(http.StatusNotFound, "admin_no_passkeys", respond.Admin)
 )
 
 func (r *loginRequest) validate() error {

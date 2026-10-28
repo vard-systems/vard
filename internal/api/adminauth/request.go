@@ -1,5 +1,7 @@
 package adminauth
 
+import "encoding/json"
+
 // loginRequest is the body of POST /admin/auth/login. The password has no rule
 // beyond being present, so the form never describes the policy to a guesser.
 type loginRequest struct {
@@ -22,7 +24,9 @@ type passwordRequest struct {
 	NewPassword     string `json:"new_password" validate:"required"`
 }
 
-// codeRequest is a code from an authenticator app, or a recovery code.
+// codeRequest is a code from an authenticator app or a recovery code, or a
+// passkey's answer to the ceremony the sign-in was offered.
 type codeRequest struct {
-	Code string `json:"code" validate:"required,max=32"`
+	Code    string          `json:"code" validate:"max=32"`
+	Passkey json.RawMessage `json:"passkey"`
 }

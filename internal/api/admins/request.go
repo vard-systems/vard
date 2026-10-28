@@ -68,5 +68,6 @@ func listQuery(c *gin.Context) store.AdminQuery {
 // securityRequest changes the settings for every administrator; an omitted flag
 // is left alone.
 type securityRequest struct {
-	RequireMFA *bool `json:"require_mfa"`
+	RequireMFA         *bool `json:"require_mfa"`
+	IdleTimeoutMinutes *int  `json:"idle_timeout_minutes"`
 }

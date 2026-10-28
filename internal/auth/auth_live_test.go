@@ -56,7 +56,7 @@ func liveService(t *testing.T, requireMFA bool) (*Service, *clock) {
 	// must be the one written.
 	c := &clock{at: time.Date(2030, 1, 1, 9, 0, 0, 0, time.UTC)}
 
-	s := New(st, sealer, slog.New(slog.NewTextHandler(io.Discard, nil)), "test")
+	s := New(st, sealer, slog.New(slog.NewTextHandler(io.Discard, nil)), "test", nil)
 	s.now = c.now
 
 	return s, c
@@ -80,6 +80,17 @@ func TestLiveSessionsEndAtTheirLifetime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			s, c := liveService(t, tt.requireMFA)
+
+			// Nothing touches the session as the clock moves, so the longest
+			// idle timeout keeps it from ending sooner than its lifetime.
+			security, err := s.store.AdminSecurity(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			security.IdleTimeoutMinutes = model.MaxAdminIdleTimeout
+			if err := s.store.SaveAdminSecurity(ctx, security); err != nil {
+				t.Fatal(err)
+			}
 
 			token, _, state, err := s.Login(ctx, liveUsername, livePassword, Request{IP: "192.0.2.1"})
 			if err != nil || state != tt.state {

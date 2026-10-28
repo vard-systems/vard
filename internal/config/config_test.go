@@ -120,11 +120,13 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.SecureUserCookies || cfg.SecureAdminCookies {
 		t.Error("cookies are secure on the http defaults, which a browser would not send back")
 	}
-	// A fresh installation does not make anybody set up an authenticator:
-	// each administrator turns one on for themselves, and a super admin can
-	// require them of everybody once there is somebody to ask.
-	if cfg.AdminMFARequired {
-		t.Error("AdminMFARequired = true, want two-factor sign-in optional by default")
+	// A fresh installation makes every administrator set up a second factor;
+	// an installation only being tried out says VARD_ADMIN_MFA=optional.
+	if !cfg.AdminMFARequired {
+		t.Error("AdminMFARequired = false, want two-factor sign-in required by default")
+	}
+	if len(cfg.AdminNetworks) != 0 {
+		t.Errorf("AdminNetworks = %v, want the admin API answering everyone by default", cfg.AdminNetworks)
 	}
 	if cfg.Mail.Host != "" {
 		t.Errorf("Mail.Host = %q, want none: email is logged by default", cfg.Mail.Host)

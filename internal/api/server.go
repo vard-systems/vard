@@ -59,6 +59,7 @@ import (
 	"vard/internal/jose"
 	"vard/internal/model"
 	"vard/internal/oidc"
+	"vard/internal/passkey"
 	"vard/internal/store"
 )
 
@@ -99,12 +100,22 @@ func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog
 		return nil, err
 	}
 
-	service := auth.New(st, sealer, log, adminIssuer(cfg.AdminURL))
+	networks, err := middleware.Networks(cfg.AdminNetworks)
+	if err != nil {
+		return nil, err
+	}
+
+	passkeys, err := passkey.RelyingParty(cfg.AdminURL)
+	if err != nil {
+		return nil, err
+	}
+
+	service := auth.New(st, sealer, log, adminIssuer(cfg.AdminURL), passkeys)
 	recorder := audit.New(st, log)
 
 	registerAdminRoutes(r, service, provider, log, adminHandlers{
 		auth:         adminauth.New(service, st, recorder, log, cfg.SecureAdminCookies),
-		mfa:          mfa.New(service, log),
+		mfa:          mfa.New(service, log, cfg.SecureAdminCookies),
 		setup:        setup.New(st, log),
 		users:        users.New(st, recorder, log),
 		userSessions: usersessions.New(st, recorder, log),
@@ -126,6 +137,7 @@ func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog
 		caching:      caching.New(shared, recorder, log),
 		limit:        ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "admin").Middleware(),
 		csrf:         csrf.New(allowed(cfg.AdminURL, cfg.CORSOrigins)),
+		networks:     networks,
 	})
 
 	return r, nil
@@ -194,6 +206,8 @@ type adminHandlers struct {
 	caching      *caching.Handler
 	limit        gin.HandlerFunc
 	csrf         gin.HandlerFunc
+	// networks refuses callers outside VARD_ADMIN_NETWORKS.
+	networks gin.HandlerFunc
 }
 
 // registerPublicRoutes mounts every public route. What a path does is in the
@@ -296,8 +310,9 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 	r.GET("/healthz", health)
 
 	// Everything here is called by the console with the administrator's session
-	// cookie, so it only takes changes from the console's origin.
-	v1 := r.Group("/api/v1", h.csrf)
+	// cookie, so it only takes changes from the console's origin; and only
+	// from the networks staff work from, when they are named.
+	v1 := r.Group("/api/v1", h.networks, h.csrf)
 	{
 		// Setup and sign-in cannot require a session. Setup is refused once any
 		// administrator exists.
@@ -307,6 +322,7 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 
 		v1.GET("/admin/auth/session", h.auth.State)
 		v1.POST("/admin/auth/mfa", h.limit, h.auth.VerifyMFA)
+		v1.POST("/admin/auth/mfa/passkey", h.limit, h.auth.PasskeyChallenge)
 		v1.POST("/admin/auth/logout", h.auth.Logout)
 
 		setup := v1.Group("/admin/mfa", session.RequireSetup(service))
@@ -323,6 +339,9 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 
 		signedIn.DELETE("/mfa/totp", h.limit, h.mfa.Disable)
 		signedIn.POST("/mfa/recovery-codes", h.limit, h.mfa.RecoveryCodes)
+		signedIn.POST("/mfa/passkeys", h.limit, h.mfa.BeginPasskey)
+		signedIn.POST("/mfa/passkeys/finish", h.limit, h.mfa.FinishPasskey)
+		signedIn.DELETE("/mfa/passkeys/:id", h.limit, h.mfa.RemovePasskey)
 		signedIn.GET("/sessions", h.auth.Sessions)
 		signedIn.DELETE("/sessions/:id", h.auth.EndSession)
 		signedIn.DELETE("/sessions", h.auth.EndOtherSessions)

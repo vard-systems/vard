@@ -103,7 +103,8 @@ func newPageResponse(admins []model.Admin, total int64, query store.AdminQuery) 
 // securityResponse is the administrators' sign-in settings and how many would
 // have to enrol if a second factor were required.
 type securityResponse struct {
-	RequireMFA bool `json:"require_mfa"`
+	RequireMFA         bool `json:"require_mfa"`
+	IdleTimeoutMinutes int  `json:"idle_timeout_minutes"`
 	// Administrators is how many there are, and WithMFA how many of those
 	// already sign in with a second factor.
 	Administrators int64 `json:"administrators"`
@@ -112,8 +113,9 @@ type securityResponse struct {
 
 func newSecurityResponse(security model.AdminSecurity, total, withMFA int64) securityResponse {
 	return securityResponse{
-		RequireMFA:     security.RequireMFA,
-		Administrators: total,
-		WithMFA:        withMFA,
+		RequireMFA:         security.RequireMFA,
+		IdleTimeoutMinutes: int(security.IdleTimeout().Minutes()),
+		Administrators:     total,
+		WithMFA:            withMFA,
 	}
 }

@@ -104,3 +104,49 @@ func (s *Store) putAdminSessions(ctx context.Context, sessions ...model.AdminSes
 		s.sessions.PutSession(ctx, cache.AdminSession, session.TokenHash, session, session.ExpiresAt)
 	}
 }
+
+// TouchAdminSession records that a session was used, at most once every
+// model.SeenEvery, so its idle timeout runs from its last use.
+func (s *Store) TouchAdminSession(ctx context.Context, session *model.AdminSession, at time.Time) error {
+	var touched []model.AdminSession
+	err := s.db.WithContext(ctx).Model(&touched).
+		Clauses(clause.Returning{}).
+		Where("id = ? AND revoked_at IS NULL AND last_seen_at < ?", session.ID, at.Add(-model.SeenEvery)).
+		Update("last_seen_at", at).Error
+	if err != nil {
+		return err
+	}
+
+	s.putAdminSessions(ctx, touched...)
+	session.LastSeenAt = at
+
+	return nil
+}
+
+// PassAdminSessionMFA ends the session a password opened and starts `next`,
+// its successor with the second factor passed, in one transaction: the token
+// a sign-in had before its second factor is worth nothing after it.
+// ErrAlreadyUsed when `current` has ended meanwhile.
+func (s *Store) PassAdminSessionMFA(ctx context.Context, current, next *model.AdminSession, at time.Time) error {
+	var ended []model.AdminSession
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var err error
+		if ended, err = revokeAdminSessionsIn(tx, at, "id = ?", current.ID); err != nil {
+			return err
+		}
+		if len(ended) == 0 {
+			return ErrAlreadyUsed
+		}
+
+		next.IsMFAPassed = true
+		return tx.Create(next).Error
+	})
+	if err != nil {
+		return err
+	}
+
+	s.putAdminSessions(ctx, append(ended, *next)...)
+
+	return nil
+}

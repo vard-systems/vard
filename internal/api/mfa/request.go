@@ -1,6 +1,8 @@
 package mfa
 
 import (
+	"encoding/json"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,4 +22,11 @@ func bindOptional(c *gin.Context, into *optionalCodeRequest) error {
 		return nil
 	}
 	return c.ShouldBindJSON(into)
+}
+
+// passkeyRequest is the browser's answer to navigator.credentials.create,
+// and what the administrator calls the passkey.
+type passkeyRequest struct {
+	Label    string          `json:"label" binding:"max=100"`
+	Response json.RawMessage `json:"response" binding:"required"`
 }

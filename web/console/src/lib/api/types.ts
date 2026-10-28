@@ -31,6 +31,15 @@ export type MfaStatus = {
 	confirmed_at: string | null;
 	last_used_at: string | null;
 	recovery_codes_left: number;
+	/** The administrator's passkeys, beside their authenticator. */
+	passkeys: AdminPasskey[];
+};
+
+export type AdminPasskey = {
+	id: string;
+	label: string;
+	added_at: string;
+	last_used_at: string | null;
 };
 
 export type MfaEnrolment = { secret: string; uri: string };
@@ -629,6 +638,8 @@ export type SocialProviderInput = {
 
 export type AdminSecurity = {
 	require_mfa: boolean;
+	/** An unused session ends after this many minutes, within its twelve hours. */
+	idle_timeout_minutes: number;
 	administrators: number;
 	with_mfa: number;
 };

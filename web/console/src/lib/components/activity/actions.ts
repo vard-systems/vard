@@ -89,6 +89,20 @@ const actions: Record<string, Action> = {
 		tone: 'warning',
 		icon: 'ri-shield-keyhole-line'
 	},
+	'admin.passkey_added': {
+		label: 'Passkey added',
+		verb: 'added a passkey for their sign-in',
+		category: 'access',
+		tone: 'success',
+		icon: 'ri-fingerprint-line'
+	},
+	'admin.passkey_removed': {
+		label: 'Passkey removed',
+		verb: 'removed a passkey from their sign-in',
+		category: 'access',
+		tone: 'warning',
+		icon: 'ri-fingerprint-line'
+	},
 	'admin.recovery_codes_regenerated': {
 		label: 'Recovery codes renewed',
 		verb: 'made new recovery codes',
@@ -753,6 +767,8 @@ const selfTargeted = new Set([
 	'admin.mfa_enabled',
 	'admin.mfa_replaced',
 	'admin.mfa_disabled',
+	'admin.passkey_added',
+	'admin.passkey_removed',
 	'admin.recovery_codes_regenerated',
 	'user.login',
 	'user.logout',

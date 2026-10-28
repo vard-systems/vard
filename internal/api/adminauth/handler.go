@@ -102,7 +102,20 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 
 	token := session.Token(c)
 
-	admin, err := h.auth.VerifySignIn(c.Request.Context(), token, req.Code, session.RequestOf(c))
+	var (
+		admin *model.Admin
+		next  string
+		err   error
+	)
+	switch {
+	case len(req.Passkey) > 0:
+		admin, next, err = h.auth.VerifySignInWithPasskey(c.Request.Context(), token, req.Passkey, session.RequestOf(c))
+	case req.Code != "" && len(req.Code) <= 32:
+		admin, next, err = h.auth.VerifySignIn(c.Request.Context(), token, req.Code, session.RequestOf(c))
+	default:
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
 	switch {
 	case errors.Is(err, auth.ErrNoSession):
 		respond.Fail(c, signInExpired)
@@ -115,7 +128,27 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
+	session.Set(c, next, h.secure)
 	c.JSON(http.StatusOK, gin.H{"admin": newAdminResponse(admin)})
+}
+
+// PasskeyChallenge offers a sign-in waiting for its second factor a passkey
+// ceremony, and answers what navigator.credentials.get needs.
+func (h *Handler) PasskeyChallenge(c *gin.Context) {
+	options, err := h.auth.PasskeyChallenge(c.Request.Context(), session.Token(c))
+	switch {
+	case errors.Is(err, auth.ErrNoSession):
+		respond.Fail(c, signInExpired)
+		return
+	case errors.Is(err, auth.ErrPasskeyUnknown):
+		respond.Fail(c, noPasskeys)
+		return
+	case err != nil:
+		respond.Failure(c, h.log, err, "offering a passkey sign-in failed")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"passkey": options})
 }
 
 // Logout revokes the session and clears the cookie.

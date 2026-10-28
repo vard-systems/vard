@@ -232,8 +232,9 @@ func TestLiveAdminMFAOptional(t *testing.T) {
 	s := newLiveServer(t)
 	root := s.superAdmin()
 
-	// A fresh installation asks nobody for a second factor: the first
-	// administrator is signed in by their password alone.
+	// An installation set up with VARD_ADMIN_MFA=optional asks nobody for a
+	// second factor: the first administrator is signed in by their password
+	// alone. (A fresh installation without it requires one.)
 	if got := root.state(); got != "signed_in" {
 		t.Fatalf("the first sign-in is at %q, want signed_in", got)
 	}
@@ -243,7 +244,7 @@ func TestLiveAdminMFAOptional(t *testing.T) {
 	}
 	root.must(http.StatusOK, http.MethodGet, "/security", nil, &policy)
 	if policy.MFARequired {
-		t.Error("a fresh installation requires a second factor, want it optional")
+		t.Error("an installation set up optional requires a second factor")
 	}
 
 	// And an administrator who wants one sets it up themselves.

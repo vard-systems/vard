@@ -15,9 +15,12 @@ type MFA struct {
 	Method MFAMethod `gorm:"type:varchar(32);index;not null" json:"method"`
 	Label  string    `gorm:"size:100;not null;default:''" json:"label,omitempty"`
 
-	// Secret is the TOTP seed. Encrypt it before it is written; the database
-	// should never hold it in the clear.
-	Secret string `gorm:"size:255;not null" json:"-"`
+	// Secret is sealed: the TOTP seed, or a passkey's credential. While a
+	// passkey is being added it holds the ceremony instead, until the
+	// browser answers.
+	Secret string `gorm:"type:text;not null" json:"-"`
+	// CredentialID is a passkey's id, base64url; "" for an authenticator.
+	CredentialID string `gorm:"size:255;not null;default:'';index" json:"-"`
 
 	RecoveryCodes []string `gorm:"serializer:json" json:"-"`
 
