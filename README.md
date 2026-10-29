@@ -57,18 +57,18 @@ target.
 Every setting is an environment variable, read from `.env` (real environment
 variables win). `.env.example` documents all of them. The ones that matter most:
 
-| Variable               | Purpose                                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------------------- |
-| `VARD_SECRET_KEY`      | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
-| `VARD_SECRET_KEY_PREVIOUS` | The key `VARD_SECRET_KEY` replaced, while rotating; it opens and never seals.        |
-| `VARD_PWNED_PASSWORDS_URL` | The Pwned Passwords range API new passwords are checked against; empty for none.     |
-| `VARD_DB_DSN`          | PostgreSQL connection string.                                                            |
-| `VARD_ISSUER`          | Public URL of the provider (the id app's origin).                                        |
-| `VARD_ADMIN_URL`       | The console's URL; only this origin may change things via the admin API.                 |
-| `VARD_REDIS_HOST`      | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
-| `VARD_TRUSTED_PROXIES` | Who may say who the caller is: the apps' servers, and nothing else.                      |
-| `VARD_RATE_LIMIT`      | Attempts per minute per address on password and email endpoints.                         |
-| `VARD_ADMIN_MFA`       | `required` (the default) or `optional`, seeded on first start.                           |
+| Variable                   | Purpose                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| `VARD_SECRET_KEY`          | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
+| `VARD_SECRET_KEY_PREVIOUS` | The key `VARD_SECRET_KEY` replaced, while rotating; it opens and never seals.            |
+| `VARD_PWNED_PASSWORDS_URL` | The Pwned Passwords range API new passwords are checked against; empty for none.         |
+| `VARD_DB_DSN`              | PostgreSQL connection string.                                                            |
+| `VARD_ISSUER`              | Public URL of the provider (the id app's origin).                                        |
+| `VARD_ADMIN_URL`           | The console's URL; only this origin may change things via the admin API.                 |
+| `VARD_REDIS_HOST`          | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
+| `VARD_TRUSTED_PROXIES`     | Who may say who the caller is: the apps' servers, and nothing else.                      |
+| `VARD_RATE_LIMIT`          | Attempts per minute per address on password and email endpoints.                         |
+| `VARD_ADMIN_MFA`           | `required` (the default) or `optional`, seeded on first start.                           |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.
