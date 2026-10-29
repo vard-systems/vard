@@ -148,6 +148,12 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   Every copy a client holds stays good, the retry is held to the same client
   authentication and DPoP binding as any refresh, and the
   family still has exactly one live token.
+- A refresh token is issued only for `offline_access`, and only to an
+  application an administrator gave the refresh-token grant, for APIs that
+  allow offline access. OpenID Connect Core §11 asks for `prompt=consent`
+  instead; here the consent step is what asks the person, so a login flow
+  without it grants `offline_access` on the administrator's say alone — add
+  the consent step to a flow used by applications you do not run yourself.
 - Setting up a fresh panel takes the one-time token the server logged, not just
   reaching the console first; it works once, and only while nobody is an
   administrator.
