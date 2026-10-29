@@ -68,12 +68,8 @@ func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, sessio
 	if err := admin.SetPassword(next); err != nil {
 		return err
 	}
-	if err := s.store.SaveOwnAccount(ctx, admin); err != nil {
-		return err
-	}
 
-	_, err := s.store.RevokeOtherAdminSessionsFor(ctx, admin.ID, session, s.now())
-	return err
+	return s.store.ChangeAdminPassword(ctx, admin, session, s.now())
 }
 
 func (s *Service) withPassword(ctx context.Context, admin *model.Admin) error {

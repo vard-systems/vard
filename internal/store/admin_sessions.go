@@ -69,6 +69,30 @@ func (s *Store) RevokeOtherAdminSessionsFor(ctx context.Context, adminID, keep u
 	return int64(len(ended)), err
 }
 
+// ChangeAdminPassword writes an administrator's new password and ends every
+// other session of theirs in one transaction: a password changed while a
+// session someone else holds lives on would leave them in.
+func (s *Store) ChangeAdminPassword(ctx context.Context, admin *model.Admin, keep uuid.UUID, at time.Time) error {
+	var ended []model.AdminSession
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(admin).Update("password_hash", admin.PasswordHash).Error; err != nil {
+			return err
+		}
+
+		var err error
+		ended, err = revokeAdminSessionsIn(tx, at, "admin_id = ? AND id <> ?", admin.ID, keep)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	s.putAdminSessions(ctx, ended...)
+	s.forget(ctx, cache.Admins)
+
+	return nil
+}
+
 func (s *Store) RevokeOwnAdminSession(ctx context.Context, adminID, id uuid.UUID, at time.Time) (bool, error) {
 	ended, err := s.revokeAdminSessions(ctx, at, "id = ? AND admin_id = ?", id, adminID)
 	return len(ended) > 0, err

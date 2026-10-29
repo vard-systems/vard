@@ -246,12 +246,12 @@ func (s *Store) SaveAdmin(ctx context.Context, admin *model.Admin) error {
 	})), cache.Admins)
 }
 
-// SaveOwnAccount writes only name, address and password, so a profile change
+// SaveOwnAccount writes only name, address and avatar, so a profile change
 // can never touch roles. A taken address is ErrDuplicate.
 func (s *Store) SaveOwnAccount(ctx context.Context, admin *model.Admin) error {
 	return s.forgetting(ctx, translate(s.db.WithContext(ctx).
 		Model(admin).
-		Select("first_name", "last_name", "email", "username", "avatar_url", "password_hash").
+		Select("first_name", "last_name", "email", "username", "avatar_url").
 		Updates(admin).Error), cache.Admins)
 }
 
