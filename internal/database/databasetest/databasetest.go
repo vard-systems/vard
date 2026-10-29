@@ -1,5 +1,6 @@
 // Package databasetest makes a throwaway Postgres database for a test,
-// migrated to the newest schema and dropped when the test ends.
+// migrated to the newest schema or left empty, and dropped when the test
+// ends.
 package databasetest
 
 import (
@@ -28,6 +29,18 @@ const Env = "VARD_TEST_DB_DSN"
 // it, which a test starting a second server on the same database needs. A
 // test without Env is skipped, so `go test ./...` passes anywhere.
 func Open(t testing.TB) (*gorm.DB, config.DB) {
+	t.Helper()
+
+	db, cfg := Empty(t)
+	if err := database.Migrate(db, cfg, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+
+	return db, cfg
+}
+
+// Empty makes the database with nothing in it, not even the migrations.
+func Empty(t testing.TB) (*gorm.DB, config.DB) {
 	t.Helper()
 
 	dsn := os.Getenv(Env)
@@ -67,10 +80,6 @@ func Open(t testing.TB) (*gorm.DB, config.DB) {
 		_ = database.Close(db)
 		_ = server.Exec("DROP DATABASE IF EXISTS " + name + " WITH (FORCE)").Error
 	})
-
-	if err := database.Migrate(db, cfg, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
-		t.Fatalf("migrate %s: %v", name, err)
-	}
 
 	return db, cfg
 }

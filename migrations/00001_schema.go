@@ -4,17 +4,21 @@
 // Importing this package is what makes the migrations exist; internal/database
 // imports it for that reason alone.
 //
-// This file is the whole schema in one step, built from the models. A later
-// change to it is a new file beside this one (make migrate-new name=x), never
-// an edit here: a migration that has run anywhere says the same thing
-// forever.
+// This file is the whole schema in one step: schema/up.sql, written out once
+// and never changed, and the rows an installation starts with. A later change
+// is a new file beside this one (make migrate-new name=x), never an edit
+// here: a migration that has run anywhere says the same thing forever.
 package migrations
 
 import (
 	"context"
 	"database/sql"
+	_ "embed"
+	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -26,10 +30,17 @@ func init() {
 	goose.AddMigrationContext(upSchema, downSchema)
 }
 
+var (
+	//go:embed schema/up.sql
+	schemaUp string
+	//go:embed schema/down.sql
+	schemaDown string
+)
+
 // gormTx wraps the transaction goose hands a migration in GORM, so a
-// migration can use the model structs and the migrator instead of writing DDL
-// by hand. Everything it does runs in goose's transaction, so a migration
-// that fails half way leaves nothing behind.
+// migration can use the migrator instead of writing every statement by hand.
+// Everything it does runs in goose's transaction, so a migration that fails
+// half way leaves nothing behind.
 func gormTx(tx *sql.Tx) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{Conn: tx}), &gorm.Config{})
 	if err != nil {
@@ -38,27 +49,17 @@ func gormTx(tx *sql.Tx) (*gorm.DB, error) {
 	return db, nil
 }
 
-// upSchema builds the whole database: every table the models describe, the
-// indexes they cannot describe themselves, and the few rows an installation
+// upSchema builds the whole database: every table, constraint and index, the
+// search index where the database allows it, and the few rows an installation
 // starts with.
-//
-// The schema is the models — `model.All()` is the list, in the order a table
-// has to exist before the tables that point at it, and each struct says what
-// its columns are.
 func upSchema(_ context.Context, tx *sql.Tx) error {
 	db, err := gormTx(tx)
 	if err != nil {
 		return err
 	}
 
-	if err := db.AutoMigrate(model.All()...); err != nil {
-		return fmt.Errorf("create tables: %w", err)
-	}
-
-	for _, index := range indexes {
-		if err := db.Exec(index.create).Error; err != nil {
-			return fmt.Errorf("create %s: %w", index.name, err)
-		}
+	if err := db.Exec(schemaUp).Error; err != nil {
+		return fmt.Errorf("create the schema: %w", err)
 	}
 
 	if err := userSearchIndex(db); err != nil {
@@ -66,6 +67,14 @@ func upSchema(_ context.Context, tx *sql.Tx) error {
 	}
 
 	return seed(db)
+}
+
+// downSchema drops everything again.
+func downSchema(_ context.Context, tx *sql.Tx) error {
+	if _, err := tx.Exec(schemaDown); err != nil {
+		return fmt.Errorf("drop the schema: %w", err)
+	}
+	return nil
 }
 
 // userSearch lets the users page find a word anywhere in a user's address,
@@ -91,117 +100,87 @@ func userSearchIndex(db *gorm.DB) error {
 	return nil
 }
 
-// downSchema drops everything again: the join tables GORM made for the
-// many-to-many relations first, then the models in the reverse of the order
-// they were made, so no foreign key blocks a drop.
-func downSchema(_ context.Context, tx *sql.Tx) error {
-	db, err := gormTx(tx)
-	if err != nil {
-		return err
-	}
-
-	tables := []any{"user_role_members", "user_role_inherits", "user_role_api_scopes"}
-
-	models := model.All()
-	for i := len(models) - 1; i >= 0; i-- {
-		tables = append(tables, models[i])
-	}
-
-	return db.Migrator().DropTable(tables...)
-}
-
-// indexes are the ones a struct tag cannot describe: partial, ordered, or
-// with an operator class.
-var indexes = []struct{ name, create string }{
-	// A null application means the whole panel for an admin role, and a
-	// global role for a user role. Postgres treats every null as different,
-	// so a unique index over a nullable column needs a partial index for the
-	// null case.
-	{"idx_user_roles_global_name", `CREATE UNIQUE INDEX idx_user_roles_global_name
-		ON user_roles (name) WHERE application_id IS NULL`},
-	{"idx_admin_role_assignments_global", `CREATE UNIQUE INDEX idx_admin_role_assignments_global
-		ON admin_role_assignments (admin_id, role_id) WHERE application_id IS NULL`},
-	{"idx_admin_role_assignments_scoped", `CREATE UNIQUE INDEX idx_admin_role_assignments_scoped
-		ON admin_role_assignments (admin_id, role_id, application_id) WHERE application_id IS NOT NULL`},
-
-	// The users page searches addresses by prefix; the unique index on email
-	// compares with the database's collation, which a LIKE 'ab%' cannot use.
-	{"idx_users_email_prefix", `CREATE INDEX idx_users_email_prefix
-		ON users (email text_pattern_ops)`},
-
-	// The lists that page newest first, and the activity log's filters, read
-	// in these orders.
-	{"idx_user_sessions_recent", `CREATE INDEX idx_user_sessions_recent
-		ON user_sessions (created_at DESC, id DESC)`},
-	{"idx_audit_logs_created_id", `CREATE INDEX idx_audit_logs_created_id
-		ON audit_logs (created_at DESC, id DESC)`},
-	{"idx_audit_logs_action_created", `CREATE INDEX idx_audit_logs_action_created
-		ON audit_logs (action, created_at DESC)`},
-	{"idx_audit_logs_actor_created", `CREATE INDEX idx_audit_logs_actor_created
-		ON audit_logs (actor_email, created_at DESC)`},
-	// What an entry is about, newest first: an application's or a user's
-	// history in the panel.
-	{"idx_audit_logs_target", `CREATE INDEX idx_audit_logs_target
-		ON audit_logs (target_type, target_id, created_at DESC)`},
-	// Entries about an API name it in their metadata, not as their target.
-	{"idx_audit_logs_api", `CREATE INDEX idx_audit_logs_api
-		ON audit_logs (((metadata::jsonb) ->> 'api_id')) WHERE metadata LIKE '%"api_id"%'`},
-	{"idx_users_created", `CREATE INDEX idx_users_created ON users (created_at DESC)`},
-
-	// The other side of each join table GORM makes: their primary keys lead
-	// with the first column only.
-	{"idx_user_role_members_role", `CREATE INDEX idx_user_role_members_role
-		ON user_role_members (user_role_id)`},
-	{"idx_user_role_inherits_inherited", `CREATE INDEX idx_user_role_inherits_inherited
-		ON user_role_inherits (inherited_role_id)`},
-	{"idx_user_role_api_scopes_scope", `CREATE INDEX idx_user_role_api_scopes_scope
-		ON user_role_api_scopes (api_scope_id)`},
-	{"idx_application_apis_api", `CREATE INDEX idx_application_apis_api
-		ON application_apis (api_id)`},
-	{"idx_application_api_scopes_scope", `CREATE INDEX idx_application_api_scopes_scope
-		ON application_api_scopes (api_scope_id)`},
-}
-
 // seed writes the rows an installation cannot start without: the admin roles
 // there are to hold, the organisation the panel edits, the login flow every
-// application falls back to, and the language every page falls back to.
+// application falls back to, and the language every page falls back to. Each
+// names its columns, as up.sql made them, so a later change to a model cannot
+// change what this writes.
 //
 // It seeds nothing else. There are no applications, no user fields and no
 // user roles: what a record is made of and who may hold what is decided in
 // the panel, so a new installation starts with none of it.
 //
-// There is no administrator either. The first one is made by whoever opens
-// the panel, on /admin/new-super-admin, which is offered only while there is
-// none — so a deployment has no password written down anywhere, and no
-// default one to forget to change. How administrators are then made to sign
-// in (admin_security) is written on the server's first start, from the
-// configuration, for the same reason: it is a setting, not a schema.
+// There is no administrator either. The first one is made on
+// /new-super-admin with the setup token the server logs while there is none,
+// or with `admin create` — so a deployment has no password written down
+// anywhere, and no default one to forget to change. How administrators are
+// then made to sign in (admin_security) is written on the server's first
+// start, from the configuration, for the same reason: it is a setting, not a
+// schema.
 //
 // English is the only language here, offered and the default. Its text is not
 // stored: it ships in i18n/ and changes with every release, and a migration has
 // to say the same thing forever. Other languages are added from the panel.
 func seed(db *gorm.DB) error {
-	roles := append([]model.AdminRole(nil), startingRoles...)
-	if err := db.Create(&roles).Error; err != nil {
-		return fmt.Errorf("create the admin roles: %w", err)
+	now := time.Now()
+	row := func(what, statement string, values ...any) error {
+		id, err := uuid.NewV7()
+		if err != nil {
+			return err
+		}
+		if err := db.Exec(statement, append([]any{id, now, now}, values...)...).Error; err != nil {
+			return fmt.Errorf("create %s: %w", what, err)
+		}
+		return nil
+	}
+
+	for _, role := range startingRoles {
+		var permissions any
+		if role.Permissions != nil {
+			encoded, err := json.Marshal(role.Permissions)
+			if err != nil {
+				return err
+			}
+			permissions = string(encoded)
+		}
+		err := row("the admin role "+role.Name, `INSERT INTO admin_roles
+			(id, created_at, updated_at, name, description, permissions) VALUES (?, ?, ?, ?, ?, ?)`,
+			role.Name, role.Description, permissions)
+		if err != nil {
+			return err
+		}
 	}
 
 	organization := model.DefaultOrganization()
-	if err := db.Create(&organization).Error; err != nil {
-		return fmt.Errorf("create the organization: %w", err)
+	err := row("the organization", `INSERT INTO organizations
+		(id, created_at, updated_at, name, slug, timezone) VALUES (?, ?, ?, ?, ?, ?)`,
+		organization.Name, organization.Slug, organization.Timezone)
+	if err != nil {
+		return err
 	}
 
 	flow := model.DefaultLoginFlow()
-	if err := db.Create(&flow).Error; err != nil {
-		return fmt.Errorf("create the default login flow: %w", err)
+	steps, err := json.Marshal(flow.Steps)
+	if err != nil {
+		return err
+	}
+	err = row("the default login flow", `INSERT INTO login_flows
+		(id, created_at, updated_at, name, slug, description, is_default, is_enabled, steps,
+		 allow_sign_in, allow_registration, allow_password_reset, allow_remember_me,
+		 verify_email_on_register, require_verified_email, allow_email_change, session_lifetime_hours)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		flow.Name, flow.Slug, flow.Description, flow.IsDefault, flow.IsEnabled, string(steps),
+		flow.AllowSignIn, flow.AllowRegistration, flow.AllowPasswordReset, flow.AllowRememberMe,
+		flow.VerifyEmailOnRegister, flow.RequireVerifiedEmail, flow.AllowEmailChange, flow.SessionLifetimeHours)
+	if err != nil {
+		return err
 	}
 
 	language := model.DefaultLanguage()
-	if err := db.Create(&language).Error; err != nil {
-		return fmt.Errorf("create the default language: %w", err)
-	}
-
-	return nil
+	return row("the default language", `INSERT INTO languages
+		(id, created_at, updated_at, code, name, native_name, is_enabled, is_default, position)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		language.Code, language.Name, language.NativeName, language.IsEnabled, language.IsDefault, language.Position)
 }
 
 // startingRoles are the admin roles a panel is given, and what each grants.

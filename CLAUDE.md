@@ -74,7 +74,8 @@ internal/api/kit/        what every handler shares: respond (answers and the
                          signedin (what account, profile, steps and twostep
                          share: the user's session, the provider's refusals);
                          tstypes (holds the panel's types.ts to the answers)
-migrations/              the schema, then one file per change, applied in order
+migrations/              00001_schema.go (schema/up.sql, frozen), then one file
+                         per change, applied in order
 i18n/                    the English that ships, read with go-i18n: id/*.en.json
                          for the sign-in pages, console/*.en.json for the admin
                          API's problems; Catalog formats any language's text
@@ -224,7 +225,7 @@ code near it, and add a test when adding a case.
 - **An SSO connection takes over an existing account only at a proved
   domain.** Linking needs `matching = link`, listed domains (validation and
   `ssoAccountFor` both refuse it without), and an `sso_domain_verifications`
-  row proved by its DNS TXT record (or carried over by migration `00008`).
+  row proved by its DNS TXT record.
   The first link to an account with a second factor waits for that factor:
   the identity is held on the pending sign-in (`link_connection_id`) and
   made only by `SubmitSecondFactor`, and the provider syncs nothing until
@@ -299,12 +300,14 @@ registered in `model.All()` — bump the count in `TestAllListsEveryModel`. A
 plain `string` column is `not null;default:''`, a `bool` or `int` is
 `not null`, anything that may be absent is a pointer. Nothing is soft-deleted.
 
-**A migration.** `migrations/00001_schema.go` builds a fresh database
-from `model.All()`; existing databases are stepped forward, so every change
-after it gets its own file (`make migrate-new name=x`; `/migration`). `up` is a
-no-op on a fresh database, `down` undoes it, and table and column lists are
-written out, never read from the models. Test the upgrade of an existing
-database, not just a fresh one.
+**A migration.** `migrations/00001_schema.go` builds a fresh database from
+`migrations/schema/up.sql`, written out once and frozen, and seeds it with
+named columns. Every change after it gets its own file (`make migrate-new
+name=x`; `/migration`) whose statements are written out, never read from the
+models, and whose `down` undoes it. `TestLiveTheMigrationsMakeWhatTheModelsDescribe`
+fails when a model and the migrations disagree — a column, a constraint or an
+index — so a model change and its migration land together. Test the upgrade
+of an existing database, not just a fresh one.
 
 **A permission.** A constant and catalog entry in
 `internal/model/admin_permission.go`, routes guarded with `session.Can` or
