@@ -342,3 +342,8 @@ func (s *Service) record(ctx context.Context, user *model.User, email, action st
 		s.log.Error("writing the activity log failed", "error", err, "action", action)
 	}
 }
+
+// Ready says the server can answer: its database does.
+func (s *Service) Ready(ctx context.Context) error {
+	return s.store.Ready(ctx)
+}

@@ -41,7 +41,7 @@ func migrate(log *slog.Logger, args []string) error {
 		return err
 	}
 
-	db, err := database.Open(cfg.DB)
+	db, err := database.Open(cfg.DB, log)
 	if err != nil {
 		return err
 	}

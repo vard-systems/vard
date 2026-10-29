@@ -3,8 +3,10 @@ package database
 
 import (
 	"fmt"
-	"log"
-	"os"
+	"log/slog"
+	"net"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 	"vard/internal/config"
 )
 
-func Open(cfg config.DB) (*gorm.DB, error) {
+func Open(cfg config.DB, log *slog.Logger) (*gorm.DB, error) {
 	if cfg.Driver != "postgres" {
 		return nil, fmt.Errorf("unsupported database driver %q", cfg.Driver)
 	}
@@ -27,12 +29,14 @@ func Open(cfg config.DB) (*gorm.DB, error) {
 
 	// A lookup that finds nothing is not logged as an error: the store uses
 	// First to ask "is there one?" and turns the answer into store.ErrNotFound.
+	// Queries are logged without their values, which are hashes, sealed
+	// secrets and people's addresses.
 	db, err := gorm.Open(postgres.Open(dsn(cfg)), &gorm.Config{
-		Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
+		Logger: logger.NewSlogLogger(log, logger.Config{
 			SlowThreshold:             200 * time.Millisecond,
 			LogLevel:                  level,
 			IgnoreRecordNotFoundError: true,
-			Colorful:                  true,
+			ParameterizedQueries:      true,
 		}),
 	})
 	if err != nil {
@@ -48,12 +52,17 @@ func Open(cfg config.DB) (*gorm.DB, error) {
 	}
 
 	// Connections are recycled every half hour so a failover or a resized pool
-	// behind a proxy is picked up. Unset keeps Go's defaults.
+	// behind a proxy is picked up; a quarter are kept idle, enough for the
+	// usual load without holding the rest of Postgres's connections.
 	if cfg.MaxConns > 0 {
 		sqlDB.SetMaxOpenConns(cfg.MaxConns)
-		sqlDB.SetMaxIdleConns(cfg.MaxConns)
+		sqlDB.SetMaxIdleConns(max(2, cfg.MaxConns/4))
 		sqlDB.SetConnMaxLifetime(30 * time.Minute)
 		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+	}
+
+	if unencrypted(cfg.DSN) {
+		log.Warn("the database connection is not encrypted; set sslmode=verify-full for a database reached over a network")
 	}
 
 	return db, nil
@@ -67,17 +76,46 @@ func Close(db *gorm.DB) error {
 	return sqlDB.Close()
 }
 
-// dsn appends the time zone by hand: URL escaping would turn "Asia/Bishkek"
-// into Asia%2FBishkek, which Postgres rejects.
+// dsn adds the time zone and the server-side limits, each only where the DSN
+// does not set its own. They are appended by hand: URL escaping would turn
+// "Asia/Bishkek" into Asia%2FBishkek, which Postgres rejects.
 func dsn(cfg config.DB) string {
-	if strings.Contains(cfg.DSN, "TimeZone=") {
-		return cfg.DSN
+	out := cfg.DSN
+	add := func(name, value string) {
+		if strings.Contains(out, name+"=") {
+			return
+		}
+		separator := "?"
+		if strings.Contains(out, "?") {
+			separator = "&"
+		}
+		out += separator + name + "=" + value
 	}
 
-	separator := "?"
-	if strings.Contains(cfg.DSN, "?") {
-		separator = "&"
+	add("TimeZone", cfg.TimeZone)
+	add("statement_timeout", strconv.FormatInt(cfg.StatementTimeout.Milliseconds(), 10))
+	add("idle_in_transaction_session_timeout", strconv.FormatInt(cfg.IdleInTransactionTimeout.Milliseconds(), 10))
+
+	return out
+}
+
+// unencrypted says a DSN reaches a database over a network without TLS. A
+// host on this machine, or a bare name such as a container's on its own
+// network, is not counted.
+func unencrypted(dsn string) bool {
+	address, err := url.Parse(dsn)
+	if err != nil {
+		return false
 	}
 
-	return cfg.DSN + separator + "TimeZone=" + cfg.TimeZone
+	switch address.Query().Get("sslmode") {
+	case "require", "verify-ca", "verify-full":
+		return false
+	}
+
+	host := address.Hostname()
+	if ip := net.ParseIP(host); ip != nil {
+		return !ip.IsLoopback()
+	}
+	return host != "" && host != "localhost" && strings.Contains(host, ".")
 }

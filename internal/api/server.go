@@ -11,10 +11,12 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -84,6 +86,7 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 		limit:   ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "public").Middleware(),
 		tokens:  ratelimit.New(cfg.RateLimit*tokenLimitMultiple).Shared(shared.SessionDB(), "token").Middleware(),
 		csrf:    csrf.New(allowed(cfg.AccountURL, cfg.CORSOrigins)),
+		ready:   ready(provider),
 	})
 
 	return r, nil
@@ -171,6 +174,7 @@ type publicHandlers struct {
 	limit   gin.HandlerFunc
 	tokens  gin.HandlerFunc
 	csrf    gin.HandlerFunc
+	ready   gin.HandlerFunc
 }
 
 type adminHandlers struct {
@@ -203,6 +207,7 @@ type adminHandlers struct {
 // handler, but that a path exists — and on which server — is only ever here.
 func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 	r.GET("/healthz", health)
+	r.GET("/readyz", h.ready)
 
 	r.GET(oidc.PathDiscovery, h.oauth.Discovery)
 	r.GET(oidc.PathJWKS, h.oauth.JWKS)
@@ -297,6 +302,7 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 
 func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Service, log *slog.Logger, h adminHandlers) {
 	r.GET("/healthz", health)
+	r.GET("/readyz", ready(provider))
 
 	// Everything here is called by the console with the administrator's session
 	// cookie, so it only takes changes from the console's origin.
@@ -509,6 +515,26 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 // health says the server is up.
 func health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+var notReady = respond.Define(http.StatusServiceUnavailable, "not_ready", respond.Both)
+
+// readyTimeout keeps a database that hangs from hanging the orchestrator's
+// probe with it.
+const readyTimeout = 2 * time.Second
+
+// ready says the server can answer requests: its database answers.
+func ready(provider *oidc.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), readyTimeout)
+		defer cancel()
+
+		if err := provider.Ready(ctx); err != nil {
+			respond.Fail(c, notReady)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ready"})
+	}
 }
 
 func notFound(c *gin.Context) {

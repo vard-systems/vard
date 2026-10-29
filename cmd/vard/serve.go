@@ -61,7 +61,7 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 		log.Warn("VARD_SECRET_KEY does not look like 32 random bytes; a low-entropy key can be brute-forced against a database dump to recover sealed secrets — generate one with: openssl rand -base64 32")
 	}
 
-	db, err := database.Open(cfg.DB)
+	db, err := database.Open(cfg.DB, log)
 	if err != nil {
 		return err
 	}

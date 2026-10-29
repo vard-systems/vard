@@ -796,3 +796,23 @@ func getJSON(t *testing.T, url string, out any) {
 		t.Fatalf("GET %s: decode: %v", url, err)
 	}
 }
+
+// Ready is a database that answers; a server whose database has gone is
+// taken out of service with a defined problem, not left to fail each request.
+func TestLiveReadyFollowsTheDatabase(t *testing.T) {
+	s := newLiveServer(t)
+
+	if status := raw(t, http.MethodGet, s.root+"/readyz", "", nil); status != http.StatusOK {
+		t.Fatalf("readyz with the database up = %d, want 200", status)
+	}
+
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = sqlDB.Close()
+
+	if status := raw(t, http.MethodGet, s.root+"/readyz", "", nil); status != http.StatusServiceUnavailable {
+		t.Errorf("readyz with the database gone = %d, want 503", status)
+	}
+}

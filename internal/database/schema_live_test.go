@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -163,5 +164,23 @@ func TestLiveInstancesStartingTogetherMigrateOnce(t *testing.T) {
 		if err != nil {
 			t.Errorf("an instance's migration = %v, want it to wait its turn", err)
 		}
+	}
+}
+
+// The limit is Postgres's own, so a query that runs past it is ended by the
+// database even if nothing in Go is waiting to cancel it.
+func TestLiveAQueryPastTheStatementTimeoutIsEnded(t *testing.T) {
+	_, cfg := databasetest.Empty(t)
+	cfg.StatementTimeout = 100 * time.Millisecond
+
+	db, err := database.Open(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = database.Close(db) })
+
+	err = db.Exec("SELECT pg_sleep(1)").Error
+	if err == nil || !strings.Contains(err.Error(), "statement timeout") {
+		t.Errorf("a one-second query under a 100ms limit = %v, want it ended", err)
 	}
 }

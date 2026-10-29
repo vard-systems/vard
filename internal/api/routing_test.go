@@ -31,7 +31,7 @@ func TestEveryRouteIsReachableThroughItsApp(t *testing.T) {
 
 			for _, route := range test.engine.Routes() {
 				// The orchestrator's, asked on the API's own port.
-				if route.Path == "/healthz" {
+				if route.Path == "/healthz" || route.Path == "/readyz" {
 					continue
 				}
 

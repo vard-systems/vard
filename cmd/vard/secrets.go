@@ -42,7 +42,7 @@ func secrets(args []string, stdout io.Writer) error {
 		return err
 	}
 
-	db, err := database.Open(cfg.DB)
+	db, err := database.Open(cfg.DB, slog.Default())
 	if err != nil {
 		return err
 	}

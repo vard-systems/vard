@@ -63,6 +63,9 @@ func TestServersKeepTheirRoutesApart(t *testing.T) {
 		if w := do(r, http.MethodGet, "/healthz", nil); w.Code != http.StatusOK {
 			t.Errorf("healthz = %d on one of the servers", w.Code)
 		}
+		if w := do(r, http.MethodGet, "/readyz", nil); w.Code == http.StatusNotFound {
+			t.Error("readyz is not served on one of the servers")
+		}
 	}
 }
 

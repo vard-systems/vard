@@ -24,6 +24,13 @@ frozen) and holds `gormTx`.
   is lost.
 - A new model goes in `model.All()`, and `TestAllListsEveryModel` counts them,
   so bump the count.
+- An index on a table that grows (refresh_tokens, audit_logs, users) is made
+  `CREATE INDEX CONCURRENTLY`, which cannot run in a transaction: register
+  that migration with `goose.AddMigrationNoTxContext`, so an upgrade does not
+  hold up writes while it builds.
+- The server's connections end a statement after `VARD_DB_STATEMENT_TIMEOUT`
+  (15 s). A step that may take longer on a large database starts with
+  `SET LOCAL statement_timeout = 0` in its transaction.
 - Never edit a migration that has already run anywhere.
 
 Then `make migrate-up`, `make migrate-status`, and `make test-integration`,

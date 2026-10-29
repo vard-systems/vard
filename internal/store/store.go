@@ -125,3 +125,13 @@ func contains(search string) string {
 // ErrAlreadyUsed is a single-use secret presented again; it differs from
 // ErrNotFound because a replay revokes what the first use issued.
 var ErrAlreadyUsed = errors.New("already used")
+
+// Ready says Postgres answers. Redis is left out: everything works without
+// it, so its being down is no reason to take the server out of service.
+func (s *Store) Ready(ctx context.Context) error {
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.PingContext(ctx)
+}

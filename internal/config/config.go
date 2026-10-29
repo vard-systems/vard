@@ -109,6 +109,11 @@ type DB struct {
 	MigrateDir string
 
 	MaxConns int
+	// StatementTimeout and IdleInTransactionTimeout are Postgres's own
+	// limits on each connection: a query, or a transaction left open, past
+	// them is ended by the database rather than held for ever.
+	StatementTimeout         time.Duration
+	IdleInTransactionTimeout time.Duration
 }
 
 type Redis struct {
@@ -168,11 +173,13 @@ func Load() (Config, error) {
 	v.SetDefault(env("SMTP_PORT"), 587)
 	v.SetDefault(env("SMTP_FROM"), brand.Name+" <no-reply@localhost>")
 	v.SetDefault(env("DB_DRIVER"), "postgres")
-	v.SetDefault(env("DB_TIMEZONE"), "Asia/Bishkek")
+	v.SetDefault(env("DB_TIMEZONE"), "UTC")
 	v.SetDefault(env("DB_LOG_QUERIES"), false)
 	v.SetDefault(env("DB_MIGRATE"), true)
 	v.SetDefault(env("DB_MIGRATE_DIR"), "./migrations")
 	v.SetDefault(env("DB_MAX_CONNS"), 25)
+	v.SetDefault(env("DB_STATEMENT_TIMEOUT"), "15s")
+	v.SetDefault(env("DB_IDLE_IN_TRANSACTION_TIMEOUT"), "60s")
 	v.SetDefault(env("REDIS_PORT"), 6379)
 	v.SetDefault(env("REDIS_CACHE_DB"), 0)
 	v.SetDefault(env("REDIS_SESSION_DB"), 1)
@@ -217,6 +224,9 @@ func Load() (Config, error) {
 			Migrate:    v.GetBool(env("DB_MIGRATE")),
 			MigrateDir: v.GetString(env("DB_MIGRATE_DIR")),
 			MaxConns:   v.GetInt(env("DB_MAX_CONNS")),
+
+			StatementTimeout:         v.GetDuration(env("DB_STATEMENT_TIMEOUT")),
+			IdleInTransactionTimeout: v.GetDuration(env("DB_IDLE_IN_TRANSACTION_TIMEOUT")),
 		},
 		Redis: Redis{
 			Host:      strings.TrimSpace(v.GetString(env("REDIS_HOST"))),
@@ -285,6 +295,10 @@ func Load() (Config, error) {
 
 	if cfg.DB.MaxConns < 1 {
 		return Config{}, errors.New(env("DB_MAX_CONNS") + " must be one or more")
+	}
+	if cfg.DB.StatementTimeout < 0 || cfg.DB.IdleInTransactionTimeout < 0 {
+		return Config{}, fmt.Errorf("%s and %s must be zero (no limit) or more",
+			env("DB_STATEMENT_TIMEOUT"), env("DB_IDLE_IN_TRANSACTION_TIMEOUT"))
 	}
 
 	if cfg.Redis.Enabled() {

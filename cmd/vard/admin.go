@@ -70,7 +70,7 @@ func admin(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	db, err := database.Open(cfg.DB)
+	db, err := database.Open(cfg.DB, slog.Default())
 	if err != nil {
 		return err
 	}

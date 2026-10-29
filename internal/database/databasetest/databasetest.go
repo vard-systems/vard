@@ -48,7 +48,8 @@ func Empty(t testing.TB) (*gorm.DB, config.DB) {
 		t.Skipf("%s is not set", Env)
 	}
 
-	server, err := database.Open(config.DB{Driver: "postgres", DSN: dsn, TimeZone: "UTC"})
+	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
+	server, err := database.Open(config.DB{Driver: "postgres", DSN: dsn, TimeZone: "UTC"}, quiet)
 	if err != nil {
 		t.Fatalf("open the test database server: %v", err)
 	}
@@ -72,7 +73,7 @@ func Empty(t testing.TB) (*gorm.DB, config.DB) {
 
 	cfg := config.DB{Driver: "postgres", DSN: address.String(), TimeZone: "UTC", MigrateDir: migrationsDir(t)}
 
-	db, err := database.Open(cfg)
+	db, err := database.Open(cfg, quiet)
 	if err != nil {
 		t.Fatalf("open %s: %v", name, err)
 	}

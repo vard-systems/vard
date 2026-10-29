@@ -115,11 +115,12 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     healthcheck:
-      # Both listeners: either one failing to come up is a broken deployment.
+      # Both listeners, each ready only while its database answers (/readyz;
+      # /healthz says only that the process is up).
       test:
         [
           "CMD-SHELL",
-          "wget -qO /dev/null http://127.0.0.1:8080/healthz && wget -qO /dev/null http://127.0.0.1:8081/healthz",
+          "wget -qO /dev/null http://127.0.0.1:8080/readyz && wget -qO /dev/null http://127.0.0.1:8081/readyz",
         ]
       interval: 10s
       timeout: 3s

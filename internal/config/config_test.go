@@ -105,8 +105,11 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.DB.Driver != "postgres" {
 		t.Errorf("Driver = %q, want the default postgres", cfg.DB.Driver)
 	}
-	if cfg.DB.TimeZone != "Asia/Bishkek" {
-		t.Errorf("TimeZone = %q, want the default Asia/Bishkek", cfg.DB.TimeZone)
+	if cfg.DB.TimeZone != "UTC" {
+		t.Errorf("TimeZone = %q, want the default UTC", cfg.DB.TimeZone)
+	}
+	if cfg.DB.StatementTimeout != 15*time.Second || cfg.DB.IdleInTransactionTimeout != time.Minute {
+		t.Errorf("limits = %v and %v, want the defaults 15s and 1m", cfg.DB.StatementTimeout, cfg.DB.IdleInTransactionTimeout)
 	}
 	if !cfg.DB.Migrate {
 		t.Error("Migrate = false, want the default true")
