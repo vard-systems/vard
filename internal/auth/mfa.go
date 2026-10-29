@@ -297,7 +297,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 	}
 
 	if recovery.Is(code) {
-		ok, err := s.store.ConsumeRecoveryCode(ctx, factor.ID, recovery.Hashes(s.sealer, recoveryCodePurpose, code)...)
+		ok, err := s.store.ConsumeRecoveryCode(ctx, factor.ID, recovery.Hash(s.sealer, recoveryCodePurpose, code))
 		if err != nil {
 			return "", err
 		}

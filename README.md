@@ -266,10 +266,10 @@ Migration `00012` runs on start.
   `bin/vard secrets reseal` once after the upgrade to move all of them now.
 - **Rotating `VARD_SECRET_KEY`**: set the old value as
   `VARD_SECRET_KEY_PREVIOUS` and a new one as `VARD_SECRET_KEY`, restart,
-  run `bin/vard secrets reseal`, then empty `VARD_SECRET_KEY_PREVIOUS` and
-  restart again. Recovery codes are one-way hashes and cannot be resealed:
-  codes made before a rotation work only while the previous key is still
-  set, so ask people to make new ones before you drop it.
+  and the server seals every stored secret again under the new key as it
+  starts and says so in its log; then empty `VARD_SECRET_KEY_PREVIOUS` and
+  restart again. Recovery codes keep working: they are hashed with the
+  installation's own key, which is resealed with the rest.
 
 ### To the release with Argon2id passwords
 

@@ -40,6 +40,7 @@ func newID() (uuid.UUID, error) {
 func All() []any {
 	return []any{
 		&Organization{},
+		&ServerSecret{},
 		&OrganizationLogo{},
 		&AdminSecurity{},
 		&SetupToken{},

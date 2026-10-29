@@ -137,13 +137,10 @@ func (s *Store) ReplaceRecoveryCodes(ctx context.Context, user uuid.UUID, hashes
 
 // ConsumeUserRecoveryCode spends one of a user's recovery codes. It is one
 // UPDATE, so a code typed twice at once works once.
-// ConsumeUserRecoveryCode spends the user's recovery code kept under any of
-// hashes, once.
-func (s *Store) ConsumeUserRecoveryCode(ctx context.Context, user uuid.UUID, hashes []string, at time.Time) (bool, error) {
+// ConsumeUserRecoveryCode spends one of the user's recovery codes, once.
+func (s *Store) ConsumeUserRecoveryCode(ctx context.Context, user uuid.UUID, hash string, at time.Time) (bool, error) {
 	result := s.db.WithContext(ctx).Model(&model.UserRecoveryCode{}).
-		Where("id = (?)", s.db.Model(&model.UserRecoveryCode{}).Select("id").
-			Where("user_id = ? AND code_hash IN ? AND used_at IS NULL", user, hashes).Limit(1)).
-		Where("used_at IS NULL").
+		Where("user_id = ? AND code_hash = ? AND used_at IS NULL", user, hash).
 		Update("used_at", at)
 
 	return result.RowsAffected == 1, result.Error

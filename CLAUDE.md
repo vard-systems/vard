@@ -132,8 +132,11 @@ code near it, and add a test when adding a case.
   data — so a value moved to another column or row does not open; the row's
   id is given before the value is sealed. A new sealed column gets its
   `…Where` method in `internal/model/sealed.go` and a line in
-  `store.sealedColumns`, which `secrets reseal` walks. Recovery codes are
-  hashed (`Sealer.Tag`), and matched against every key's (`Tags`). The one
+  `store.sealedColumns`, which `secrets reseal` walks — and the server walks
+  as it starts while `VARD_SECRET_KEY_PREVIOUS` is set. Recovery codes, device
+  user codes and throttle keys are keyed hashes (`Sealer.Tag`) under the
+  installation's own tag key (`server_secrets`, sealed like the rest), so
+  they survive a rotation of `VARD_SECRET_KEY`. The one
   secret also kept recoverable is a refresh token that has just replaced
   another: sealed on the replaced row (`successor_sealed`) for the grace
   below, and cleared within one more — when read past it, at the family's

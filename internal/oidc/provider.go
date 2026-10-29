@@ -9,6 +9,7 @@ package oidc
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/x509"
 	"fmt"
 	"log/slog"
@@ -84,6 +85,10 @@ type Service struct {
 }
 
 func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.Sealer, mailer mail.Sender, log *slog.Logger) (*Service, error) {
+	if err := loadTagKey(ctx, st, sealer); err != nil {
+		return nil, err
+	}
+
 	keys, err := loadKeys(ctx, st, sealer, cfg.KeyRotation, log)
 	if err != nil {
 		return nil, err
@@ -129,6 +134,30 @@ func New(ctx context.Context, cfg config.Config, st *store.Store, sealer *jose.S
 	st.OnLogout(s.TellApplications)
 
 	return s, nil
+}
+
+// loadTagKey gives the sealer the installation's own key for keyed hashes,
+// making it the first time.
+func loadTagKey(ctx context.Context, st *store.Store, sealer *jose.Sealer) error {
+	where := model.ServerSecret{Name: model.ServerSecretTag}.ValueWhere()
+	sealed, err := st.ServerSecret(ctx, model.ServerSecretTag, func() ([]byte, error) {
+		key := make([]byte, 32)
+		if _, err := rand.Read(key); err != nil {
+			return nil, err
+		}
+		return sealer.SealFor(where, key)
+	})
+	if err != nil {
+		return err
+	}
+
+	key, _, err := sealer.OpenFor(where, sealed)
+	if err != nil {
+		return fmt.Errorf("the installation's tag key: %w", err)
+	}
+	sealer.UseTagKey(key)
+
+	return nil
 }
 
 // loadClientCAs reads the authorities tls_client_auth certificates chain to;

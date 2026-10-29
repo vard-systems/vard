@@ -2,10 +2,6 @@ package jose
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
 	"testing"
 )
 
@@ -89,51 +85,22 @@ func TestARotatedKeyStillOpensWhatItSealed(t *testing.T) {
 	}
 }
 
-// A value sealed before versions existed — a bare nonce and ciphertext under
-// a SHA-256 of the secret — still opens, and is stale.
-func TestALegacySealedValueOpens(t *testing.T) {
-	sum := sha256.Sum256([]byte(secretNow))
-	block, err := aes.NewCipher(sum[:])
-	if err != nil {
-		t.Fatal(err)
-	}
-	aead, err := cipher.NewGCM(block)
-	if err != nil {
-		t.Fatal(err)
-	}
-	nonce := make([]byte, aead.NonceSize())
-	_, _ = rand.Read(nonce)
-	legacy := aead.Seal(nonce, nonce, []byte("from before"), nil)
+// The installation's tag key makes a keyed hash the same under any
+// VARD_SECRET_KEY, so a recovery code hashed before a rotation still matches
+// after it; without it, a hash follows the secret.
+func TestATagSurvivesARotation(t *testing.T) {
+	tagKey := []byte("the installation's own tag key, 32b")
 
-	plain, stale, err := mustSealer(t, secretNow).OpenFor(Bind("mail_settings", "password", "anything"), legacy)
-	if err != nil || string(plain) != "from before" || !stale {
-		t.Errorf("a legacy value = %q, stale %v, %v; want it, stale", plain, stale, err)
+	before := mustSealer(t, secretBefore)
+	before.UseTagKey(tagKey)
+	after := mustSealer(t, secretNow, secretBefore)
+	after.UseTagKey(tagKey)
+
+	if !bytes.Equal(before.Tag("purpose", []byte("code")), after.Tag("purpose", []byte("code"))) {
+		t.Error("a tag changed with the secret, though the tag key did not")
 	}
-}
-
-// A keyed hash stored before keys were derived, or under the previous key,
-// is still among the ones a value is matched with: recovery codes keep
-// working through the upgrade and a rotation.
-func TestStoredTagsKeepMatching(t *testing.T) {
-	sum := sha256.Sum256([]byte(secretBefore))
-	legacyRoot := sha256.Sum256(append(sum[:], []byte("purpose")...))
-	legacy := hmacSHA256(legacyRoot[:], []byte("code"))
-
-	before := mustSealer(t, secretBefore).Tag("purpose", []byte("code"))
-	rotated := mustSealer(t, secretNow, secretBefore)
-
-	tags := rotated.Tags("purpose", []byte("code"))
-	for name, stored := range map[string][]byte{"tagged before keys were derived": legacy, "tagged with the previous key": before} {
-		found := false
-		for _, tag := range tags {
-			found = found || bytes.Equal(tag, stored)
-		}
-		if !found {
-			t.Errorf("a value %s does not match", name)
-		}
-	}
-	if !bytes.Equal(tags[0], rotated.Tag("purpose", []byte("code"))) {
-		t.Error("the first tag is not the current key's")
+	if bytes.Equal(mustSealer(t, secretBefore).Tag("purpose", []byte("code")), mustSealer(t, secretNow).Tag("purpose", []byte("code"))) {
+		t.Error("without a tag key, two secrets made the same tag")
 	}
 }
 
@@ -144,8 +111,4 @@ func mustSealer(t *testing.T, secret string, previous ...string) *Sealer {
 		t.Fatal(err)
 	}
 	return s
-}
-
-func hmacSHA256(key, data []byte) []byte {
-	return keyedHashRaw(key, data)
 }

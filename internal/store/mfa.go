@@ -74,7 +74,7 @@ func (s *Store) ClaimMFAStep(ctx context.Context, factor uuid.UUID, at time.Time
 // ConsumeRecoveryCode removes one recovery code under a row lock, so it works
 // only once even when presented twice. It leaves LastUsedAt alone: that column
 // is the last accepted TOTP step, not a timestamp.
-func (s *Store) ConsumeRecoveryCode(ctx context.Context, factor uuid.UUID, hashes ...string) (bool, error) {
+func (s *Store) ConsumeRecoveryCode(ctx context.Context, factor uuid.UUID, hash string) (bool, error) {
 	consumed := false
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -83,7 +83,7 @@ func (s *Store) ConsumeRecoveryCode(ctx context.Context, factor uuid.UUID, hashe
 			return translate(err)
 		}
 
-		index := slices.IndexFunc(row.RecoveryCodes, func(stored string) bool { return slices.Contains(hashes, stored) })
+		index := slices.Index(row.RecoveryCodes, hash)
 		if index < 0 {
 			return nil
 		}

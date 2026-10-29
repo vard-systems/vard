@@ -14,9 +14,10 @@ import (
 )
 
 // secretsCommand seals every stored secret again under the current
-// VARD_SECRET_KEY: what was sealed before versions existed, or under the
-// key VARD_SECRET_KEY_PREVIOUS names, is written in the current form, after
-// which the previous key can be dropped.
+// VARD_SECRET_KEY: what the key VARD_SECRET_KEY_PREVIOUS names sealed is
+// written under the current one, after which the previous key can be
+// dropped. The server does the same as it starts mid-rotation; this is for
+// doing it without starting one.
 func secretsCommand(args []string) int {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 

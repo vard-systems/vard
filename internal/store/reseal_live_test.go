@@ -2,10 +2,7 @@ package store
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
+	"github.com/google/uuid"
 	"testing"
 
 	"vard/internal/database/databasetest"
@@ -13,26 +10,8 @@ import (
 	"vard/internal/model"
 )
 
-// legacySeal is how a value was sealed before versions existed.
-func legacySeal(t *testing.T, secret string, plain []byte) []byte {
-	t.Helper()
-	sum := sha256.Sum256([]byte(secret))
-	block, err := aes.NewCipher(sum[:])
-	if err != nil {
-		t.Fatal(err)
-	}
-	aead, err := cipher.NewGCM(block)
-	if err != nil {
-		t.Fatal(err)
-	}
-	nonce := make([]byte, aead.NonceSize())
-	_, _ = rand.Read(nonce)
-	return aead.Seal(nonce, nonce, plain, nil)
-}
-
 // After a rotation and a reseal, everything stored opens with the new key
-// alone, where it is kept: values from before versions and values under the
-// previous key alike. A second reseal finds nothing to do.
+// alone, where it is kept. A second reseal finds nothing to do.
 func TestLiveResealingMovesEverySecretToTheCurrentKey(t *testing.T) {
 	const before, now = "the-key-before-0123456789abcdefghijkl", "the-key-now-0123456789abcdefghijklmno"
 	db, _ := databasetest.Open(t)
@@ -44,8 +23,12 @@ func TestLiveResealingMovesEverySecretToTheCurrentKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mail := model.MailSettings{Host: "smtp.example.com", Port: 587, Encryption: model.MailStartTLS}
-	mail.Password = legacySeal(t, before, []byte("smtp password"))
+	mail := model.MailSettings{Base: model.Base{ID: uuid.New()}, Host: "smtp.example.com", Port: 587, Encryption: model.MailStartTLS}
+	password, err := old.SealFor(mail.PasswordWhere(), []byte("smtp password"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mail.Password = password
 	if err := db.Create(&mail).Error; err != nil {
 		t.Fatal(err)
 	}

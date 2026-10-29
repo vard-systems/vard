@@ -44,18 +44,6 @@ func Hash(sealer *jose.Sealer, purpose, code string) string {
 	return hex.EncodeToString(sealer.Tag(purpose, []byte(Normalize(code))))
 }
 
-// Hashes are every hash a stored code may be kept under: the current key's,
-// a previous key's, and the one before keys were derived, so codes handed
-// out before an upgrade or a key rotation still work.
-func Hashes(sealer *jose.Sealer, purpose, code string) []string {
-	tags := sealer.Tags(purpose, []byte(Normalize(code)))
-	out := make([]string, len(tags))
-	for i, tag := range tags {
-		out[i] = hex.EncodeToString(tag)
-	}
-	return out
-}
-
 // Normalize is a code as it is compared: lower case, without the dash or
 // spaces a reader may have typed.
 func Normalize(code string) string {

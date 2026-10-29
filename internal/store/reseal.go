@@ -42,6 +42,9 @@ func byID(where func(id uuid.UUID) jose.Context) func(string) jose.Context {
 // sealedColumns are every column that keeps a sealed value. A secret added
 // to a model goes here too, or `secrets reseal` leaves it under the old key.
 var sealedColumns = []sealedColumn{
+	{"server_secrets", "value", "name", nil, func(name string) jose.Context {
+		return model.ServerSecret{Name: name}.ValueWhere()
+	}},
 	{"signing_keys", "private_key", "kid", nil, func(kid string) jose.Context {
 		return model.SigningKey{KID: kid}.PrivateKeyWhere()
 	}},
