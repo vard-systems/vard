@@ -13,8 +13,10 @@ import (
 )
 
 // ForgotPassword sends a reset link if the address has an account that may sign
-// in, in the page's language. It answers the same either way and sends in the
-// background, so timing cannot reveal which addresses exist.
+// in, in the page's language. It answers the same either way, and finding the
+// account and everything only an account costs — the link, its throttle, the
+// log, the mail — happens after the answer, so timing cannot reveal which
+// addresses exist.
 func (s *Service) ForgotPassword(ctx context.Context, email, request, language string, client Client) error {
 	if err := s.ssoRequiredFor(ctx, email); err != nil {
 		return err
@@ -33,16 +35,26 @@ func (s *Service) ForgotPassword(ctx context.Context, email, request, language s
 		return nil
 	}
 
+	background := context.WithoutCancel(ctx)
+	go func() {
+		ctx, cancel := context.WithTimeout(background, 30*time.Second)
+		defer cancel()
+
+		if err := s.sendReset(ctx, email, request, language, client); err != nil {
+			s.log.Error("sending a password reset email failed", "error", err)
+		}
+	}()
+
+	return nil
+}
+
+func (s *Service) sendReset(ctx context.Context, email, request, language string, client Client) error {
 	user, err := s.store.UserByEmail(ctx, strings.TrimSpace(email))
-	if errors.Is(err, store.ErrNotFound) {
+	if errors.Is(err, store.ErrNotFound) || err == nil && !user.IsActive {
 		return nil
 	}
 	if err != nil {
 		return err
-	}
-
-	if !user.IsActive {
-		return nil
 	}
 
 	token, hash, err := model.NewSecret()
@@ -87,16 +99,7 @@ func (s *Service) ForgotPassword(ctx context.Context, email, request, language s
 
 	s.record(ctx, user, user.Email, "user.password_reset_requested", client, nil)
 
-	go func() {
-		sendCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-		defer cancel()
-
-		if err := s.mail.Send(sendCtx, msg); err != nil {
-			s.log.Error("sending a password reset email failed", "error", err)
-		}
-	}()
-
-	return nil
+	return s.mail.Send(ctx, msg)
 }
 
 func (s *Service) newReset(ctx context.Context, user *model.User) (string, error) {

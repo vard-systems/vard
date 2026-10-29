@@ -155,3 +155,35 @@ func TestLiveAResetEndsTheWait(t *testing.T) {
 		t.Errorf("the new password straight after the reset = %d %s, want 200", status, code)
 	}
 }
+
+// Asking for a reset link takes as long for an address nobody has as for one
+// somebody has: everything a known address costs happens after the answer.
+func TestLiveForgotPasswordTakesAsLongForAnyAddress(t *testing.T) {
+	f := newOAuthFixture(t)
+
+	ask := func(email string) time.Duration {
+		start := time.Now()
+		if status := f.s.browser().account(http.MethodPost, "/forgot-password", map[string]string{"email": email}, nil); status != http.StatusAccepted {
+			t.Fatalf("forgot-password = %d", status)
+		}
+		return time.Since(start)
+	}
+
+	// Warm both paths, then take the fastest of several, which is the
+	// work itself rather than the machine's noise.
+	ask(adaEmail)
+	ask("nobody@example.com")
+	fastest := func(email string) time.Duration {
+		best := time.Hour
+		for range 15 {
+			f.s.db.Exec("DELETE FROM password_resets")
+			best = min(best, ask(email))
+		}
+		return best
+	}
+
+	known, unknown := fastest(adaEmail), fastest("nobody@example.com")
+	if ratio := float64(known) / float64(unknown); ratio > 1.5 {
+		t.Errorf("an account's address took %v and nobody's %v, want about the same", known, unknown)
+	}
+}
