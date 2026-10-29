@@ -24,12 +24,17 @@ func (s *Store) RefreshTokenByHash(ctx context.Context, hash string) (*model.Ref
 	return &token, nil
 }
 
-// RotateRefreshToken revokes `old`, naming `next` as what replaced it with
-// `sealed`, its token sealed, and stores `next`, in one transaction; if `old`
-// was already revoked it returns ErrAlreadyUsed. The family's sealed
-// successors older than the grace are cleared on the way.
+// RotateRefreshToken stores `next` and revokes `old`, naming `next` as what
+// replaced it with `sealed`, its token sealed, in one transaction; if `old`
+// was already revoked it returns ErrAlreadyUsed and `next` is never kept.
+// `next` goes first because `old` names it. The family's sealed successors
+// older than the grace are cleared on the way.
 func (s *Store) RotateRefreshToken(ctx context.Context, old, next *model.RefreshToken, sealed []byte, at time.Time) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit(clause.Associations).Create(next).Error; err != nil {
+			return translate(err)
+		}
+
 		result := tx.Model(&model.RefreshToken{}).
 			Where("id = ? AND revoked_at IS NULL", old.ID).
 			Updates(map[string]any{"revoked_at": at, "successor_id": next.ID, "successor_sealed": sealed})
@@ -46,7 +51,7 @@ func (s *Store) RotateRefreshToken(ctx context.Context, old, next *model.Refresh
 			return err
 		}
 
-		return translate(tx.Omit(clause.Associations).Create(next).Error)
+		return nil
 	})
 }
 

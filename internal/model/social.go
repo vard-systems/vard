@@ -14,7 +14,7 @@ import (
 type SocialProvider struct {
 	Base
 
-	Kind SocialKind `gorm:"type:varchar(32);not null" json:"kind"`
+	Kind SocialKind `gorm:"type:varchar(32);not null;check:chk_social_providers_kind,kind IN ('google','apple','facebook','yandex','vk','oidc')" json:"kind"`
 
 	// Slug is part of the redirect URI registered with the provider
 	// (/oauth2/social/<slug>/callback), so it never changes.
@@ -26,7 +26,7 @@ type SocialProvider struct {
 
 	ClientSecret []byte `gorm:"type:bytea" json:"-"`
 
-	Scopes StringList `gorm:"serializer:json" json:"scopes"`
+	Scopes StringList `gorm:"type:jsonb;serializer:json" json:"scopes"`
 
 	IsEnabled bool `gorm:"not null" json:"is_enabled"`
 
@@ -40,7 +40,7 @@ type SocialProvider struct {
 	TokenURL     string `gorm:"size:512;not null;default:''" json:"token_url"`
 	UserinfoURL  string `gorm:"size:512;not null;default:''" json:"userinfo_url"`
 
-	TokenAuth SocialTokenAuth `gorm:"type:varchar(32);not null;default:''" json:"token_auth"`
+	TokenAuth SocialTokenAuth `gorm:"type:varchar(32);not null;default:'';check:chk_social_providers_token_auth,token_auth IN ('','basic','post')" json:"token_auth"`
 
 	// Apple's client secret is a JWT signed per request with the team's key;
 	// PrivateKey is the .p8 contents, sealed.
@@ -95,8 +95,9 @@ type SocialAccount struct {
 type SocialLogin struct {
 	Base
 
-	StateHash  string    `gorm:"size:64;not null;uniqueIndex" json:"-"`
-	ProviderID uuid.UUID `gorm:"type:uuid;not null;index" json:"provider_id"`
+	StateHash  string          `gorm:"size:64;not null;uniqueIndex" json:"-"`
+	ProviderID uuid.UUID       `gorm:"type:uuid;not null;index" json:"provider_id"`
+	Provider   *SocialProvider `gorm:"constraint:OnDelete:CASCADE" json:"-"`
 
 	Verifier string `gorm:"size:128;not null;default:''" json:"-"`
 

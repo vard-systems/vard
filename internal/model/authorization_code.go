@@ -21,7 +21,8 @@ type AuthorizationCode struct {
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE"`
 	UserID        uuid.UUID    `gorm:"type:uuid;not null;index"`
 	User          *User        `gorm:"constraint:OnDelete:CASCADE"`
-	SessionID     *uuid.UUID   `gorm:"type:uuid"`
+	SessionID     *uuid.UUID   `gorm:"type:uuid;index"`
+	Session       *UserSession `gorm:"constraint:OnDelete:SET NULL"`
 
 	RedirectURI         string    `gorm:"size:512;not null"`
 	Scope               string    `gorm:"type:text;not null"`

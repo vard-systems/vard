@@ -81,7 +81,7 @@ func downSchema(_ context.Context, tx *sql.Tx) error {
 // name or fields. It needs pg_trgm, which a managed database may not let us
 // install; without it the search still works, by scanning.
 const userSearch = `CREATE INDEX idx_users_search ON users USING gin (
-	LOWER(email || ' ' || COALESCE(first_name, '') || ' ' || COALESCE(last_name, '') || ' ' || COALESCE(data, ''))
+	LOWER(email || ' ' || COALESCE(first_name, '') || ' ' || COALESCE(last_name, '') || ' ' || COALESCE(data::text, ''))
 	gin_trgm_ops)`
 
 func userSearchIndex(db *gorm.DB) error {

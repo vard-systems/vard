@@ -19,7 +19,7 @@ type LoginFlow struct {
 
 	IsEnabled bool `gorm:"not null" json:"is_enabled"`
 
-	Steps StepList `gorm:"type:text;serializer:json;not null" json:"steps"`
+	Steps StepList `gorm:"type:jsonb;serializer:json;not null" json:"steps"`
 
 	AllowSignIn bool `gorm:"not null" json:"allow_sign_in"`
 

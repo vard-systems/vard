@@ -4,9 +4,12 @@ import (
 	"io"
 	"log/slog"
 	"slices"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"vard/internal/database"
 	"vard/internal/database/databasetest"
@@ -92,4 +95,51 @@ func rows(t *testing.T, db *gorm.DB, query string) []string {
 	}
 	slices.Sort(out)
 	return out
+}
+
+// The database refuses what Go never writes, so a bug or a hand-run query
+// cannot store it either. Each row is whole but for the one thing wrong.
+func TestLiveTheDatabaseRefusesWhatGoNeverWrites(t *testing.T) {
+	db, _ := databasetest.Open(t)
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{
+		Name: "Shop", ClientID: "shop", Type: model.AppWeb, TokenAuthMethod: model.AuthNone, IsEnabled: true,
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatal(err)
+	}
+	nowhere := uuid.New()
+
+	for _, tt := range []struct {
+		name, refusedBy string
+		row             any
+	}{
+		{"an administrator status no code knows", "chk_admins_status",
+			&model.Admin{Username: "a@example.com", Email: "a@example.com", Status: "root"}},
+		{"an administrator's address in capitals", "chk_admins_email_lower",
+			&model.Admin{Username: "b@example.com", Email: "B@example.com", Status: model.StatusActive}},
+		{"a second organization", "idx_organizations_one_row",
+			&model.Organization{Name: "Another", Slug: "another", Timezone: "UTC"}},
+		{"an application type no code knows", "chk_applications_type",
+			&model.Application{Name: "X", ClientID: "x", Type: "mainframe", TokenAuthMethod: model.AuthNone}},
+		{"a refresh token naming a session that never was", "fk_refresh_tokens_session",
+			&model.RefreshToken{TokenHash: "h", FamilyID: uuid.New(), ApplicationID: app.ID, UserID: user.ID, SessionID: &nowhere}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := db.Omit(clause.Associations).Create(tt.row).Error; err == nil || !strings.Contains(err.Error(), tt.refusedBy) {
+				t.Errorf("= %v, want it refused by %s", err, tt.refusedBy)
+			}
+		})
+	}
+
+	// Users' addresses are lower-cased by the model on the way in; the
+	// check is for a write that goes round it.
+	err := db.Exec("UPDATE users SET email = 'Ada@Example.com' WHERE id = ?", user.ID).Error
+	if err == nil || !strings.Contains(err.Error(), "chk_users_email_lower") {
+		t.Errorf("an address written in capitals = %v, want it refused by chk_users_email_lower", err)
+	}
 }

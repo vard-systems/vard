@@ -10,7 +10,7 @@ import (
 type User struct {
 	Base
 
-	Email           string `gorm:"uniqueIndex;size:255;not null" json:"email"`
+	Email           string `gorm:"uniqueIndex;size:255;not null;check:chk_users_email_lower,email = lower(email)" json:"email"`
 	IsEmailVerified bool   `gorm:"not null;default:false" json:"is_email_verified"`
 	FirstName       string `gorm:"size:100;not null;default:''" json:"first_name"`
 	LastName        string `gorm:"size:100;not null;default:''" json:"last_name"`
@@ -40,7 +40,7 @@ type User struct {
 	// terms and privacy policy, on the Agreements step.
 	AgreementsAcceptedAt *time.Time `json:"agreements_accepted_at"`
 
-	Data map[string]any `gorm:"serializer:json" json:"data"`
+	Data map[string]any `gorm:"type:jsonb;serializer:json" json:"data"`
 
 	// Roles are the roles given to this user directly. What they add up to,
 	// inheritance included, is RoleGraph.Effective.

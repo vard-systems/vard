@@ -17,7 +17,7 @@ type Consent struct {
 	ApplicationID uuid.UUID    `gorm:"type:uuid;not null;uniqueIndex:idx_consents_pair;index"`
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE"`
 
-	Scopes []string `gorm:"type:text;serializer:json;not null"`
+	Scopes []string `gorm:"type:jsonb;serializer:json;not null"`
 }
 
 func (Consent) TableName() string {

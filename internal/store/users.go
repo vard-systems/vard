@@ -25,7 +25,7 @@ type UserQuery struct {
 // userSearch is the record as one lower-cased text, searched by one box. It
 // must match idx_users_search exactly, because Postgres uses a trigram index
 // only for the expression it was built on.
-const userSearch = `LOWER(email || ' ' || COALESCE(first_name, '') || ' ' || COALESCE(last_name, '') || ' ' || COALESCE(data, ''))`
+const userSearch = `LOWER(email || ' ' || COALESCE(first_name, '') || ' ' || COALESCE(last_name, '') || ' ' || COALESCE(data::text, ''))`
 
 func (s *Store) Users(ctx context.Context, q UserQuery) ([]model.User, int64, error) {
 	query := s.db.WithContext(ctx).Model(&model.User{})
@@ -119,7 +119,7 @@ func (s *Store) FieldValueTaken(ctx context.Context, field string, value any, ex
 
 	query := s.db.WithContext(ctx).
 		Model(&model.User{}).
-		Where("data::jsonb ->> ? = ?", field, text)
+		Where("data ->> ? = ?", field, text)
 
 	if except != uuid.Nil {
 		query = query.Where("id <> ?", except)

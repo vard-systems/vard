@@ -11,14 +11,14 @@ import (
 type Admin struct {
 	Base
 
-	Username     string `gorm:"uniqueIndex;size:100;not null" json:"username"`
-	Email        string `gorm:"uniqueIndex;size:255;not null" json:"email"`
+	Username     string `gorm:"uniqueIndex;size:100;not null;check:chk_admins_username_lower,username = lower(username)" json:"username"`
+	Email        string `gorm:"uniqueIndex;size:255;not null;check:chk_admins_email_lower,email = lower(email)" json:"email"`
 	FirstName    string `gorm:"size:100;not null" json:"first_name"`
 	LastName     string `gorm:"size:100;not null" json:"last_name"`
 	AvatarURL    string `gorm:"size:512;not null;default:''" json:"avatar_url"`
 	PasswordHash string `gorm:"size:255;not null" json:"-"`
 	IsActive     bool   `gorm:"-" json:"is_active"`
-	Status       Status `gorm:"type:varchar(32);index;not null;default:invited" json:"status"`
+	Status       Status `gorm:"type:varchar(32);index;not null;default:invited;check:chk_admins_status,status IN ('invited','active','suspended','disabled')" json:"status"`
 
 	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
 	LastLoginAt     *time.Time `json:"last_login_at,omitempty"`

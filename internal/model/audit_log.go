@@ -25,7 +25,7 @@ type AuditLog struct {
 
 	// Metadata carries whatever else is worth keeping, such as the fields that
 	// changed. Never put secrets or passwords in it.
-	Metadata map[string]any `gorm:"serializer:json" json:"metadata,omitempty"`
+	Metadata map[string]any `gorm:"type:jsonb;serializer:json" json:"metadata,omitempty"`
 
 	IP        string `gorm:"size:45;not null;default:''" json:"ip,omitempty"`
 	UserAgent string `gorm:"size:255;not null;default:''" json:"user_agent,omitempty"`

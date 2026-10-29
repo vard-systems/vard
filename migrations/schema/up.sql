@@ -18,7 +18,7 @@ CREATE TABLE admin_roles (
     updated_at timestamp with time zone NOT NULL,
     name character varying(64) NOT NULL,
     description character varying(255) DEFAULT ''::character varying NOT NULL,
-    permissions text
+    permissions jsonb
 );
 
 CREATE TABLE admin_security (
@@ -57,7 +57,10 @@ CREATE TABLE admins (
     status character varying(32) DEFAULT 'invited'::character varying NOT NULL,
     email_verified_at timestamp with time zone,
     last_login_at timestamp with time zone,
-    last_login_ip character varying(45) DEFAULT ''::character varying NOT NULL
+    last_login_ip character varying(45) DEFAULT ''::character varying NOT NULL,
+    CONSTRAINT chk_admins_email_lower CHECK (email = lower(email)),
+    CONSTRAINT chk_admins_status CHECK (status IN ('invited','active','suspended','disabled')),
+    CONSTRAINT chk_admins_username_lower CHECK (username = lower(username))
 );
 
 CREATE TABLE api_scopes (
@@ -112,11 +115,11 @@ CREATE TABLE applications (
     secret_hint character varying(8) DEFAULT ''::character varying NOT NULL,
     secret_created_at timestamp with time zone,
     token_auth_method character varying(32) NOT NULL,
-    grant_types text,
-    redirect_uris text,
-    post_logout_redirect_uris text,
+    grant_types jsonb,
+    redirect_uris jsonb,
+    post_logout_redirect_uris jsonb,
     allow_development_redirects boolean DEFAULT false NOT NULL,
-    scopes text,
+    scopes jsonb,
     backchannel_logout_uri character varying(512) DEFAULT ''::character varying NOT NULL,
     frontchannel_logout_uri character varying(512) DEFAULT ''::character varying NOT NULL,
     require_pkce boolean NOT NULL,
@@ -127,7 +130,9 @@ CREATE TABLE applications (
     assert_roles boolean NOT NULL,
     require_role_assignment boolean DEFAULT false NOT NULL,
     login_flow_id uuid,
-    is_enabled boolean NOT NULL
+    is_enabled boolean NOT NULL,
+    CONSTRAINT chk_applications_token_auth_method CHECK (token_auth_method IN ('client_secret_basic','client_secret_post','none')),
+    CONSTRAINT chk_applications_type CHECK (type IN ('web','spa','native','m2m'))
 );
 
 CREATE TABLE audit_logs (
@@ -138,7 +143,7 @@ CREATE TABLE audit_logs (
     action character varying(128) NOT NULL,
     target_type character varying(64) DEFAULT ''::character varying NOT NULL,
     target_id character varying(64) DEFAULT ''::character varying NOT NULL,
-    metadata text,
+    metadata jsonb,
     ip character varying(45) DEFAULT ''::character varying NOT NULL,
     user_agent character varying(255) DEFAULT ''::character varying NOT NULL,
     request_id character varying(64) DEFAULT ''::character varying NOT NULL
@@ -188,7 +193,7 @@ CREATE TABLE consents (
     updated_at timestamp with time zone NOT NULL,
     user_id uuid NOT NULL,
     application_id uuid NOT NULL,
-    scopes text NOT NULL
+    scopes jsonb NOT NULL
 );
 
 CREATE TABLE device_authorizations (
@@ -207,7 +212,8 @@ CREATE TABLE device_authorizations (
     authenticated_at timestamp with time zone,
     last_polled_at timestamp with time zone,
     expires_at timestamp with time zone NOT NULL,
-    used_at timestamp with time zone
+    used_at timestamp with time zone,
+    CONSTRAINT chk_device_authorizations_status CHECK (status IN ('pending','approved','denied'))
 );
 
 CREATE TABLE dpop_proofs (
@@ -234,7 +240,7 @@ CREATE TABLE frontchannel_logouts (
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     handle_hash character varying(64) NOT NULL,
-    frames text NOT NULL,
+    frames jsonb NOT NULL,
     next character varying(2048) NOT NULL,
     language character varying(35) DEFAULT ''::character varying NOT NULL,
     expires_at timestamp with time zone NOT NULL,
@@ -277,7 +283,7 @@ CREATE TABLE login_flows (
     description character varying(500) DEFAULT ''::character varying NOT NULL,
     is_default boolean NOT NULL,
     is_enabled boolean NOT NULL,
-    steps text NOT NULL,
+    steps jsonb NOT NULL,
     allow_sign_in boolean NOT NULL,
     allow_registration boolean NOT NULL,
     allow_password_reset boolean NOT NULL,
@@ -299,7 +305,8 @@ CREATE TABLE mail_settings (
     username character varying(255) DEFAULT ''::character varying NOT NULL,
     password bytea,
     from_address character varying(255) DEFAULT ''::character varying NOT NULL,
-    from_name character varying(100) DEFAULT ''::character varying NOT NULL
+    from_name character varying(100) DEFAULT ''::character varying NOT NULL,
+    CONSTRAINT chk_mail_settings_encryption CHECK (encryption IN ('starttls','tls','none'))
 );
 
 CREATE TABLE mfa_factors (
@@ -311,9 +318,10 @@ CREATE TABLE mfa_factors (
     label character varying(100) DEFAULT ''::character varying NOT NULL,
     secret text NOT NULL,
     credential_id character varying(255) DEFAULT ''::character varying NOT NULL,
-    recovery_codes text,
+    recovery_codes jsonb,
     confirmed_at timestamp with time zone,
-    last_used_at timestamp with time zone
+    last_used_at timestamp with time zone,
+    CONSTRAINT chk_mfa_factors_method CHECK (method IN ('totp','webauthn'))
 );
 
 CREATE TABLE organization_logos (
@@ -500,7 +508,7 @@ CREATE TABLE social_providers (
     name character varying(100) NOT NULL,
     client_id character varying(255) NOT NULL,
     client_secret bytea,
-    scopes text,
+    scopes jsonb,
     is_enabled boolean NOT NULL,
     "position" bigint NOT NULL,
     link_verified_emails boolean NOT NULL,
@@ -511,7 +519,9 @@ CREATE TABLE social_providers (
     token_auth character varying(32) DEFAULT ''::character varying NOT NULL,
     team_id character varying(64) DEFAULT ''::character varying NOT NULL,
     key_id character varying(64) DEFAULT ''::character varying NOT NULL,
-    private_key bytea
+    private_key bytea,
+    CONSTRAINT chk_social_providers_kind CHECK (kind IN ('google','apple','facebook','yandex','vk','oidc')),
+    CONSTRAINT chk_social_providers_token_auth CHECK (token_auth IN ('','basic','post'))
 );
 
 CREATE TABLE sso_connections (
@@ -528,7 +538,7 @@ CREATE TABLE sso_connections (
     issuer character varying(512) DEFAULT ''::character varying NOT NULL,
     client_id character varying(255) DEFAULT ''::character varying NOT NULL,
     client_secret bytea,
-    scopes text,
+    scopes jsonb,
     metadata_url character varying(1024) DEFAULT ''::character varying NOT NULL,
     metadata text DEFAULT ''::text NOT NULL,
     name_id_format character varying(16) DEFAULT ''::character varying NOT NULL,
@@ -543,7 +553,10 @@ CREATE TABLE sso_connections (
     last_name_attribute character varying(255) DEFAULT ''::character varying NOT NULL,
     groups_attribute character varying(255) DEFAULT ''::character varying NOT NULL,
     role_mappings jsonb NOT NULL,
-    sync_roles boolean NOT NULL
+    sync_roles boolean NOT NULL,
+    CONSTRAINT chk_sso_connections_matching CHECK (matching IN ('link','deny')),
+    CONSTRAINT chk_sso_connections_name_id_format CHECK (name_id_format IN ('','email','persistent','unspecified')),
+    CONSTRAINT chk_sso_connections_protocol CHECK (protocol IN ('oidc','saml'))
 );
 
 CREATE TABLE sso_domain_verifications (
@@ -613,7 +626,8 @@ CREATE TABLE user_factors (
     secret text NOT NULL,
     credential_id character varying(255) DEFAULT ''::character varying NOT NULL,
     confirmed_at timestamp with time zone,
-    last_used_at timestamp with time zone
+    last_used_at timestamp with time zone,
+    CONSTRAINT chk_user_factors_method CHECK (method IN ('totp','webauthn'))
 );
 
 CREATE TABLE user_fields (
@@ -628,7 +642,8 @@ CREATE TABLE user_fields (
     min numeric,
     max numeric,
     starts_with character varying(64) DEFAULT ''::character varying NOT NULL,
-    "position" bigint DEFAULT 0 NOT NULL
+    "position" bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT chk_user_fields_type CHECK (type IN ('text','number','bool','email','date'))
 );
 
 CREATE TABLE user_recovery_codes (
@@ -691,7 +706,8 @@ CREATE TABLE users (
     is_password_temporary boolean DEFAULT false NOT NULL,
     last_login_at timestamp with time zone,
     agreements_accepted_at timestamp with time zone,
-    data text
+    data jsonb,
+    CONSTRAINT chk_users_email_lower CHECK (email = lower(email))
 );
 
 -- Primary keys and unique constraints
@@ -875,6 +891,10 @@ CREATE UNIQUE INDEX idx_admin_role_assignments_scoped ON admin_role_assignments 
 
 CREATE UNIQUE INDEX idx_admin_roles_name ON admin_roles USING btree (name);
 
+-- The settings tables hold one row each; a second, made by two first saves
+-- at once, would leave which one is read to chance.
+CREATE UNIQUE INDEX idx_admin_security_one_row ON admin_security USING btree ((true));
+
 CREATE INDEX idx_admin_sessions_admin_id ON admin_sessions USING btree (admin_id);
 
 CREATE INDEX idx_admin_sessions_expires_at ON admin_sessions USING btree (expires_at);
@@ -910,7 +930,7 @@ CREATE INDEX idx_audit_logs_actor_created ON audit_logs USING btree (actor_email
 CREATE INDEX idx_audit_logs_admin_id ON audit_logs USING btree (admin_id);
 
 -- Entries about an API name it in their metadata, not as their target.
-CREATE INDEX idx_audit_logs_api ON audit_logs USING btree ((((metadata)::jsonb ->> 'api_id'::text))) WHERE (metadata ~~ '%"api_id"%'::text);
+CREATE INDEX idx_audit_logs_api ON audit_logs USING btree (((metadata ->> 'api_id'::text))) WHERE ((metadata ->> 'api_id'::text) IS NOT NULL);
 
 CREATE INDEX idx_audit_logs_created_id ON audit_logs USING btree (created_at DESC, id DESC);
 
@@ -925,6 +945,8 @@ CREATE INDEX idx_authorization_codes_application_id ON authorization_codes USING
 CREATE UNIQUE INDEX idx_authorization_codes_code_hash ON authorization_codes USING btree (code_hash);
 
 CREATE INDEX idx_authorization_codes_expires_at ON authorization_codes USING btree (expires_at);
+
+CREATE INDEX idx_authorization_codes_session_id ON authorization_codes USING btree (session_id);
 
 CREATE INDEX idx_authorization_codes_user_id ON authorization_codes USING btree (user_id);
 
@@ -944,7 +966,11 @@ CREATE UNIQUE INDEX idx_device_authorizations_device_code_hash ON device_authori
 
 CREATE INDEX idx_device_authorizations_expires_at ON device_authorizations USING btree (expires_at);
 
+CREATE INDEX idx_device_authorizations_session_id ON device_authorizations USING btree (session_id);
+
 CREATE UNIQUE INDEX idx_device_authorizations_user_code_hash ON device_authorizations USING btree (user_code_hash);
+
+CREATE INDEX idx_device_authorizations_user_id ON device_authorizations USING btree (user_id);
 
 CREATE INDEX idx_dpop_proofs_expires_at ON dpop_proofs USING btree (expires_at);
 
@@ -970,13 +996,19 @@ CREATE INDEX idx_login_codes_user_id ON login_codes USING btree (user_id);
 
 CREATE UNIQUE INDEX idx_login_flows_slug ON login_flows USING btree (slug);
 
+CREATE UNIQUE INDEX idx_mail_settings_one_row ON mail_settings USING btree ((true));
+
 CREATE INDEX idx_mfa_factors_admin_id ON mfa_factors USING btree (admin_id);
 
 CREATE INDEX idx_mfa_factors_credential_id ON mfa_factors USING btree (credential_id);
 
 CREATE INDEX idx_mfa_factors_method ON mfa_factors USING btree (method);
 
+CREATE UNIQUE INDEX idx_organizations_one_row ON organizations USING btree ((true));
+
 CREATE UNIQUE INDEX idx_organizations_slug ON organizations USING btree (slug);
+
+CREATE UNIQUE INDEX idx_otp_settings_one_row ON otp_settings USING btree ((true));
 
 CREATE INDEX idx_passkey_logins_expires_at ON passkey_logins USING btree (expires_at);
 
@@ -1010,6 +1042,10 @@ CREATE INDEX idx_refresh_tokens_family_id ON refresh_tokens USING btree (family_
 
 -- Only the rows still holding a sealed successor, which the sweep clears.
 CREATE INDEX idx_refresh_tokens_sealed ON refresh_tokens USING btree (revoked_at) WHERE (successor_sealed IS NOT NULL);
+
+CREATE INDEX idx_refresh_tokens_session_id ON refresh_tokens USING btree (session_id);
+
+CREATE INDEX idx_refresh_tokens_successor_id ON refresh_tokens USING btree (successor_id);
 
 CREATE UNIQUE INDEX idx_refresh_tokens_token_hash ON refresh_tokens USING btree (token_hash);
 
@@ -1142,8 +1178,14 @@ ALTER TABLE application_apis
 ALTER TABLE application_apis
     ADD CONSTRAINT fk_application_apis_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE;
 
+ALTER TABLE applications
+    ADD CONSTRAINT fk_applications_login_flow FOREIGN KEY (login_flow_id) REFERENCES login_flows(id) ON DELETE SET NULL;
+
 ALTER TABLE authorization_codes
     ADD CONSTRAINT fk_authorization_codes_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE;
+
+ALTER TABLE authorization_codes
+    ADD CONSTRAINT fk_authorization_codes_session FOREIGN KEY (session_id) REFERENCES user_sessions(id) ON DELETE SET NULL;
 
 ALTER TABLE authorization_codes
     ADD CONSTRAINT fk_authorization_codes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -1159,6 +1201,12 @@ ALTER TABLE consents
 
 ALTER TABLE device_authorizations
     ADD CONSTRAINT fk_device_authorizations_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE;
+
+ALTER TABLE device_authorizations
+    ADD CONSTRAINT fk_device_authorizations_session FOREIGN KEY (session_id) REFERENCES user_sessions(id) ON DELETE SET NULL;
+
+ALTER TABLE device_authorizations
+    ADD CONSTRAINT fk_device_authorizations_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE email_verifications
     ADD CONSTRAINT fk_email_verifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -1185,6 +1233,15 @@ ALTER TABLE refresh_tokens
     ADD CONSTRAINT fk_refresh_tokens_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE;
 
 ALTER TABLE refresh_tokens
+    ADD CONSTRAINT fk_refresh_tokens_code FOREIGN KEY (code_id) REFERENCES authorization_codes(id) ON DELETE SET NULL;
+
+ALTER TABLE refresh_tokens
+    ADD CONSTRAINT fk_refresh_tokens_session FOREIGN KEY (session_id) REFERENCES user_sessions(id) ON DELETE SET NULL;
+
+ALTER TABLE refresh_tokens
+    ADD CONSTRAINT fk_refresh_tokens_successor FOREIGN KEY (successor_id) REFERENCES refresh_tokens(id) ON DELETE SET NULL;
+
+ALTER TABLE refresh_tokens
     ADD CONSTRAINT fk_refresh_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE session_applications
@@ -1198,6 +1255,9 @@ ALTER TABLE social_identities
 
 ALTER TABLE social_identities
     ADD CONSTRAINT fk_social_identities_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE social_logins
+    ADD CONSTRAINT fk_social_logins_provider FOREIGN KEY (provider_id) REFERENCES social_providers(id) ON DELETE CASCADE;
 
 ALTER TABLE sso_domain_verifications
     ADD CONSTRAINT fk_sso_domain_verifications_connection FOREIGN KEY (connection_id) REFERENCES sso_connections(id) ON DELETE CASCADE;

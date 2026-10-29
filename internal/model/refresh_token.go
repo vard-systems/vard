@@ -17,10 +17,14 @@ type RefreshToken struct {
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE"`
 	UserID        uuid.UUID    `gorm:"type:uuid;not null;index"`
 	User          *User        `gorm:"constraint:OnDelete:CASCADE"`
-	CodeID        *uuid.UUID   `gorm:"type:uuid;index"`
+	// The code, session and successor a token names may be swept before it
+	// is: it outlives them, and forgets them.
+	CodeID *uuid.UUID         `gorm:"type:uuid;index"`
+	Code   *AuthorizationCode `gorm:"constraint:OnDelete:SET NULL"`
 	// SessionID is the browser session the family began in, so an ID token
 	// issued on a refresh names the same sid as the first.
-	SessionID *uuid.UUID `gorm:"type:uuid"`
+	SessionID *uuid.UUID   `gorm:"type:uuid;index"`
+	Session   *UserSession `gorm:"constraint:OnDelete:SET NULL"`
 	// DPoPKey is the thumbprint of the key a public client's family is bound
 	// to (RFC 9449 §5): a refresh needs a proof from that key. "" when unbound.
 	DPoPKey string `gorm:"column:dpop_key;size:64;not null;default:''"`
@@ -41,8 +45,9 @@ type RefreshToken struct {
 	// RefreshReuseGrace is answered with the same token rather than a new
 	// one. It is cleared within one more grace: when read past it, at the
 	// family's next rotation, or by KeepSwept every RefreshReuseGrace.
-	SuccessorID     *uuid.UUID `gorm:"type:uuid"`
-	SuccessorSealed []byte     `gorm:"type:bytea"`
+	SuccessorID     *uuid.UUID    `gorm:"type:uuid;index"`
+	Successor       *RefreshToken `gorm:"foreignKey:SuccessorID;constraint:OnDelete:SET NULL"`
+	SuccessorSealed []byte        `gorm:"type:bytea"`
 }
 
 func (RefreshToken) TableName() string {

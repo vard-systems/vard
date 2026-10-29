@@ -24,7 +24,7 @@ type Application struct {
 
 	Name        string          `gorm:"size:100;not null" json:"name"`
 	Description string          `gorm:"size:255;not null;default:''" json:"description"`
-	Type        ApplicationType `gorm:"type:varchar(16);not null;index" json:"type"`
+	Type        ApplicationType `gorm:"type:varchar(16);not null;index;check:chk_applications_type,type IN ('web','spa','native','m2m')" json:"type"`
 
 	// LogoURL and ClientURI are shown on the sign-in pages, and on the
 	// consent page when the application's login flow has that step.
@@ -42,16 +42,16 @@ type Application struct {
 	SecretHint       string     `gorm:"size:8;not null;default:''" json:"secret_hint"`
 	SecretCreatedAt  *time.Time `json:"secret_created_at"`
 
-	TokenAuthMethod AuthMethod `gorm:"type:varchar(32);not null" json:"token_auth_method"`
+	TokenAuthMethod AuthMethod `gorm:"type:varchar(32);not null;check:chk_applications_token_auth_method,token_auth_method IN ('client_secret_basic','client_secret_post','none')" json:"token_auth_method"`
 
-	GrantTypes             []string `gorm:"type:text;serializer:json" json:"grant_types"`
-	RedirectURIs           []string `gorm:"type:text;serializer:json" json:"redirect_uris"`
-	PostLogoutRedirectURIs []string `gorm:"type:text;serializer:json" json:"post_logout_redirect_uris"`
+	GrantTypes             []string `gorm:"type:jsonb;serializer:json" json:"grant_types"`
+	RedirectURIs           []string `gorm:"type:jsonb;serializer:json" json:"redirect_uris"`
+	PostLogoutRedirectURIs []string `gorm:"type:jsonb;serializer:json" json:"post_logout_redirect_uris"`
 	// AllowDevelopmentRedirects lets a native app register Expo Go's exp://
 	// addresses while it is developed. They name a developer's machine on
 	// their network, so a released app turns it off.
 	AllowDevelopmentRedirects bool     `gorm:"not null;default:false" json:"allow_development_redirects"`
-	Scopes                    []string `gorm:"type:text;serializer:json" json:"scopes"`
+	Scopes                    []string `gorm:"type:jsonb;serializer:json" json:"scopes"`
 
 	// BackchannelLogoutURI is told, server to server, when a session the
 	// application signed someone in through ends (OpenID Connect
@@ -75,7 +75,9 @@ type Application struct {
 	AssertRoles           bool `gorm:"not null" json:"assert_roles"`
 	RequireRoleAssignment bool `gorm:"not null;default:false" json:"require_role_assignment"`
 
+	// A flow deleted leaves its applications on the default one.
 	LoginFlowID *uuid.UUID `gorm:"type:uuid;index" json:"login_flow_id"`
+	LoginFlow   *LoginFlow `gorm:"constraint:OnDelete:SET NULL" json:"-"`
 
 	IsEnabled bool `gorm:"not null;index" json:"is_enabled"`
 }

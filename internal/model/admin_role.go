@@ -10,7 +10,7 @@ type AdminRole struct {
 	Name        string `gorm:"type:varchar(64);uniqueIndex;not null" json:"name"`
 	Description string `gorm:"size:255;not null;default:''" json:"description,omitempty"`
 
-	Permissions []string `gorm:"type:text;serializer:json" json:"permissions"`
+	Permissions []string `gorm:"type:jsonb;serializer:json" json:"permissions"`
 }
 
 func (AdminRole) TableName() string {

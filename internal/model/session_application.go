@@ -32,7 +32,7 @@ type FrontchannelLogout struct {
 	Base
 
 	HandleHash string   `gorm:"size:64;uniqueIndex;not null"`
-	Frames     []string `gorm:"type:text;serializer:json;not null"`
+	Frames     []string `gorm:"type:jsonb;serializer:json;not null"`
 	Next       string   `gorm:"size:2048;not null"`
 	Language   string   `gorm:"size:35;not null;default:''"`
 

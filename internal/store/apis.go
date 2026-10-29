@@ -124,7 +124,7 @@ func (s *Store) APIAuditLog(ctx context.Context, apiID uuid.UUID, limit int) ([]
 		// Each side of the OR matches an index (idx_audit_logs_target,
 		// idx_audit_logs_api), so this stays an index read.
 		Where(`(target_type = ? AND target_id = ?)
-			OR (metadata LIKE '%"api_id"%' AND (metadata::jsonb) ->> 'api_id' = ?)`,
+			OR metadata ->> 'api_id' = ?`,
 			"api", apiID.String(), apiID.String()).
 		Order("created_at DESC").
 		Limit(limit).

@@ -17,7 +17,7 @@ type MailSettings struct {
 	Host string `gorm:"size:255;not null;default:''" json:"host"`
 	Port int    `gorm:"not null" json:"port"`
 
-	Encryption MailEncryption `gorm:"type:varchar(16);not null" json:"encryption"`
+	Encryption MailEncryption `gorm:"type:varchar(16);not null;check:chk_mail_settings_encryption,encryption IN ('starttls','tls','none')" json:"encryption"`
 
 	Username string `gorm:"size:255;not null;default:''" json:"username"`
 	Password []byte `gorm:"type:bytea" json:"-"`

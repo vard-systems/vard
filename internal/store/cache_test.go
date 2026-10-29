@@ -35,6 +35,7 @@ func TestCachedTypesSurviveJSON(t *testing.T) {
 		"AdminSession.TokenHash":       "the key it is kept under, put back when it is read",
 		"AdminSession.PasskeyCeremony": "never kept: TakeAdminPasskeyCeremony takes it from the database",
 		"Application.ClientSecretHash": "kept beside it in client, and put back",
+		"Application.LoginFlow":        "a relation for the foreign key alone, which no read loads",
 		"SSOConnection.ClientSecret":   "never kept: only the sign-in buttons are cached, which read the name",
 		"SSOConnection.SPKey":          "never kept: only the sign-in buttons are cached, which read the name",
 		"UserRole.Application":         "a relation the role graph never loads",

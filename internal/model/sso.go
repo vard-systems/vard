@@ -37,7 +37,7 @@ type SSOConnection struct {
 
 	// Name is what the sign-in page calls it: "Continue with <name>".
 	Name      string      `gorm:"size:100;not null" json:"name"`
-	Protocol  SSOProtocol `gorm:"type:varchar(8);not null" json:"protocol"`
+	Protocol  SSOProtocol `gorm:"type:varchar(8);not null;check:chk_sso_connections_protocol,protocol IN ('oidc','saml')" json:"protocol"`
 	IsEnabled bool        `gorm:"not null" json:"is_enabled"`
 
 	// Domains the connection signs people in for, lower case, each owned by one
@@ -57,14 +57,14 @@ type SSOConnection struct {
 	Issuer       string     `gorm:"size:512;not null;default:''" json:"issuer"`
 	ClientID     string     `gorm:"size:255;not null;default:''" json:"client_id"`
 	ClientSecret []byte     `gorm:"type:bytea" json:"-"`
-	Scopes       StringList `gorm:"serializer:json" json:"scopes"`
+	Scopes       StringList `gorm:"type:jsonb;serializer:json" json:"scopes"`
 
 	// SAML 2.0: the provider's metadata (from MetadataURL or pasted) with its
 	// entity ID, sign-in address and signing certificate.
 	MetadataURL string `gorm:"size:1024;not null;default:''" json:"metadata_url"`
 	Metadata    string `gorm:"type:text;not null;default:''" json:"metadata"`
 	// NameIDFormat is what to ask the provider to identify people by.
-	NameIDFormat SSONameIDFormat `gorm:"type:varchar(16);not null;default:''" json:"name_id_format"`
+	NameIDFormat SSONameIDFormat `gorm:"type:varchar(16);not null;default:'';check:chk_sso_connections_name_id_format,name_id_format IN ('','email','persistent','unspecified')" json:"name_id_format"`
 	// SignRequests signs the authentication requests sent to the provider,
 	// for the providers that require it.
 	SignRequests  bool   `gorm:"not null" json:"sign_requests"`
@@ -72,7 +72,7 @@ type SSOConnection struct {
 	SPCertificate string `gorm:"type:text;not null;default:''" json:"sp_certificate"`
 
 	// Matching is what to do with an address this server already has.
-	Matching SSOMatching `gorm:"type:varchar(16);not null" json:"matching"`
+	Matching SSOMatching `gorm:"type:varchar(16);not null;check:chk_sso_connections_matching,matching IN ('link','deny')" json:"matching"`
 	// CreateUsers makes an account for someone signing in for the first time.
 	CreateUsers bool `gorm:"not null" json:"create_users"`
 	// SyncProfile rewrites the user's name from the provider on every sign-in:

@@ -29,7 +29,7 @@ type UserField struct {
 
 	Name       string    `gorm:"uniqueIndex;size:64;not null" json:"name"`
 	Label      string    `gorm:"size:100;not null" json:"label"`
-	Type       FieldType `gorm:"type:varchar(16);not null" json:"type"`
+	Type       FieldType `gorm:"type:varchar(16);not null;check:chk_user_fields_type,type IN ('text','number','bool','email','date')" json:"type"`
 	IsRequired bool      `gorm:"not null;default:false" json:"is_required"`
 
 	// IsUnique values are checked on write, since they live in JSON the

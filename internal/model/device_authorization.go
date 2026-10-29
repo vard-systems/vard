@@ -42,12 +42,14 @@ type DeviceAuthorization struct {
 	Scope         string       `gorm:"type:text;not null"`
 	Audience      string       `gorm:"size:255;not null;default:''"`
 
-	Status   DeviceStatus `gorm:"type:varchar(16);not null"`
+	Status   DeviceStatus `gorm:"type:varchar(16);not null;check:chk_device_authorizations_status,status IN ('pending','approved','denied')"`
 	Interval int          `gorm:"not null"`
 
 	// Who allowed it, from which session, set when it is approved.
-	UserID          *uuid.UUID `gorm:"type:uuid"`
-	SessionID       *uuid.UUID `gorm:"type:uuid"`
+	UserID          *uuid.UUID   `gorm:"type:uuid;index"`
+	User            *User        `gorm:"constraint:OnDelete:CASCADE"`
+	SessionID       *uuid.UUID   `gorm:"type:uuid;index"`
+	Session         *UserSession `gorm:"constraint:OnDelete:SET NULL"`
 	AuthenticatedAt *time.Time
 
 	LastPolledAt *time.Time

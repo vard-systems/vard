@@ -16,7 +16,7 @@ type UserFactor struct {
 	UserID uuid.UUID `gorm:"type:uuid;not null;index"`
 	User   *User     `gorm:"constraint:OnDelete:CASCADE"`
 
-	Method MFAMethod `gorm:"type:varchar(32);not null"`
+	Method MFAMethod `gorm:"type:varchar(32);not null;check:chk_user_factors_method,method IN ('totp','webauthn')"`
 	// Label is what the user calls a passkey ("Work laptop").
 	Label string `gorm:"size:100;not null;default:''"`
 
