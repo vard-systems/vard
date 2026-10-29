@@ -181,7 +181,7 @@ func (s *Service) SecondFactorFor(ctx context.Context, handle string) (*SecondFa
 }
 
 // SubmitSecondFactor finishes a waiting sign-in with its second factor. Every
-// answer counts towards the account's lockout before it is checked, as a
+// answer counts towards the account's throttle before it is checked, as a
 // password does, so guessing codes across many sign-ins is bounded too.
 func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer SecondFactorAnswer, client Client) (*SignInResult, error) {
 	pending, err := s.waitingSignIn(ctx, handle)
@@ -191,7 +191,7 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer 
 
 	user := pending.User
 	now := s.now()
-	if !user.CanSignIn(now) {
+	if !user.CanSignIn() {
 		return nil, ErrInvalidCredentials
 	}
 

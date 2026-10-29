@@ -191,7 +191,7 @@ func TestLiveTwoStepWithAnAuthenticator(t *testing.T) {
 	}
 }
 
-// Wrong second factors count towards the account's lockout, as wrong
+// Wrong second factors count towards the account's throttle, as wrong
 // passwords do, so guessing across many held sign-ins is bounded too.
 func TestLiveTwoStepWrongCodesLockTheAccount(t *testing.T) {
 	f := newOAuthFixture(t)

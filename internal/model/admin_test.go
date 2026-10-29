@@ -23,10 +23,6 @@ func TestFullName(t *testing.T) {
 }
 
 func TestCanSignIn(t *testing.T) {
-	now := time.Now()
-	past := now.Add(-time.Hour)
-	future := now.Add(time.Hour)
-
 	tests := []struct {
 		name  string
 		admin Admin
@@ -50,19 +46,15 @@ func TestCanSignIn(t *testing.T) {
 			admin: Admin{Status: StatusDisabled},
 		},
 		{
-			name:  "active but locked out after failed attempts",
-			admin: Admin{Status: StatusActive, LockedUntil: &future},
-		},
-		{
-			name:  "active and the lockout has expired",
-			admin: Admin{Status: StatusActive, LockedUntil: &past},
+			name:  "active account",
+			admin: Admin{Status: StatusActive},
 			want:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.admin.CanSignIn(now); got != tt.want {
+			if got := tt.admin.CanSignIn(); got != tt.want {
 				t.Errorf("CanSignIn() = %v, want %v", got, tt.want)
 			}
 		})

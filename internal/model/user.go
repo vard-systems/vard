@@ -34,9 +34,7 @@ type User struct {
 	SocialAccounts []SocialAccount `gorm:"-" json:"social_accounts"`
 
 	// LastLoginAt is when the user last signed in to an application.
-	LastLoginAt      *time.Time `json:"last_login_at"`
-	FailedLoginCount int        `gorm:"not null;default:0" json:"-"`
-	LockedUntil      *time.Time `json:"locked_until"`
+	LastLoginAt *time.Time `json:"last_login_at"`
 
 	// AgreementsAcceptedAt is when the user last accepted the organization's
 	// terms and privacy policy, on the Agreements step.
@@ -52,14 +50,6 @@ type User struct {
 func (User) TableName() string {
 	return "users"
 }
-
-// Wrong passwords in a row that lock an account, an administrator's or a
-// user's, and for how long: long enough to stop guessing, short enough that an
-// attacker cannot keep the owner out.
-const (
-	MaxFailedLogins = 5
-	LockoutDuration = 15 * time.Minute
-)
 
 // NormalizeEmail trims and lower-cases an address, so the unique index on
 // users.email both finds users and stops "Ada@x" duplicating "ada@x".
@@ -89,8 +79,8 @@ func (u *User) SetPassword(password string) error {
 	return nil
 }
 
-func (u User) CanSignIn(now time.Time) bool {
-	return u.IsActive && (u.LockedUntil == nil || now.After(*u.LockedUntil))
+func (u User) CanSignIn() bool {
+	return u.IsActive
 }
 
 func (u User) FullName() string {

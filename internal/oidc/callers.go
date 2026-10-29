@@ -86,7 +86,7 @@ func (s *Service) AccountCaller(ctx context.Context, token string) (*AccountCall
 		return nil, err
 	}
 	// Active, and not unlocked: a token was issued to a signed-in user, and
-	// the lock after wrong passwords is on signing in (see SessionFor).
+	// the throttle on wrong passwords is on signing in (see SessionFor).
 	if !user.IsActive {
 		return nil, ErrTokenRefused
 	}

@@ -110,26 +110,26 @@ func TestLiveSessionsEndAtTheirLifetime(t *testing.T) {
 	}
 }
 
-// Wrong passwords lock the account for LockoutDuration, during which even the
+// Past the free wrong passwords an administrator waits, during which even the
 // right one is refused with the same answer, and after which it works again.
-func TestLiveLockoutEndsAfterItsDuration(t *testing.T) {
+func TestLiveAWaitEndsOnItsOwn(t *testing.T) {
 	ctx := context.Background()
 	s, c := liveService(t, false)
 	req := Request{IP: "192.0.2.1"}
 
-	for range model.MaxFailedLogins {
+	for range model.ThrottleFree {
 		if _, _, _, err := s.Login(ctx, liveUsername, "wrong-password", req); !errors.Is(err, ErrInvalidCredentials) {
 			t.Fatalf("a wrong password = %v, want ErrInvalidCredentials", err)
 		}
 	}
 
-	c.advance(model.LockoutDuration - time.Second)
+	c.advance(model.ThrottleFirst - time.Second)
 	if _, _, _, err := s.Login(ctx, liveUsername, livePassword, req); !errors.Is(err, ErrInvalidCredentials) {
-		t.Fatalf("the right password while locked = %v, want ErrInvalidCredentials", err)
+		t.Fatalf("the right password while waiting = %v, want ErrInvalidCredentials", err)
 	}
 
 	c.advance(time.Second)
 	if _, _, state, err := s.Login(ctx, liveUsername, livePassword, req); err != nil || state != StateSignedIn {
-		t.Errorf("the right password once the lock ends = %q, %v; want signed in", state, err)
+		t.Errorf("the right password once the wait ends = %q, %v; want signed in", state, err)
 	}
 }

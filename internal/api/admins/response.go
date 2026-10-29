@@ -25,7 +25,7 @@ type assignmentResponse struct {
 }
 
 // adminResponse is an administrator as the panel sees it. It is built by hand
-// so the password hash and the lockout counters are never published.
+// so the password hash and its sign-in counts are never published.
 type adminResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"`

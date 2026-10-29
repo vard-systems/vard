@@ -162,7 +162,7 @@ func (s *Service) deviceToken(ctx context.Context, app *model.Application, p Tok
 	}
 
 	user, err := s.store.User(ctx, *device.UserID)
-	if errors.Is(err, store.ErrNotFound) || err == nil && !user.CanSignIn(now) {
+	if errors.Is(err, store.ErrNotFound) || err == nil && !user.CanSignIn() {
 		return nil, oauthError(ErrInvalidGrant, "the user can no longer sign in")
 	}
 	if err != nil {

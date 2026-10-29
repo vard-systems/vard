@@ -135,7 +135,8 @@ func (s *Store) Counts(ctx context.Context, now, since time.Time) (Counts, error
 			(SELECT COUNT(*) FROM api_scopes) AS api_scopes,
 			(SELECT COUNT(*) FROM user_roles) AS user_roles,
 			(SELECT COUNT(*) FROM admins) AS admins,
-			(SELECT COUNT(*) FROM admins WHERE locked_until > @now) AS locked_admins,
+			(SELECT COUNT(*) FROM sign_in_throttles
+				WHERE key LIKE 'admin:%' AND blocked_until > @now) AS locked_admins,
 			(SELECT COUNT(*) FROM admin_sessions
 				WHERE revoked_at IS NULL AND expires_at > @now) AS active_sessions`,
 		map[string]any{"now": now, "since": since},

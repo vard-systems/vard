@@ -80,8 +80,6 @@ func (s *Store) ResetPassword(ctx context.Context, reset *model.PasswordReset, u
 		changes := map[string]any{
 			"password_hash":         user.PasswordHash,
 			"is_password_temporary": false,
-			"failed_login_count":    0,
-			"locked_until":          nil,
 		}
 		// An emailed link proves the address; the link a temporary password
 		// hands out does not.

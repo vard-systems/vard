@@ -136,9 +136,9 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   administrators) and at most 128; unknown accounts take as long to refuse
   as wrong passwords. New ones can be checked against known breaches.
 - Sign-in attempts and one-time-code guesses are counted atomically in the
-  database, so parallel guessing cannot slip past them. A user's sign-in is
-  throttled — each attempt past a few failures waits longer — rather than
-  locked.
+  database, so parallel guessing cannot slip past them. Sign-ins, users'
+  and administrators' alike, are throttled — each attempt past a few
+  failures waits longer — rather than locked.
 - The admin API runs on its own listener and is never served on the public one.
 - Outbound calls to identity providers refuse private, link-local and cloud
   metadata addresses.

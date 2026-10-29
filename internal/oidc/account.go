@@ -76,7 +76,7 @@ func (s *Service) ChangePassword(ctx context.Context, session *Session, current,
 // checkCurrentPassword proves the person at a signed-in session knows the
 // password, before a change that would hand them the account. Each guess is
 // counted before comparing, like a sign-in, so a session cannot be used to
-// find the password past the lockout.
+// find the password past the throttle.
 func (s *Service) checkCurrentPassword(ctx context.Context, user *model.User, password string, client Client) error {
 	keys := s.keysFor(user.Email, client)
 

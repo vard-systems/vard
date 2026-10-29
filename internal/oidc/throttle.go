@@ -41,8 +41,7 @@ func (s *Service) keysFor(email string, client Client) signInKeys {
 
 // reserve counts an attempt before it is checked; false when it has to wait.
 func (s *Service) reserve(ctx context.Context, keys signInKeys) (bool, error) {
-	attempt, err := s.store.ReserveSignIn(ctx, keys.keys, s.now())
-	return attempt.Allowed, err
+	return s.store.ReserveSignIn(ctx, keys.keys, s.now())
 }
 
 // succeeded forgets the attempts against the address typed, and gives the

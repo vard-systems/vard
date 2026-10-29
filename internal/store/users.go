@@ -143,14 +143,12 @@ func (s *Store) UserByEmail(ctx context.Context, email string) (*model.User, err
 	return &user, nil
 }
 
-// MarkUserSignedIn records the sign-in and clears failed attempts. It writes
+// MarkUserSignedIn records the sign-in. It writes
 // only these columns, so roles removed by SSO role sync during the sign-in are
 // not written back.
 func (s *Store) MarkUserSignedIn(ctx context.Context, user *model.User, at time.Time) error {
 	return s.db.WithContext(ctx).Model(user).Omit(clause.Associations).Updates(map[string]any{
-		"last_login_at":      at,
-		"failed_login_count": 0,
-		"locked_until":       nil,
+		"last_login_at": at,
 	}).Error
 }
 

@@ -109,6 +109,13 @@ func (h *Handler) Update(c *gin.Context) {
 	h.audit.Record(c, "admin.updated", targetType, admin.ID.String())
 	if req.Password != "" {
 		h.audit.Record(c, "admin.password_changed", targetType, admin.ID.String())
+
+		// A password set by a super admin is the way back in for someone
+		// made to wait, so the guesses that made them wait are forgotten.
+		if err := h.auth.Unthrottle(ctx, admin); err != nil {
+			respond.Failure(c, h.log, err, "forgetting the administrator's failed attempts failed")
+			return
+		}
 	}
 
 	// Your own sessions are left alone, or saving your own password here
@@ -288,11 +295,6 @@ func (h *Handler) build(c *gin.Context, req *adminRequest, into *model.Admin) (*
 		if err != nil {
 			return nil, err
 		}
-
-		// A password set by a super admin is the way back into a locked
-		// account, so the wrong guesses that locked it are forgotten.
-		admin.FailedLoginCount = 0
-		admin.LockedUntil = nil
 	}
 
 	admin.Username = req.Email

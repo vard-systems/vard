@@ -216,8 +216,8 @@ func TestLiveReplicasSeeGrantChanges(t *testing.T) {
 }
 
 // Wrong passwords sent to both instances at once count against one account,
-// and the lock they set holds on both.
-func TestLiveReplicasShareTheLockout(t *testing.T) {
+// and the wait they set holds on both.
+func TestLiveReplicasShareTheThrottle(t *testing.T) {
 	s := newLiveServer(t)
 	s.superAdmin()
 	nodes := []*liveServer{s, s.replica()}
@@ -232,7 +232,7 @@ func TestLiveReplicasShareTheLockout(t *testing.T) {
 
 	for i, node := range nodes {
 		if status := node.client().login(superEmail, superPassword); status != http.StatusUnauthorized {
-			t.Errorf("right password on instance %d after the burst = %d, want the account locked", i+1, status)
+			t.Errorf("right password on instance %d after the burst = %d, want the account waiting", i+1, status)
 		}
 	}
 }

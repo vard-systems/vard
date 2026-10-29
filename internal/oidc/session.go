@@ -58,7 +58,7 @@ func (s *Service) SessionFor(ctx context.Context, token string) (*Session, error
 		return nil, err
 	}
 
-	// The lockout is on password sign-in, not on existing sessions; otherwise
+	// The throttle is on password sign-in, not on existing sessions; otherwise
 	// anyone could sign a user out with wrong passwords.
 	if !user.IsActive {
 		return nil, nil

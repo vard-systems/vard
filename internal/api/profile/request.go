@@ -9,7 +9,7 @@ type profileRequest struct {
 type emailRequest struct {
 	Email string `json:"email" validate:"required,email,max=255"`
 	// CurrentPassword proves the person at the session owns the account; a
-	// wrong one counts towards the lockout, as at sign-in.
+	// wrong one counts towards the throttle, as at sign-in.
 	CurrentPassword string `json:"current_password" validate:"required,max=128"`
 }
 

@@ -206,7 +206,7 @@ func (s *Service) PasskeyChallenge(ctx context.Context, token string) (*protocol
 }
 
 // VerifySignInWithPasskey finishes a sign-in with a passkey's answer to the
-// ceremony the session was offered, counted against the lockout as a code
+// ceremony the session was offered, counted against the throttle as a code
 // is, and returns the new session token.
 func (s *Service) VerifySignInWithPasskey(ctx context.Context, token string, response []byte, req Request) (*model.Admin, string, error) {
 	admin, session, state, err := s.Session(ctx, token)
@@ -217,12 +217,12 @@ func (s *Service) VerifySignInWithPasskey(ctx context.Context, token string, res
 		return nil, "", ErrNoSession
 	}
 
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, s.now(), model.MaxFailedLogins, model.LockoutDuration)
+	allowed, err := s.reserve(ctx, admin)
 	if err != nil {
 		return nil, "", err
 	}
 	if !allowed {
-		s.record(ctx, &admin.ID, admin.Username, "admin.mfa_failed", req, "locked after too many attempts")
+		s.record(ctx, &admin.ID, admin.Username, "admin.mfa_failed", req, "throttled after too many attempts")
 		return nil, "", ErrInvalidCode
 	}
 
@@ -243,7 +243,7 @@ func (s *Service) VerifySignInWithPasskey(ctx context.Context, token string, res
 		return nil, "", s.failed(ctx, admin, req, "wrong passkey")
 	}
 
-	if err := s.store.ClearAdminFailedLogins(ctx, admin); err != nil {
+	if err := s.succeeded(ctx, admin); err != nil {
 		return nil, "", err
 	}
 

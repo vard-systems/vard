@@ -17,7 +17,7 @@ import (
 	"vard/internal/model"
 )
 
-func TestLiveLoginLockout(t *testing.T) {
+func TestLiveWrongPasswordsMakeAnAdministratorWait(t *testing.T) {
 	s := newLiveServer(t)
 	s.superAdmin()
 
@@ -29,7 +29,7 @@ func TestLiveLoginLockout(t *testing.T) {
 	}
 
 	if status := c.login(superEmail, superPassword); status != http.StatusUnauthorized {
-		t.Errorf("right password on a locked account = %d, want 401", status)
+		t.Errorf("right password on a waiting account = %d, want 401", status)
 	}
 }
 
@@ -45,12 +45,51 @@ func TestLiveLoginResetsFailures(t *testing.T) {
 		t.Fatalf("login after four failures = %d, want 200", status)
 	}
 
-	// The count started again, so four more are not a lock either.
+	// The count started again, so four more are not a wait either.
 	for range 4 {
 		c.login(superEmail, "wrong-password")
 	}
 	if status := c.login(superEmail, superPassword); status != http.StatusOK {
 		t.Errorf("login after four more failures = %d, want 200", status)
+	}
+}
+
+// An administrator made to wait shows on the overview, and a password a
+// super admin sets is the way back in straight away.
+func TestLiveASuperAdminsPasswordEndsTheWait(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+
+	const email, password = "waiting@example.com", "waiting-password-1"
+	var created struct {
+		Admin idOnly `json:"admin"`
+	}
+	body := map[string]any{
+		"email": email, "first_name": "Wait", "status": "active",
+		"password": password, "confirm_password": password,
+		"assignments": []map[string]any{},
+	}
+	super.must(http.StatusCreated, http.MethodPost, "/admins", body, &created)
+
+	for range model.ThrottleFree {
+		s.client().login(email, "wrong-password")
+	}
+	if status := s.client().login(email, password); status != http.StatusUnauthorized {
+		t.Fatalf("the right password while waiting = %d, want 401", status)
+	}
+
+	var got overviewBody
+	super.must(http.StatusOK, http.MethodGet, "/overview", nil, &got)
+	if got.Counts["locked_admins"] != 1 {
+		t.Errorf("the overview counts %d administrators waiting, want 1", got.Counts["locked_admins"])
+	}
+
+	const fresh = "a-fresh-password-1"
+	body["password"], body["confirm_password"] = fresh, fresh
+	super.must(http.StatusOK, http.MethodPatch, "/admins/"+created.Admin.ID, body, nil)
+
+	if status := s.client().login(email, fresh); status != http.StatusOK {
+		t.Errorf("the password a super admin set = %d, want 200 at once", status)
 	}
 }
 

@@ -93,7 +93,7 @@ func (s *Service) signInThroughSSO(
 		if user, existing, err = s.ssoAccountFor(ctx, connection, person, email, client); err != nil {
 			return nil, err
 		}
-		if !user.CanSignIn(now) {
+		if !user.CanSignIn() {
 			return nil, s.ssoBlocked(ctx, user, connection, client)
 		}
 
@@ -118,7 +118,7 @@ func (s *Service) signInThroughSSO(
 		}
 	}
 
-	if !user.CanSignIn(now) {
+	if !user.CanSignIn() {
 		return nil, s.ssoBlocked(ctx, user, connection, client)
 	}
 

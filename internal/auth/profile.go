@@ -89,9 +89,9 @@ func (s *Service) withPassword(ctx context.Context, admin *model.Admin) error {
 
 // checkPassword says whether a password is the administrator's own. Each
 // guess is counted before comparing, like a sign-in, so a session left open
-// cannot be used to find the password; a locked account is refused outright.
+// cannot be used to find the password; a waiting account is refused outright.
 func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, password string) error {
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, s.now(), model.MaxFailedLogins, model.LockoutDuration)
+	allowed, err := s.reserve(ctx, admin)
 	if err != nil {
 		return err
 	}
@@ -103,5 +103,5 @@ func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, passwor
 		return ErrWrongPassword
 	}
 
-	return s.store.ClearAdminFailedLogins(ctx, admin)
+	return s.succeeded(ctx, admin)
 }

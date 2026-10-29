@@ -49,7 +49,7 @@ type Service struct {
 	// breached says a new password is known from a breach.
 	breached func(ctx context.Context, password string) bool
 
-	// now is the clock every lifetime, lockout and expiry is measured by, so
+	// now is the clock every lifetime, wait and expiry is measured by, so
 	// a test can move it instead of waiting.
 	now func() time.Time
 }
@@ -90,15 +90,15 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 	}
 
 	// The attempt is reserved before comparing, so parallel guesses cannot pass
-	// a lock, and a locked account takes as long to refuse as a wrong password.
-	now := s.now()
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, model.MaxFailedLogins, model.LockoutDuration)
+	// the throttle, and a waiting account takes as long to refuse as a wrong
+	// password.
+	allowed, err := s.reserve(ctx, admin)
 	if err != nil {
 		return "", nil, StateNone, err
 	}
 	if !allowed {
 		model.CompareDummyPassword(password)
-		s.record(ctx, &admin.ID, admin.Username, "admin.login_blocked", req, "locked")
+		s.record(ctx, &admin.ID, admin.Username, "admin.login_blocked", req, "throttled")
 
 		return "", nil, StateNone, ErrInvalidCredentials
 	}
@@ -129,10 +129,10 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 
 	// Codes are counted against the same attempts, so while one is owed the
 	// password must not give them back: signing in again between guesses
-	// would otherwise make the lockout unreachable. The code itself clears
+	// would otherwise make the throttle unreachable. The code itself clears
 	// them (signedIn).
 	if state != StateMFA {
-		if err := s.store.ClearAdminFailedLogins(ctx, admin); err != nil {
+		if err := s.succeeded(ctx, admin); err != nil {
 			return "", nil, StateNone, err
 		}
 	}
@@ -203,7 +203,7 @@ func (s *Service) Session(ctx context.Context, token string) (*model.Admin, *mod
 		return nil, nil, StateNone, err
 	}
 
-	// The lockout applies to signing in, not to open sessions; otherwise five
+	// The throttle applies to signing in, not to open sessions; otherwise a few
 	// wrong passwords from anyone would sign an administrator out.
 	admin, err := s.store.AdminPrincipal(ctx, session.AdminID)
 	if err != nil || admin.Status != model.StatusActive {

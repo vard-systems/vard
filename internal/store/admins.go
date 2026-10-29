@@ -170,44 +170,8 @@ func (s *Store) AdminPrincipal(ctx context.Context, id uuid.UUID) (*model.Admin,
 
 func (s *Store) MarkAdminSignedIn(ctx context.Context, admin *model.Admin, at time.Time, ip string) error {
 	err := s.db.WithContext(ctx).Model(admin).Updates(map[string]any{
-		"last_login_at":      at,
-		"last_login_ip":      ip,
-		"failed_login_count": 0,
-		"locked_until":       nil,
-	}).Error
-	if err == nil {
-		s.forget(ctx, cache.Admins)
-	}
-
-	return err
-}
-
-func (s *Store) ReserveAdminLogin(ctx context.Context, admin *model.Admin, at time.Time, max int, lockFor time.Duration) (bool, error) {
-	var rows []struct {
-		LockedUntil *time.Time
-	}
-
-	err := s.db.WithContext(ctx).Raw(`
-		UPDATE admins SET
-			locked_until = CASE WHEN failed_login_count + 1 >= @max THEN @until ELSE locked_until END,
-			failed_login_count = CASE WHEN failed_login_count + 1 >= @max THEN 0 ELSE failed_login_count + 1 END
-		WHERE id = @id AND (locked_until IS NULL OR locked_until <= @now)
-		RETURNING locked_until`,
-		map[string]any{"max": max, "until": at.Add(lockFor), "id": admin.ID, "now": at},
-	).Scan(&rows).Error
-	if err != nil {
-		return false, err
-	}
-
-	s.forget(ctx, cache.Admins)
-
-	return len(rows) > 0, nil
-}
-
-func (s *Store) ClearAdminFailedLogins(ctx context.Context, admin *model.Admin) error {
-	err := s.db.WithContext(ctx).Model(admin).Updates(map[string]any{
-		"failed_login_count": 0,
-		"locked_until":       nil,
+		"last_login_at": at,
+		"last_login_ip": ip,
 	}).Error
 	if err == nil {
 		s.forget(ctx, cache.Admins)

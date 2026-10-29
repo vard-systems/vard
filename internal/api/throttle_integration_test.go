@@ -133,3 +133,25 @@ func TestLiveAnUnknownAddressIsThrottledLikeAKnownOne(t *testing.T) {
 		t.Errorf("seven attempts took %v for an account and %v for nobody, want about the same", known, unknown)
 	}
 }
+
+// The owner who resets the password through the emailed link is not kept
+// waiting by a stranger's guesses at their address.
+func TestLiveAResetEndsTheWait(t *testing.T) {
+	f := throttledFixture(t)
+
+	for i := range 6 {
+		f.s.browser().signInFrom(fmt.Sprintf("198.51.100.%d", i+1), adaEmail, "wrong-password")
+	}
+
+	f.s.browser().account(http.MethodPost, "/forgot-password", map[string]string{"email": adaEmail}, nil)
+	token := tokenIn(t, f.s.mail.waitFor(t, adaEmail, "/reset-password").Body, "/reset-password")
+	if status := f.s.browser().account(http.MethodPost, "/reset-password", map[string]string{
+		"token": token, "password": "ada-new-password-1",
+	}, nil); status != http.StatusOK {
+		t.Fatalf("reset = %d", status)
+	}
+
+	if status, code := f.s.browser().signInFrom("198.51.100.50", adaEmail, "ada-new-password-1"); status != http.StatusOK {
+		t.Errorf("the new password straight after the reset = %d %s, want 200", status, code)
+	}
+}

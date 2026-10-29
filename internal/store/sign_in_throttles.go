@@ -11,18 +11,12 @@ import (
 	"vard/internal/model"
 )
 
-// SignInAttempt is what reserving an attempt found: whether it may go ahead,
-// and the most failures any of its keys has had, for a challenge hook.
-type SignInAttempt struct {
-	Allowed  bool
-	Failures int
-}
-
 // ReserveSignIn counts an attempt against every key before the attempt is
-// checked, so parallel guesses cannot slip past the count. While any key is
-// waiting the attempt is refused and counted against none. Keys are locked
-// in order, so two attempts sharing keys never deadlock.
-func (s *Store) ReserveSignIn(ctx context.Context, keys []model.ThrottleKey, now time.Time) (SignInAttempt, error) {
+// checked, so parallel guesses cannot slip past the count, and answers whether
+// it may go ahead. While any key is waiting the attempt is refused and counted
+// against none. Keys are locked in order, so two attempts sharing keys never
+// deadlock.
+func (s *Store) ReserveSignIn(ctx context.Context, keys []model.ThrottleKey, now time.Time) (bool, error) {
 	sorted := slices.Clone(keys)
 	slices.SortFunc(sorted, func(a, b model.ThrottleKey) int {
 		switch {
@@ -34,7 +28,7 @@ func (s *Store) ReserveSignIn(ctx context.Context, keys []model.ThrottleKey, now
 		return 0
 	})
 
-	var attempt SignInAttempt
+	allowed := false
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		rows := make([]model.SignInThrottle, len(sorted))
 		for i, key := range sorted {
@@ -50,13 +44,12 @@ func (s *Store) ReserveSignIn(ctx context.Context, keys []model.ThrottleKey, now
 			if !now.Before(rows[i].ExpiresAt) {
 				rows[i].Failures, rows[i].BlockedUntil = 0, nil
 			}
-			attempt.Failures = max(attempt.Failures, rows[i].Failures)
 			if rows[i].BlockedUntil != nil && now.Before(*rows[i].BlockedUntil) {
 				return nil
 			}
 		}
 
-		attempt.Allowed = true
+		allowed = true
 		for i, key := range sorted {
 			row := &rows[i]
 			row.Failures++
@@ -77,7 +70,7 @@ func (s *Store) ReserveSignIn(ctx context.Context, keys []model.ThrottleKey, now
 		return nil
 	})
 
-	return attempt, err
+	return allowed, err
 }
 
 // ClearSignIn forgets the counts of keys an attempt has just succeeded

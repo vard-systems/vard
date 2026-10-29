@@ -24,7 +24,6 @@ func TestCachedTypesSurviveJSON(t *testing.T) {
 		"Admin.Assignments":            "kept beside it in principal, and put back",
 		"Admin.MFA":                    "kept beside it in principal, and put back",
 		"Admin.PasswordHash":           "never kept: a password is checked against AdminByID",
-		"Admin.FailedLoginCount":       "counted in the database; only locked_until decides a sign-in",
 		"Admin.Sessions":               "a relation AdminByID never loads",
 		"Admin.Service":                "only model.ServiceAdmin sets it, per request, and that is never stored or cached",
 		"AdminRoleAssignment.Admin":    "the administrator it belongs to, who is the principal",

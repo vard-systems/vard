@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -286,13 +284,13 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 	now := s.now()
 
 	// Reserved before comparing, so parallel guesses are bounded by the
-	// lockout.
-	allowed, err := s.store.ReserveAdminLogin(ctx, admin, now, model.MaxFailedLogins, model.LockoutDuration)
+	// throttle.
+	allowed, err := s.reserve(ctx, admin)
 	if err != nil {
 		return "", err
 	}
 	if !allowed {
-		s.record(ctx, &admin.ID, admin.Username, "admin.mfa_failed", req, "locked after too many attempts")
+		s.record(ctx, &admin.ID, admin.Username, "admin.mfa_failed", req, "throttled after too many attempts")
 		return "", ErrInvalidCode
 	}
 
@@ -301,14 +299,8 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 		if err != nil {
 			return "", err
 		}
-		if !ok {
-			// Codes handed out before they were keyed are still good once.
-			if ok, err = s.store.ConsumeRecoveryCode(ctx, factor.ID, legacyHashRecoveryCode(code)); err != nil {
-				return "", err
-			}
-		}
 		if ok {
-			return "recovery_code", s.store.ClearAdminFailedLogins(ctx, admin)
+			return "recovery_code", s.succeeded(ctx, admin)
 		}
 		return "", s.failed(ctx, admin, req, "wrong recovery code")
 	}
@@ -332,8 +324,8 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 	}
 
 	// A right code gives back the attempt it took, so codes asked for by
-	// changes made while signed in do not add up to a lockout.
-	return "totp", s.store.ClearAdminFailedLogins(ctx, admin)
+	// changes made while signed in do not add up to a wait.
+	return "totp", s.succeeded(ctx, admin)
 }
 
 func (s *Service) failed(ctx context.Context, admin *model.Admin, req Request, reason string) error {
@@ -377,8 +369,3 @@ func factorSecret(factor uuid.UUID) jose.Context {
 }
 
 const recoveryCodePurpose = "admin recovery code"
-
-func legacyHashRecoveryCode(code string) string {
-	sum := sha256.Sum256([]byte(recovery.Normalize(code)))
-	return hex.EncodeToString(sum[:])
-}

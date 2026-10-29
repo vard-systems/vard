@@ -24,9 +24,6 @@ type Admin struct {
 	LastLoginAt     *time.Time `json:"last_login_at,omitempty"`
 	LastLoginIP     string     `gorm:"size:45;not null;default:''" json:"last_login_ip,omitempty"`
 
-	FailedLoginCount int        `gorm:"not null;default:0" json:"-"`
-	LockedUntil      *time.Time `json:"locked_until,omitempty"`
-
 	Service bool `gorm:"-" json:"-"`
 
 	Assignments []AdminRoleAssignment `gorm:"constraint:OnDelete:CASCADE" json:"-"`
@@ -55,11 +52,8 @@ func (a Admin) FullName() string {
 	return strings.TrimSpace(a.FirstName + " " + a.LastName)
 }
 
-func (a Admin) CanSignIn(now time.Time) bool {
-	if a.Status != StatusActive {
-		return false
-	}
-	return a.LockedUntil == nil || now.After(*a.LockedUntil)
+func (a Admin) CanSignIn() bool {
+	return a.Status == StatusActive
 }
 
 func (a Admin) HasRole(name string) bool {

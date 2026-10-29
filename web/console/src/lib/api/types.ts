@@ -368,8 +368,6 @@ export type UserRecord = UserBuiltins & {
 	/** Whether they turned on two-step verification. */
 	two_step_enabled: boolean;
 	last_login_at: string | null;
-	/** Until when wrong passwords keep them out; null when they are not locked. */
-	locked_until: string | null;
 	/** When they last accepted the organization's terms, on the Agreements step. */
 	agreements_accepted_at: string | null;
 	roles: UserRoleRef[];

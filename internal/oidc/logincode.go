@@ -96,7 +96,7 @@ func (s *Service) SubmitLoginCode(ctx context.Context, handle, typed string, cli
 	}
 
 	user := waiting.code.User
-	if user == nil || !user.CanSignIn(s.now()) {
+	if user == nil || !user.CanSignIn() {
 		return nil, ErrInvalidCredentials
 	}
 
@@ -147,7 +147,7 @@ func (s *Service) ResendLoginCode(ctx context.Context, handle string, client Cli
 	}
 
 	user := waiting.code.User
-	if user == nil || !user.CanSignIn(s.now()) {
+	if user == nil || !user.CanSignIn() {
 		return nil, ErrInvalidCredentials
 	}
 

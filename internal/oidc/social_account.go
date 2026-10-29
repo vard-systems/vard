@@ -47,7 +47,7 @@ func (s *Service) signInWithIdentity(
 		if err := s.socialSSORequired(ctx, user.Email); err != nil {
 			return nil, err
 		}
-		if !user.CanSignIn(now) {
+		if !user.CanSignIn() {
 			s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{
 				"reason": "inactive", "provider": provider.Name,
 			})
@@ -80,7 +80,7 @@ func (s *Service) signInWithIdentity(
 		if !who.EmailVerified || !provider.LinkVerifiedEmails || !user.IsEmailVerified {
 			return nil, ErrSocialLinkRefused
 		}
-		if !user.CanSignIn(now) {
+		if !user.CanSignIn() {
 			return nil, ErrInvalidCredentials
 		}
 

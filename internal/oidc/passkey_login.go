@@ -126,7 +126,7 @@ func (s *Service) FinishPasskeySignIn(ctx context.Context, handle string, respon
 		return nil, ErrPasskeySignInFailed
 	}
 
-	if !user.CanSignIn(now) {
+	if !user.CanSignIn() {
 		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "locked or inactive"})
 		return nil, ErrPasskeySignInFailed
 	}
