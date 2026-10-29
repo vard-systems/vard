@@ -5,8 +5,10 @@ import (
 	"context"
 	"crypto"
 	"crypto/sha256"
+	"crypto/subtle"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -155,13 +157,26 @@ type socialIdentity struct {
 	LastName      string
 }
 
-func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProvider, token *socialToken) (*socialIdentity, error) {
-	spec := provider.Spec()
+// identityInIDToken says the identity is read out of the provider's
+// id_token rather than its userinfo endpoint.
+func identityInIDToken(provider *model.SocialProvider) bool {
 	_, _, userInfoURL := provider.Endpoints()
+	return provider.Spec().IdentityInIDToken || userInfoURL == ""
+}
+
+// socialNonce is the nonce a sign-in sends and its id_token must carry back:
+// a keyed hash of its state, so nothing more has to be kept for it, and a
+// token issued for another sign-in is told apart.
+func (s *Service) socialNonce(state string) string {
+	return hex.EncodeToString(s.sealer.Tag("social nonce", []byte(state)))
+}
+
+func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProvider, token *socialToken, nonce string) (*socialIdentity, error) {
+	spec := provider.Spec()
 
 	var claims map[string]any
-	if spec.IdentityInIDToken || userInfoURL == "" {
-		payload, err := s.idTokenClaims(provider, token.IDToken)
+	if identityInIDToken(provider) {
+		payload, err := s.idTokenClaims(provider, token.IDToken, nonce)
 		if err != nil {
 			return nil, err
 		}
@@ -200,9 +215,9 @@ func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProv
 
 // idTokenClaims reads an id_token straight from the provider's token endpoint
 // over TLS, which OpenID Connect Core 3.1.3.7 accepts in place of a signature
-// check. Its claims are still held to this client, the expected issuer and the
-// clock.
-func (s *Service) idTokenClaims(provider *model.SocialProvider, idToken string) (map[string]any, error) {
+// check. Its claims are still held to this client, the expected issuer, the
+// nonce this sign-in sent, and the clock.
+func (s *Service) idTokenClaims(provider *model.SocialProvider, idToken, nonce string) (map[string]any, error) {
 	if idToken == "" {
 		s.log.Error("a social provider gave no id_token", "provider", provider.Slug)
 		return nil, ErrSocialUpstream
@@ -236,8 +251,28 @@ func (s *Service) idTokenClaims(provider *model.SocialProvider, idToken string) 
 		return nil, ErrSocialUpstream
 	}
 
-	if exp, ok := numberClaim(claims["exp"]); ok && s.now().After(time.Unix(int64(exp), 0)) {
+	if azp := claimString(claims, "azp"); azp != "" && azp != provider.ClientID {
+		s.log.Error("a social provider's id_token was authorised for another client", "provider", provider.Slug)
+		return nil, ErrSocialUpstream
+	}
+
+	if subtle.ConstantTimeCompare([]byte(claimString(claims, "nonce")), []byte(nonce)) != 1 {
+		s.log.Error("a social provider's id_token was for another sign-in", "provider", provider.Slug)
+		return nil, ErrSocialUpstream
+	}
+
+	now := s.now()
+	exp, ok := numberClaim(claims["exp"])
+	if !ok {
+		s.log.Error("a social provider's id_token has no expiry", "provider", provider.Slug)
+		return nil, ErrSocialUpstream
+	}
+	if now.After(time.Unix(int64(exp), 0).Add(idTokenLeeway)) {
 		return nil, ErrSocialExpired
+	}
+	if iat, ok := numberClaim(claims["iat"]); ok && time.Unix(int64(iat), 0).After(now.Add(idTokenLeeway)) {
+		s.log.Error("a social provider's id_token was issued in the future", "provider", provider.Slug)
+		return nil, ErrSocialUpstream
 	}
 
 	return claims, nil

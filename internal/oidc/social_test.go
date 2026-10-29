@@ -29,7 +29,8 @@ func unsignedIDToken(t *testing.T, claims map[string]any) string {
 }
 
 // An id_token the identity is read out of is held to the client it was issued
-// for, to the issuer its kind is known to have, and to the clock. The token
+// for, to the issuer its kind is known to have, to the sign-in it was asked
+// for (its nonce), and to the clock. The token
 // endpoint answering over TLS says the answer came from the provider; it does
 // not say the token inside it is one of theirs.
 func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
@@ -42,9 +43,23 @@ func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
 	apple := &model.SocialProvider{Kind: model.SocialApple, Slug: "apple", ClientID: "com.example.app"}
 	inHouse := &model.SocialProvider{Kind: model.SocialOIDC, Slug: "in-house", ClientID: "in-house-app"}
 
+	const nonce = "this-sign-in"
 	claims := func(issuer, audience string, expires time.Time) map[string]any {
-		return map[string]any{"iss": issuer, "aud": audience, "sub": "000123", "exp": expires.Unix()}
+		return map[string]any{"iss": issuer, "aud": audience, "sub": "000123", "exp": expires.Unix(), "nonce": nonce}
 	}
+	with := func(base map[string]any, key string, value any) map[string]any {
+		changed := map[string]any{}
+		for k, v := range base {
+			changed[k] = v
+		}
+		if value == nil {
+			delete(changed, key)
+		} else {
+			changed[key] = value
+		}
+		return changed
+	}
+	good := claims("https://appleid.apple.com", "com.example.app", now.Add(time.Hour))
 
 	tests := []struct {
 		name     string
@@ -66,7 +81,37 @@ func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
 		{
 			name:     "no issuer at all",
 			provider: apple,
-			claims:   map[string]any{"aud": "com.example.app", "sub": "000123", "exp": now.Add(time.Hour).Unix()},
+			claims:   with(good, "iss", nil),
+			want:     ErrSocialUpstream,
+		},
+		{
+			name:     "no expiry at all",
+			provider: apple,
+			claims:   with(good, "exp", nil),
+			want:     ErrSocialUpstream,
+		},
+		{
+			name:     "issued in the future",
+			provider: apple,
+			claims:   with(good, "iat", now.Add(time.Hour).Unix()),
+			want:     ErrSocialUpstream,
+		},
+		{
+			name:     "authorised for another client",
+			provider: apple,
+			claims:   with(with(good, "aud", []string{"com.example.app", "com.other.app"}), "azp", "com.other.app"),
+			want:     ErrSocialUpstream,
+		},
+		{
+			name:     "another sign-in's nonce",
+			provider: apple,
+			claims:   with(good, "nonce", "another-sign-in"),
+			want:     ErrSocialUpstream,
+		},
+		{
+			name:     "no nonce, though one was sent",
+			provider: apple,
+			claims:   with(good, "nonce", nil),
 			want:     ErrSocialUpstream,
 		},
 		{
@@ -78,7 +123,7 @@ func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
 		{
 			name:     "a token that has expired",
 			provider: apple,
-			claims:   claims("https://appleid.apple.com", "com.example.app", now.Add(-time.Minute)),
+			claims:   claims("https://appleid.apple.com", "com.example.app", now.Add(-idTokenLeeway-time.Second)),
 			want:     ErrSocialExpired,
 		},
 		{
@@ -90,7 +135,7 @@ func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := service.idTokenClaims(tt.provider, unsignedIDToken(t, tt.claims))
+			_, err := service.idTokenClaims(tt.provider, unsignedIDToken(t, tt.claims), nonce)
 			if !errors.Is(err, tt.want) {
 				t.Errorf("idTokenClaims = %v, want %v", err, tt.want)
 			}

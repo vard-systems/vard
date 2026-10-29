@@ -88,6 +88,12 @@ func (s *Service) StartSocial(ctx context.Context, slug, request, next string) (
 		values.Set(key, value)
 	}
 
+	// The identity read out of an id_token has to be this sign-in's, not one
+	// issued to the same client for somebody else (Core 3.1.2.1).
+	if identityInIDToken(provider) {
+		values.Set("nonce", s.socialNonce(state))
+	}
+
 	login := model.SocialLogin{
 		StateHash:  stateHash,
 		ProviderID: provider.ID,
@@ -146,7 +152,7 @@ func (s *Service) CompleteSocial(ctx context.Context, slug, code, state, binding
 		return nil, err
 	}
 
-	identity, err := s.socialIdentity(ctx, provider, token)
+	identity, err := s.socialIdentity(ctx, provider, token, s.socialNonce(state))
 	if err != nil {
 		return nil, err
 	}
