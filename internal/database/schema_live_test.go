@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -141,5 +142,26 @@ func TestLiveTheDatabaseRefusesWhatGoNeverWrites(t *testing.T) {
 	err := db.Exec("UPDATE users SET email = 'Ada@Example.com' WHERE id = ?", user.ID).Error
 	if err == nil || !strings.Contains(err.Error(), "chk_users_email_lower") {
 		t.Errorf("an address written in capitals = %v, want it refused by chk_users_email_lower", err)
+	}
+}
+
+// Instances started together, as replicas are, migrate one at a time: the
+// second waits for the first and finds nothing left to do.
+func TestLiveInstancesStartingTogetherMigrateOnce(t *testing.T) {
+	db, cfg := databasetest.Empty(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	errs := make(chan error, 4)
+	var started sync.WaitGroup
+	for range 4 {
+		started.Go(func() { errs <- database.Migrate(db, cfg, log) })
+	}
+	started.Wait()
+	close(errs)
+
+	for err := range errs {
+		if err != nil {
+			t.Errorf("an instance's migration = %v, want it to wait its turn", err)
+		}
 	}
 }

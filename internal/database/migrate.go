@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"github.com/pressly/goose/v3"
 	"gorm.io/gorm"
 
+	"vard/internal/brand"
 	"vard/internal/config"
 	_ "vard/migrations"
 )
@@ -19,6 +21,12 @@ func Migrate(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	unlock, err := migrationLock(sqlDB)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 
 	before, err := goose.GetDBVersion(sqlDB)
 	if err != nil {
@@ -48,6 +56,12 @@ func MigrateDown(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	unlock, err := migrationLock(sqlDB)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 
 	if err := goose.Down(sqlDB, cfg.MigrateDir); err != nil {
 		return err
@@ -85,6 +99,28 @@ func (printLogger) Printf(format string, v ...any) {
 func (printLogger) Fatalf(format string, v ...any) {
 	fmt.Fprintf(os.Stderr, format, v...)
 	os.Exit(1)
+}
+
+// migrationLock makes instances started together, as replicas are, migrate
+// one at a time: the rest wait, then find nothing left to do. The lock is a
+// session's, so it is held on a connection of its own until unlock.
+func migrationLock(db *sql.DB) (unlock func(), err error) {
+	ctx := context.Background()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	const lock = "SELECT pg_advisory_lock(hashtext($1))"
+	if _, err := conn.ExecContext(ctx, lock, brand.Slug+" migrations"); err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("wait for other instances' migrations: %w", err)
+	}
+
+	return func() {
+		_, _ = conn.ExecContext(ctx, "SELECT pg_advisory_unlock(hashtext($1))", brand.Slug+" migrations")
+		_ = conn.Close()
+	}, nil
 }
 
 func prepareGoose(db *gorm.DB) (*sql.DB, error) {
