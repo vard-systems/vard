@@ -19,8 +19,8 @@ const HOP_BY_HOP = [
 	'upgrade'
 ];
 
-// The API's own write timeout (cmd/vard/serve.go): past it the API has given
-// up too, so waiting longer would only hold the connection open.
+// The API's own write timeout (writeTimeout, in the server's serve.go): past
+// it the API has given up too, so waiting longer only holds a connection.
 const API_TIMEOUT_MS = 2 * 60 * 1000;
 
 /** Whole segments only: `/oauth2` takes `/oauth2/token`, not a page at `/oauth2-help`. */
