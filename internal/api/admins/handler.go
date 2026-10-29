@@ -272,10 +272,7 @@ func (h *Handler) build(c *gin.Context, req *adminRequest, into *model.Admin) (*
 		})
 
 		if status != model.StatusActive || !keepsSuper {
-			return nil, respond.Fault{
-				Status:  http.StatusConflict,
-				Message: "you cannot suspend yourself or take away your own super_admin role",
-			}
+			return nil, ownAccess.Fault(nil)
 		}
 	}
 
@@ -317,7 +314,7 @@ func (h *Handler) assignments(c *gin.Context, requested []assignmentRequest) ([]
 
 	roles, err := h.store.AdminRolesByID(ctx, roleIDs)
 	if errors.Is(err, store.ErrNotFound) {
-		return nil, respond.Fault{Status: http.StatusBadRequest, Message: "assignments: a role does not exist"}
+		return nil, assignedRoleUnknown.Fault(nil)
 	}
 	if err != nil {
 		return nil, err
@@ -337,15 +334,12 @@ func (h *Handler) assignments(c *gin.Context, requested []assignmentRequest) ([]
 		key := a.RoleID.String()
 		if a.ApplicationID != nil {
 			if role.IsSuperAdmin() {
-				return nil, respond.Fault{
-					Status:  http.StatusBadRequest,
-					Message: "assignments: super_admin can only be held for the whole panel",
-				}
+				return nil, superAdminScoped.Fault(nil)
 			}
 
 			if _, err := h.store.Application(ctx, *a.ApplicationID); err != nil {
 				if errors.Is(err, store.ErrNotFound) {
-					return nil, respond.Fault{Status: http.StatusBadRequest, Message: "assignments: an application does not exist"}
+					return nil, assignedApplicationUnknown.Fault(nil)
 				}
 				return nil, err
 			}

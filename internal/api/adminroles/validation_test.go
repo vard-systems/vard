@@ -40,12 +40,12 @@ func TestRoleRequestApplyTo(t *testing.T) {
 		{
 			name:    "the built-in name",
 			request: roleRequest{Name: "super_admin"},
-			want:    "super_admin is built in: choose another name",
+			want:    "super_admin is built in. Choose another name.",
 		},
 		{
 			name:    "a permission the catalog does not have",
 			request: roleRequest{Name: "moderator", Permissions: []string{"admins.manage"}},
-			want:    "permissions: admins.manage is not a permission",
+			want:    "admins.manage is not a permission.",
 		},
 	}
 

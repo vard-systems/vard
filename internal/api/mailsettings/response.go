@@ -14,6 +14,7 @@ var (
 	testFailed = respond.Define(http.StatusBadGateway, "mail_test_failed", respond.Admin)
 
 	contentKeyUnknown = respond.Define(http.StatusBadRequest, "mail_content_key_unknown", respond.Admin)
+	contentTooLong    = respond.Define(http.StatusBadRequest, "mail_content_too_long", respond.Admin)
 )
 
 // settingsResponse is built by hand so the password can never leave; only

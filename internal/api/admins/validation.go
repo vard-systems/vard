@@ -13,6 +13,11 @@ var (
 	ownMFA      = respond.Define(http.StatusConflict, "admin_own_mfa", respond.Admin)
 	ownAccount  = respond.Define(http.StatusConflict, "admin_own_account", respond.Admin)
 	adminAbsent = respond.Define(http.StatusNotFound, "admin_not_found", respond.Admin)
+	ownAccess   = respond.Define(http.StatusConflict, "admin_own_access", respond.Admin)
+
+	assignedRoleUnknown        = respond.Define(http.StatusBadRequest, "admin_assignment_role_unknown", respond.Admin)
+	assignedApplicationUnknown = respond.Define(http.StatusBadRequest, "admin_assignment_application_unknown", respond.Admin)
+	superAdminScoped           = respond.Define(http.StatusBadRequest, "admin_assignment_super_admin_scoped", respond.Admin)
 
 	idleTimeoutOutOfRange = respond.Define(http.StatusBadRequest, "admin_idle_timeout_out_of_range", respond.Admin)
 )

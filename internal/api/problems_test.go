@@ -1,6 +1,8 @@
 package api
 
 import (
+	"io/fs"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -105,6 +107,12 @@ func TestErrorParametersAreSent(t *testing.T) {
 		"application_too_many_uris":       {"max"},
 		"social_provider_kind_invalid":    {"kinds"},
 		"user_password_too_short":         {"min"},
+		"admin_role_permission_unknown":   {"permission"},
+		"mail_content_too_long":           {"key"},
+		"user_field_built_in":             {"name"},
+		"user_field_value_taken":          {"field"},
+		"user_role_inherits_forbidden":    {"role"},
+		"user_role_inherits_foreign":      {"role"},
 		"validation.max":                  {"field", "max"},
 		"validation.min":                  {"field", "min"},
 		"validation.oneof":                {"field", "values"},
@@ -146,5 +154,27 @@ func placeholders(text string) []string {
 
 		out = append(out, text[start+1:start+end])
 		text = text[start+end+1:]
+	}
+}
+
+// A sentence the panel shows is the catalog's, so it can be reworded without
+// touching Go; the one sentence Go writes is a model's own validation,
+// passed on by respond.Invalid. A Fault built by hand anywhere else is a
+// sentence nobody can find to change.
+func TestNoHandlerWritesItsOwnSentence(t *testing.T) {
+	err := filepath.WalkDir(".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") ||
+			strings.HasPrefix(path, "kit/respond/") {
+			return err
+		}
+		for i, line := range strings.Split(read(t, path), "\n") {
+			if strings.Contains(line, "respond.Fault{") {
+				t.Errorf("%s:%d writes its own Fault; define a problem (or respond.Invalid a model's sentence)", path, i+1)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

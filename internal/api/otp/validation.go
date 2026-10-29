@@ -1,8 +1,6 @@
 package otp
 
 import (
-	"net/http"
-
 	"vard/internal/api/kit/respond"
 	"vard/internal/api/kit/validate"
 	"vard/internal/model"
@@ -16,7 +14,7 @@ func (r *settingsRequest) applyTo(settings *model.OTPSettings) ([]string, error)
 	updated.ResendSeconds = validate.Number(r.ResendSeconds, settings.ResendSeconds)
 
 	if err := updated.Validate(); err != nil {
-		return nil, respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
+		return nil, respond.Invalid(err.Error())
 	}
 
 	changed := []string{}

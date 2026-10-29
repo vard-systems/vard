@@ -520,7 +520,7 @@ func (h *Handler) setPassword(ctx context.Context, user *model.User, req *userRe
 		}
 		err := user.SetPassword(req.Password)
 		if errors.Is(err, model.ErrPasswordTooLong) {
-			return respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
+			return passwordTooLong.Fault(nil)
 		}
 		if err != nil {
 			return err
@@ -530,10 +530,7 @@ func (h *Handler) setPassword(ctx context.Context, user *model.User, req *userRe
 	temporary := validate.Flag(req.IsPasswordTemporary, user.IsPasswordTemporary)
 
 	if temporary && !user.HasPassword {
-		return respond.Fault{
-			Status:  http.StatusBadRequest,
-			Message: "is_password_temporary needs a password to be set",
-		}
+		return temporaryNeedsPassword.Fault(nil)
 	}
 
 	user.IsPasswordTemporary = temporary

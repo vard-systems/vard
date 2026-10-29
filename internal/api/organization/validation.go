@@ -3,7 +3,6 @@ package organization
 import (
 	"encoding/base64"
 	"errors"
-	"net/http"
 	"slices"
 	"time"
 
@@ -23,7 +22,7 @@ func (r *organizationRequest) applyTo(organization *model.Organization) ([]strin
 	updated.Timezone = validate.Text(r.Timezone, organization.Timezone)
 
 	if err := updated.Validate(); err != nil {
-		return nil, respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
+		return nil, respond.Invalid(err.Error())
 	}
 
 	changed := []string{}

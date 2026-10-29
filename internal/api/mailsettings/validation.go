@@ -1,8 +1,6 @@
 package mailsettings
 
 import (
-	"net/http"
-
 	"github.com/google/uuid"
 
 	"vard/internal/api/kit/respond"
@@ -52,7 +50,7 @@ func (r *settingsRequest) applyTo(settings *model.MailSettings, sealer *jose.Sea
 	}
 
 	if err := updated.Validate(); err != nil {
-		return nil, respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
+		return nil, respond.Invalid(err.Error())
 	}
 
 	changed := []string{}
@@ -91,7 +89,7 @@ func (r *testRequest) settings(stored *model.MailSettings, sealer *jose.Sealer) 
 	trying.FromName = validate.Text(r.FromName, stored.FromName)
 
 	if err := trying.Validate(); err != nil {
-		return mail.Settings{}, respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
+		return mail.Settings{}, respond.Invalid(err.Error())
 	}
 
 	if r.Password != nil {
@@ -117,10 +115,7 @@ func (r *contentRequest) validate() error {
 		}
 
 		if len(text) > model.MaxMessageLength {
-			return respond.Fault{
-				Status:  http.StatusBadRequest,
-				Message: key + " is longer than a message may be",
-			}
+			return contentTooLong.With("key", key)
 		}
 	}
 

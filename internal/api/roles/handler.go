@@ -195,7 +195,7 @@ func (h *Handler) build(c *gin.Context, req *roleRequest, into *model.UserRole) 
 
 	inherits, err := h.store.UserRolesByID(ctx, req.Inherits)
 	if errors.Is(err, store.ErrNotFound) {
-		return nil, respond.Fault{Status: http.StatusBadRequest, Message: "inherits: one of them does not exist"}
+		return nil, includedUnknown.Fault(nil)
 	}
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func (h *Handler) build(c *gin.Context, req *roleRequest, into *model.UserRole) 
 
 	for _, inherited := range inherits {
 		if !session.SeesRole(c, inherited) {
-			return nil, respond.Fault{Status: http.StatusBadRequest, Message: "inherits: one of them does not exist"}
+			return nil, includedUnknown.Fault(nil)
 		}
 
 		// Including a role hands it to everyone holding this one, so adding it
@@ -216,18 +216,11 @@ func (h *Handler) build(c *gin.Context, req *roleRequest, into *model.UserRole) 
 		// roles stay.
 		added := !slices.ContainsFunc(role.Inherits, func(held model.UserRole) bool { return held.ID == inherited.ID })
 		if added && !session.AllowedScope(c, model.PermUserRolesWrite, inherited.ApplicationID) {
-			return nil, respond.Fault{
-				Status:  http.StatusForbidden,
-				Message: "inherits: your roles do not allow you to include " + inherited.Name,
-			}
+			return nil, includeForbidden.With("role", inherited.Name)
 		}
 
 		if !role.MayInherit(inherited) {
-			return nil, respond.Fault{
-				Status: http.StatusBadRequest,
-				Message: "inherits: " + inherited.Name + " belongs to another application; " +
-					"an application role can include global roles and its own application's roles",
-			}
+			return nil, includedForeign.With("role", inherited.Name)
 		}
 	}
 
@@ -238,24 +231,18 @@ func (h *Handler) build(c *gin.Context, req *roleRequest, into *model.UserRole) 
 		}
 
 		if graph.WouldCycle(role.ID, req.Inherits) {
-			return nil, respond.Fault{
-				Status:  http.StatusBadRequest,
-				Message: "inherits: a role cannot include itself, or a role that includes it",
-			}
+			return nil, includeCycle.Fault(nil)
 		}
 	}
 
 	if req.APIScopes != nil {
 		if !session.Admin(c).HasPermission(model.PermAPIsRead) {
-			return nil, respond.Fault{
-				Status:  http.StatusForbidden,
-				Message: "api_scopes: your roles do not allow you to see APIs",
-			}
+			return nil, scopesForbidden.Fault(nil)
 		}
 
 		scopes, err := h.store.APIScopesByID(ctx, *req.APIScopes)
 		if errors.Is(err, store.ErrNotFound) {
-			return nil, respond.Fault{Status: http.StatusBadRequest, Message: "api_scopes: one of them does not exist"}
+			return nil, scopeUnknown.Fault(nil)
 		}
 		if err != nil {
 			return nil, err

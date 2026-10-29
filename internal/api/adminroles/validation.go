@@ -9,9 +9,11 @@ import (
 )
 
 var (
-	roleAbsent      = respond.Define(http.StatusNotFound, "admin_role_not_found", respond.Admin)
-	superAdminFixed = respond.Define(http.StatusForbidden, "admin_role_built_in", respond.Admin)
-	roleNameTaken   = respond.Define(http.StatusConflict, "admin_role_name_taken", respond.Admin)
+	roleAbsent        = respond.Define(http.StatusNotFound, "admin_role_not_found", respond.Admin)
+	superAdminFixed   = respond.Define(http.StatusForbidden, "admin_role_built_in", respond.Admin)
+	roleNameTaken     = respond.Define(http.StatusConflict, "admin_role_name_taken", respond.Admin)
+	nameReserved      = respond.Define(http.StatusConflict, "admin_role_name_reserved", respond.Admin)
+	permissionUnknown = respond.Define(http.StatusBadRequest, "admin_role_permission_unknown", respond.Admin)
 )
 
 func init() {
@@ -26,16 +28,13 @@ func (r *roleRequest) applyTo(role *model.AdminRole) error {
 	}
 
 	if r.Name == model.RoleSuperAdmin {
-		return respond.Fault{Status: http.StatusConflict, Message: "super_admin is built in: choose another name"}
+		return nameReserved.Fault(nil)
 	}
 
 	asked := make(map[string]bool, len(r.Permissions))
 	for _, name := range r.Permissions {
 		if !model.IsAdminPermission(name) {
-			return respond.Fault{
-				Status:  http.StatusBadRequest,
-				Message: "permissions: " + name + " is not a permission",
-			}
+			return permissionUnknown.With("permission", name)
 		}
 		asked[name] = true
 	}

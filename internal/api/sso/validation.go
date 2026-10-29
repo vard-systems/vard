@@ -163,7 +163,7 @@ func settle(connection *model.SSOConnection) error {
 	}
 
 	if err := connection.Validate(); err != nil {
-		return respond.Fault{Status: 400, Message: err.Error()}
+		return respond.Invalid(err.Error())
 	}
 
 	return nil

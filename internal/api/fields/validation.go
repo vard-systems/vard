@@ -13,6 +13,7 @@ import (
 var (
 	nameTaken   = respond.Define(http.StatusConflict, "user_field_name_taken", respond.Admin)
 	fieldAbsent = respond.Define(http.StatusNotFound, "user_field_not_found", respond.Admin)
+	builtIn     = respond.Define(http.StatusConflict, "user_field_built_in", respond.Admin)
 )
 
 // column is what a field may be called: the same shape as a column name,
@@ -36,11 +37,7 @@ func (r *fieldRequest) newField() (*model.UserField, error) {
 	}
 
 	if model.IsBuiltinField(r.Name) {
-		return nil, respond.Fault{
-			Status: http.StatusConflict,
-			Message: r.Name + " is a built-in field: every record has one already, " +
-				"and two fields with one name would be two places to look",
-		}
+		return nil, builtIn.With("name", r.Name)
 	}
 
 	field := &model.UserField{Name: r.Name, Type: model.FieldType(r.Type)}
@@ -72,7 +69,7 @@ func (r *rulesRequest) applyTo(field *model.UserField) error {
 	field.StartsWith = r.StartsWith
 
 	if err := field.Validate(); err != nil {
-		return respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}
+		return respond.Invalid(err.Error())
 	}
 
 	return nil
