@@ -28,6 +28,7 @@ if [[ ! -f deploy/.env ]]; then
 
 	set_value VARD_SECRET_KEY "$(openssl rand -base64 32)"
 	set_value POSTGRES_PASSWORD "$(openssl rand -hex 32)"
+	set_value POSTGRES_APP_PASSWORD "$(openssl rand -hex 32)"
 	# So the first administrator can be created without an authenticator app.
 	# A server runs this as required; deploy/compose.yaml asks for that.
 	set_value VARD_ADMIN_MFA optional
@@ -48,6 +49,10 @@ set_value CONSOLE_PUBLISH 127.0.0.1:8081
 # was required.
 if ! grep -qE '^REDIS_PASSWORD=.+' deploy/.env; then
 	set_value REDIS_PASSWORD "$(openssl rand -hex 32)"
+fi
+# Likewise the runtime role's, which the server makes on its next start.
+if ! grep -qE '^POSTGRES_APP_PASSWORD=.+' deploy/.env; then
+	set_value POSTGRES_APP_PASSWORD "$(openssl rand -hex 32)"
 fi
 
 "${compose[@]}" up -d --build --wait

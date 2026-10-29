@@ -135,7 +135,10 @@ services:
       VARD_ISSUER: ${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}
       VARD_ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in deploy/.env}
       VARD_SECRET_KEY: ${VARD_SECRET_KEY:?set VARD_SECRET_KEY in deploy/.env}
-      VARD_DB_DSN: postgres://vard:${POSTGRES_PASSWORD}@postgres:5432/vard?sslmode=disable
+      # The server runs as vard_app, which reads and writes rows and nothing
+      # else; it migrates as vard, the owner, and makes vard_app on the way.
+      VARD_DB_DSN: postgres://vard_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in deploy/.env}@postgres:5432/vard?sslmode=disable
+      VARD_DB_MIGRATE_DSN: postgres://vard:${POSTGRES_PASSWORD}@postgres:5432/vard?sslmode=disable
       VARD_REDIS_HOST: redis
       VARD_REDIS_PORT: 6379
       VARD_REDIS_PASSWORD: ${REDIS_PASSWORD}

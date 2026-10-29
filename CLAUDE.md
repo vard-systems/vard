@@ -472,7 +472,12 @@ shield mark does.
   `VARD_DB_IDLE_IN_TRANSACTION_TIMEOUT` (60 s) is ended by the database.
   Migrations run under a session advisory lock, one instance at a time.
   `/readyz` is the orchestrator's probe (the database answers); `/healthz`
-  says only that the process is up.
+  says only that the process is up. With `VARD_DB_MIGRATE_DSN` (the
+  schema owner's, as in `deploy/compose.yaml`) the server migrates as the
+  owner and runs as `VARD_DB_DSN`'s role, which `MigrateAsOwner` makes and
+  grants rows only — no DDL, not goose's table. A store query that needs more
+  than SELECT, INSERT, UPDATE or DELETE fails there; it belongs in a
+  migration.
 - **Redis is optional.** Every path must work with a nil cache, and Redis is
   never the only copy of anything.
 - **The shell is zsh.** An unquoted glob such as `--include=*.go` fails with

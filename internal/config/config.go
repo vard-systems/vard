@@ -101,8 +101,12 @@ type Mail struct {
 }
 
 type DB struct {
-	Driver     string
-	DSN        string
+	Driver string
+	DSN    string
+	// MigrateDSN is the schema owner's, used only to migrate; the server then
+	// runs as DSN's user, which may read and write rows and nothing more.
+	// Empty migrates as DSN's user.
+	MigrateDSN string
 	TimeZone   string
 	LogQueries bool
 	Migrate    bool
@@ -219,6 +223,7 @@ func Load() (Config, error) {
 		DB: DB{
 			Driver:     v.GetString(env("DB_DRIVER")),
 			DSN:        v.GetString(env("DB_DSN")),
+			MigrateDSN: v.GetString(env("DB_MIGRATE_DSN")),
 			TimeZone:   v.GetString(env("DB_TIMEZONE")),
 			LogQueries: v.GetBool(env("DB_LOG_QUERIES")),
 			Migrate:    v.GetBool(env("DB_MIGRATE")),

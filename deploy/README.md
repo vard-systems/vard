@@ -13,6 +13,9 @@ infrastructure ─▶ 127.0.0.1:3000  id       ─┐
 
 - **Published:** only the two apps, on loopback. Postgres, Redis and the API
   publish nothing; the apps cannot reach Postgres or Redis.
+- **The API runs as `vard_app`**, a database role that reads and writes rows
+  and nothing more; it migrates as `vard`, the owner, and makes `vard_app`
+  (with `POSTGRES_APP_PASSWORD`) on its first start.
 - **The API believes only the two apps** about who is calling
   (`VARD_TRUSTED_PROXIES`, their fixed addresses).
 - **Containers** run as unprivileged users with no capabilities, read-only
@@ -78,5 +81,6 @@ curl -sI https://id.example.com/.well-known/openid-configuration   # 200, with H
 
 Everything is in `deploy/.env`; `deploy/.env.example` explains each. The ones
 a server must not change: `VARD_SECRET_KEY` and `POSTGRES_PASSWORD`, which
-the stored keys and the database were made with. `ID_PUBLISH` and
+the stored keys and the database were made with, and `POSTGRES_APP_PASSWORD`,
+which `vard_app` was made with. `ID_PUBLISH` and
 `CONSOLE_PUBLISH` stay on loopback: Docker opens a published port past ufw.

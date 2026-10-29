@@ -47,13 +47,24 @@ func migrate(log *slog.Logger, args []string) error {
 	}
 	defer database.Close(db)
 
+	// Going down and reading the version are the schema owner's, as going up
+	// is; the runtime role may not drop a table or read goose's.
+	owner, ownerCfg := db, cfg.DB
+	if cfg.DB.MigrateDSN != "" {
+		ownerCfg.DSN = cfg.DB.MigrateDSN
+		if owner, err = database.Open(ownerCfg, log); err != nil {
+			return err
+		}
+		defer database.Close(owner)
+	}
+
 	switch command := args[0]; command {
 	case "up":
-		return database.Migrate(db, cfg.DB, log)
+		return database.MigrateAsOwner(db, cfg.DB, log)
 	case "down":
-		return database.MigrateDown(db, cfg.DB, log)
+		return database.MigrateDown(owner, ownerCfg, log)
 	case "status":
-		return database.MigrateStatus(db, cfg.DB)
+		return database.MigrateStatus(owner, ownerCfg)
 	default:
 		return fmt.Errorf("unknown command %q: want up, down or status", command)
 	}

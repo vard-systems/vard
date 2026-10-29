@@ -168,4 +168,4 @@ docker-ps: ## Show the stack's containers and their health
 
 docker-config: ## Validate deploy/compose.yaml, with placeholders for what deploy/.env would say
 	@PUBLIC_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 VARD_SECRET_KEY=x \
-		POSTGRES_PASSWORD=x REDIS_PASSWORD=x $(COMPOSE) config -q && echo "deploy/compose.yaml is valid"
+		POSTGRES_PASSWORD=x POSTGRES_APP_PASSWORD=x REDIS_PASSWORD=x $(COMPOSE) config -q && echo "deploy/compose.yaml is valid"

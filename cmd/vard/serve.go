@@ -70,7 +70,7 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 	log.Info("database connected")
 
 	if cfg.DB.Migrate {
-		if err := database.Migrate(db, cfg.DB, log); err != nil {
+		if err := database.MigrateAsOwner(db, cfg.DB, log); err != nil {
 			return err
 		}
 	}

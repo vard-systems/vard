@@ -37,6 +37,7 @@ if [[ ! -f deploy/.env ]]; then
 	cp deploy/.env.example deploy/.env
 	set_value VARD_SECRET_KEY "$(openssl rand -base64 32)"
 	set_value POSTGRES_PASSWORD "$(openssl rand -hex 32)"
+	set_value POSTGRES_APP_PASSWORD "$(openssl rand -hex 32)"
 	set_value REDIS_PASSWORD "$(openssl rand -hex 32)"
 	set_value VARD_ADMIN_MFA required
 	echo "==> made deploy/.env with new secrets: back it up somewhere safe"
@@ -44,6 +45,12 @@ else
 	echo "==> deploy/.env is there: its secrets are kept"
 fi
 chmod 600 deploy/.env
+
+# A deploy/.env from before the server ran as its own role gets one; the
+# server makes the role on its next start.
+if ! grep -qE '^POSTGRES_APP_PASSWORD=.+' deploy/.env; then
+	set_value POSTGRES_APP_PASSWORD "$(openssl rand -hex 32)"
+fi
 
 set_value PUBLIC_URL "$public"
 set_value ADMIN_URL "$admin"

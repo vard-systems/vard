@@ -1,8 +1,11 @@
 package database_test
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -13,6 +16,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"vard/internal/config"
 	"vard/internal/database"
 	"vard/internal/database/databasetest"
 	"vard/internal/model"
@@ -182,5 +186,57 @@ func TestLiveAQueryPastTheStatementTimeoutIsEnded(t *testing.T) {
 	err = db.Exec("SELECT pg_sleep(1)").Error
 	if err == nil || !strings.Contains(err.Error(), "statement timeout") {
 		t.Errorf("a one-second query under a 100ms limit = %v, want it ended", err)
+	}
+}
+
+// With the owner's DSN to migrate, the server runs as a role made for it that
+// reads and writes rows and nothing else: a flaw in the running server cannot
+// change the schema, whatever SQL it is tricked into.
+func TestLiveTheServerRunsAsARoleThatCannotChangeTheSchema(t *testing.T) {
+	role := fmt.Sprintf("app_test_%d", time.Now().UnixNano())
+	server, err := database.Open(config.DB{Driver: "postgres", DSN: os.Getenv(databasetest.Env), TimeZone: "UTC"},
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Skip(err)
+	}
+	t.Cleanup(func() {
+		_ = server.Exec(`DROP ROLE IF EXISTS "` + role + `"`).Error
+		_ = database.Close(server)
+	})
+
+	owner, cfg := databasetest.Empty(t)
+	runtime, _ := url.Parse(cfg.DSN)
+	runtime.User = url.UserPassword(role, "runtime-password")
+	cfg.MigrateDSN, cfg.DSN = cfg.DSN, runtime.String()
+
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	for range 2 { // the second start finds the role already made
+		if err := database.MigrateAsOwner(owner, cfg, log); err != nil {
+			t.Fatalf("migrate as the owner: %v", err)
+		}
+	}
+
+	db, err := database.Open(cfg, log)
+	if err != nil {
+		t.Fatalf("connect as the runtime role: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = database.Close(db)
+		_ = owner.Exec(`DROP OWNED BY "` + role + `"`).Error
+	})
+
+	if err := db.Exec("UPDATE organizations SET name = 'Renamed'").Error; err != nil {
+		t.Errorf("writing a row as the runtime role = %v, want it allowed", err)
+	}
+	for _, statement := range []string{
+		"CREATE TABLE stolen (id int)",
+		"ALTER TABLE users ADD COLUMN stolen text",
+		"DROP TABLE audit_logs",
+		"DELETE FROM goose_db_version",
+	} {
+		if err := db.Exec(statement).Error; err == nil || !strings.Contains(err.Error(), "permission denied") &&
+			!strings.Contains(err.Error(), "must be owner") {
+			t.Errorf("%s as the runtime role = %v, want it refused", statement, err)
+		}
 	}
 }
