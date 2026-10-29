@@ -46,7 +46,10 @@ func (s *Service) Logout(ctx context.Context, p LogoutParams, sessionToken strin
 			Subject  string `json:"sub"`
 			Audience any    `json:"aud"`
 		}
-		if _, err := jose.Verify(p.IDTokenHint, s.keys.lookup(ctx), &claims); err != nil || claims.Issuer != s.issuer {
+		// Access and logout tokens are signed by the same keys about the same
+		// people; only the ID token's type says it is one.
+		header, err := jose.Verify(p.IDTokenHint, s.keys.lookup(ctx), &claims)
+		if err != nil || header.Type != idTokenType || claims.Issuer != s.issuer {
 			return s.errorPage(ErrInvalidRequest, "id_token_hint is not an ID token from this server"), false, nil
 		}
 

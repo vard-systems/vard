@@ -686,6 +686,13 @@ func TestLiveOAuthLogoutLeavesOtherPeoplesSessionsAlone(t *testing.T) {
 		t.Fatal("a logout naming another user signed this browser out")
 	}
 
+	// The reader's own access token is signed by the same keys, about the
+	// same person, but is not an ID token, and is refused like a made-up one.
+	b.visit(f.s.root + "/oauth2/logout?" + url.Values{"id_token_hint": {tokens.str("access_token")}}.Encode())
+	if !signedIn() {
+		t.Fatal("an access token taken as id_token_hint signed the reader out")
+	}
+
 	// The reader's own ID token still signs the reader out.
 	b.visit(f.s.root + "/oauth2/logout?" + url.Values{"id_token_hint": {tokens.str("id_token")}}.Encode())
 	if signedIn() {

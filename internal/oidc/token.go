@@ -20,6 +20,11 @@ import (
 // OpenID Connect client must accept; access tokens follow their API's choice.
 const idTokenAlgorithm = jose.RS256
 
+// idTokenType is the typ an ID token is signed with, which is what tells it
+// apart from an access token ("at+jwt") or a logout token signed by the same
+// keys.
+const idTokenType = "JWT"
+
 type ClientAuth struct {
 	ID     string
 	Secret string
@@ -399,7 +404,7 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 			return nil, errors.New("oidc: no signing key for " + idTokenAlgorithm)
 		}
 
-		if response.IDToken, err = jose.Sign(idKey, "JWT", id); err != nil {
+		if response.IDToken, err = jose.Sign(idKey, idTokenType, id); err != nil {
 			return nil, err
 		}
 	}
