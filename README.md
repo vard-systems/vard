@@ -102,7 +102,9 @@ make docker-reset    # stops it and drops its data
 ```
 
 Without Docker, run `bin/vard` and the two `node build` servers, with the
-API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
+API's `VARD_TRUSTED_PROXIES` set to the apps' addresses. Each API listener
+answers `/healthz` (the process is up) and `/readyz` (its database answers),
+for whatever starts and routes to it.
 
 ### Before going live
 
@@ -112,7 +114,8 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - [ ] `VARD_SECRET_KEY` is stored in a secret manager.
 - [ ] SMTP is configured, or reset emails only reach the log.
 - [ ] Postgres is backed up (`make db-backup` from cron), and the dumps leave
-      the machine.
+      the machine. A database reached over a network is `sslmode=verify-full`
+      (the server warns at start about one that is not encrypted).
 - [ ] Both sites are served over https, and the apps publish on loopback only (`ID_PUBLISH`, `CONSOLE_PUBLISH`).
 - [ ] The firewall lets in 22, 80 and 443 only.
 - [ ] `VARD_ADMIN_MFA=required`, and at least two super admins exist.

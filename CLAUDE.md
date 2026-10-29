@@ -299,6 +299,12 @@ which passes on a model's own validation sentence.
 registered in `model.All()` — bump the count in `TestAllListsEveryModel`. A
 plain `string` column is `not null;default:''`, a `bool` or `int` is
 `not null`, anything that may be absent is a pointer. Nothing is soft-deleted.
+A column holding one of a set of values carries a named
+`check:chk_<table>_<column>,<column> IN (…)` listing exactly the Go constants
+(`TestEachCheckListsWhatGoAccepts`); a column naming another row has its
+relation with a deliberate `constraint:OnDelete:` and an index; JSON is
+`type:jsonb;serializer:json`. Anything with an `ExpiresAt` goes in the
+sweep's `expiring` list (`TestEverythingThatExpiresIsSwept`).
 
 **A migration.** `migrations/00001_schema.go` builds a fresh database from
 `migrations/schema/up.sql`, written out once and frozen, and seeds it with
@@ -461,6 +467,12 @@ shield mark does.
   how the server was started — for `VARD_SECRET_KEY`, signing keys one of
   them cannot open. `TestTheScriptsReadDotEnvLikeTheServer` holds them
   together; change both or neither.
+- **Postgres bounds every connection**: a statement past
+  `VARD_DB_STATEMENT_TIMEOUT` (15 s) or a transaction idle past
+  `VARD_DB_IDLE_IN_TRANSACTION_TIMEOUT` (60 s) is ended by the database.
+  Migrations run under a session advisory lock, one instance at a time.
+  `/readyz` is the orchestrator's probe (the database answers); `/healthz`
+  says only that the process is up.
 - **Redis is optional.** Every path must work with a nil cache, and Redis is
   never the only copy of anything.
 - **The shell is zsh.** An unquoted glob such as `--include=*.go` fails with
