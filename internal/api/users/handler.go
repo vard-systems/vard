@@ -3,6 +3,7 @@
 package users
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -24,10 +25,12 @@ type Handler struct {
 	store *store.Store
 	audit audit.Recorder
 	log   *slog.Logger
+	// breached says a password is known from a breach.
+	breached func(ctx context.Context, password string) bool
 }
 
-func New(st *store.Store, recorder audit.Recorder, log *slog.Logger) *Handler {
-	return &Handler{store: st, audit: recorder, log: log}
+func New(st *store.Store, recorder audit.Recorder, log *slog.Logger, breached func(ctx context.Context, password string) bool) *Handler {
+	return &Handler{store: st, audit: recorder, log: log, breached: breached}
 }
 
 // List returns a page of users, newest first. `search` matches the email and
@@ -492,7 +495,7 @@ func (h *Handler) build(c *gin.Context, req *userRequest, into *model.User) (*mo
 	user.IsActive = validate.Flag(req.IsActive, user.IsActive)
 	user.Data = data
 
-	if err := setPassword(user, req); err != nil {
+	if err := h.setPassword(ctx, user, req); err != nil {
 		return nil, err
 	}
 
@@ -508,8 +511,13 @@ func (h *Handler) build(c *gin.Context, req *userRequest, into *model.User) (*mo
 	return user, nil
 }
 
-func setPassword(user *model.User, req *userRequest) error {
+func (h *Handler) setPassword(ctx context.Context, user *model.User, req *userRequest) error {
 	if req.Password != "" {
+		// A password an administrator chooses for someone is held to the
+		// same rule as one they choose themselves.
+		if h.breached != nil && h.breached(ctx, req.Password) {
+			return passwordBreached.Fault(nil)
+		}
 		err := user.SetPassword(req.Password)
 		if errors.Is(err, model.ErrPasswordTooLong) {
 			return respond.Fault{Status: http.StatusBadRequest, Message: err.Error()}

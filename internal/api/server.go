@@ -110,7 +110,7 @@ func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog
 		auth:         adminauth.New(service, st, recorder, log, cfg.SecureAdminCookies),
 		mfa:          mfa.New(service, log, cfg.SecureAdminCookies),
 		setup:        setup.New(st, service, log),
-		users:        users.New(st, recorder, log),
+		users:        users.New(st, recorder, log, provider.PasswordBreached),
 		userSessions: usersessions.New(st, recorder, log),
 		fields:       fields.New(st, recorder, log),
 		roles:        roles.New(st, recorder, log),

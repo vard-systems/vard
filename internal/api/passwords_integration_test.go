@@ -138,6 +138,11 @@ func TestLiveABreachedPasswordIsRefused(t *testing.T) {
 	if status := f.super.do(http.MethodPost, "/me/password", map[string]string{"current_password": superPassword, "new_password": breached}, &refused); status != http.StatusBadRequest || refused.Code != "admin_password_breached" {
 		t.Errorf("an administrator choosing a breached password = %d %s, want 400 admin_password_breached", status, refused.Code)
 	}
+	if status := f.super.do(http.MethodPost, "/users", map[string]any{
+		"email": "given@example.com", "password": breached, "confirm_password": breached,
+	}, &refused); status != http.StatusBadRequest || refused.Code != "user_password_breached" {
+		t.Errorf("an administrator giving a user a breached password = %d %s, want 400 user_password_breached", status, refused.Code)
+	}
 
 	api.Close()
 	if status, code := register(breached); status != http.StatusOK {

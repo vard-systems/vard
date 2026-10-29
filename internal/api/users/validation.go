@@ -21,6 +21,7 @@ var (
 	emailTaken       = respond.Define(http.StatusConflict, "user_email_taken", respond.Admin)
 	passwordRequired = respond.Define(http.StatusBadRequest, "user_password_required", respond.Admin)
 	passwordTooShort = respond.Define(http.StatusBadRequest, "user_password_too_short", respond.Admin)
+	passwordBreached = respond.Define(http.StatusBadRequest, "user_password_breached", respond.Admin)
 )
 
 const minPasswordLength = model.MinUserPasswordLength

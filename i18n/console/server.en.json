@@ -107,6 +107,7 @@
 		"user_email_taken": "A user with this email already exists.",
 		"user_password_required": "A password is required.",
 		"user_password_too_short": "The password must be at least {min} characters.",
+		"user_password_breached": "That password is known from a data breach, so it is among the first anybody would try. Choose another.",
 		"application_type_fixed": "An application's type cannot be changed: register a new application instead.",
 		"application_no_secret": "A public client has no secret to rotate.",
 		"application_api_scope_foreign": "One of the scopes is not a scope of {api}.",
