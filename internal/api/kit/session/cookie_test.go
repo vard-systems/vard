@@ -42,7 +42,6 @@ func TestSessionCookiesAreHostOnlyOverHTTPS(t *testing.T) {
 		{"the user's session", UserCookie, "/", func(c *gin.Context, secure bool) { SetUser(c, "token", time.Now().Add(time.Hour), true, secure) }},
 		{"the sign-in state", SignInStateCookie, signInStatePath, func(c *gin.Context, secure bool) { SetSignInState(c, "state", secure) }},
 		{"the second factor", SecondFactorCookie, secondFactorPath, func(c *gin.Context, secure bool) { SetSecondFactor(c, "handle", time.Now().Add(time.Minute), secure) }},
-		{"the known device", KnownDeviceCookie, knownDevicePath, func(c *gin.Context, secure bool) { SetKnownDevice(c, "device", secure) }},
 	}
 
 	for _, w := range writers {

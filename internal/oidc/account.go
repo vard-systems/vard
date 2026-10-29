@@ -80,7 +80,7 @@ func (s *Service) ChangePassword(ctx context.Context, session *Session, current,
 func (s *Service) checkCurrentPassword(ctx context.Context, user *model.User, password string, client Client) error {
 	keys := s.keysFor(user.Email, client)
 
-	allowed, err := s.reserve(ctx, keys, client)
+	allowed, err := s.reserve(ctx, keys)
 	if err != nil {
 		return err
 	}

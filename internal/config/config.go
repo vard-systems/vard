@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -30,16 +29,6 @@ type Config struct {
 
 	AdminURL string
 
-	// MTLSURL is where clients reach the provider's endpoints with a TLS
-	// client certificate (RFC 8705 §5): a host of its own, so browsers on the
-	// sign-in pages are never asked for one. Empty, mutual TLS is off.
-	MTLSURL string
-
-	// MTLSCAFile holds the certificate authorities, in PEM, that a
-	// tls_client_auth client's certificate must chain to. Empty, only
-	// self-signed certificates are taken.
-	MTLSCAFile string
-
 	// CORSOrigins are extra origins allowed to call cookie-authenticated APIs
 	// with credentials. None by default: each listed origin can act as the
 	// signed-in user.
@@ -59,10 +48,6 @@ type Config struct {
 	// LogLevel is the least severe line the server writes: debug, info, warn
 	// or error.
 	LogLevel slog.Level
-
-	// AdminNetworks are the networks the admin API answers, as CIDRs: anyone
-	// else is refused before anything is read. Empty answers everyone.
-	AdminNetworks []string
 
 	// TrustedProxies are the proxies whose X-Forwarded-For is believed. Empty
 	// believes no one. Behind a proxy it must be set, or every request (and the
@@ -176,7 +161,6 @@ func Load() (Config, error) {
 	v.SetDefault(env("RATE_LIMIT"), 20)
 	v.SetDefault(env("LOG_LEVEL"), "info")
 	v.SetDefault(env("ADMIN_MFA"), "required")
-	v.SetDefault(env("ADMIN_NETWORKS"), "")
 	v.SetDefault(env("KEY_ROTATION_DAYS"), 90)
 	v.SetDefault(env("AUDIT_RETENTION_DAYS"), 365)
 	v.SetDefault(env("ISSUER"), "http://localhost:8080")
@@ -200,7 +184,6 @@ func Load() (Config, error) {
 		accountURL = issuer
 	}
 	adminURL := strings.TrimRight(v.GetString(env("ADMIN_URL")), "/")
-	mtlsURL := strings.TrimRight(v.GetString(env("MTLS_URL")), "/")
 
 	cfg := Config{
 		Addr:               v.GetString(env("ADDR")),
@@ -208,8 +191,6 @@ func Load() (Config, error) {
 		Issuer:             issuer,
 		AccountURL:         accountURL,
 		AdminURL:           adminURL,
-		MTLSURL:            mtlsURL,
-		MTLSCAFile:         strings.TrimSpace(v.GetString(env("MTLS_CA_FILE"))),
 		CORSOrigins:        splitList(v.GetString(env("CORS_ORIGINS"))),
 		SecureUserCookies:  strings.HasPrefix(accountURL, "https://"),
 		SecureAdminCookies: strings.HasPrefix(adminURL, "https://"),
@@ -218,7 +199,6 @@ func Load() (Config, error) {
 		AuditRetention:     time.Duration(v.GetInt(env("AUDIT_RETENTION_DAYS"))) * 24 * time.Hour,
 		RateLimit:          v.GetInt(env("RATE_LIMIT")),
 		TrustedProxies:     splitList(v.GetString(env("TRUSTED_PROXIES"))),
-		AdminNetworks:      splitList(v.GetString(env("ADMIN_NETWORKS"))),
 		SecretKey:          v.GetString(env("SECRET_KEY")),
 		SecretKeyPrevious:  v.GetString(env("SECRET_KEY_PREVIOUS")),
 		PwnedPasswordsURL:  strings.TrimSpace(v.GetString(env("PWNED_PASSWORDS_URL"))),
@@ -277,22 +257,6 @@ func Load() (Config, error) {
 		}
 	}
 
-	// A client certificate is only ever presented over TLS, so the alias is
-	// https, and on a host of its own: on the issuer's, every browser would
-	// be asked to choose a certificate.
-	if cfg.MTLSURL != "" {
-		parsed, err := url.Parse(cfg.MTLSURL)
-		switch {
-		case err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.Path != "":
-			return Config{}, fmt.Errorf("%s must be an https URL with no path, got %q", env("MTLS_URL"), cfg.MTLSURL)
-		case Origin(cfg.MTLSURL) == Origin(cfg.Issuer) || Origin(cfg.MTLSURL) == Origin(cfg.AccountURL):
-			return Config{}, errors.New(env("MTLS_URL") + " must be a host of its own, not the issuer's")
-		}
-	}
-	if cfg.MTLSCAFile != "" && cfg.MTLSURL == "" {
-		return Config{}, errors.New(env("MTLS_CA_FILE") + " needs " + env("MTLS_URL"))
-	}
-
 	// One listener for both would put the admin API back on the public one,
 	// which is exactly what the second listener is there to prevent.
 	if cfg.AdminAddr == "" || cfg.AdminAddr == cfg.Addr {
@@ -301,12 +265,6 @@ func Load() (Config, error) {
 
 	if mode := v.GetString(env("ADMIN_MFA")); mode != "required" && mode != "optional" {
 		return Config{}, fmt.Errorf("%s must be required or optional, got %q", env("ADMIN_MFA"), mode)
-	}
-
-	for _, network := range cfg.AdminNetworks {
-		if _, _, err := net.ParseCIDR(network); err != nil {
-			return Config{}, fmt.Errorf("%s holds %q, which is not a network such as 10.0.0.0/8", env("ADMIN_NETWORKS"), network)
-		}
 	}
 
 	if cfg.KeyRotation < 0 {

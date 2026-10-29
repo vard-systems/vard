@@ -170,11 +170,9 @@ func (s *Store) SSODomainVerification(ctx context.Context, connection uuid.UUID,
 }
 
 // CheckedSSODomain records a DNS check of a domain, and its proof when the
-// check found the record — which also turns a domain carried over from
-// before proofs into a proved one. A domain stays as it was otherwise: one
-// carried over keeps linking until an administrator removes it.
+// check found the record. A domain already proved stays proved.
 func (s *Store) CheckedSSODomain(ctx context.Context, verification *model.SSODomainVerification, proved bool, at time.Time) error {
-	upgrade := proved && verification.Method != model.SSODomainProvedByDNS
+	upgrade := proved && !verification.Proved()
 
 	changes := map[string]any{"checked_at": at}
 	if upgrade {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"vard/internal/brand"
-	"vard/internal/config"
 )
 
 // adminCookie is the administrator's session cookie this client holds.
@@ -146,44 +145,6 @@ func TestLiveAnIdleAdminSessionEnds(t *testing.T) {
 	idle(60)
 	if status := root2.do(http.MethodGet, "/me", nil, nil); status != http.StatusOK {
 		t.Errorf("idle for an hour under a two-hour timeout = %d, want still signed in", status)
-	}
-}
-
-// The panel's API can be held to the networks staff work from: anyone else
-// is refused before sign-in, setup or anything else is looked at.
-func TestLiveTheAdminAPIAnswersOnlyItsNetworks(t *testing.T) {
-	cases := []struct {
-		name     string
-		networks []string
-		want     int
-	}{
-		{"no list lets everyone reach it", nil, http.StatusOK},
-		{"a list that holds the caller", []string{"10.0.0.0/8", "127.0.0.0/8", "::1/128"}, http.StatusOK},
-		{"a list that does not", []string{"10.0.0.0/8"}, http.StatusForbidden},
-	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			s := newLiveServerWith(t, func(cfg *config.Config) { cfg.AdminNetworks = c.networks })
-
-			var out problemBody
-			status := s.client().do(http.MethodGet, "/setup", nil, &out)
-			if status != c.want {
-				t.Errorf("GET /setup from the loopback = %d, want %d", status, c.want)
-			}
-			if c.want == http.StatusForbidden && out.Code != "admin_network_refused" {
-				t.Errorf("refused with %q, want admin_network_refused", out.Code)
-			}
-
-			res, err := http.Get(s.adminRoot + "/healthz")
-			if err != nil {
-				t.Fatal(err)
-			}
-			res.Body.Close()
-			if res.StatusCode != http.StatusOK {
-				t.Errorf("/healthz = %d, want it answered for whoever checks the process", res.StatusCode)
-			}
-		})
 	}
 }
 

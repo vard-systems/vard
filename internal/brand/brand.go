@@ -46,9 +46,6 @@ const (
 	// SecondFactorCookie names a sign-in waiting for the user's second
 	// factor, so only the browser that signed in can finish it.
 	SecondFactorCookie = Slug + "_second_factor"
-	// KnownDeviceCookie is the accounts a browser has signed in to, so a
-	// stranger's failed sign-ins elsewhere never slow its owner down.
-	KnownDeviceCookie = Slug + "_known_device"
 
 	LanguageCookie = Slug + "-account-language"
 )

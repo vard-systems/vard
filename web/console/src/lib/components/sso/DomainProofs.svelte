@@ -18,7 +18,7 @@
 	const check = createMutation(() => ({
 		mutationFn: (domain: string) => ssoApi.checkDomain(connectionId, domain),
 		onSuccess: async ({ domain }) => {
-			if (domain.proved && !domain.carried_over) notify.success(`${domain.domain} is proved`);
+			if (domain.proved) notify.success(`${domain.domain} is proved`);
 			else notify.error(null, `No matching TXT record at ${domain.record_name} yet`);
 			await queryClient.invalidateQueries({ queryKey: keys.sso.domains(connectionId) });
 		},

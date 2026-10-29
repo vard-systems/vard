@@ -39,10 +39,6 @@ type applicationResponse struct {
 	Scopes                    []string         `json:"scopes"`
 	RequirePKCE               bool             `json:"require_pkce"`
 	RequirePushedRequests     bool             `json:"require_pushed_authorization_requests"`
-	TLSSubjectKind            string           `json:"tls_subject_kind"`
-	TLSSubject                string           `json:"tls_subject"`
-	TLSCertificates           []string         `json:"tls_certificates"`
-	CertificateBoundTokens    bool             `json:"tls_client_certificate_bound_access_tokens"`
 
 	AccessTokenLifetime  int `json:"access_token_lifetime"`
 	IDTokenLifetime      int `json:"id_token_lifetime"`
@@ -88,10 +84,6 @@ func newApplicationResponse(app model.Application, roles int64) applicationRespo
 		Scopes:                    nonNil(app.Scopes),
 		RequirePKCE:               app.RequirePKCE,
 		RequirePushedRequests:     app.RequirePushedRequests,
-		TLSSubjectKind:            string(app.TLSSubjectKind),
-		TLSSubject:                app.TLSSubject,
-		TLSCertificates:           nonNil(app.TLSCertificates),
-		CertificateBoundTokens:    app.CertificateBoundTokens,
 		AccessTokenLifetime:       app.AccessTokenLifetime,
 		IDTokenLifetime:           app.IDTokenLifetime,
 		RefreshTokenLifetime:      app.RefreshTokenLifetime,

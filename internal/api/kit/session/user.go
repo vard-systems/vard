@@ -109,25 +109,3 @@ func SecondFactor(c *gin.Context) string {
 func writeSecondFactor(c *gin.Context, value string, maxAge int, secure bool) {
 	writeCookie(c, cookie{name: SecondFactorCookie, path: secondFactorPath, sameSite: http.SameSiteLaxMode}, value, maxAge, secure)
 }
-
-// KnownDeviceCookie is the accounts this browser has signed in to, which
-// sign-ins are throttled by apart from strangers' attempts.
-const KnownDeviceCookie = brand.KnownDeviceCookie
-
-// knownDevicePath keeps it to the account endpoints, the only ones that read
-// it.
-const knownDevicePath = "/api/v1/account"
-
-// knownDeviceLifetime is how long a browser stays known without signing in.
-const knownDeviceLifetime = 180 * 24 * time.Hour
-
-// KnownDevice is the browser's known-device cookie, or "" when absent or
-// duplicated.
-func KnownDevice(c *gin.Context) string {
-	return read(c, KnownDeviceCookie)
-}
-
-func SetKnownDevice(c *gin.Context, value string, secure bool) {
-	writeCookie(c, cookie{name: KnownDeviceCookie, path: knownDevicePath, sameSite: http.SameSiteLaxMode},
-		value, int(knownDeviceLifetime.Seconds()), secure)
-}

@@ -30,7 +30,6 @@ import (
 	"vard/internal/api/flows"
 	"vard/internal/api/keys"
 	"vard/internal/api/kit/audit"
-	"vard/internal/api/kit/clientcert"
 	"vard/internal/api/kit/cors"
 	"vard/internal/api/kit/csrf"
 	"vard/internal/api/kit/middleware"
@@ -74,23 +73,17 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 		return nil, err
 	}
 
-	certificate, err := clientcert.New(cfg.MTLSURL != "", cfg.TrustedProxies)
-	if err != nil {
-		return nil, err
-	}
-
 	r.Use(session.CookieMode(cfg.SecureUserCookies))
 
 	registerPublicRoutes(r, publicHandlers{
-		certificate: certificate,
-		oauth:       oauth.New(provider, log, cfg.SecureUserCookies),
-		account:     account.New(provider, log, cfg.SecureUserCookies),
-		twoStep:     twostep.New(provider, log),
-		profile:     profile.New(provider, log),
-		steps:       steps.New(provider, log),
-		limit:       ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "public").Middleware(),
-		tokens:      ratelimit.New(cfg.RateLimit*tokenLimitMultiple).Shared(shared.SessionDB(), "token").Middleware(),
-		csrf:        csrf.New(allowed(cfg.AccountURL, cfg.CORSOrigins)),
+		oauth:   oauth.New(provider, log, cfg.SecureUserCookies),
+		account: account.New(provider, log, cfg.SecureUserCookies),
+		twoStep: twostep.New(provider, log),
+		profile: profile.New(provider, log),
+		steps:   steps.New(provider, log),
+		limit:   ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "public").Middleware(),
+		tokens:  ratelimit.New(cfg.RateLimit*tokenLimitMultiple).Shared(shared.SessionDB(), "token").Middleware(),
+		csrf:    csrf.New(allowed(cfg.AccountURL, cfg.CORSOrigins)),
 	})
 
 	return r, nil
@@ -98,11 +91,6 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 
 func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog.Logger, provider *oidc.Service, shared *cache.Redis) (*gin.Engine, error) {
 	r, err := engine(cfg, log, cfg.AdminURL)
-	if err != nil {
-		return nil, err
-	}
-
-	networks, err := middleware.Networks(cfg.AdminNetworks)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +116,7 @@ func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog
 		roles:        roles.New(st, recorder, log),
 		admins:       admins.New(st, service, recorder, log),
 		adminRoles:   adminroles.New(st, recorder, log),
-		applications: applications.New(st, recorder, log, cfg.Issuer, applications.MutualTLS{On: cfg.MTLSURL != "", Authorities: cfg.MTLSCAFile != ""}),
+		applications: applications.New(st, recorder, log, cfg.Issuer),
 		organization: organization.New(st, recorder, log),
 		social:       social.New(st, sealer, recorder, log, cfg.Issuer),
 		sso:          sso.New(st, sealer, provider, recorder, log, cfg.Issuer),
@@ -142,7 +130,6 @@ func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog
 		caching:      caching.New(shared, recorder, log),
 		limit:        ratelimit.New(cfg.RateLimit).Shared(shared.SessionDB(), "admin").Middleware(),
 		csrf:         csrf.New(allowed(cfg.AdminURL, cfg.CORSOrigins)),
-		networks:     networks,
 	})
 
 	return r, nil
@@ -176,17 +163,14 @@ func allowed(appURL string, extra []string) []string {
 }
 
 type publicHandlers struct {
-	// certificate reads the TLS client certificate, on the endpoints the
-	// mutual TLS host serves (oidc.MTLSPaths).
-	certificate gin.HandlerFunc
-	oauth       *oauth.Handler
-	account     *account.Handler
-	twoStep     *twostep.Handler
-	profile     *profile.Handler
-	steps       *steps.Handler
-	limit       gin.HandlerFunc
-	tokens      gin.HandlerFunc
-	csrf        gin.HandlerFunc
+	oauth   *oauth.Handler
+	account *account.Handler
+	twoStep *twostep.Handler
+	profile *profile.Handler
+	steps   *steps.Handler
+	limit   gin.HandlerFunc
+	tokens  gin.HandlerFunc
+	csrf    gin.HandlerFunc
 }
 
 type adminHandlers struct {
@@ -213,8 +197,6 @@ type adminHandlers struct {
 	caching      *caching.Handler
 	limit        gin.HandlerFunc
 	csrf         gin.HandlerFunc
-	// networks refuses callers outside VARD_ADMIN_NETWORKS.
-	networks gin.HandlerFunc
 }
 
 // registerPublicRoutes mounts every public route. What a path does is in the
@@ -228,17 +210,17 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 	// loose per-address limit.
 	r.GET(oidc.PathAuthorize, h.tokens, h.oauth.Authorize)
 	r.POST(oidc.PathAuthorize, h.tokens, h.oauth.Authorize)
-	r.POST(oidc.PathToken, h.tokens, h.certificate, h.oauth.Token)
-	r.POST(oidc.PathPushedAuthorization, h.tokens, h.certificate, h.oauth.PushAuthorization)
-	r.POST(oidc.PathDeviceAuthorization, h.tokens, h.certificate, h.oauth.StartDevice)
+	r.POST(oidc.PathToken, h.tokens, h.oauth.Token)
+	r.POST(oidc.PathPushedAuthorization, h.tokens, h.oauth.PushAuthorization)
+	r.POST(oidc.PathDeviceAuthorization, h.tokens, h.oauth.StartDevice)
 	r.POST(oidc.PathRegistration, h.tokens, h.oauth.RegisterClient)
-	r.GET(oidc.PathUserInfo, h.certificate, h.oauth.UserInfo)
-	r.POST(oidc.PathUserInfo, h.certificate, h.oauth.UserInfo)
+	r.GET(oidc.PathUserInfo, h.oauth.UserInfo)
+	r.POST(oidc.PathUserInfo, h.oauth.UserInfo)
 	r.GET(oidc.PathLogout, h.oauth.Logout)
 	r.POST(oidc.PathLogout, h.oauth.Logout)
 	r.GET(oidc.PathFrontchannelLogout, h.oauth.FrontchannelLogout)
-	r.POST(oidc.PathRevoke, h.tokens, h.certificate, h.oauth.Revoke)
-	r.POST(oidc.PathIntrospect, h.tokens, h.certificate, h.oauth.Introspect)
+	r.POST(oidc.PathRevoke, h.tokens, h.oauth.Revoke)
+	r.POST(oidc.PathIntrospect, h.tokens, h.oauth.Introspect)
 
 	// Social sign-in. The callback also answers POST and sits outside CSRF
 	// because Apple posts its answer from its own form.
@@ -317,9 +299,8 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 	r.GET("/healthz", health)
 
 	// Everything here is called by the console with the administrator's session
-	// cookie, so it only takes changes from the console's origin; and only
-	// from the networks staff work from, when they are named.
-	v1 := r.Group("/api/v1", h.networks, h.csrf)
+	// cookie, so it only takes changes from the console's origin.
+	v1 := r.Group("/api/v1", h.csrf)
 	{
 		// Setup and sign-in cannot require a session. Setup is refused once any
 		// administrator exists.

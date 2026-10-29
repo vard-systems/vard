@@ -14,8 +14,8 @@ One Go binary is the API: `:8080` (provider and account API) and `:8081`
 (admin API). Each app is a SvelteKit Node server in front of it that renders
 its pages and passes the API paths it calls on to it, so each app is one
 origin and the browser never reaches the API directly. Locally everything is
-plain http; on a server, the platform's TLS proxy ends TLS in front of the
-apps (`deploy/README.md` says what it must do).
+plain http; on a server, TLS and routing are the infrastructure's, in front
+of the apps (`deploy/README.md`).
 Postgres holds everything; Redis is an optional cache. `README.md` is the
 overview for people; update it when a change makes a sentence in it untrue.
 
@@ -36,7 +36,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                                     |
 | Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                               |
 | Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                            |
-| A server behind a TLS proxy        | `make docker-env`, `make docker-up`, `make db-backup` (deploy/README.md)                      |
+| A server                           | `make docker-env`, `make docker-up`, `make db-backup` (deploy/README.md)                      |
 | Everything else                    | `make` lists every target                                                                     |
 
 Project commands in `.claude/commands/`: `/check` (every check), `/preview`
@@ -94,7 +94,7 @@ scripts/                 what the Makefile runs: setup, start, docker-local,
                          docker-env, db, db-backup, rename;
                          lib.sh (load_env) is shared by all of them
 deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles,
-                         README.md (a server, and what its TLS proxy must do)
+                         README.md (a server)
 ```
 
 **Layering.** Nothing above `store` writes a query; nothing below `api` knows
@@ -109,7 +109,7 @@ client sent there dropped. The same hook carries the browser's requests and
 the ones a load makes while a page is rendered, in `make dev` and in
 production alike. `TestEveryRouteIsReachableThroughItsApp` holds every route
 to those lists. In `deploy/compose.yaml` only the apps publish ports, on the
-host's loopback, for the TLS proxy; Postgres and Redis are on an internal network the
+host's loopback; Postgres and Redis are on an internal network the
 apps are not on. Cookies are host-only and nothing is
 cross-origin.
 
@@ -148,7 +148,7 @@ code near it, and add a test when adding a case.
   was replaced less than `model.RefreshReuseGrace` (30 s) before, when it is
   answered with the very token that replaced it, so every copy a client holds
   stays good and a family never has two live tokens. The retry is checked
-  like any refresh — client authentication, then DPoP key and certificate —
+  like any refresh — client authentication, then DPoP key —
   before it is given anything.
 - **Session cookies are read through `session.Token`, `session.UserToken` or
   `session.SignInState`**, which treat a duplicated cookie (planted from a
@@ -172,9 +172,8 @@ code near it, and add a test when adding a case.
   current password — is counted before it is checked (`ReserveSignIn`, rows
   locked in key order) against the caller's network and the address typed,
   keyed by a keyed hash so an address nobody has counts the same; past the
-  free failures each attempt waits longer (`model.ThrottleWait`). A browser
-  with a valid known-device cookie for the account is counted against
-  itself instead of the address typed. A right password does not clear the
+  free failures each attempt waits longer (`model.ThrottleWait`). A right
+  password does not clear the
   count while a second factor is still to come; only the right second factor
   does, and a success only gives the network its one attempt back. The
   waiting sign-in is named by an httpOnly cookie, never by anything the page
@@ -188,19 +187,10 @@ code near it, and add a test when adding a case.
   recorded once. Device user codes are short, so they are kept as a keyed hash
   and entering them is rate-limited.
 - **A DPoP-bound access token is never taken as a bearer token.** Userinfo
-  checks its proof; the account and admin APIs, which do not, refuse it. The
-  same goes for a certificate-bound one (`cnf.x5t#S256`).
+  checks its proof; the account and admin APIs, which do not, refuse it.
 - **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
   whatever its `RequirePKCE` says, and a code asked for with a challenge is
   never exchanged without its verifier.
-- **A TLS client certificate is believed only as the TLS proxy passed it
-  on.** The proxy asks for one on the mutual TLS host alone (`VARD_MTLS_URL`)
-  and removes the header everywhere else (deploy/README.md); the id app passes
-  it on only from
-  `CLIENT_CERT_HEADER`, and the API reads it (`api/kit/clientcert`) only with
-  mutual TLS on and from `VARD_TRUSTED_PROXIES`. A self-signed client is the
-  exact certificate it registered; a `tls_client_auth` one chains to
-  `VARD_MTLS_CA_FILE` and carries its one registered subject.
 - **Registering a client takes an initial access token** (an admin API token
   with `applications.write`); `/oauth2/register` is never open.
 - **Passwords are Argon2id** (`model.HashPassword`; `VerifyPassword` takes
@@ -457,10 +447,9 @@ shield mark does.
   and `VARD_TRUSTED_PROXIES` over whatever `.env` says.
 - **The API trusts the apps' servers and nobody else** to say who the
   caller is: loopback under `make dev`, the two containers' fixed addresses
-  in `deploy/compose.yaml` — never a whole private range. Behind the TLS
-  proxy the apps read the caller from `X-Real-IP` (`ADDRESS_HEADER`), which
-  the proxy must overwrite; nothing else reaches their loopback ports, and the API's
-  ports are never published. adapter-node's `BODY_SIZE_LIMIT` is the API's
+  in `deploy/compose.yaml` — never a whole private range. The apps read the
+  caller from the connection, or from `ADDRESS_HEADER` when the
+  infrastructure in front sets one; the API's ports are never published. adapter-node's `BODY_SIZE_LIMIT` is the API's
   1 MiB, or it refuses a logo or a SAML response first.
 - **The scripts read `.env` with `load_env` (`scripts/lib.sh`), the server
   with viper,** and the scripts export what they read, which the server then

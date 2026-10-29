@@ -11,8 +11,7 @@ import (
 // SSODomainVerification is whether a connection has proved it holds one of
 // its domains. A connection signs in new people at any domain it lists, but
 // links to an existing account — taking it over — only at a proved one: a
-// DNS TXT record only the domain's owner could publish, or, for a domain a
-// connection held before proofs existed, its being there already.
+// DNS TXT record only the domain's owner could publish.
 type SSODomainVerification struct {
 	Base
 
@@ -24,8 +23,8 @@ type SSODomainVerification struct {
 	// published in DNS, not a secret.
 	Token string `gorm:"size:64;not null"`
 
-	// Method is how the domain was proved: SSODomainProvedByDNS or
-	// SSODomainHeldBefore. "" while it has not been.
+	// Method is how the domain was proved: SSODomainProvedByDNS, "" while it
+	// has not been.
 	Method     string `gorm:"size:16;not null;default:''"`
 	VerifiedAt *time.Time
 	CheckedAt  *time.Time
@@ -35,10 +34,7 @@ func (SSODomainVerification) TableName() string {
 	return "sso_domain_verifications"
 }
 
-const (
-	SSODomainProvedByDNS = "dns"
-	SSODomainHeldBefore  = "existing"
-)
+const SSODomainProvedByDNS = "dns"
 
 // RecordName is where the TXT record goes.
 func (v SSODomainVerification) RecordName() string {
@@ -53,10 +49,4 @@ func (v SSODomainVerification) RecordValue() string {
 // Proved says the connection may link to existing accounts at the domain.
 func (v SSODomainVerification) Proved() bool {
 	return v.VerifiedAt != nil
-}
-
-// CarriedOver says the domain links only because the connection listed it
-// before proofs existed: nobody has proved it is the organisation's.
-func (v SSODomainVerification) CarriedOver() bool {
-	return v.Method == SSODomainHeldBefore
 }

@@ -11,9 +11,6 @@ type loginRequest struct {
 	// Remember is the "stay signed in" box. A flow that does not offer it
 	// ignores whatever is sent.
 	Remember bool `json:"remember"`
-	// Challenge is the answer to the installation's challenge hook, when it
-	// asked for one.
-	Challenge string `json:"challenge" validate:"max=4096"`
 }
 
 type registerRequest struct {

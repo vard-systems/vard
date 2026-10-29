@@ -12,9 +12,8 @@ import (
 )
 
 // Users' sign-ins are throttled, not locked: past a few failures each attempt
-// waits longer, counted against the address typed whoever types it — and,
-// from a browser that has signed in to the account before, against that
-// browser instead, so a stranger cannot keep its owner out of it.
+// waits longer, counted against the address typed whoever types it, and the
+// wait ends on its own.
 
 // throttledFixture is an OAuth fixture whose server believes the caller's
 // address from X-Forwarded-For, as it does from the id app's server, so one
@@ -78,29 +77,6 @@ func TestLiveASprayFromManyAddressesIsThrottledPerAccount(t *testing.T) {
 	f.waitOver(t)
 	if status, code := f.s.browser().signInFrom("198.51.100.100", adaEmail, adaPassword); status != http.StatusOK {
 		t.Errorf("the right password once the wait is over = %d %s, want 200", status, code)
-	}
-}
-
-// A stranger's guesses never shut the owner out of a browser they have signed
-// in on before; a browser that has not is held to the account's count.
-func TestLiveAStrangerCannotShutTheOwnerOutOfTheirKnownDevice(t *testing.T) {
-	f := throttledFixture(t)
-
-	owner := f.s.browser()
-	if status, code := owner.signInFrom("203.0.113.7", adaEmail, adaPassword); status != http.StatusOK {
-		t.Fatalf("the owner's first sign-in = %d %s", status, code)
-	}
-	owner.account(http.MethodPost, "/logout", map[string]any{}, nil)
-
-	for i := range 20 {
-		f.s.browser().signInFrom(fmt.Sprintf("198.51.100.%d", i+1), adaEmail, "wrong-password")
-	}
-
-	if status, code := owner.signInFrom("203.0.113.7", adaEmail, adaPassword); status != http.StatusOK {
-		t.Errorf("the owner on their known browser = %d %s, want 200", status, code)
-	}
-	if status, _ := f.s.browser().signInFrom("203.0.113.8", adaEmail, adaPassword); status != http.StatusUnauthorized {
-		t.Errorf("the right password from a browser the account has never used = %d, want 401 while throttled", status)
 	}
 }
 

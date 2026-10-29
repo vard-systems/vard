@@ -25,7 +25,6 @@ func TestDiscoverySaysFalseOutLoud(t *testing.T) {
 		"request_parameter_supported",
 		"claims_parameter_supported",
 		"require_pushed_authorization_requests",
-		"tls_client_certificate_bound_access_tokens",
 		"authorization_response_iss_parameter_supported",
 	} {
 		if value, ok := document[field]; !ok || value != false {

@@ -318,7 +318,6 @@ func TestApplicationMustUsePKCE(t *testing.T) {
 		{"a public client with the flag on", AuthNone, true, true},
 		{"a confidential client with the flag off", AuthClientSecretBasic, false, false},
 		{"a confidential client with the flag on", AuthClientSecretBasic, true, true},
-		{"a mutual TLS client with the flag off", AuthTLSClient, false, false},
 	}
 
 	for _, tt := range tests {

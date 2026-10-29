@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/api/kit/clientcert"
 	"vard/internal/model"
 	"vard/internal/oidc"
 )
@@ -150,12 +149,9 @@ func readForm(c *gin.Context) (url.Values, error) {
 	return c.Request.PostForm, nil
 }
 
-// clientAuth reads how the client identified itself, and the TLS client
-// certificate it came with, if any.
+// clientAuth reads how the client identified itself.
 func clientAuth(c *gin.Context, form url.Values) (oidc.ClientAuth, error) {
-	auth, err := credentials(c, form)
-	auth.Certificate = clientcert.From(c)
-	return auth, err
+	return credentials(c, form)
 }
 
 // credentials reads the client's id and secret. Basic credentials are
@@ -239,7 +235,7 @@ func dpopProof(c *gin.Context) (string, error) {
 // presentation reads a protected request's token, as Bearer or as DPoP with
 // its proof, for the address the client sent it to.
 func presentation(c *gin.Context, target string) (string, oidc.Presentation, error) {
-	how := oidc.Presentation{Method: c.Request.Method, URL: target, Scheme: "Bearer", Certificate: clientcert.Thumbprint(c)}
+	how := oidc.Presentation{Method: c.Request.Method, URL: target, Scheme: "Bearer"}
 
 	if header := c.GetHeader("Authorization"); header != "" {
 		scheme, token, found := strings.Cut(header, " ")

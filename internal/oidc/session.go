@@ -26,9 +26,6 @@ type SignInResult struct {
 	SecondFactorHandle string
 	Request            string
 	Remember           bool
-	// KnownDevice is the browser's known-device cookie as this sign-in
-	// leaves it, naming this account too.
-	KnownDevice string
 }
 
 func (s *Session) InBrowser() bool {
@@ -91,7 +88,7 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 	// whether or not anybody has it, so a throttled address tells nothing;
 	// a waiting attempt still pays a dummy hash for equal timing.
 	keys := s.keysFor(email, client)
-	allowed, err := s.reserve(ctx, keys, client)
+	allowed, err := s.reserve(ctx, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -275,17 +272,11 @@ func (s *Service) openSession(
 
 	s.record(ctx, user, user.Email, action, client, nil)
 
-	device, err := s.rememberDevice(client.Device, user.Email)
-	if err != nil {
-		return nil, err
-	}
-
 	return &SignInResult{
-		Session:     &Session{Record: record, User: user},
-		Token:       token,
-		Request:     request,
-		Remember:    remember && flow.AllowRememberMe,
-		KnownDevice: device,
+		Session:  &Session{Record: record, User: user},
+		Token:    token,
+		Request:  request,
+		Remember: remember && flow.AllowRememberMe,
 	}, nil
 }
 

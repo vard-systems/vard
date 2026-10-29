@@ -196,7 +196,7 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer 
 	}
 
 	keys := s.keysFor(user.Email, client)
-	allowed, err := s.reserve(ctx, keys, client)
+	allowed, err := s.reserve(ctx, keys)
 	if err != nil {
 		return nil, err
 	}

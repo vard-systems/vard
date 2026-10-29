@@ -12,8 +12,7 @@ with two web apps:
 credentials), pushed authorization requests (PAR), the device authorization
 grant (sign-in on TVs and command lines), refresh token rotation with reuse
 detection and a short grace for a retried refresh, client credentials,
-DPoP-bound tokens, mutual TLS (`tls_client_auth`,
-`self_signed_tls_client_auth` and certificate-bound tokens), native apps'
+DPoP-bound tokens, native apps'
 redirects (private-use schemes, `127.0.0.1` / `[::1]` loopback on any port,
 Expo Go's `exp://` for an app marked as in development),
 dynamic client registration, userinfo, introspection, revocation,
@@ -70,7 +69,6 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | `VARD_TRUSTED_PROXIES` | Who may say who the caller is: the apps' servers, and nothing else.                      |
 | `VARD_RATE_LIMIT`      | Attempts per minute per address on password and email endpoints.                         |
 | `VARD_ADMIN_MFA`       | `required` (the default) or `optional`, seeded on first start.                           |
-| `VARD_ADMIN_NETWORKS`  | CIDRs the admin API answers (office, VPN). Empty answers everyone.                       |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.
@@ -82,7 +80,7 @@ migrations on start. Each app is a Node server (`make build-web`, then `node bui
 in its directory, with `API_URL` pointing at its listener).
 
 `deploy/` holds the production stack: Postgres, Redis, the API and the two
-apps, speaking plain HTTP behind whatever TLS proxy the platform provides.
+apps, speaking plain HTTP; TLS and routing are the infrastructure's.
 Only the apps publish ports,
 on the host's loopback; Postgres and Redis are on an internal network the
 apps cannot reach. [`deploy/README.md`](deploy/README.md) walks through a
@@ -93,8 +91,7 @@ make docker-env public=https://id.example.com admin=https://admin.example.com
 make docker-up       # build and start; waits until everything is healthy
 ```
 
-Then point the TLS proxy at the two published ports; `deploy/README.md`
-says what it must do.
+Then route the two sites to the two published ports.
 
 To try the same stack on one machine (served on `http://localhost:8080` and
 `http://localhost:8081`):
@@ -111,14 +108,12 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 
 - [ ] `PUBLIC_URL` and `ADMIN_URL` are `https` (session cookies become Secure
       `__Host-` cookies).
-- [ ] The admin host is reachable only from staff networks or a VPN, and
-      `VARD_ADMIN_NETWORKS` names them.
+- [ ] The admin host is reachable only from staff networks or a VPN.
 - [ ] `VARD_SECRET_KEY` is stored in a secret manager.
 - [ ] SMTP is configured, or reset emails only reach the log.
 - [ ] Postgres is backed up (`make db-backup` from cron), and the dumps leave
       the machine.
-- [ ] The TLS proxy serves both sites over https and overwrites `X-Real-IP`,
-      and the apps publish on loopback only (`ID_PUBLISH`, `CONSOLE_PUBLISH`).
+- [ ] Both sites are served over https, and the apps publish on loopback only (`ID_PUBLISH`, `CONSOLE_PUBLISH`).
 - [ ] The firewall lets in 22, 80 and 443 only.
 - [ ] `VARD_ADMIN_MFA=required`, and at least two super admins exist.
 - [ ] Web applications register `https` redirect URIs; native apps a
@@ -143,8 +138,7 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - Sign-in attempts and one-time-code guesses are counted atomically in the
   database, so parallel guessing cannot slip past them. A user's sign-in is
   throttled — each attempt past a few failures waits longer — rather than
-  locked, and a browser the account has signed in on before is counted
-  apart, so nobody can keep its owner out by guessing.
+  locked.
 - The admin API runs on its own listener and is never served on the public one.
 - Outbound calls to identity providers refuse private, link-local and cloud
   metadata addresses.
@@ -152,11 +146,8 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   family — unless it comes within 30 seconds, when it is a retry (a lost
   answer, two tabs at once) and is given the same token that replaced it.
   Every copy a client holds stays good, the retry is held to the same client
-  authentication and DPoP or certificate binding as any refresh, and the
+  authentication and DPoP binding as any refresh, and the
   family still has exactly one live token.
-- A client certificate is believed only as the TLS proxy passed it on, from
-  the mutual TLS host of its own (`VARD_MTLS_URL`); a token bound to one is
-  taken only over a connection with it.
 - Setting up a fresh panel takes the one-time token the server logged, not just
   reaching the console first; it works once, and only while nobody is an
   administrator.
@@ -175,112 +166,6 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
   for what an application wants. Registering an application — in the panel or
   through `/oauth2/register` with an initial access token — is an admin
   permission either way.
-
-## Upgrading
-
-### To the release with setup tokens, address proofs and SSO domain proofs
-
-Migrations `00007` and `00008` run on start. What changes for an installation
-that already exists:
-
-- **First setup** needs the token the server logs while no administrator
-  exists. An installation that has one is unaffected.
-- **Verified addresses**: new login flows require one. Existing flows keep
-  their setting; turn it on under Login flows → *Require a verified email*.
-  Until it is on, an unverified account can still sign in, but the first
-  proof of its address clears what it held before.
-- **Social sign-up** for an address the provider has not verified is refused
-  (`social_email_unverified`); linking such an address was already refused.
-- **SSO domains**: every domain a connection already lists is carried over,
-  so it links as before — but nobody has proved it is the organisation's.
-  The connection's *Domains & sign-in* tab marks each one *Carried over, not
-  proved*, with a warning: **publish its TXT record and press *Check*, or
-  remove the domain.** A domain added from now on is proved the same way
-  before the connection links to existing accounts there. A connection
-  without domains no longer links to existing accounts at all, and new ones
-  are saved with *Refuse*.
-- **First SSO link**: when a connection is linked to an existing account that
-  has a second factor, the person is asked for it once; later sign-ins
-  through the link are not.
-
-### To the release with admin session hardening
-
-Migrations `00009` and `00010` run on start.
-
-- **Admin second factor**: `VARD_ADMIN_MFA` now defaults to `required`. It is
-  read only on the first start, so an existing installation keeps its
-  setting; turn it on under Administrators → *Require an authenticator*.
-- **Idle timeout**: an administrator's session ends after 30 minutes unused
-  (Administrators → *Sign out an idle session after*), within its 12 hours.
-  Sessions open during the upgrade count as used then.
-- **Session token**: passing the second factor now issues a new session
-  cookie and ends the one the password set.
-- **Passkeys**: administrators with an authenticator can add passkeys on
-  their profile and sign in with them instead of a code.
-- **Networks**: `VARD_ADMIN_NETWORKS` holds the admin API to the networks
-  named, by the caller's address as the console's server passes it on.
-
-### To the release with access-token revocation
-
-Migration `00011` runs on start.
-
-- **Access tokens** now live 10 minutes by default (applications set their
-  own, up to 24 hours); existing applications keep their stored lifetime.
-- **Audience**: a token asked for without an API carries the client's own
-  `client_id` as `aud`, never an empty list.
-- **Revocation**: signing out, disconnecting an application, a replayed
-  refresh token, revoking the refresh token or the access token itself
-  (`/oauth2/revoke`) end the access tokens issued with it at userinfo,
-  introspection and this server's own APIs. An API that checks the JWT on
-  its own still takes one until it expires, which is why lifetimes are
-  short. Tokens issued before the upgrade name no session or family, so
-  only revoking them by themselves reaches them.
-
-### To the release with sign-in throttling
-
-Migration `00012` runs on start.
-
-- **Users are throttled, not locked**: five failures against an address
-  typed, then waits of 30 seconds, a minute, two… up to 15 minutes; fifty
-  against one network. A user locked during the upgrade stays locked until
-  that lock runs out. A browser that has signed in before keeps a
-  known-device cookie and is counted apart. Administrators keep the lock.
-- **A challenge hook** (`oidc.ChallengeHook`, set with `UseChallenge`) can
-  ask a sign-in for a CAPTCHA or a proof of work after three failures; the
-  sign-in form sends its answer as `challenge`. None is set by default.
-
-### To the release with `__Host-` cookies
-
-- Over https, the session and sign-in cookies are renamed `__Host-…`
-  (Secure, the whole host, no Domain), so no other subdomain can plant or
-  overwrite them. Sessions under the old names keep working for this
-  release and are renamed at the next sign-in; the next release stops
-  reading the old names. Plain-http `make dev` keeps the old names, which a
-  browser requires there.
-
-### To the release with bound, rotatable secrets
-
-- Every secret is now sealed bound to where it is kept, under a key derived
-  from `VARD_SECRET_KEY` and marked with its id. Secrets sealed before still
-  open, and are written in the new form whenever they are next saved; run
-  `bin/vard secrets reseal` once after the upgrade to move all of them now.
-- **Rotating `VARD_SECRET_KEY`**: set the old value as
-  `VARD_SECRET_KEY_PREVIOUS` and a new one as `VARD_SECRET_KEY`, restart,
-  and the server seals every stored secret again under the new key as it
-  starts and says so in its log; then empty `VARD_SECRET_KEY_PREVIOUS` and
-  restart again. Recovery codes keep working: they are hashed with the
-  installation's own key, which is resealed with the rest.
-
-### To the release with Argon2id passwords
-
-- New passwords are hashed with Argon2id. A bcrypt hash keeps working and is
-  replaced with an Argon2id one at its owner's next sign-in; nothing is
-  rehashed in bulk.
-- Passwords set from now on are at least 12 characters (administrators 14)
-  and at most 128 characters, in any script. Existing passwords keep
-  signing in whatever their length.
-- Set `VARD_PWNED_PASSWORDS_URL=https://api.pwnedpasswords.com` to refuse
-  new passwords known from breaches.
 
 ## Development
 

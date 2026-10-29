@@ -4,8 +4,7 @@ import type {
 	ApplicationType,
 	AuthMethod,
 	GrantType,
-	Scope,
-	TLSSubjectKind
+	Scope
 } from '#lib/api/index.js';
 
 export const types: Record<
@@ -48,41 +47,8 @@ export const authMethods: { value: AuthMethod; label: string; description: strin
 		value: 'client_secret_post',
 		label: 'client_secret_post',
 		description: 'The secret in the token request body'
-	},
-	{
-		value: 'tls_client_auth',
-		label: 'tls_client_auth',
-		description: 'A certificate from a trusted authority, over mutual TLS'
-	},
-	{
-		value: 'self_signed_tls_client_auth',
-		label: 'self_signed_tls_client_auth',
-		description: 'A self-signed certificate registered here, over mutual TLS'
 	}
 ];
-
-/** Which certificate field names a tls_client_auth client; exactly one is registered. */
-export const tlsSubjectKinds: {
-	value: Exclude<TLSSubjectKind, ''>;
-	label: string;
-	description: string;
-}[] = [
-	{
-		value: 'subject_dn',
-		label: 'Subject DN',
-		description:
-			'Exactly as RFC 4514 writes it, most specific first: CN=app,O=Example. Compared as text, so a SAN is more reliable.'
-	},
-	{ value: 'san_dns', label: 'DNS name', description: 'A dNSName subject alternative name' },
-	{ value: 'san_uri', label: 'URI', description: 'A uniformResourceIdentifier alternative name' },
-	{ value: 'san_ip', label: 'IP address', description: 'An iPAddress alternative name' },
-	{ value: 'san_email', label: 'Email address', description: 'An rfc822Name alternative name' }
-];
-
-/** The certificates in pasted text, one PEM block each. */
-export function certificates(text: string): string[] {
-	return text.match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g) ?? [];
-}
 
 export const grants: { value: GrantType; description: string }[] = [
 	{ value: 'authorization_code', description: 'Sign users in with a redirect and a code' },
@@ -129,10 +95,6 @@ export function blank(type: ApplicationType): ApplicationInput {
 		scopes: type === 'm2m' ? [] : ['openid', 'profile', 'email'],
 		require_pkce: type !== 'm2m',
 		require_pushed_authorization_requests: false,
-		tls_subject_kind: '',
-		tls_subject: '',
-		tls_certificates: [],
-		tls_client_certificate_bound_access_tokens: false,
 		access_token_lifetime: 60 * 60,
 		id_token_lifetime: 60 * 60,
 		refresh_token_lifetime: 30 * 24 * 60 * 60,

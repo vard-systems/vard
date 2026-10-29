@@ -125,9 +125,6 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if !cfg.AdminMFARequired {
 		t.Error("AdminMFARequired = false, want two-factor sign-in required by default")
 	}
-	if len(cfg.AdminNetworks) != 0 {
-		t.Errorf("AdminNetworks = %v, want the admin API answering everyone by default", cfg.AdminNetworks)
-	}
 	if cfg.Mail.Host != "" {
 		t.Errorf("Mail.Host = %q, want none: email is logged by default", cfg.Mail.Host)
 	}
