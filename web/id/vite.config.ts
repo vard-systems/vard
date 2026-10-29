@@ -55,7 +55,8 @@ export default defineConfig({
 					'font-src': ['self'],
 					'connect-src': ['self'],
 					'object-src': ['none'],
-					'base-uri': ['self'],
+					'base-uri': ['none'],
+					'form-action': ['self'],
 					'frame-ancestors': ['none']
 				}
 			}

@@ -72,6 +72,27 @@ func TestTheIDAppLetsTheProviderTakeFormPosts(t *testing.T) {
 	}
 }
 
+// Each app's pages hold who is signed in, so its policy refuses what would
+// let an injected tag do anything with them: no script but its own, no
+// plugin, no <base> pointing its links elsewhere, no form sending what was
+// typed to another site, and no frame around it.
+func TestTheAppsPoliciesHoldTheirPagesIn(t *testing.T) {
+	for _, app := range []string{"id", "console"} {
+		config := read(t, "../../web/"+app+"/vite.config.ts")
+		for _, directive := range []string{
+			`'script-src': ['self']`,
+			`'object-src': ['none']`,
+			`'base-uri': ['none']`,
+			`'form-action': ['self']`,
+			`'frame-ancestors': ['none']`,
+		} {
+			if !strings.Contains(config, directive) {
+				t.Errorf("web/%s/vite.config.ts: the policy does not say %s", app, directive)
+			}
+		}
+	}
+}
+
 func read(t *testing.T, path string) string {
 	t.Helper()
 
