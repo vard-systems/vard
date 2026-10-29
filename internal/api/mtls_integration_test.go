@@ -19,7 +19,7 @@ import (
 )
 
 // These tests run the server with mutual TLS on (RFC 8705), the way it runs
-// behind nginx: the proxy asks for a client certificate on the mutual TLS
+// behind a TLS proxy: the proxy asks for a client certificate on the mutual TLS
 // host and the id app passes it on in clientcert.Header, which the API
 // believes from the apps alone — here, from this machine.
 

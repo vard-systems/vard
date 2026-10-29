@@ -259,7 +259,7 @@ type MTLSEndpointAliases struct {
 }
 
 // MTLSPaths are the paths the mutual TLS host serves; its proxy passes no
-// other on (deploy/nginx).
+// other on (deploy/README.md).
 var MTLSPaths = []string{PathToken, PathRevoke, PathIntrospect, PathUserInfo, PathPushedAuthorization, PathDeviceAuthorization}
 
 // Discovery describes the provider from the model, so it cannot claim anything

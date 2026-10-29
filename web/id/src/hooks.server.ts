@@ -12,7 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event, {
 		transformPageChunk: ({ html }) => html.replace('%lang%', event.locals.language ?? BASE)
 	});
-	setPageHeaders(response.headers);
+	setPageHeaders(response.headers, event.url);
 
 	return response;
 };

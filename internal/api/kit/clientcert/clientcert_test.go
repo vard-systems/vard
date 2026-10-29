@@ -3,15 +3,11 @@ package clientcert
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/brand"
 	"vard/internal/model"
 	"vard/internal/model/certtest"
 )
@@ -72,48 +68,5 @@ func TestTheCertificateIsBelievedOnlyFromTheApps(t *testing.T) {
 func TestATrustedProxyThatIsNoAddressIsRefused(t *testing.T) {
 	if _, err := New(true, []string{"not-an-address"}); err == nil {
 		t.Error("New() = nil, want an error: a mistyped proxy must not quietly trust nobody, or everybody")
-	}
-}
-
-// The header is only as good as the proxy in front: on every site but the
-// mutual TLS one, nginx must drop a certificate header a client wrote
-// itself — or anyone could claim any certificate, and certificates are
-// public. On the mutual TLS site it must be the connection's own. nginx
-// passes a client's headers on by default, so every location that proxies
-// says which.
-func TestNginxPassesOnlyTheConnectionsCertificate(t *testing.T) {
-	template, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "deploy", "nginx", brand.Slug+".conf.template"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	servers := strings.Split(string(template), "\nserver {")[1:]
-	mutual := 0
-	for _, server := range servers {
-		name := regexp.MustCompile(`server_name ([^;]+);`).FindStringSubmatch(server)[1]
-		asksForCertificates := strings.Contains(server, "ssl_verify_client")
-		if asksForCertificates {
-			mutual++
-		}
-
-		for _, location := range strings.Split(server, "location ")[1:] {
-			if !strings.Contains(location, "proxy_pass") {
-				continue
-			}
-
-			header := regexp.MustCompile(`proxy_set_header `+Header+` ([^;]+);`).FindAllStringSubmatch(location, -1)
-			switch {
-			case len(header) != 1:
-				t.Errorf("%s: a location passes on to an app without setting %s once", name, Header)
-			case asksForCertificates && header[0][1] != "$ssl_client_escaped_cert":
-				t.Errorf("%s: the mutual TLS site sets %s to %s, want the connection's certificate", name, Header, header[0][1])
-			case !asksForCertificates && header[0][1] != `""`:
-				t.Errorf("%s: sets %s to %s, want it cleared", name, Header, header[0][1])
-			}
-		}
-	}
-
-	if mutual != 1 {
-		t.Errorf("%d sites ask for client certificates, want exactly the mutual TLS one", mutual)
 	}
 }

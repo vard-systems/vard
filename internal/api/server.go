@@ -69,7 +69,7 @@ import (
 const tokenLimitMultiple = 10
 
 func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shared *cache.Redis) (*gin.Engine, error) {
-	r, err := engine(cfg, log)
+	r, err := engine(cfg, log, cfg.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 }
 
 func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog.Logger, provider *oidc.Service, shared *cache.Redis) (*gin.Engine, error) {
-	r, err := engine(cfg, log)
+	r, err := engine(cfg, log, cfg.AdminURL)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,9 @@ func adminIssuer(adminURL string) string {
 	return brand.Name
 }
 
-func engine(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
+// engine is a listener's router; site is where browsers reach it, which says
+// whether it is served over https.
+func engine(cfg config.Config, log *slog.Logger, site string) (*gin.Engine, error) {
 	r := gin.New()
 
 	// Gin believes every X-Forwarded-For header unless told otherwise, which
@@ -160,7 +162,7 @@ func engine(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 		return nil, fmt.Errorf("trusted proxies: %w", err)
 	}
 
-	r.Use(middleware.Chain(log, cors.New(cfg.CORSOrigins))...)
+	r.Use(middleware.Chain(log, cors.New(cfg.CORSOrigins), strings.HasPrefix(site, "https://"))...)
 
 	return r, nil
 }

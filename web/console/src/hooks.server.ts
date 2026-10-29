@@ -7,7 +7,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (isApiPath(event.url.pathname)) return toApi(event);
 
 	const response = await resolve(event);
-	setPageHeaders(response.headers);
+	setPageHeaders(response.headers, event.url);
 
 	return response;
 };

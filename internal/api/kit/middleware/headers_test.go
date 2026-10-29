@@ -28,7 +28,7 @@ func TestSecurityHeaders(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			r := gin.New()
-			r.Use(SecurityHeaders())
+			r.Use(SecurityHeaders(false))
 			r.GET("/thing", tc.route)
 
 			w := httptest.NewRecorder()
@@ -40,5 +40,22 @@ func TestSecurityHeaders(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Over https every answer holds the browser to https; over plain http, where
+// a browser ignores it, none is sent.
+func TestStrictTransportSecurityOnlyOverHTTPS(t *testing.T) {
+	for _, https := range []bool{true, false} {
+		r := gin.New()
+		r.Use(SecurityHeaders(https))
+		r.GET("/", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/", nil))
+
+		if got := w.Header().Get("Strict-Transport-Security"); (got != "") != https {
+			t.Errorf("over https %v: Strict-Transport-Security = %q", https, got)
+		}
 	}
 }

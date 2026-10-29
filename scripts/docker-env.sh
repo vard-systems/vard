@@ -4,7 +4,7 @@
 # https://admin.example.com (make docker-env public=… admin=…).
 #
 # The addresses are the two sites as browsers reach them, through the TLS
-# proxy (deploy/nginx). Every secret is generated here, once: an existing
+# proxy in front (deploy/README.md). Every secret is generated here, once: an existing
 # deploy/.env keeps its secrets — VARD_SECRET_KEY seals the signing keys and
 # POSTGRES_PASSWORD is the one the database was made with — and only its
 # addresses are changed.
@@ -51,6 +51,6 @@ set_value ADMIN_URL "$admin"
 cat <<EOF
 ==> the sign-in pages: $public, the panel: $admin
     Next: fill in the SMTP settings in deploy/.env, then
-      make nginx-config     the proxy's configuration for these addresses
+      point the TLS proxy at the published ports (deploy/README.md)
       make docker-up        build and start the stack
 EOF

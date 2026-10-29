@@ -26,7 +26,7 @@ func TestChainRunsEverythingInOrder(t *testing.T) {
 		c.Next()
 	}
 
-	chain := Chain(log, passed)
+	chain := Chain(log, passed, false)
 	if len(chain) != 5 {
 		t.Fatalf("Chain() has %d handlers, want 5", len(chain))
 	}
@@ -66,7 +66,7 @@ func TestChainLetsThePassedHandlerAbort(t *testing.T) {
 	stop := func(c *gin.Context) { c.AbortWithStatus(http.StatusNoContent) }
 
 	r := gin.New()
-	r.Use(Chain(log, stop)...)
+	r.Use(Chain(log, stop, false)...)
 	r.GET("/thing", func(*gin.Context) { reached = true })
 
 	w := httptest.NewRecorder()
@@ -87,7 +87,7 @@ func TestChainRecoversFromAPanic(t *testing.T) {
 	nothing := func(c *gin.Context) { c.Next() }
 
 	r := gin.New()
-	r.Use(Chain(log, nothing)...)
+	r.Use(Chain(log, nothing, false)...)
 	r.GET("/boom", func(*gin.Context) { panic("boom") })
 
 	w := httptest.NewRecorder()

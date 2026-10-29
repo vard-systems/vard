@@ -14,8 +14,8 @@ One Go binary is the API: `:8080` (provider and account API) and `:8081`
 (admin API). Each app is a SvelteKit Node server in front of it that renders
 its pages and passes the API paths it calls on to it, so each app is one
 origin and the browser never reaches the API directly. Locally everything is
-plain http; on a server, nginx on the host ends TLS in front of the apps
-(`deploy/README.md`).
+plain http; on a server, the platform's TLS proxy ends TLS in front of the
+apps (`deploy/README.md` says what it must do).
 Postgres holds everything; Redis is an optional cache. `README.md` is the
 overview for people; update it when a change makes a sentence in it untrue.
 
@@ -36,7 +36,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                                     |
 | Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                               |
 | Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                            |
-| A server behind nginx              | `make docker-env`, `make docker-up`, `make nginx-config`, `make db-backup` (deploy/README.md) |
+| A server behind a TLS proxy        | `make docker-env`, `make docker-up`, `make db-backup` (deploy/README.md)                      |
 | Everything else                    | `make` lists every target                                                                     |
 
 Project commands in `.claude/commands/`: `/check` (every check), `/preview`
@@ -91,10 +91,10 @@ web/<app>/src/lib/brand.ts  the app's brand (name, slug, mark, favicon from
                          pageTitle)
 web/console/scripts/     theme.ts, the generator
 scripts/                 what the Makefile runs: setup, start, docker-local,
-                         docker-env, nginx-config, db, db-backup, rename;
+                         docker-env, db, db-backup, rename;
                          lib.sh (load_env) is shared by all of them
 deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles,
-                         nginx/ (the TLS proxy's template), README.md (a server)
+                         README.md (a server, and what its TLS proxy must do)
 ```
 
 **Layering.** Nothing above `store` writes a query; nothing below `api` knows
@@ -109,7 +109,7 @@ client sent there dropped. The same hook carries the browser's requests and
 the ones a load makes while a page is rendered, in `make dev` and in
 production alike. `TestEveryRouteIsReachableThroughItsApp` holds every route
 to those lists. In `deploy/compose.yaml` only the apps publish ports, on the
-host's loopback, for nginx; Postgres and Redis are on an internal network the
+host's loopback, for the TLS proxy; Postgres and Redis are on an internal network the
 apps are not on. Cookies are host-only and nothing is
 cross-origin.
 
@@ -189,10 +189,10 @@ code near it, and add a test when adding a case.
 - **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
   whatever its `RequirePKCE` says, and a code asked for with a challenge is
   never exchanged without its verifier.
-- **A TLS client certificate is believed only as nginx passed it on.** nginx
-  asks for one on the mutual TLS host alone (`VARD_MTLS_URL`) and clears the
-  header everywhere else (`TestNginxPassesOnlyTheConnectionsCertificate`);
-  the id app passes it on only from
+- **A TLS client certificate is believed only as the TLS proxy passed it
+  on.** The proxy asks for one on the mutual TLS host alone (`VARD_MTLS_URL`)
+  and removes the header everywhere else (deploy/README.md); the id app passes
+  it on only from
   `CLIENT_CERT_HEADER`, and the API reads it (`api/kit/clientcert`) only with
   mutual TLS on and from `VARD_TRUSTED_PROXIES`. A self-signed client is the
   exact certificate it registered; a `tls_client_auth` one chains to
@@ -269,7 +269,8 @@ code near it, and add a test when adding a case.
   side — and served with its stored type and `nosniff`.
 - **Every response carries security headers** — the API's from
   `middleware.SecurityHeaders`, each app's (`Permissions-Policy` among them)
-  from `src/lib/server/headers.ts`. HSTS comes from nginx (`deploy/nginx/vard.conf.template`).
+  from `src/lib/server/headers.ts`. HSTS is sent by both over https
+  (`SecurityHeaders(https)`, `setPageHeaders(headers, url)`).
   A rendered page holds the reader's data, so every page is `no-store`.
 - **The apps run no script they did not ship.** Their Content Security Policy
   is SvelteKit's `csp` option in each `vite.config.ts`, sent as a header:
@@ -452,9 +453,9 @@ shield mark does.
   and `VARD_TRUSTED_PROXIES` over whatever `.env` says.
 - **The API trusts the apps' servers and nobody else** to say who the
   caller is: loopback under `make dev`, the two containers' fixed addresses
-  in `deploy/compose.yaml` — never a whole private range. Behind nginx the
-  apps read the caller from `X-Real-IP` (`ADDRESS_HEADER`), which nginx
-  overwrites; nothing else reaches their loopback ports, and the API's
+  in `deploy/compose.yaml` — never a whole private range. Behind the TLS
+  proxy the apps read the caller from `X-Real-IP` (`ADDRESS_HEADER`), which
+  the proxy must overwrite; nothing else reaches their loopback ports, and the API's
   ports are never published. adapter-node's `BODY_SIZE_LIMIT` is the API's
   1 MiB, or it refuses a logo or a SAML response first.
 - **The scripts read `.env` with `load_env` (`scripts/lib.sh`), the server

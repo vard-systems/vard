@@ -20,7 +20,7 @@ each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)) |
 .PHONY: help setup deps tidy dev start run build build-api build-web generate \
 	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \
 	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
-	docker-up docker-local docker-env nginx-config db-backup docker-down docker-reset docker-logs docker-build docker-ps docker-config \
+	docker-up docker-local docker-env db-backup docker-down docker-reset docker-logs docker-build docker-ps docker-config \
 	clean rename
 
 help: ## Show this help
@@ -147,9 +147,6 @@ docker-local: ## Start the stack on this machine — http://localhost:8080, :808
 docker-env: ## Make deploy/.env for a server — make docker-env public=https://id.example.com admin=https://admin.example.com
 	@[[ -n "$(public)" && -n "$(admin)" ]] || { echo 'usage: make docker-env public=https://id.example.com admin=https://admin.example.com'; exit 1; }
 	@scripts/docker-env.sh "$(public)" "$(admin)"
-
-nginx-config: ## Make deploy/nginx/vard.conf, the TLS proxy's configuration, from deploy/.env
-	@scripts/nginx-config.sh
 
 db-backup: ## Dump the stack's database into deploy/backups, keeping the newest 14 (KEEP=n)
 	@scripts/db-backup.sh

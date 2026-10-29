@@ -79,7 +79,7 @@ func PEM(cert *x509.Certificate) string {
 	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw}))
 }
 
-// Header is the certificate as nginx's $ssl_client_escaped_cert passes it.
+// Header is the certificate as a TLS proxy passes it: PEM, URL-escaped.
 func Header(cert *x509.Certificate) string {
 	return url.PathEscape(PEM(cert))
 }

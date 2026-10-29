@@ -82,7 +82,8 @@ migrations on start. Each app is a Node server (`make build-web`, then `node bui
 in its directory, with `API_URL` pointing at its listener).
 
 `deploy/` holds the production stack: Postgres, Redis, the API and the two
-apps, behind nginx on the host, which ends TLS. Only the apps publish ports,
+apps, speaking plain HTTP behind whatever TLS proxy the platform provides.
+Only the apps publish ports,
 on the host's loopback; Postgres and Redis are on an internal network the
 apps cannot reach. [`deploy/README.md`](deploy/README.md) walks through a
 server from DNS to backups:
@@ -90,8 +91,10 @@ server from DNS to backups:
 ```sh
 make docker-env public=https://id.example.com admin=https://admin.example.com
 make docker-up       # build and start; waits until everything is healthy
-make nginx-config    # the TLS proxy's configuration for those addresses
 ```
+
+Then point the TLS proxy at the two published ports; `deploy/README.md`
+says what it must do.
 
 To try the same stack on one machine (served on `http://localhost:8080` and
 `http://localhost:8081`):
@@ -114,8 +117,8 @@ API's `VARD_TRUSTED_PROXIES` set to the apps' addresses.
 - [ ] SMTP is configured, or reset emails only reach the log.
 - [ ] Postgres is backed up (`make db-backup` from cron), and the dumps leave
       the machine.
-- [ ] nginx serves both sites over https (`make nginx-config`), and the apps
-      publish on loopback only (`ID_PUBLISH`, `CONSOLE_PUBLISH`).
+- [ ] The TLS proxy serves both sites over https and overwrites `X-Real-IP`,
+      and the apps publish on loopback only (`ID_PUBLISH`, `CONSOLE_PUBLISH`).
 - [ ] The firewall lets in 22, 80 and 443 only.
 - [ ] `VARD_ADMIN_MFA=required`, and at least two super admins exist.
 - [ ] Web applications register `https` redirect URIs; native apps a
@@ -308,7 +311,7 @@ i18n/                      the English that ships: sign-in pages, API messages
 web/id, web/console        the two SvelteKit apps; each keeps its own brand in
                            src/lib/brand.ts, the server in internal/brand, and
                            `make rename` renames all three
-deploy/                    the Docker stack, the nginx configuration, the server guide
+deploy/                    the Docker stack and the server guide
 scripts/                   what the Makefile runs
 ```
 

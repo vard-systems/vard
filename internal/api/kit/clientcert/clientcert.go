@@ -85,7 +85,8 @@ func fromTrusted(c *gin.Context, ranges []*net.IPNet) bool {
 	return false
 }
 
-// parse reads nginx's $ssl_client_escaped_cert. PathUnescape, not
+// parse reads the certificate as a proxy passes it: PEM, URL-escaped (as
+// nginx's $ssl_client_escaped_cert and most proxies do). PathUnescape, not
 // QueryUnescape: a + in the base64 is a +, not a space.
 func parse(header string) *x509.Certificate {
 	if header == "" || len(header) > maxHeader {

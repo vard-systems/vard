@@ -1,7 +1,7 @@
 # Production: Postgres, Redis, the API, and the two apps as Node servers in
-# front of it. TLS ends at a proxy on the host (deploy/nginx/vard.conf.template),
-# which is the only thing the internet reaches: the apps publish on the host's
-# loopback alone, and nothing else publishes at all. See deploy/README.md.
+# front of it. TLS ends at whatever proxy or load balancer the platform puts in
+# front (deploy/README.md says what it must do): the apps publish on the host's
+# loopback alone, for it, and nothing else publishes at all.
 #
 #   make docker-env public=https://id.example.com admin=https://admin.example.com
 #   make docker-up
@@ -172,6 +172,8 @@ services:
       args: { APP: web/id, VERSION: "${VERSION:-dev}" }
     environment:
       <<: *web-environment
+      # Where browsers reach it, so a page knows its own https address.
+      ORIGIN: ${PUBLIC_URL}
       API_URL: http://api:8080
       # The proxy names a client's TLS certificate in this header on the
       # mutual TLS host, and clears it everywhere else; `make docker-local`,
@@ -182,8 +184,8 @@ services:
       edge: { ipv4_address: 172.30.0.2 }
 
   # The staff site: the panel, with the admin API passed on to the admin
-  # listener. The proxy may limit who reaches it (deploy/nginx); without one,
-  # reach it over an SSH tunnel (ssh -L 3001:localhost:3001 server).
+  # listener. VARD_ADMIN_NETWORKS limits who reaches it; or reach it over an
+  # SSH tunnel (ssh -L 3001:localhost:3001 server).
   console:
     <<: *web
     image: vard-console:${VERSION:-dev}
@@ -193,6 +195,7 @@ services:
       args: { APP: web/console, VERSION: "${VERSION:-dev}" }
     environment:
       <<: *web-environment
+      ORIGIN: ${ADMIN_URL}
       API_URL: http://api:8081
     ports: ["${CONSOLE_PUBLISH:-127.0.0.1:3001}:3000"]
     networks:

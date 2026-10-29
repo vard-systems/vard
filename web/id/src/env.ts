@@ -5,7 +5,7 @@ import { defineEnvVars } from '@sveltejs/kit/env';
 // machine.
 //
 // CLIENT_CERT_HEADER is the header the TLS proxy in front names a client's certificate in, on
-// its mutual TLS host (deploy/nginx). Empty — `make dev`, `make docker-local`, anything with no
+// its mutual TLS host (deploy/README.md). Empty — `make dev`, `make docker-local`, anything with no
 // such proxy — no certificate is passed on, so no caller can claim one.
 export const variables = defineEnvVars({
 	API_URL: { schema: (input) => input || 'http://localhost:8080' },

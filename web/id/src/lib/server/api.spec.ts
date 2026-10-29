@@ -51,8 +51,8 @@ describe('toApi and the client certificate', () => {
 	});
 
 	it("passes on the proxy's certificate", async () => {
-		expect(await send('x-ssl-client-cert', { 'x-ssl-client-cert': 'from-nginx' })).toBe(
-			'from-nginx'
+		expect(await send('x-ssl-client-cert', { 'x-ssl-client-cert': 'from-the-proxy' })).toBe(
+			'from-the-proxy'
 		);
 	});
 
