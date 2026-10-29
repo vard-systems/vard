@@ -15,7 +15,8 @@ detection and a short grace for a retried refresh, client credentials,
 DPoP-bound tokens, native apps'
 redirects (private-use schemes, `127.0.0.1` / `[::1]` loopback on any port,
 Expo Go's `exp://` for an app marked as in development),
-dynamic client registration, userinfo, introspection, revocation,
+dynamic client registration, userinfo, introspection, revocation, ID tokens
+that say how the person signed in (`amr`: `pwd`, `otp`, `hwk`, `user`, `mfa`),
 logout (RP-initiated, back-channel and front-channel), a consent page, terms
 acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
 OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),

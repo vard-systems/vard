@@ -152,7 +152,7 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 		return &SignInResult{ResetToken: token}, nil
 	}
 
-	return s.finishSignIn(ctx, user, flow, request, remember, client, "user.login")
+	return s.finishSignIn(ctx, user, flow, request, remember, []string{model.AMRPassword}, client, "user.login")
 }
 
 // finishSignIn ends a password or registration sign-in, holding it for the
@@ -164,15 +164,16 @@ func (s *Service) finishSignIn(
 	flow *model.LoginFlow,
 	request string,
 	remember bool,
+	methods []string,
 	client Client,
 	action string,
 ) (*SignInResult, error) {
 	if !flow.Offers(model.StepEmailCode) {
-		return s.startSession(ctx, user, flow, request, remember, client, action)
+		return s.startSession(ctx, user, flow, request, remember, methods, client, action)
 	}
 
 	if flow.RequireVerifiedEmail && !user.IsEmailVerified {
-		return s.startSession(ctx, user, flow, request, remember, client, action)
+		return s.startSession(ctx, user, flow, request, remember, methods, client, action)
 	}
 
 	return s.sendLoginCode(ctx, user, request, remember, client)
@@ -186,6 +187,7 @@ func (s *Service) startSession(
 	flow *model.LoginFlow,
 	request string,
 	remember bool,
+	methods []string,
 	client Client,
 	action string,
 ) (*SignInResult, error) {
@@ -193,12 +195,12 @@ func (s *Service) startSession(
 		return nil, err
 	}
 
-	held, err := s.holdForSecondFactor(ctx, user, request, remember)
+	held, err := s.holdForSecondFactor(ctx, user, request, remember, methods)
 	if err != nil || held != nil {
 		return held, err
 	}
 
-	return s.openSession(ctx, user, flow, request, remember, client, action)
+	return s.openSession(ctx, user, flow, request, remember, methods, client, action)
 }
 
 // startFederatedSession is startSession for single sign-on, whose provider
@@ -214,7 +216,8 @@ func (s *Service) startFederatedSession(
 		return nil, err
 	}
 
-	return s.openSession(ctx, user, flow, request, true, client, "user.login")
+	// What the provider proved is its own to say; nothing was proved here.
+	return s.openSession(ctx, user, flow, request, true, nil, client, "user.login")
 }
 
 // admit is what the flow asks of everyone, checked here because every way in
@@ -244,6 +247,7 @@ func (s *Service) openSession(
 	flow *model.LoginFlow,
 	request string,
 	remember bool,
+	methods []string,
 	client Client,
 	action string,
 ) (*SignInResult, error) {
@@ -258,6 +262,7 @@ func (s *Service) openSession(
 		TokenHash:       hash,
 		UserID:          user.ID,
 		AuthenticatedAt: now,
+		Methods:         methods,
 		ExpiresAt:       now.Add(time.Duration(flow.SessionLifetimeHours) * time.Hour),
 		IP:              client.IP,
 		UserAgent:       model.Truncate(client.UserAgent, 255),

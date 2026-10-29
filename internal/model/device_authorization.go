@@ -51,6 +51,7 @@ type DeviceAuthorization struct {
 	SessionID       *uuid.UUID   `gorm:"type:uuid;index"`
 	Session         *UserSession `gorm:"constraint:OnDelete:SET NULL"`
 	AuthenticatedAt *time.Time
+	Methods         StringList `gorm:"type:jsonb;serializer:json"`
 
 	LastPolledAt *time.Time
 	ExpiresAt    time.Time `gorm:"not null;index"`

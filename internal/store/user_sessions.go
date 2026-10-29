@@ -196,14 +196,15 @@ func (s *Store) ActiveUserSessions(ctx context.Context, user uuid.UUID, now time
 }
 
 type userSession struct {
-	ID              uuid.UUID  `json:"id"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UserID          uuid.UUID  `json:"user_id"`
-	AuthenticatedAt time.Time  `json:"authenticated_at"`
-	ExpiresAt       time.Time  `json:"expires_at"`
-	RevokedAt       *time.Time `json:"revoked_at"`
-	IP              string     `json:"ip"`
-	UserAgent       string     `json:"user_agent"`
+	ID              uuid.UUID        `json:"id"`
+	CreatedAt       time.Time        `json:"created_at"`
+	UserID          uuid.UUID        `json:"user_id"`
+	AuthenticatedAt time.Time        `json:"authenticated_at"`
+	Methods         model.StringList `json:"methods"`
+	ExpiresAt       time.Time        `json:"expires_at"`
+	RevokedAt       *time.Time       `json:"revoked_at"`
+	IP              string           `json:"ip"`
+	UserAgent       string           `json:"user_agent"`
 }
 
 func newUserSession(session model.UserSession) userSession {
@@ -212,6 +213,7 @@ func newUserSession(session model.UserSession) userSession {
 		CreatedAt:       session.CreatedAt,
 		UserID:          session.UserID,
 		AuthenticatedAt: session.AuthenticatedAt,
+		Methods:         session.Methods,
 		ExpiresAt:       session.ExpiresAt,
 		RevokedAt:       session.RevokedAt,
 		IP:              session.IP,
@@ -224,6 +226,7 @@ func (u userSession) model(hash string) model.UserSession {
 		TokenHash:       hash,
 		UserID:          u.UserID,
 		AuthenticatedAt: u.AuthenticatedAt,
+		Methods:         u.Methods,
 		ExpiresAt:       u.ExpiresAt,
 		RevokedAt:       u.RevokedAt,
 		IP:              u.IP,

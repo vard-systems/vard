@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,14 +50,21 @@ func (s *Store) PolledDevice(ctx context.Context, device uuid.UUID, at time.Time
 
 // AnswerDevice approves or denies a device's sign-in, once, while it waits:
 // false if it was already answered or has expired.
-func (s *Store) AnswerDevice(ctx context.Context, device *model.DeviceAuthorization, approved bool, user, session uuid.UUID, authenticated, at time.Time) (bool, error) {
+func (s *Store) AnswerDevice(ctx context.Context, device *model.DeviceAuthorization, approved bool, user uuid.UUID, session *model.UserSession, at time.Time) (bool, error) {
 	changes := map[string]any{"status": model.DeviceDenied}
 	if approved {
+		// A map update skips the column's serializer, so the list is
+		// written as the JSON it would have made.
+		methods, err := json.Marshal(session.Methods)
+		if err != nil {
+			return false, err
+		}
 		changes = map[string]any{
 			"status":           model.DeviceApproved,
 			"user_id":          user,
-			"session_id":       session,
-			"authenticated_at": authenticated,
+			"session_id":       session.ID,
+			"authenticated_at": session.AuthenticatedAt,
+			"methods":          string(methods),
 		}
 	}
 

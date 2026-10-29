@@ -71,13 +71,23 @@ func TestLiveTheMigrationsMakeWhatTheModelsDescribe(t *testing.T) {
 	}
 }
 
-// Going down takes away everything the migrations made, and up builds it again.
+// Going down, one step at a time, takes away everything the migrations
+// made, and up builds it again.
 func TestLiveTheMigrationsGoDownAndUpAgain(t *testing.T) {
 	db, cfg := databasetest.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	if err := database.MigrateDown(db, cfg, log); err != nil {
-		t.Fatalf("down: %v", err)
+	applied := func() int64 {
+		var version int64
+		if err := db.Raw("SELECT COALESCE(MAX(version_id), 0) FROM goose_db_version WHERE is_applied").Scan(&version).Error; err != nil {
+			t.Fatal(err)
+		}
+		return version
+	}
+	for applied() > 0 {
+		if err := database.MigrateDown(db, cfg, log); err != nil {
+			t.Fatalf("down from %d: %v", applied(), err)
+		}
 	}
 	if left := rows(t, db, `SELECT tablename FROM pg_tables
 		WHERE schemaname = 'public' AND tablename <> 'goose_db_version'`); len(left) != 0 {

@@ -29,9 +29,10 @@ type RefreshToken struct {
 	// to (RFC 9449 §5): a refresh needs a proof from that key. "" when unbound.
 	DPoPKey string `gorm:"column:dpop_key;size:64;not null;default:''"`
 
-	Scope           string    `gorm:"type:text;not null"`
-	Audience        string    `gorm:"size:255;not null;default:''"`
-	AuthenticatedAt time.Time `gorm:"not null"`
+	Scope           string     `gorm:"type:text;not null"`
+	Audience        string     `gorm:"size:255;not null;default:''"`
+	AuthenticatedAt time.Time  `gorm:"not null"`
+	Methods         StringList `gorm:"type:jsonb;serializer:json"`
 
 	// ExpiresAt is the family's: a rotated token keeps its predecessor's, so
 	// rotating cannot keep a session alive for ever.

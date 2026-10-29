@@ -189,6 +189,7 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		audience: code.Audience,
 		nonce:    code.Nonce,
 		authTime: code.AuthenticatedAt,
+		methods:  code.Methods,
 		session:  code.SessionID,
 		codeID:   &code.ID,
 		dpopKey:  p.dpopKey,
@@ -277,6 +278,7 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		scopes:   scopes,
 		audience: old.Audience,
 		authTime: old.AuthenticatedAt,
+		methods:  old.Methods,
 		session:  old.SessionID,
 		replaces: old,
 		again:    again,
@@ -306,6 +308,8 @@ type grant struct {
 	audience string
 	nonce    string
 	authTime time.Time
+	// methods are how the person signed in (model.AMR), "" for none.
+	methods  []string
 	session  *uuid.UUID
 	codeID   *uuid.UUID
 	replaces *model.RefreshToken
@@ -390,6 +394,9 @@ func (s *Service) issue(ctx context.Context, g grant) (*TokenResponse, error) {
 	if evaluated.IDToken != nil {
 		id := evaluated.IDToken
 		id["auth_time"] = g.authTime.Unix()
+		if amr := model.AMR(g.methods); amr != nil {
+			id["amr"] = amr
+		}
 		id["at_hash"] = jose.HalfHash(accessToken)
 		id["azp"] = g.app.ClientID
 		if g.nonce != "" {
@@ -444,6 +451,7 @@ func (s *Service) newRefreshToken(ctx context.Context, g grant, scope string) (s
 		Scope:           scope,
 		Audience:        g.audience,
 		AuthenticatedAt: g.authTime,
+		Methods:         g.methods,
 		ExpiresAt:       now.Add(time.Duration(g.app.RefreshTokenLifetime) * time.Second),
 	}
 

@@ -192,7 +192,7 @@ func (s *Service) startSocialSession(
 	request string,
 	client Client,
 ) (*SignInResult, error) {
-	result, err := s.startSession(ctx, user, flow, request, true, client, "user.login")
+	result, err := s.startSession(ctx, user, flow, request, true, nil, client, "user.login")
 	if err != nil {
 		return nil, err
 	}

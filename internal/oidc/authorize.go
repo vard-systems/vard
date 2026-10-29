@@ -372,6 +372,7 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, h
 		CodeChallengeMethod: req.CodeChallengeMethod,
 		Audience:            req.Audience,
 		AuthenticatedAt:     session.AuthenticatedAt,
+		Methods:             session.Methods,
 		ExpiresAt:           now.Add(model.AuthorizationCodeLifetime),
 	})
 	if err != nil {

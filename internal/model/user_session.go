@@ -13,10 +13,13 @@ type UserSession struct {
 	UserID          uuid.UUID `gorm:"type:uuid;not null;index"`
 	User            *User     `gorm:"constraint:OnDelete:CASCADE"`
 	AuthenticatedAt time.Time `gorm:"not null"`
-	ExpiresAt       time.Time `gorm:"not null;index"`
-	RevokedAt       *time.Time
-	IP              string `gorm:"size:45;not null;default:''"`
-	UserAgent       string `gorm:"size:255;not null;default:''"`
+	// Methods are how the sign-in proved who it was (AMRPassword, …), for the
+	// amr claim of every token issued in the session.
+	Methods   StringList `gorm:"type:jsonb;serializer:json"`
+	ExpiresAt time.Time  `gorm:"not null;index"`
+	RevokedAt *time.Time
+	IP        string `gorm:"size:45;not null;default:''"`
+	UserAgent string `gorm:"size:255;not null;default:''"`
 }
 
 func (UserSession) TableName() string {

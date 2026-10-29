@@ -275,7 +275,7 @@ func (s *Service) Discovery(ctx context.Context) Discovery {
 }
 
 var claimsSupported = []string{
-	"iss", "sub", "aud", "exp", "iat", "auth_time", "nonce", "at_hash", "sid",
+	"iss", "sub", "aud", "exp", "iat", "auth_time", "amr", "nonce", "at_hash", "sid",
 	"azp", "client_id", "scope", "jti",
 	"name", "given_name", "family_name", "email", "email_verified",
 	model.ClaimApplicationRoles, model.ClaimGlobalRoles,

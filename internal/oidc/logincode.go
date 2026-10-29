@@ -137,7 +137,9 @@ func (s *Service) SubmitLoginCode(ctx context.Context, handle, typed string, cli
 		return nil, err
 	}
 
-	return s.startSession(ctx, user, flow, waiting.code.Request, waiting.code.RememberMe, client, "user.login")
+	// An emailed code only ever follows a password (finishSignIn).
+	methods := []string{model.AMRPassword, model.AMROneTimeCode}
+	return s.startSession(ctx, user, flow, waiting.code.Request, waiting.code.RememberMe, methods, client, "user.login")
 }
 
 func (s *Service) ResendLoginCode(ctx context.Context, handle string, client Client) (*CodeChallenge, error) {

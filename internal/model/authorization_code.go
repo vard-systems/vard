@@ -24,13 +24,14 @@ type AuthorizationCode struct {
 	SessionID     *uuid.UUID   `gorm:"type:uuid;index"`
 	Session       *UserSession `gorm:"constraint:OnDelete:SET NULL"`
 
-	RedirectURI         string    `gorm:"size:512;not null"`
-	Scope               string    `gorm:"type:text;not null"`
-	Nonce               string    `gorm:"type:text;not null;default:''"`
-	CodeChallenge       string    `gorm:"size:128;not null;default:''"`
-	CodeChallengeMethod string    `gorm:"size:8;not null;default:''"`
-	Audience            string    `gorm:"size:255;not null;default:''"`
-	AuthenticatedAt     time.Time `gorm:"not null"`
+	RedirectURI         string     `gorm:"size:512;not null"`
+	Scope               string     `gorm:"type:text;not null"`
+	Nonce               string     `gorm:"type:text;not null;default:''"`
+	CodeChallenge       string     `gorm:"size:128;not null;default:''"`
+	CodeChallengeMethod string     `gorm:"size:8;not null;default:''"`
+	Audience            string     `gorm:"size:255;not null;default:''"`
+	AuthenticatedAt     time.Time  `gorm:"not null"`
+	Methods             StringList `gorm:"type:jsonb;serializer:json"`
 
 	ExpiresAt time.Time `gorm:"not null;index"`
 	// UsedAt is set on exchange. A second presentation is refused and revokes

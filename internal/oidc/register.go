@@ -103,5 +103,5 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 		}
 	}
 
-	return s.finishSignIn(ctx, user, flow, r.Request, r.Remember, client, "user.login")
+	return s.finishSignIn(ctx, user, flow, r.Request, r.Remember, []string{model.AMRPassword}, client, "user.login")
 }

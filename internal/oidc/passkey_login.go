@@ -154,5 +154,8 @@ func (s *Service) FinishPasskeySignIn(ctx context.Context, handle string, respon
 		return nil, err
 	}
 
-	return s.openSession(ctx, user, flow, login.Request, login.RememberMe, client, "user.login")
+	// The ceremony requires the person verified on the device, not only
+	// the device.
+	methods := []string{model.AMRHardwareKey, model.AMRUserPresence}
+	return s.openSession(ctx, user, flow, login.Request, login.RememberMe, methods, client, "user.login")
 }

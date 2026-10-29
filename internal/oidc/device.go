@@ -175,6 +175,7 @@ func (s *Service) deviceToken(ctx context.Context, app *model.Application, p Tok
 		scopes:   strings.Fields(device.Scope),
 		audience: device.Audience,
 		authTime: *device.AuthenticatedAt,
+		methods:  device.Methods,
 		session:  device.SessionID,
 		dpopKey:  p.dpopKey,
 		refusal:  ErrInvalidGrant,
@@ -230,7 +231,7 @@ func (s *Service) AnswerDevice(ctx context.Context, userCode string, session *Se
 		allow = token.Issued
 	}
 
-	answered, err := s.store.AnswerDevice(ctx, device, allow, session.User.ID, session.Record.ID, session.Record.AuthenticatedAt, s.now())
+	answered, err := s.store.AnswerDevice(ctx, device, allow, session.User.ID, &session.Record, s.now())
 	if err != nil {
 		return err
 	}

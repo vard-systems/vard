@@ -29,6 +29,14 @@ import (
 // finished.
 const PageSecondFactor = "/second-factor"
 
+// factorAMR is what each second factor proves (model.AMR). A passkey here is
+// the device alone: the ceremony only prefers the person verified.
+var factorAMR = map[string]string{
+	MethodAuthenticator: model.AMROneTimeCode,
+	MethodRecoveryCode:  model.AMROneTimeCode,
+	MethodPasskey:       model.AMRHardwareKey,
+}
+
 const (
 	MethodAuthenticator = "totp"
 	MethodPasskey       = "passkey"
@@ -97,13 +105,13 @@ type AuthenticatorSetup struct {
 
 // holdForSecondFactor keeps a sign-in waiting when the user has a second
 // factor, and returns nil when they have none.
-func (s *Service) holdForSecondFactor(ctx context.Context, user *model.User, request string, remember bool) (*SignInResult, error) {
-	return s.hold(ctx, user, request, remember, nil)
+func (s *Service) holdForSecondFactor(ctx context.Context, user *model.User, request string, remember bool, methods []string) (*SignInResult, error) {
+	return s.hold(ctx, user, request, remember, methods, nil)
 }
 
 // hold is holdForSecondFactor with, for a first single sign-on link, the
 // identity to link once the factor is answered.
-func (s *Service) hold(ctx context.Context, user *model.User, request string, remember bool, link *model.SSOIdentity) (*SignInResult, error) {
+func (s *Service) hold(ctx context.Context, user *model.User, request string, remember bool, methods []string, link *model.SSOIdentity) (*SignInResult, error) {
 	has, err := s.store.HasUserFactor(ctx, user.ID)
 	if err != nil || !has {
 		return nil, err
@@ -119,6 +127,7 @@ func (s *Service) hold(ctx context.Context, user *model.User, request string, re
 		UserID:     user.ID,
 		Request:    request,
 		RememberMe: remember,
+		Methods:    methods,
 		ExpiresAt:  s.now().Add(model.PendingSignInLifetime),
 	}
 	if link != nil {
@@ -238,7 +247,8 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer 
 		return nil, err
 	}
 
-	return s.openSession(ctx, user, flow, pending.Request, pending.RememberMe, client, "user.login")
+	methods := append(slices.Clone(pending.Methods), factorAMR[method])
+	return s.openSession(ctx, user, flow, pending.Request, pending.RememberMe, methods, client, "user.login")
 }
 
 func (s *Service) waitingSignIn(ctx context.Context, handle string) (*model.PendingSignIn, error) {

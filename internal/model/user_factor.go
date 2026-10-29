@@ -85,6 +85,9 @@ type PendingSignIn struct {
 	// account pages.
 	Request    string `gorm:"size:64;not null;default:''"`
 	RememberMe bool   `gorm:"not null"`
+	// Methods are what the sign-in has proved so far; the second factor
+	// adds its own.
+	Methods StringList `gorm:"type:jsonb;serializer:json"`
 
 	// Passkey is the assertion ceremony offered with it, so a passkey can
 	// answer; "" when the user has none.

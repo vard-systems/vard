@@ -225,7 +225,7 @@ func (s *Service) holdSSOLink(ctx context.Context, user *model.User, flow *model
 		return nil, err
 	}
 
-	return s.hold(ctx, user, request, true, identity)
+	return s.hold(ctx, user, request, true, nil, identity)
 }
 
 func (s *Service) ssoBlocked(ctx context.Context, user *model.User, connection *model.SSOConnection, client Client) error {
