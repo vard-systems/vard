@@ -17,7 +17,24 @@ func authorizeParams(c *gin.Context) (oidc.AuthorizeParams, error) {
 		return oidc.AuthorizeParams{}, err
 	}
 
-	form := c.Request.Form
+	params := requestParams(c.Request.Form)
+
+	// A parameter given twice, in the address or the body or once in each,
+	// is ambiguous — which redirect_uri, which state? — and refused (RFC 6749
+	// section 3.1). The provider answers it with its error page, since no
+	// redirect URI can be trusted yet.
+	for key, values := range c.Request.Form {
+		if len(values) > 1 {
+			params.Repeated = key
+			break
+		}
+	}
+
+	return params, nil
+}
+
+// requestParams is an authorization request as either endpoint reads it.
+func requestParams(form url.Values) oidc.AuthorizeParams {
 	return oidc.AuthorizeParams{
 		ClientID:            form.Get("client_id"),
 		RedirectURI:         form.Get("redirect_uri"),
@@ -33,7 +50,7 @@ func authorizeParams(c *gin.Context) (oidc.AuthorizeParams, error) {
 		MaxAge:              form.Get("max_age"),
 		LoginHint:           form.Get("login_hint"),
 		RequestURI:          form.Get("request_uri"),
-	}, nil
+	}
 }
 
 // pushedParams is a pushed authorization request: the client's credentials,
@@ -49,22 +66,7 @@ func pushedParams(c *gin.Context) (oidc.ClientAuth, oidc.AuthorizeParams, error)
 		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, err
 	}
 
-	return auth, oidc.AuthorizeParams{
-		ClientID:            form.Get("client_id"),
-		RedirectURI:         form.Get("redirect_uri"),
-		ResponseType:        form.Get("response_type"),
-		ResponseMode:        form.Get("response_mode"),
-		Scope:               form.Get("scope"),
-		State:               form.Get("state"),
-		Nonce:               form.Get("nonce"),
-		CodeChallenge:       form.Get("code_challenge"),
-		CodeChallengeMethod: form.Get("code_challenge_method"),
-		Audience:            form.Get("audience"),
-		Prompt:              form.Get("prompt"),
-		MaxAge:              form.Get("max_age"),
-		LoginHint:           form.Get("login_hint"),
-		RequestURI:          form.Get("request_uri"),
-	}, nil
+	return auth, requestParams(form), nil
 }
 
 func logoutParams(c *gin.Context) (oidc.LogoutParams, error) {

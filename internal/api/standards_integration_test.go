@@ -258,3 +258,32 @@ func TestLiveDynamicClientRegistration(t *testing.T) {
 		t.Errorf("registering for the implicit flow = %d %v", status, body)
 	}
 }
+
+// A parameter given twice is ambiguous, and both endpoints that read an
+// authorization request refuse it (RFC 6749 section 3.1): the authorization
+// endpoint with its error page, never a redirect to either URI, and a push
+// with an answer to the client.
+func TestLiveARepeatedParameterIsRefused(t *testing.T) {
+	f := newOAuthFixture(t)
+	_, challenge := pkce(t)
+
+	for name, extra := range map[string]url.Values{
+		"two redirect URIs": {"redirect_uri": {shopRedirect, "https://evil.example/callback"}},
+		"two states":        {"state": {"one", "two"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			landed := f.s.browser().visit(f.authorizeURL(challenge, extra))
+			if !strings.HasPrefix(landed.String(), testAccountURL+"/error") {
+				t.Errorf("a repeated parameter led to %s, want the error page", landed)
+			}
+		})
+	}
+
+	pushed := f.token("/oauth2/par", f.clientID, f.clientSecret, url.Values{
+		"response_type": {"code"}, "redirect_uri": {shopRedirect, "https://evil.example/callback"},
+		"scope": {"openid"}, "code_challenge": {challenge}, "code_challenge_method": {"S256"},
+	})
+	if pushed.status != http.StatusBadRequest || pushed.str("error") != "invalid_request" {
+		t.Errorf("pushing a repeated parameter = %d %v, want 400 invalid_request", pushed.status, pushed.body)
+	}
+}

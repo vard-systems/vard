@@ -31,6 +31,8 @@ type AuthorizeParams struct {
 	// RequestURI names a request the client pushed first (RFC 9126); the
 	// parameters are then the pushed ones, not the address's.
 	RequestURI string `json:"-"`
+	// Repeated names a parameter the request gave more than once.
+	Repeated string `json:"-"`
 }
 
 const (
@@ -69,6 +71,10 @@ func (p AuthorizeParams) oversized() string {
 }
 
 func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Session) (string, error) {
+	if p.Repeated != "" {
+		return s.errorPage(ErrInvalidRequest, p.Repeated+" is repeated"), nil
+	}
+
 	pushed := p.RequestURI != ""
 	if pushed {
 		taken, page, err := s.takePushed(ctx, p)
