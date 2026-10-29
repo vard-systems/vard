@@ -79,6 +79,13 @@ func TestVerifyRefusesTampering(t *testing.T) {
 	none := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","kid":"k1"}`)) + "." + parts[1] + "."
 	hs := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","kid":"k1"}`)) + "." + parts[1] + "." + parts[2]
 
+	// An extension marked critical has to be understood or the token refused
+	// (RFC 7515 §4.1.11), and this server understands none.
+	critical, err := signWithHeader(key, `{"alg":"RS256","kid":"k1","typ":"JWT","crit":["exp"],"exp":1}`, parts[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cases := map[string]struct {
 		token  string
 		lookup func(string) (Key, bool)
@@ -91,6 +98,7 @@ func TestVerifyRefusesTampering(t *testing.T) {
 		"not a jws":         {"abc", lookupOf(key)},
 		"truncated":         {parts[0] + "." + parts[1], lookupOf(key)},
 		"signature garbage": {parts[0] + "." + parts[1] + ".!!!", lookupOf(key)},
+		"a critical header": {critical, lookupOf(key)},
 	}
 
 	for name, tc := range cases {
@@ -101,6 +109,16 @@ func TestVerifyRefusesTampering(t *testing.T) {
 			}
 		})
 	}
+}
+
+// signWithHeader signs a payload under a header written by hand.
+func signWithHeader(key Key, header, payload string) (string, error) {
+	input := base64.RawURLEncoding.EncodeToString([]byte(header)) + "." + payload
+	signature, err := sign(key, []byte(input))
+	if err != nil {
+		return "", err
+	}
+	return input + "." + base64.RawURLEncoding.EncodeToString(signature), nil
 }
 
 func TestVerifyAmongPublishedKeys(t *testing.T) {

@@ -52,6 +52,9 @@ type Header struct {
 	Type      string `json:"typ,omitempty"`
 	// JWK is the public key a self-signed token carries (a DPoP proof).
 	JWK *JWK `json:"jwk,omitempty"`
+	// Critical names extensions a verifier must understand (RFC 7515
+	// §4.1.11); this package understands none, so any refuses the token.
+	Critical []string `json:"crit,omitempty"`
 }
 
 func Generate(algorithm string) (crypto.Signer, error) {
@@ -151,7 +154,7 @@ func VerifyAmong(token string, candidates func(Header) []Key, claims any) (Heade
 	}
 
 	var header Header
-	if err := json.Unmarshal(rawHeader, &header); err != nil {
+	if err := json.Unmarshal(rawHeader, &header); err != nil || header.Critical != nil {
 		return Header{}, ErrInvalid
 	}
 
