@@ -79,6 +79,8 @@ func NewPublic(cfg config.Config, log *slog.Logger, provider *oidc.Service, shar
 		return nil, err
 	}
 
+	r.Use(session.CookieMode(cfg.SecureUserCookies))
+
 	registerPublicRoutes(r, publicHandlers{
 		certificate: certificate,
 		oauth:       oauth.New(provider, log, cfg.SecureUserCookies),
@@ -113,6 +115,8 @@ func NewAdmin(cfg config.Config, st *store.Store, sealer *jose.Sealer, log *slog
 	service := auth.New(st, sealer, log, adminIssuer(cfg.AdminURL), passkeys)
 	service.UseBreachCheck(provider.PasswordBreached)
 	recorder := audit.New(st, log)
+
+	r.Use(session.CookieMode(cfg.SecureAdminCookies))
 
 	registerAdminRoutes(r, service, provider, log, adminHandlers{
 		auth:         adminauth.New(service, st, recorder, log, cfg.SecureAdminCookies),

@@ -53,15 +53,12 @@ type cookie struct {
 
 // writeCookie sets a session or sign-in cookie. Over https it is named with
 // brand.HostPrefix, which the browser holds to Secure, Path=/ and no Domain,
-// so no sibling subdomain can plant or overwrite it; the copy under the old
-// name is cleared on the way, so it is not read in its place.
+// so no sibling subdomain can plant or overwrite it. Over plain http, where
+// a browser refuses the prefix, it keeps its bare name and its narrow path.
 func writeCookie(c *gin.Context, which cookie, value string, maxAge int, secure bool) {
 	name, path := which.name, which.path
 	if secure {
 		name, path = brand.HostPrefix+which.name, "/"
-		http.SetCookie(c.Writer, &http.Cookie{
-			Name: which.name, Path: which.path, MaxAge: -1, HttpOnly: true, Secure: true, SameSite: which.sameSite,
-		})
 	}
 
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -75,12 +72,26 @@ func writeCookie(c *gin.Context, which cookie, value string, maxAge int, secure 
 	})
 }
 
-// read is a session or sign-in cookie's value: the prefixed one, or for one
-// release the one under the old name, so sessions from before the prefix
-// keep working. Either counts as none when the browser sent two.
+// secureKey is where CookieMode leaves whether the listener's cookies are
+// the https ones.
+const secureKey = "session_cookies_secure"
+
+// CookieMode says, for every request a listener answers, whether its session
+// and sign-in cookies are the https ones, so each is read under the one name
+// it is written under.
+func CookieMode(secure bool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set(secureKey, secure)
+		c.Next()
+	}
+}
+
+// read is a session or sign-in cookie's value under the name this listener
+// writes it with — the __Host- one over https — or "" when the browser sent
+// none, or two.
 func read(c *gin.Context, name string) string {
-	if value := single(c, brand.HostPrefix+name); value != "" {
-		return value
+	if c.GetBool(secureKey) {
+		name = brand.HostPrefix + name
 	}
 	return single(c, name)
 }

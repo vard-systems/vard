@@ -29,9 +29,8 @@ func set(write func(c *gin.Context)) map[string]*http.Cookie {
 
 // Over https every session and sign-in cookie is a __Host- one: Secure, the
 // whole host's path, no Domain, so a sibling subdomain can neither plant nor
-// overwrite it; the copy under the old name is cleared as it is set. Over
-// plain http, where a browser would refuse the prefix, the names are as they
-// were.
+// overwrite it. Over plain http, where a browser would refuse the prefix,
+// each keeps its bare name.
 func TestSessionCookiesAreHostOnlyOverHTTPS(t *testing.T) {
 	writers := []struct {
 		name  string
@@ -58,8 +57,8 @@ func TestSessionCookiesAreHostOnlyOverHTTPS(t *testing.T) {
 				t.Errorf("%s = Secure %v, Path %q, Domain %q, HttpOnly %v; want Secure, /, none, HttpOnly",
 					prefixed.Name, prefixed.Secure, prefixed.Path, prefixed.Domain, prefixed.HttpOnly)
 			}
-			if old := cookies[w.base]; old == nil || old.MaxAge >= 0 {
-				t.Errorf("the old %s was not cleared: %v", w.base, old)
+			if bare := cookies[w.base]; bare != nil {
+				t.Errorf("a bare %s was set beside the prefixed one", w.base)
 			}
 		})
 
@@ -76,18 +75,20 @@ func TestSessionCookiesAreHostOnlyOverHTTPS(t *testing.T) {
 	}
 }
 
-// A session is read from its prefixed cookie, and for one release from the
-// old name when there is none; two of either count as none.
-func TestSessionCookiesAreReadPrefixedFirst(t *testing.T) {
+// A session is read under the one name its listener writes it with: the
+// __Host- one over https, the bare one over http. Under the other name it is
+// none, and so are two of it.
+func TestSessionCookiesAreReadUnderTheirListenersName(t *testing.T) {
 	cases := []struct {
 		name    string
+		secure  bool
 		cookies []string
 		want    string
 	}{
-		{"the prefixed one", []string{brand.HostPrefix + UserCookie + "=new"}, "new"},
-		{"the old name, before the prefix", []string{UserCookie + "=old"}, "old"},
-		{"the prefixed one over the old", []string{UserCookie + "=old", brand.HostPrefix + UserCookie + "=new"}, "new"},
-		{"two of the old, one planted", []string{UserCookie + "=old", UserCookie + "=planted"}, ""},
+		{"over https, the prefixed one", true, []string{brand.HostPrefix + UserCookie + "=new"}, "new"},
+		{"over https, a bare one planted by a sibling", true, []string{UserCookie + "=planted"}, ""},
+		{"over http, the bare one", false, []string{UserCookie + "=plain"}, "plain"},
+		{"over http, two of it", false, []string{UserCookie + "=one", UserCookie + "=two"}, ""},
 	}
 
 	for _, tt := range cases {
@@ -96,6 +97,7 @@ func TestSessionCookiesAreReadPrefixedFirst(t *testing.T) {
 			c, _ := gin.CreateTestContext(httptest.NewRecorder())
 			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 			c.Request.Header.Set("Cookie", strings.Join(tt.cookies, "; "))
+			CookieMode(tt.secure)(c)
 
 			if got := UserToken(c); got != tt.want {
 				t.Errorf("UserToken = %q, want %q", got, tt.want)
