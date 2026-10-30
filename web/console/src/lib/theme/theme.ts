@@ -1,6 +1,6 @@
 /**
  * The console's theme: every colour, size, typeface and speed. `bun run theme` renders it to
- * lib/styles/tokens.css and fonts.css, and `bun run check` fails while they are behind, so
+ * web/ui/src/styles/tokens.css and fonts.css, and `bun run check` fails while they are behind, so
  * change values here only. Layout follows the PocketBase admin UI; colour is Telegram's, with
  * one brand blue (#0088cc).
  */
@@ -216,7 +216,7 @@ export const theme: Theme<ColorName> = {
 		// included, and Google Sans Code for code. Chirp is bundled from assets/fonts: weights 400,
 		// 500 and 700 (600 drawn from 700), Latin and Latin Extended. It is X's typeface, not an open font; see the README's Third-party assets
 		// before shipping publicly.
-		baseUrl: '../../assets/fonts/',
+		baseUrl: '../assets/fonts/',
 		subsets: {
 			'latin-ext':
 				'U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF',

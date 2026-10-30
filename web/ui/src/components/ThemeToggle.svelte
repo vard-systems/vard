@@ -1,16 +1,30 @@
 <script lang="ts">
-	import { theme } from '#lib/state/theme.svelte.js';
+	import type { Theme } from '../theme.svelte';
 	import type { Size } from './control';
 	import Tooltip from './Tooltip.svelte';
 
-	type Props = { size?: Size; variant?: 'ghost' | 'subtle' };
+	type Props = {
+		/** The app's theme (`new Theme(cookie)`), which this switches. */
+		theme: Theme;
+		size?: Size;
+		variant?: 'ghost' | 'subtle';
+		/** What the button is called, and its tooltip: the app's words. */
+		label?: string;
+		hint?: string;
+	};
 
-	let { size = 'md', variant = 'subtle' }: Props = $props();
+	let {
+		theme,
+		size = 'md',
+		variant = 'subtle',
+		label = 'Switch between the light and dark theme',
+		hint = 'Switch theme'
+	}: Props = $props();
 
 	const glyph: Record<Size, string> = { sm: '1rem', md: '1.125rem', lg: '1.25rem' };
 </script>
 
-<Tooltip label="Switch theme">
+<Tooltip label={hint}>
 	{#snippet children(trigger)}
 		<button
 			{...trigger()}
@@ -21,7 +35,7 @@
 			data-variant={variant}
 			data-palette="neutral"
 			onclick={() => theme.toggle()}
-			aria-label="Switch between the light and dark theme"
+			aria-label={label}
 		>
 			<span class="icons" style="--glyph: {glyph[size]}">
 				<span class="moon"

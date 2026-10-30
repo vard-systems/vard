@@ -9,5 +9,9 @@
 	"peerDependencies": {
 		"@ark-ui/svelte": "^5.24.3",
 		"svelte": "^5.57.2"
+	},
+	"devDependencies": {
+		"prettier": "^3.9.10",
+		"prettier-plugin-svelte": "^4.1.1"
 	}
 }

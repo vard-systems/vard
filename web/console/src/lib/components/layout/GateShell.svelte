@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { theme } from '#lib/state/theme.svelte.js';
 	import type { Snippet } from 'svelte';
 	import { BRAND } from '#lib/brand.js';
-	import { Card, ThemeToggle, type IconName } from '../ui/index.js';
+	import { Card, ThemeToggle, type IconName } from '#lib/components/ui/index.js';
 
 	type Props = {
 		title: string;
@@ -17,7 +18,7 @@
 
 <!-- A page outside the panel: signing in, or setting up what signing in needs. -->
 <main>
-	<div class="corner"><ThemeToggle /></div>
+	<div class="corner"><ThemeToggle {theme} /></div>
 
 	<div class={['column', width]}>
 		<Card padded>

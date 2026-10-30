@@ -88,8 +88,13 @@ i18n/                    the English that ships, read with go-i18n: id/*.en.json
                          API's problems; Catalog formats any language's text
 web/<app>/src/hooks.server.ts  the app's server: API paths passed on
                          (lib/server/api.ts), page headers (lib/server/headers.ts)
-web/console/src/lib/     api/, query/, components/ui/, components/<feature>/,
-                         styles/tokens.css (generated: make generate)
+web/ui/                  the design both apps share (a workspace package, `ui`):
+                         src/components (the kit), src/styles (tokens.css and
+                         fonts.css generated: make generate), src/assets/fonts,
+                         theme.svelte.ts
+web/console/src/lib/     api/, query/, components/ui/ (`ui` with the code
+                         views), components/<feature>/, server/actions.ts,
+                         forms.ts
 web/id/src/lib/          api/, i18n/, state/, components/ui/ (primitives),
                          components/auth|account|layout/, constants.ts (the
                          API's field limits)
@@ -97,7 +102,7 @@ web/<app>/src/lib/testing/  expectAccessible: axe on a mounted component
 web/<app>/src/lib/brand.ts  the app's brand (name, slug, mark, favicon from
                          lib/assets/, cookie names; the console's links and
                          pageTitle)
-web/console/scripts/     theme.ts, the generator
+web/console/scripts/     theme.ts, the generator (writes web/ui/src/styles)
 web/e2e/                 Playwright tests of both apps through a real stack
                          (scripts/e2e.sh raises it with its own database, Redis
                          prefix and no .env); tests/stack.ts, their helpers
@@ -422,11 +427,13 @@ change made with one click (a remove, a toggle) and a search box stay as they
 are: a call from the browser, and the address's filters. The sign-in pages have
 no form actions, ever: SvelteKit's origin check is off there.
 
-**A colour, size or font in the panel.** `web/console/src/lib/theme/theme.ts`
-decides; `bun run theme` writes `lib/styles/tokens.css` and `fonts.css` (never
-edit those by hand). Both apps use two faces and no others: Chirp for text,
-Google Sans Code for code; the sign-in pages' `lib/styles/fonts.css` declares
-the same two.
+**A colour, size, font or component.** The design is `web/ui`, shared by both
+apps. `web/console/src/lib/theme/theme.ts` decides the values; `bun run theme`
+writes `web/ui/src/styles/tokens.css` and `fonts.css` (never edit those by
+hand). A component both apps could use goes in `web/ui/src/components` and is
+exported from its index, with its words as props (the sign-in pages translate
+theirs); only what one app alone draws stays in that app. Both apps use two
+faces and no others: Chirp for text, Google Sans Code for code.
 
 **An icon** (both apps). The Remix Icon font, as PocketBase uses it: the root
 layout loads `remixicon/fonts/remixicon.css`, and an icon is its class on an

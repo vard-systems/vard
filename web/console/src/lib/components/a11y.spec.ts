@@ -6,12 +6,12 @@ import { expectAccessible } from '#lib/testing/a11y.js';
 import LogoField from './organization/LogoField.svelte';
 import RoleCodes from './profile/RoleCodes.svelte';
 import DomainProofList from './sso/DomainProofList.svelte';
-import Button from './ui/Button.svelte';
-import EmptyState from './ui/EmptyState.svelte';
-import Input from './ui/Input.svelte';
-import PasswordInput from './ui/PasswordInput.svelte';
-import SwitchField from './ui/SwitchField.svelte';
-import TabList from './ui/TabList.svelte';
+import Button from 'ui/components/Button.svelte';
+import EmptyState from 'ui/components/EmptyState.svelte';
+import Input from 'ui/components/Input.svelte';
+import PasswordInput from 'ui/components/PasswordInput.svelte';
+import SwitchField from 'ui/components/SwitchField.svelte';
+import TabList from 'ui/components/TabList.svelte';
 
 const text = (words: string) => createRawSnippet(() => ({ render: () => `<span>${words}</span>` }));
 

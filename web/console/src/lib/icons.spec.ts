@@ -7,14 +7,17 @@ const stylesheet = readFileSync(
 	new URL('../../node_modules/remixicon/fonts/remixicon.css', import.meta.url),
 	'utf8'
 );
-const source = new URL('..', import.meta.url);
+// The app's own source, and the shared design it is drawn with.
+const sources = [new URL('..', import.meta.url), new URL('../../../ui/src/', import.meta.url)];
 
 const used = new Map<string, string>();
-for (const file of readdirSync(source, { recursive: true, encoding: 'utf8' })) {
-	if (!/\.(svelte|ts)$/.test(file) || file.endsWith('icons.spec.ts')) continue;
-	const text = readFileSync(new URL(file, source), 'utf8');
-	for (const [name] of text.matchAll(/\bri-[a-z0-9]+(?:-[a-z0-9]+)*/g)) {
-		if (!used.has(name)) used.set(name, file);
+for (const source of sources) {
+	for (const file of readdirSync(source, { recursive: true, encoding: 'utf8' })) {
+		if (!/\.(svelte|ts)$/.test(file) || file.endsWith('icons.spec.ts')) continue;
+		const text = readFileSync(new URL(file, source), 'utf8');
+		for (const [name] of text.matchAll(/\bri-[a-z0-9]+(?:-[a-z0-9]+)*/g)) {
+			if (!used.has(name)) used.set(name, file);
+		}
 	}
 }
 
