@@ -35,10 +35,9 @@ help: ## Show this help
 setup: ## Prepare a fresh checkout: .env, the database, dependencies
 	@scripts/setup.sh
 
-deps: ## Install the Go modules, both apps' packages and the end-to-end tests
+deps: ## Install the Go modules and the web workspace (both apps, ui, the end-to-end tests)
 	go mod download
-	@$(call each-app,bun install --frozen-lockfile)
-	cd web/e2e && bun install --frozen-lockfile
+	cd web && bun install --frozen-lockfile
 
 tidy: ## Tidy go.mod and go.sum
 	go mod tidy
@@ -62,7 +61,8 @@ build-api: ## Build the API into bin/vard
 	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o bin/vard ./cmd/vard
 
 build-web: ## Build both apps into web/*/build (run each with `node build`)
-	@$(call each-app,bun install --frozen-lockfile && bun run build)
+	cd web && bun install --frozen-lockfile
+	@$(call each-app,bun run build)
 
 generate: ## Rewrite the console's generated files: theme tokens and fonts
 	cd web/console && bun run theme

@@ -1,0 +1,13 @@
+{
+	"name": "ui",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./*": "./src/*"
+	},
+	"peerDependencies": {
+		"@ark-ui/svelte": "^5.24.3",
+		"svelte": "^5.57.2"
+	}
+}

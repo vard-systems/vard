@@ -16,6 +16,7 @@
 		"test": "vitest --run"
 	},
 	"dependencies": {
+		"@ark-ui/svelte": "^5.24.3",
 		"@simplewebauthn/browser": "^14.0.0",
 		"qrcode": "^1.5.4",
 		"remixicon": "4.8.0",
@@ -40,13 +41,11 @@
 		"svelte-check": "^4.7.7",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.72.0",
+		"ui": "workspace:*",
 		"vite": "^8.3.5",
 		"vitest": "^5.0.5"
 	},
 	"imports": {
 		"#lib/*": "./src/lib/*"
-	},
-	"overrides": {
-		"esbuild": "^0.28.2"
 	}
 }
