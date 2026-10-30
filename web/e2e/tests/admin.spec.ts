@@ -26,3 +26,41 @@ test('an administrator creates a user', async ({ page }) => {
 	await visit(page, `${CONSOLE}/users`);
 	await expect(page.getByText('ada@example.com', { exact: true })).toBeVisible();
 });
+
+// A setting is saved through the panel's form action, which asks the admin
+// API with the administrator's own session.
+test('an administrator renames the organization', async ({ page }) => {
+	await visit(page, `${CONSOLE}/login`);
+	await page.getByLabel('Email').fill(ROOT.email);
+	await page.getByRole('textbox', { name: 'Password', exact: true }).fill(ROOT.password);
+	await page.getByRole('button', { name: 'Sign in' }).click();
+	await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible();
+
+	await visit(page, `${CONSOLE}/settings`);
+	await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Acme');
+	await page.getByRole('button', { name: 'Save changes' }).click();
+	await expect(page.getByText('Settings saved')).toBeVisible();
+
+	await visit(page, `${CONSOLE}/settings`);
+	await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Acme');
+});
+
+// A form action vouches to the admin API for the console's origin, so one
+// posted from anywhere else — with the administrator's cookies, as a page on
+// another site could — is refused before it runs.
+test('a form posted from another site is refused', async ({ page }) => {
+	await visit(page, `${CONSOLE}/login`);
+	await page.getByLabel('Email').fill(ROOT.email);
+	await page.getByRole('textbox', { name: 'Password', exact: true }).fill(ROOT.password);
+	await page.getByRole('button', { name: 'Sign in' }).click();
+	await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible();
+
+	const forged = await page.request.post(`${CONSOLE}/actions/organization?/update`, {
+		headers: { Origin: 'https://evil.example' },
+		form: { input: JSON.stringify({ name: 'Evil' }) }
+	});
+	expect(forged.status()).toBe(403);
+
+	await visit(page, `${CONSOLE}/settings`);
+	await expect(page.getByRole('textbox', { name: 'Name', exact: true })).not.toHaveValue('Evil');
+});

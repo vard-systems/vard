@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
-	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { organizationApi, type Organization } from '#lib/api/index.js';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import type { Organization } from '#lib/api/index.js';
 	import {
 		Alert,
 		FieldGrid,
@@ -13,6 +14,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { ADMIN_DEPENDENCY } from '#lib/constants.js';
+	import { submit } from '#lib/forms.js';
 	import { keys, organizationOptions } from '#lib/query/index.js';
 	import LogoField from './LogoField.svelte';
 	import OrganizationSummary from './OrganizationSummary.svelte';
@@ -48,9 +50,11 @@
 	const complete = $derived(input.name !== '' && input.slug !== '');
 	const offset = $derived(offsetOf(input.timezone));
 
-	const save = createMutation(() => ({
-		mutationFn: () => organizationApi.update(input),
-		onSuccess: async (result) => {
+	const save = submit<{ organization: Organization }>({
+		input: () => input,
+		when: () => editable && !saving && dirty && complete,
+		pending: (busy) => (saving = busy),
+		done: async (result) => {
 			queryClient.setQueryData(keys.organization.settings, result);
 			form = settingsOf(result.organization);
 			notify.success('Settings saved', 'The sign-in pages and the discovery document follow.');
@@ -59,13 +63,8 @@
 				invalidate(ADMIN_DEPENDENCY)
 			]);
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save these settings');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save these settings')
+	});
 
 	// The logo is saved the moment it is chosen, apart from the form: the
 	// settings view takes the new version, and the header reloads its own.
@@ -73,18 +72,9 @@
 		queryClient.setQueryData(keys.organization.settings, { organization: saved });
 		await invalidate(ADMIN_DEPENDENCY);
 	}
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!editable || saving || !dirty || !complete) return;
-
-		saving = true;
-		save.mutate();
-	}
 </script>
 
-<form onsubmit={submit}>
+<form method="POST" action="/actions/organization?/update" use:enhance={save}>
 	<OrganizationSummary {input} saved={organization} />
 
 	{#if !editable}
