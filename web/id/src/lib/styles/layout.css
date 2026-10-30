@@ -1,0 +1,9 @@
+/* What only the sign-in pages lay out with: the rounded frame their cards
+   sit in, and the widest gap between sections. Everything else is the
+   shared design's (web/ui). */
+
+:root {
+	--app-radius: 18px;
+	--app-inset: 12px;
+	--space-7: 48px;
+}

@@ -1,9 +1,17 @@
 <script lang="ts">
 	import { Toast, Toaster } from '@ark-ui/svelte/toast';
 	import { toaster } from './toast';
+
+	type Props = {
+		/** What the region and each close button are called: the app's words. */
+		label?: string;
+		dismiss?: string;
+	};
+
+	let { label = 'Notifications', dismiss = 'Dismiss' }: Props = $props();
 </script>
 
-<Toaster {toaster}>
+<Toaster {toaster} aria-label={label}>
 	{#snippet children(toast)}
 		<Toast.Root class={toast().description ? 'toast detailed' : 'toast'}>
 			<span class="glyph">
@@ -19,7 +27,7 @@
 					<Toast.Description class="description">{toast().description}</Toast.Description>
 				{/if}
 			</div>
-			<Toast.CloseTrigger class="close" aria-label="Dismiss">
+			<Toast.CloseTrigger class="close" aria-label={dismiss}>
 				<i class="ri-close-line" style:font-size="14px" aria-hidden="true"></i>
 			</Toast.CloseTrigger>
 		</Toast.Root>

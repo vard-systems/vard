@@ -1,17 +1,20 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { Checkbox } from '@ark-ui/svelte/checkbox';
 
 	type Props = {
 		checked: boolean | 'indeterminate';
 		onChange: (checked: boolean) => void;
 		label?: string;
+		/** A label with more in it than words (a link to the terms); `title` then names the box. */
+		children?: Snippet;
 		title?: string;
 		disabled?: boolean;
 		id?: string;
 		name?: string;
 	};
 
-	let { checked, onChange, label, title, disabled, id, name }: Props = $props();
+	let { checked, onChange, label, children, title, disabled, id, name }: Props = $props();
 </script>
 
 <Checkbox.Root
@@ -30,7 +33,9 @@
 		</Checkbox.Indicator>
 	</Checkbox.Control>
 
-	{#if label}
+	{#if children}
+		<Checkbox.Label>{@render children()}</Checkbox.Label>
+	{:else if label}
 		<Checkbox.Label>{label}</Checkbox.Label>
 	{/if}
 

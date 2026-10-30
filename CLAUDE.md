@@ -95,7 +95,8 @@ web/ui/                  the design both apps share (a workspace package, `ui`):
 web/console/src/lib/     api/, query/, components/ui/ (`ui` with the code
                          views), components/<feature>/, server/actions.ts,
                          forms.ts
-web/id/src/lib/          api/, i18n/, state/, components/ui/ (primitives),
+web/id/src/lib/          api/, i18n/, state/, components/ui/ (the sign-in pages'
+                         kit, drawn with `ui`, their words translated),
                          components/auth|account|layout/, constants.ts (the
                          API's field limits)
 web/<app>/src/lib/testing/  expectAccessible: axe on a mounted component

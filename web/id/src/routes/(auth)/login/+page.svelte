@@ -272,7 +272,7 @@
 		/>
 
 		{#if data.ssoAvailable}
-			<Note align="center" size="sm">
+			<Note align="center">
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a href={authHref('/sso', data.request)}>{t('login.sso')}</a>
 			</Note>
@@ -291,7 +291,7 @@
 <style>
 	.aside {
 		display: block;
-		color: var(--color-text-muted);
+		color: var(--color-text-hint);
 		font-size: var(--text-sm);
 	}
 </style>

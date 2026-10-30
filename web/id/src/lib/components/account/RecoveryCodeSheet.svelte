@@ -46,7 +46,7 @@
 		gap: var(--space-2);
 		margin: 0;
 		padding: var(--space-3);
-		border: 1px dashed var(--color-border-strong);
+		border: 1px dashed var(--color-input-border);
 		border-radius: var(--radius-md);
 		list-style: none;
 	}

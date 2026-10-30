@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
+	import { Button, LinkButton, type ColorPalette, type Variant } from 'ui';
 
 	type Props = Omit<HTMLButtonAttributes, 'type'> & {
 		variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -22,7 +23,6 @@
 		type = 'button',
 		loading = false,
 		block = false,
-		disabled = false,
 		href,
 		target,
 		rel,
@@ -30,120 +30,35 @@
 		...rest
 	}: Props = $props();
 
-	const classes = $derived(['button', variant, size, { block }]);
+	// The sign-in pages' four kinds of button, drawn as the panel draws them;
+	// their regular size is the panel's large one, which its sign-in uses.
+	const looks: Record<NonNullable<Props['variant']>, [Variant, ColorPalette]> = {
+		primary: ['solid', 'neutral'],
+		secondary: ['subtle', 'neutral'],
+		danger: ['solid', 'danger'],
+		ghost: ['ghost', 'neutral']
+	};
+	const look = $derived(looks[variant]);
+	const drawn = $derived(size === 'md' ? 'lg' : 'sm');
+	// Passed on as they came; the shared Button types them where they land.
+	const attributes = $derived(rest as Record<string, unknown>);
 </script>
 
-{#if href !== undefined}
-	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the caller resolves it -->
-	<a class={classes} {href} {target} {rel}>{@render children()}</a>
-{:else}
-	<button
-		{type}
-		class={classes}
-		disabled={disabled || loading}
-		aria-busy={loading || undefined}
-		{...rest}
-	>
-		{#if loading}<span class="spinner" aria-hidden="true"></span>{/if}
+{#if href}
+	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved by the caller -->
+	<LinkButton {href} {target} {rel} variant={look[0]} colorPalette={look[1]} size={drawn} {block}>
 		{@render children()}
-	</button>
+	</LinkButton>
+{:else}
+	<Button
+		{...attributes}
+		{type}
+		{loading}
+		{block}
+		variant={look[0]}
+		colorPalette={look[1]}
+		size={drawn}
+	>
+		{@render children()}
+	</Button>
 {/if}
-
-<style>
-	.button {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-2);
-		height: var(--control-height);
-		padding: 0 var(--space-5);
-		border: 1px solid transparent;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: var(--text-base);
-		white-space: nowrap;
-		text-decoration: none;
-		cursor: pointer;
-		transition:
-			background var(--speed),
-			border-color var(--speed),
-			opacity var(--speed);
-	}
-
-	.sm {
-		height: 36px;
-		padding: 0 var(--space-4);
-		font-size: var(--text-sm);
-	}
-
-	.block {
-		width: 100%;
-	}
-
-	.primary {
-		background: var(--color-primary);
-		color: var(--color-primary-text);
-	}
-
-	.primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
-	}
-
-	.secondary {
-		background: var(--color-surface);
-		border-color: var(--color-border-strong);
-		color: var(--color-text);
-	}
-
-	.secondary:hover:not(:disabled) {
-		background: var(--color-surface-alt);
-	}
-
-	.danger {
-		background: transparent;
-		border-color: color-mix(in srgb, var(--color-danger), transparent 55%);
-		color: var(--color-danger);
-	}
-
-	.danger:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--color-danger), transparent 90%);
-	}
-
-	.ghost {
-		background: transparent;
-		color: var(--color-text-hint);
-	}
-
-	.ghost:hover:not(:disabled) {
-		background: var(--color-input);
-		color: var(--color-text);
-	}
-
-	a.button:hover {
-		text-decoration: none;
-	}
-
-	.button:disabled {
-		cursor: not-allowed;
-		opacity: 0.55;
-	}
-
-	.button[aria-busy='true'] {
-		opacity: 0.85;
-	}
-
-	.spinner {
-		width: 1em;
-		height: 1em;
-		border: 2px solid currentColor;
-		border-right-color: transparent;
-		border-radius: 50%;
-		animation: spin 0.7s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-</style>

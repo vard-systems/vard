@@ -13,4 +13,6 @@ export type ControlProps = {
 	loading?: boolean;
 	disabled?: boolean;
 	icon?: IconName;
+	/** As wide as what holds it: the one action of a narrow form. */
+	block?: boolean;
 };

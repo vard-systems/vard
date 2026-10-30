@@ -163,3 +163,7 @@
 		animation: none;
 	}
 }
+
+.control[data-block] {
+	width: 100%;
+}
