@@ -2,13 +2,12 @@ package oidc
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 
 	"vard/internal/jose"
 	"vard/internal/model"
@@ -97,11 +96,7 @@ func (ks *keySet) add(ctx context.Context, alg string, now time.Time) error {
 		return err
 	}
 
-	var suffix [6]byte
-	if _, err := rand.Read(suffix[:]); err != nil {
-		return err
-	}
-	kid := strings.ToLower(alg) + "-" + hex.EncodeToString(suffix[:])
+	kid := newKeyID()
 
 	sealed, err := ks.sealer.Seal(signingKeySecret(kid), private)
 	if err != nil {
@@ -140,11 +135,7 @@ func (ks *keySet) Rotate(ctx context.Context, immediate, revoke bool) error {
 			return err
 		}
 
-		var suffix [6]byte
-		if _, err := rand.Read(suffix[:]); err != nil {
-			return err
-		}
-		kid := strings.ToLower(alg) + "-" + hex.EncodeToString(suffix[:])
+		kid := newKeyID()
 
 		sealed, err := ks.sealer.Seal(signingKeySecret(kid), private)
 		if err != nil {
@@ -351,6 +342,12 @@ func (ks *keySet) describe() []KeyInfo {
 }
 
 // signingKeySecret is where a signing key's sealed private half is kept.
+// newKeyID names a signing key in a token's header and the JWKS: a random
+// UUID, which says nothing about the key, not even when it was made.
+func newKeyID() string {
+	return uuid.NewString()
+}
+
 func signingKeySecret(kid string) jose.Context {
 	return model.SigningKey{KID: kid}.PrivateKeyWhere()
 }

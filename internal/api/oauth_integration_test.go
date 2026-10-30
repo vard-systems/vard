@@ -17,6 +17,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"vard/internal/config"
 	"vard/internal/model"
 )
@@ -338,6 +340,11 @@ func (f *oauthFixture) verifyJWT(token string) (map[string]any, map[string]any) 
 		return out
 	}
 	header, claims := decode(parts[0]), decode(parts[1])
+
+	// A key is named by a random UUID, which says nothing about it.
+	if kid, _ := header["kid"].(string); uuid.Validate(kid) != nil {
+		t.Errorf("kid = %q, want a UUID", kid)
+	}
 
 	for _, key := range jwks.Keys {
 		if key["kid"] != header["kid"] {
