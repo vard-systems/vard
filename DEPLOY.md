@@ -35,10 +35,10 @@ infrastructure ─▶ 127.0.0.1:3000  id       ─┐
 ```sh
 git clone https://github.com/vard-systems/vard.git && cd vard
 
-# deploy/.env, with new secrets — back it up: VARD_SECRET_KEY unlocks the
+# compose.env, with new secrets — back it up: VARD_SECRET_KEY unlocks the
 # signing keys, and without it every token and session is lost.
 make docker-env public=https://id.example.com admin=https://admin.example.com
-$EDITOR deploy/.env          # the VARD_SMTP_* settings, so mail is sent
+$EDITOR compose.env          # the VARD_SMTP_* settings, so mail is sent
 
 make docker-up               # build and start; waits until everything is healthy
 ```
@@ -59,7 +59,7 @@ make docker-up               # rebuilds what changed, migrates the database on s
 
 ## Backups
 
-`make db-backup` writes `deploy/backups/vard-<time>.dump` and keeps the newest
+`make db-backup` writes `backups/vard-<time>.dump` and keeps the newest
 14 (`KEEP=30 make db-backup` for more). Run it from cron, and copy the dumps
 off the machine: they hold every user and every sealed secret.
 
@@ -79,7 +79,7 @@ curl -sI https://id.example.com/.well-known/openid-configuration   # 200, with H
 
 ## Settings
 
-Everything is in `deploy/.env`; `deploy/.env.example` explains each. The ones
+Everything is in `compose.env`; `compose.env.example` explains each. The ones
 a server must not change: `VARD_SECRET_KEY` and `POSTGRES_PASSWORD`, which
 the stored keys and the database were made with, and `POSTGRES_APP_PASSWORD`,
 which `vard_app` was made with. `ID_PUBLISH` and

@@ -114,7 +114,7 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 			return nil
 		}
 
-		// What the code is made of. The scripts, deploy/, CI and the docs
+		// What the code is made of. The scripts, the compose and Docker files, CI and the docs
 		// spell the name too, where a tool needs it written out: scripts/rename.sh
 		// rewrites those.
 		switch filepath.Ext(name) {

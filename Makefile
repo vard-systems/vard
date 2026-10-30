@@ -11,7 +11,7 @@ APPS    := console id
 PKGS    := ./cmd/... ./internal/... ./migrations/... ./i18n/...
 GO_DIRS := cmd internal migrations i18n
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-COMPOSE := docker compose -f deploy/compose.yaml
+COMPOSE := docker compose -f compose.yaml --env-file compose.env
 
 # $(call each-app,command): run the command in every app, stopping at the
 # first that fails.
@@ -135,20 +135,20 @@ db-reset: ## Empty the database in .env and migrate it afresh (asks first)
 db-psql: ## Open psql on the database in .env
 	@scripts/db.sh psql
 
-## Docker (deploy/compose.yaml)
+## Docker (compose.yaml, with compose.env)
 
-docker-up: ## Build and start the stack in the background, as deploy/.env says
+docker-up: ## Build and start the stack in the background, as compose.env says
 	VERSION=$(VERSION) $(COMPOSE) build --pull
 	VERSION=$(VERSION) $(COMPOSE) up -d --wait
 
-docker-local: ## Start the stack on this machine — http://localhost:8080, :8081 (writes deploy/.env)
+docker-local: ## Start the stack on this machine — http://localhost:8080, :8081 (writes compose.env)
 	@VERSION=$(VERSION) scripts/docker-local.sh
 
-docker-env: ## Make deploy/.env for a server — make docker-env public=https://id.example.com admin=https://admin.example.com
+docker-env: ## Make compose.env for a server — make docker-env public=https://id.example.com admin=https://admin.example.com
 	@[[ -n "$(public)" && -n "$(admin)" ]] || { echo 'usage: make docker-env public=https://id.example.com admin=https://admin.example.com'; exit 1; }
 	@scripts/docker-env.sh "$(public)" "$(admin)"
 
-db-backup: ## Dump the stack's database into deploy/backups, keeping the newest 14 (KEEP=n)
+db-backup: ## Dump the stack's database into backups/, keeping the newest 14 (KEEP=n)
 	@scripts/db-backup.sh
 
 docker-down: ## Stop the stack, keeping its data
@@ -166,6 +166,6 @@ docker-build: ## Build the images
 docker-ps: ## Show the stack's containers and their health
 	$(COMPOSE) ps
 
-docker-config: ## Validate deploy/compose.yaml, with placeholders for what deploy/.env would say
+docker-config: ## Validate compose.yaml, with placeholders for what compose.env would say
 	@PUBLIC_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 VARD_SECRET_KEY=x \
-		POSTGRES_PASSWORD=x POSTGRES_APP_PASSWORD=x REDIS_PASSWORD=x $(COMPOSE) config -q && echo "deploy/compose.yaml is valid"
+		POSTGRES_PASSWORD=x POSTGRES_APP_PASSWORD=x REDIS_PASSWORD=x docker compose -f compose.yaml --env-file /dev/null config -q && echo "compose.yaml is valid"

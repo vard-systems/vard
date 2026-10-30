@@ -6,7 +6,7 @@
 # src/lib/brand.ts in each app. This rewrites all three, and what cannot read
 # them and spells the name itself: the Go module path in go.mod and every
 # import, cmd/<slug>/, the VARD_-style environment prefix, the scripts,
-# deploy/, CI and the docs.
+# the compose and Docker files, CI and the docs.
 #
 # It edits tracked files only, and only in a clean tree, so `git diff` is the
 # whole of what it did and `git checkout .` undoes it. It never touches .env:

@@ -33,4 +33,5 @@ go.work.sum
 
 
 # Made on the server: the database's dumps (make db-backup).
-/deploy/backups/
+/backups/
+compose.env

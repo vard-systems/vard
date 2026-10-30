@@ -3,7 +3,7 @@
 # A web app (web/console or web/id) as a Node server. Build context: the
 # repository root, and APP says which app to build.
 #
-#   docker build -f deploy/docker/web.Dockerfile --build-arg APP=web/id -t vard-id .
+#   docker build -f web/Dockerfile --build-arg APP=web/id -t vard-id .
 #
 # The context is the repository and not the app's own directory because the
 # apps import the shipped translations from i18n/ at the top of it
@@ -11,7 +11,7 @@
 # tree inside the image — /src/web/id — so that relative import still points
 # at /src/i18n.
 #
-# Runtime settings, all from deploy/compose.yaml: API_URL (the API inside the
+# Runtime settings, all from compose.yaml: API_URL (the API inside the
 # network), PORT (3000), and adapter-node's own — ADDRESS_HEADER, which header
 # names the caller once a proxy is in front, and BODY_SIZE_LIMIT.
 

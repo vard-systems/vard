@@ -15,7 +15,7 @@ One Go binary is the API: `:8080` (provider and account API) and `:8081`
 its pages and passes the API paths it calls on to it, so each app is one
 origin and the browser never reaches the API directly. Locally everything is
 plain http; on a server, TLS and routing are the infrastructure's, in front
-of the apps (`deploy/README.md`).
+of the apps (`DEPLOY.md`).
 Postgres holds everything; Redis is an optional cache. `README.md` is the
 overview for people; update it when a change makes a sentence in it untrue.
 
@@ -36,7 +36,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                              |
 | Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                        |
 | Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                     |
-| A server                           | `make docker-env`, `make docker-up`, `make db-backup` (deploy/README.md)               |
+| A server                           | `make docker-env`, `make docker-up`, `make db-backup` (DEPLOY.md)                      |
 | Everything else                    | `make` lists every target                                                              |
 
 Project commands in `.claude/commands/`: `/check` (every check), `/preview`
@@ -94,8 +94,11 @@ web/console/scripts/     theme.ts, the generator
 scripts/                 what the Makefile runs: setup, start, docker-local,
                          docker-env, db, db-backup, rename;
                          lib.sh (load_env) is shared by all of them
-deploy/                  compose.yaml (make docker-up, make docker-local), Dockerfiles,
-                         README.md (a server)
+compose.yaml             the Docker stack (make docker-up, make docker-local), read
+                         with compose.env (compose.env.example); never .env, the
+                         server's own development settings
+Dockerfile, web/Dockerfile  the API's image and the apps'
+DEPLOY.md                a server, from DNS to backups
 ```
 
 **Layering.** Nothing above `store` writes a query; nothing below `api` knows
@@ -109,7 +112,7 @@ in `validation.go` and the model.
 client sent there dropped. The same hook carries the browser's requests and
 the ones a load makes while a page is rendered, in `make dev` and in
 production alike. `TestEveryRouteIsReachableThroughItsApp` holds every route
-to those lists. In `deploy/compose.yaml` only the apps publish ports, on the
+to those lists. In `compose.yaml` only the apps publish ports, on the
 host's loopback; Postgres and Redis are on an internal network the
 apps are not on. Cookies are host-only and nothing is
 cross-origin.
@@ -359,7 +362,7 @@ app's `BRAND` and is read as `BRAND.field`; a new asset goes in
 `src/lib/assets/` and is imported there, so a build fingerprints it. A new
 name for everything is `make rename name="New Name" slug=newslug`, which also
 rewrites what has to spell it (go.mod, `cmd/<slug>`, the environment prefix,
-scripts, `deploy/`, CI, docs). An installation's own name, app logo, terms
+scripts, the compose and Docker files, CI, docs). An installation's own name, app logo, terms
 and privacy links are not a brand: an administrator sets them in Settings
 (the logo is an uploaded file, `model.OrganizationLogo`, never an address),
 and they take the brand's place in the console's header and on the sign-in
@@ -443,7 +446,8 @@ shield mark does.
 
 ## Gotchas and warnings
 
-- **Never read `.env`** — it holds the secret key. `.env.example` documents
+- **Never read `.env` or `compose.env`** — they hold the secret key and the
+  stack's passwords. `.env.example` documents
   every variable.
 - **Do not restart a running stack.** If anything answers on 8080, 8081, 5173
   or 5174, leave it alone; `/preview` raises a throwaway one on spare ports
@@ -457,7 +461,7 @@ shield mark does.
   and `VARD_TRUSTED_PROXIES` over whatever `.env` says.
 - **The API trusts the apps' servers and nobody else** to say who the
   caller is: loopback under `make dev`, the two containers' fixed addresses
-  in `deploy/compose.yaml` — never a whole private range. The apps read the
+  in `compose.yaml` — never a whole private range. The apps read the
   caller from the connection, or from `ADDRESS_HEADER` when the
   infrastructure in front sets one; the API's ports are never published. adapter-node's `BODY_SIZE_LIMIT` is the API's
   1 MiB, or it refuses a logo or a SAML response first.
@@ -473,7 +477,7 @@ shield mark does.
   Migrations run under a session advisory lock, one instance at a time.
   `/readyz` is the orchestrator's probe (the database answers); `/healthz`
   says only that the process is up. With `VARD_DB_MIGRATE_DSN` (the
-  schema owner's, as in `deploy/compose.yaml`) the server migrates as the
+  schema owner's, as in `compose.yaml`) the server migrates as the
   owner and runs as `VARD_DB_DSN`'s role, which `MigrateAsOwner` makes and
   grants rows only — no DDL, not goose's table. A store query that needs more
   than SELECT, INSERT, UPDATE or DELETE fails there; it belongs in a
@@ -492,7 +496,7 @@ ran and their result — or which were skipped and why:
 
 1. `make check` passes: formatting, go vet, staticcheck, both apps' lint and
    type-check, and every unit test.
-2. If anything under `deploy/` changed: `make docker-config` passes.
+2. If `compose.yaml`, `compose.env.example` or a Dockerfile changed: `make docker-config` passes.
 3. If a migration, the store, hand-written SQL or a route changed:
    `make test-integration` passes.
 4. Every new problem code is in the catalogs, every new key in every language,

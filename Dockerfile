@@ -2,7 +2,7 @@
 #
 # The Vard API server. Build context: the repository root.
 #
-#   docker build -f deploy/docker/api.Dockerfile -t vard-api .
+#   docker build -t vard-api .
 #
 # A static binary on Alpine, run as an unprivileged user with nothing else in
 # the image it could use: no compiler, no sources, no shell tools beyond

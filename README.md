@@ -80,11 +80,11 @@ The API is one binary (`make build-api` → `bin/vard`); it applies its
 migrations on start. Each app is a Node server (`make build-web`, then `node build`
 in its directory, with `API_URL` pointing at its listener).
 
-`deploy/` holds the production stack: Postgres, Redis, the API and the two
+`compose.yaml` is the production stack: Postgres, Redis, the API and the two
 apps, speaking plain HTTP; TLS and routing are the infrastructure's.
 Only the apps publish ports,
 on the host's loopback; Postgres and Redis are on an internal network the
-apps cannot reach. [`deploy/README.md`](deploy/README.md) walks through a
+apps cannot reach. [`DEPLOY.md`](DEPLOY.md) walks through a
 server from DNS to backups:
 
 ```sh
@@ -98,7 +98,7 @@ To try the same stack on one machine (served on `http://localhost:8080` and
 `http://localhost:8081`):
 
 ```sh
-make docker-local    # generates deploy/.env, builds and starts everything
+make docker-local    # generates compose.env, builds and starts everything
 make docker-reset    # stops it and drops its data
 ```
 
@@ -206,7 +206,8 @@ i18n/                      the English that ships: sign-in pages, API messages
 web/id, web/console        the two SvelteKit apps; each keeps its own brand in
                            src/lib/brand.ts, the server in internal/brand, and
                            `make rename` renames all three
-deploy/                    the Docker stack and the server guide
+compose.yaml, Dockerfile   the Docker stack (web/Dockerfile for the apps);
+                           DEPLOY.md, the server guide
 scripts/                   what the Makefile runs
 ```
 
