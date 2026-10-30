@@ -2,9 +2,10 @@ package social
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"vard/internal/domain/model"
 	"vard/internal/interfaces/api/kit/respond"

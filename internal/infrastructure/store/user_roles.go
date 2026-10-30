@@ -153,7 +153,11 @@ func (s *Store) RoleMemberCounts(ctx context.Context, ids []uuid.UUID) (map[uuid
 }
 
 func (s *Store) CreateUserRole(ctx context.Context, role *model.UserRole) error {
-	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Omit("Inherits.*", "APIScopes.*").Create(role).Error), cache.Grants)
+	// The role and the rows of what it includes go together.
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Omit("Inherits.*", "APIScopes.*").Create(role).Error
+	})
+	return s.forgetting(ctx, translate(err), cache.Grants)
 }
 
 func (s *Store) SaveUserRole(ctx context.Context, role *model.UserRole) error {

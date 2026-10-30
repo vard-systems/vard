@@ -31,7 +31,12 @@ func Open(cfg config.DB, log *slog.Logger) (*gorm.DB, error) {
 	// First to ask "is there one?" and turns the answer into store.ErrNotFound.
 	// Queries are logged without their values, which are hashes, sealed
 	// secrets and people's addresses.
+	//
+	// GORM would wrap every write in a transaction of its own, a BEGIN and a
+	// COMMIT round each single statement; the store opens one itself where a
+	// write spans tables (TestLiveAWriteAcrossTablesIsWholeOrNothing).
 	db, err := gorm.Open(postgres.Open(dsn(cfg)), &gorm.Config{
+		SkipDefaultTransaction: true,
 		Logger: logger.NewSlogLogger(log, logger.Config{
 			SlowThreshold:             200 * time.Millisecond,
 			LogLevel:                  level,

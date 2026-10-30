@@ -1,9 +1,10 @@
 package social
 
 import (
-	"github.com/google/uuid"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
 
 	"vard/internal/domain/model"
 	"vard/internal/interfaces/api/kit/respond"

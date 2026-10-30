@@ -40,11 +40,16 @@ func (s *Store) API(ctx context.Context, id uuid.UUID) (*model.API, error) {
 	return &api, nil
 }
 
+// APIByIdentifier is read on every authorization that names an audience,
+// and an API carries no secret, so it is cached with the grants it decides.
 func (s *Store) APIByIdentifier(ctx context.Context, identifier string) (*model.API, error) {
-	var api model.API
-	err := s.db.WithContext(ctx).Preload("Scopes", scopesByName).First(&api, "identifier = ?", identifier).Error
+	api, err := cached(ctx, s, cache.Grants, "api:"+identifier, func() (model.API, error) {
+		var api model.API
+		err := s.db.WithContext(ctx).Preload("Scopes", scopesByName).First(&api, "identifier = ?", identifier).Error
+		return api, translate(err)
+	})
 	if err != nil {
-		return nil, translate(err)
+		return nil, err
 	}
 
 	return &api, nil
@@ -143,7 +148,11 @@ func (s *Store) APIScopesByID(ctx context.Context, ids []uuid.UUID) ([]model.API
 }
 
 func (s *Store) CreateAPI(ctx context.Context, api *model.API) error {
-	return s.forgetting(ctx, translate(s.db.WithContext(ctx).Create(api).Error), cache.Grants)
+	// The API and its scopes go together.
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Create(api).Error
+	})
+	return s.forgetting(ctx, translate(err), cache.Grants)
 }
 
 func (s *Store) SaveAPI(ctx context.Context, api *model.API) error {

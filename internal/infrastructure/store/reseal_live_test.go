@@ -2,8 +2,9 @@ package store
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"vard/internal/domain/model"
 	"vard/internal/infrastructure/database/databasetest"

@@ -70,7 +70,10 @@ func (s *Store) User(ctx context.Context, id uuid.UUID) (*model.User, error) {
 }
 
 func (s *Store) CreateUser(ctx context.Context, user *model.User) error {
-	return translate(s.db.WithContext(ctx).Omit("Roles.*").Create(user).Error)
+	// The user and the rows giving its roles go together.
+	return translate(s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Omit("Roles.*").Create(user).Error
+	}))
 }
 
 func (s *Store) SaveUser(ctx context.Context, user *model.User) error {
