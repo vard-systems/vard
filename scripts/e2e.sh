@@ -89,5 +89,8 @@ token="$(grep -o 'setup_token=[^ ]*' "$logs/e2e-api.log" | head -1 | cut -d= -f2
 [[ -n $token ]] || die "the API logged no setup token; see .logs/e2e-api.log"
 
 cd web/e2e
+[[ -d node_modules ]] || bun install --frozen-lockfile
+# Fetched once, into Playwright's own cache; a no-op when it is there.
+./node_modules/.bin/playwright install chromium
 E2E_ID_URL="http://localhost:$id_port" E2E_CONSOLE_URL="http://localhost:$console_port" \
 	E2E_SETUP_TOKEN="$token" ./node_modules/.bin/playwright test "$@"

@@ -35,9 +35,10 @@ help: ## Show this help
 setup: ## Prepare a fresh checkout: .env, the database, dependencies
 	@scripts/setup.sh
 
-deps: ## Install the Go modules and both apps' packages
+deps: ## Install the Go modules, both apps' packages and the end-to-end tests
 	go mod download
 	@$(call each-app,bun install --frozen-lockfile)
+	cd web/e2e && bun install --frozen-lockfile
 
 tidy: ## Tidy go.mod and go.sum
 	go mod tidy
