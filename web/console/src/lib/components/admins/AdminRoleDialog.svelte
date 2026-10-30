@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import {
 		adminsApi,
 		type AdminPermission,
@@ -19,6 +19,7 @@
 	import Choice from '#lib/components/roles/Choice.svelte';
 	import { tidyName } from '#lib/components/roles/roles.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import { byGroup } from './permissions';
 
 	type Props = {
@@ -59,30 +60,17 @@
 		return { name: tidyName(name), description: description.trim(), permissions: granted };
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () =>
-			role ? adminsApi.updateRole(role.id, payload()) : adminsApi.createRole(payload()),
-		onSuccess: async () => {
+	const save = submit<Awaited<ReturnType<typeof adminsApi.updateRole>>>({
+		input: () => (role ? [role.id, payload()] : [payload()]),
+		when: () => !(locked || name.trim() === ''),
+		pending: (busy) => (saving = busy),
+		done: async () => {
 			notify.success(role ? 'Admin role saved' : 'Admin role created');
 			await queryClient.invalidateQueries({ queryKey: keys.admins.all });
 			open = false;
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this role');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (locked || saving || name.trim() === '') return;
-
-		saving = true;
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save this role')
+	});
 </script>
 
 {#snippet actions()}
@@ -99,7 +87,8 @@
 	meta={role
 		? `${role.admin_count} ${role.admin_count === 1 ? 'administrator' : 'administrators'}`
 		: undefined}
-	onsubmit={submit}
+	action={role ? '/actions/admins?/updateRole' : '/actions/admins?/createRole'}
+	onsubmit={save}
 >
 	{#if locked}
 		<div class="intro">

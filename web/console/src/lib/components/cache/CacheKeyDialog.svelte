@@ -15,6 +15,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys, cacheValueOptions } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import { formatBytes, formatTTL, kinds } from './cache';
 
 	type Props = {
@@ -67,21 +68,19 @@
 		return queryClient.invalidateQueries({ queryKey: keys.cache.all });
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () =>
-			cacheApi.update(database, key?.name ?? '', {
-				value: parsed?.value,
-				ttl_seconds: ttlSeconds
-			}),
-		onSuccess: async () => {
+	let saving = $state(false);
+
+	const save = submit<Awaited<ReturnType<typeof cacheApi.update>>>({
+		input: () => [database, key?.name ?? '', { value: parsed?.value, ttl_seconds: ttlSeconds }],
+		when: () => editable && parsed !== undefined && parsed !== null && ttlValid && !busy,
+		pending: (pending) => (saving = pending),
+		done: async () => {
 			notify.success('Value saved');
 			await refill();
 			open = false;
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this value');
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save this value')
+	});
 
 	const remove = createMutation(() => ({
 		mutationFn: () => cacheApi.remove(database, key?.name ?? ''),
@@ -95,13 +94,7 @@
 		}
 	}));
 
-	const busy = $derived(save.isPending || remove.isPending);
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-		if (!editable || !parsed || !ttlValid || busy) return;
-		save.mutate();
-	}
+	const busy = $derived(saving || remove.isPending);
 
 	const consequence = $derived.by(() => {
 		switch (current?.kind) {
@@ -119,9 +112,7 @@
 
 {#snippet actions()}
 	<Button variant="subtle" onclick={() => (open = false)} disabled={busy}>Cancel</Button>
-	<Button type="submit" loading={save.isPending} disabled={busy || !parsed || !ttlValid}>
-		Save value
-	</Button>
+	<Button type="submit" loading={saving} disabled={busy || !parsed || !ttlValid}>Save value</Button>
 {/snippet}
 
 <FullscreenDialog
@@ -129,7 +120,8 @@
 	actions={editable ? actions : undefined}
 	title={key?.name ?? 'Cached key'}
 	meta={key ? kinds[key.kind].label : undefined}
-	onsubmit={submit}
+	action="/actions/cache?/update"
+	onsubmit={save}
 >
 	{#if value.isError}
 		<Alert>{messageOf(value.error, 'Could not read this key')}</Alert>

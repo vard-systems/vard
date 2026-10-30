@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { enhance } from '$app/forms';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
 	import { otpApi, type OTPResponse, type OTPSettingsInput } from '#lib/api/index.js';
 	import {
@@ -15,6 +16,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 
 	type Props = {
 		settings: OTPResponse;
@@ -80,33 +82,21 @@
 		} — about 1 in ${chance.toLocaleString()} of being guessed.`;
 	});
 
-	const save = createMutation(() => ({
-		mutationFn: () => otpApi.update(input),
-		onSuccess: async (result) => {
+	const save = submit<Awaited<ReturnType<typeof otpApi.update>>>({
+		input: () => [input],
+		when: () => !(!dirty || !complete),
+		pending: (busy) => (saving = busy),
+		done: async (result) => {
 			queryClient.setQueryData(keys.otp.settings, result);
 			form = formOf(result.otp);
 			notify.success('Settings saved', 'The next code sent follows them.');
 			await queryClient.invalidateQueries({ queryKey: keys.admin.overview });
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save these settings');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (saving || !dirty || !complete) return;
-
-		saving = true;
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save these settings')
+	});
 </script>
 
-<form onsubmit={submit}>
+<form method="POST" action="/actions/otp?/update" use:enhance={save}>
 	{#if settings.flows.length === 0}
 		<Alert tone="warning">
 			No login flow asks for an emailed code yet, so nothing reads these. Add the

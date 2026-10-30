@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { mailApi, type MailEncryption, type MailResponse } from '#lib/api/index.js';
 	import {
@@ -13,6 +14,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 
 	type Props = {
 		settings: MailResponse;
@@ -93,9 +95,11 @@
 		}[encryption];
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () => mailApi.update({ ...input, password: passwordInput }),
-		onSuccess: async (result) => {
+	const save = submit<Awaited<ReturnType<typeof mailApi.update>>>({
+		input: () => [{ ...input, password: passwordInput }],
+		when: () => !(!dirty || !complete),
+		pending: (busy) => (saving = busy),
+		done: async (result) => {
 			queryClient.setQueryData(keys.mail.settings, result);
 			form = formOf(result.mail);
 			password = '';
@@ -106,22 +110,8 @@
 			);
 			await queryClient.invalidateQueries({ queryKey: keys.admin.overview });
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save these settings');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (saving || !dirty || !complete) return;
-
-		saving = true;
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save these settings')
+	});
 
 	let testTo = $state('');
 
@@ -146,7 +136,7 @@
 	}
 </script>
 
-<form onsubmit={submit}>
+<form method="POST" action="/actions/mail?/update" use:enhance={save}>
 	<FormSection
 		title="Sending"
 		description="Whether messages leave this server at all."

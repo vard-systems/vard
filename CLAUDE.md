@@ -407,6 +407,21 @@ filters live in its address: `setSearchParams` and `debounce` from
 with an `allowed` check. Build from `#lib/components/ui`; a page never writes a
 colour, a height or a hover state itself.
 
+**A form in the panel.** It posts to a form action, enhanced with `use:enhance`.
+Actions live by subject in `src/routes/actions/<subject>/+page.server.ts`, so a
+dialog posts to the same one wherever it is mounted, and each is a method of
+the typed client — `update: action(usersApi.update)` — or, where one save is
+several calls, `act(event, …)` (`#lib/server/actions.js`). The form sends the
+method's arguments as its `input` field, and `submit()` from `#lib/forms.js`
+builds the `use:enhance` callback that sends them and applies the answer to
+the page's state and its queries. `act` refuses a form from another origin
+before it calls (SvelteKit's own check is off under its dev server); the call
+goes through the request's fetch, with the administrator's cookies and this
+origin, and the cookies the API sets come back with the action's answer. A
+change made with one click (a remove, a toggle) and a search box stay as they
+are: a call from the browser, and the address's filters. The sign-in pages have
+no form actions, ever: SvelteKit's origin check is off there.
+
 **A colour, size or font in the panel.** `web/console/src/lib/theme/theme.ts`
 decides; `bun run theme` writes `lib/styles/tokens.css` and `fonts.css` (never
 edit those by hand). Both apps use two faces and no others: Chirp for text,
@@ -444,7 +459,8 @@ shield mark does.
   (`+page.ts`), never in `onMount`. Code that runs while a page renders runs
   on the server too: no `document`, `window` or `localStorage` outside an
   effect, an event handler or a `browser` check. What the server needs to do
-  for the API is the API's job, not a form action. The theme is applied
+  for the API is the API's job: a console form action only passes the form
+  to it (A form in the panel). The theme is applied
   before the first paint by `static/theme.js`.
 - **Comments** are few and short and say _why_ — a security reason, a race, a
   protocol rule — never what the next line does.

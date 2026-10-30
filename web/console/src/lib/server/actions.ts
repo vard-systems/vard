@@ -41,3 +41,12 @@ function problem(error: ApiError): ActionProblem {
 		error: { status: error.status, message: error.message, code: error.code, params: error.params }
 	};
 }
+
+/**
+ * A form action that calls one method of the typed client (`#lib/api/admin.js`), with the
+ * arguments the form sends as its input, in order: `update: action(usersApi.update)` answers a
+ * form whose input is `[id, changes]`. The path and the answer stay written once, in the client.
+ */
+export function action<F extends (...args: never[]) => Promise<unknown>>(call: F) {
+	return (event: RequestEvent) => act(event, (args: Parameters<F>) => call(...args));
+}

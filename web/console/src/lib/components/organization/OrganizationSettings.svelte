@@ -14,8 +14,8 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { ADMIN_DEPENDENCY } from '#lib/constants.js';
-	import { submit } from '#lib/forms.js';
 	import { keys, organizationOptions } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import LogoField from './LogoField.svelte';
 	import OrganizationSummary from './OrganizationSummary.svelte';
 	import { changed, offsetOf, settingsOf, tidy, timezoneOptions } from './settings';
@@ -51,7 +51,7 @@
 	const offset = $derived(offsetOf(input.timezone));
 
 	const save = submit<{ organization: Organization }>({
-		input: () => input,
+		input: () => [input],
 		when: () => editable && !saving && dirty && complete,
 		pending: (busy) => (saving = busy),
 		done: async (result) => {

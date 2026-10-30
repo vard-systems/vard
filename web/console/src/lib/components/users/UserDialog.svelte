@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
 	import {
-		usersApi,
 		type Admin,
 		type Application,
 		type Role,
@@ -26,6 +25,7 @@
 	import { MIN_USER_PASSWORD } from '#lib/constants.js';
 	import { keys, roleMappingsOptions } from '#lib/query/index.js';
 	import RoleMappings from '#lib/components/roles/RoleMappings.svelte';
+	import { submit } from '#lib/forms.js';
 	import { additional } from './fields';
 	import { UserForm } from './form.svelte';
 	import UserExtraFields from './UserExtraFields.svelte';
@@ -103,12 +103,14 @@
 		untrack(() => form.fill(user, extras));
 	});
 
-	const save = createMutation(() => ({
-		mutationFn: () => {
+	const save = submit<{ user: UserRecord }>({
+		input: () => {
 			const input = form.toInput(extras, hasPassword);
-			return current ? usersApi.update(current.id, input) : usersApi.create(input);
+			return current ? [current.id, input] : [input];
 		},
-		onSuccess: async (result: { user: UserRecord }) => {
+		when: () => tab === 'user' && canSubmit,
+		pending: (busy) => (saving = busy),
+		done: async (result) => {
 			notify.success(current ? 'User saved' : 'User created');
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.users.all }),
@@ -126,22 +128,8 @@
 			created = true;
 			tab = 'roles';
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this user');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (tab !== 'user' || !canSubmit) return;
-
-		saving = true;
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save this user')
+	});
 </script>
 
 <FullscreenDialog
@@ -150,7 +138,8 @@
 		? `${current.first_name} ${current.last_name}`.trim() || current.email
 		: 'New user'}
 	meta={current?.email}
-	onsubmit={submit}
+	action={current ? '/actions/users?/update' : '/actions/users?/create'}
+	onsubmit={save}
 >
 	{#if !editing || created}
 		<div class="intro">

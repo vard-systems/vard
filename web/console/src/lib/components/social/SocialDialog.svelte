@@ -21,6 +21,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import { kindOptions, tokenAuthOptions } from './providers';
 	import SecretField from './SecretField.svelte';
 
@@ -156,21 +157,17 @@
 		return body;
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () =>
-			provider ? socialApi.update(provider.id, input()) : socialApi.create(input()),
-		onSuccess: async () => {
+	const save = submit<Awaited<ReturnType<typeof socialApi.update>>>({
+		input: () => (provider ? [provider.id, input()] : [input()]),
+		when: () => !!ready,
+		pending: (busy) => (saving = busy),
+		done: async () => {
 			notify.success(provider ? 'Provider saved' : 'Provider added');
 			open = false;
 			await queryClient.invalidateQueries({ queryKey: keys.social.all });
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this provider');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save this provider')
+	});
 
 	const remove = createMutation(() => ({
 		mutationFn: () => socialApi.remove(provider?.id ?? ''),
@@ -185,15 +182,6 @@
 			saving = false;
 		}
 	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!ready || saving) return;
-
-		saving = true;
-		save.mutate();
-	}
 </script>
 
 <FullscreenDialog
@@ -203,7 +191,8 @@
 		? 'What this server sends to the provider, and what it may do here.'
 		: 'Register this server with a provider, then paste what it gave you here.'}
 	meta={editing ? provider!.slug : undefined}
-	onsubmit={submit}
+	action={provider ? '/actions/social?/update' : '/actions/social?/create'}
+	onsubmit={save}
 >
 	<FormSection
 		title="Provider"

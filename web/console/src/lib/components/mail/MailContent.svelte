@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { enhance } from '$app/forms';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import {
-		mailApi,
 		type MailContent,
 		type MailLanguageContent,
 		type MailMessageSpec
@@ -18,6 +18,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 
 	type Props = {
 		content: MailContent;
@@ -76,9 +77,13 @@
 		)
 	);
 
-	const save = createMutation(() => ({
-		mutationFn: () => mailApi.saveContent(code, drafts),
-		onSuccess: async () => {
+	let saving = $state(false);
+
+	const save = submit<unknown>({
+		input: () => [code, drafts],
+		when: () => !saving && dirty,
+		pending: (busy) => (saving = busy),
+		done: async () => {
 			notify.success('Saved', 'The next message in this language uses these words.');
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.mail.content }),
@@ -86,18 +91,8 @@
 				queryClient.invalidateQueries({ queryKey: keys.admin.overview })
 			]);
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save these words');
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (save.isPending || !dirty) return;
-
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save these words')
+	});
 
 	function revert(spec: MailMessageSpec) {
 		drafts = { ...drafts, [spec.subject_key]: '', [spec.body_key]: '' };
@@ -112,7 +107,7 @@
 	}
 </script>
 
-<form onsubmit={submit}>
+<form method="POST" action="/actions/mail?/saveContent" use:enhance={save}>
 	<FormSection
 		title="Language"
 		description="An email goes out in the reader's language. A field left empty falls back to the English this release ships, which is what its placeholder shows."
@@ -174,7 +169,7 @@
 	{/each}
 
 	{#if dirty}
-		<SaveBar saving={save.isPending} ondiscard={() => (drafts = wordsOf(language))} />
+		<SaveBar {saving} ondiscard={() => (drafts = wordsOf(language))} />
 	{/if}
 </form>
 

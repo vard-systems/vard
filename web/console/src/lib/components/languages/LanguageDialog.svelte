@@ -15,6 +15,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import TranslationEditor from './TranslationEditor.svelte';
 
 	type Props = {
@@ -93,27 +94,23 @@
 		}))
 	]);
 
-	const save = createMutation(() => ({
-		mutationFn: async () => {
-			const code = language!.code;
-
-			if (settingsChanged) {
-				await languagesApi.update(code, {
-					name: name.trim(),
-					native_name: native.trim(),
-					is_enabled: enabled,
-					is_default: isDefault,
-					position: Number(position)
-				});
-			}
-
-			for (const app of textChanged) {
-				await languagesApi.saveTranslation(code, app, drafts[app] ?? {});
-			}
-
-			return code;
-		},
-		onSuccess: async () => {
+	const save = submit<{ code: string }>({
+		input: () => [
+			language!.code,
+			settingsChanged
+				? {
+						name: name.trim(),
+						native_name: native.trim(),
+						is_enabled: enabled,
+						is_default: isDefault,
+						position: Number(position)
+					}
+				: null,
+			textChanged.map((app) => [app, drafts[app] ?? {}])
+		],
+		when: () => ready && !saving && (settingsChanged || textChanged.length > 0),
+		pending: (busy) => (saving = busy),
+		done: async () => {
 			notify.success(`${language?.name ?? 'Language'} saved`);
 			open = false;
 
@@ -125,13 +122,8 @@
 
 			await queryClient.invalidateQueries({ queryKey: keys.languages.list });
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this language');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save this language')
+	});
 
 	const remove = createMutation(() => ({
 		mutationFn: () => languagesApi.remove(language?.code ?? ''),
@@ -148,15 +140,6 @@
 		}
 	}));
 
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!ready || saving || (!settingsChanged && textChanged.length === 0)) return;
-
-		saving = true;
-		save.mutate();
-	}
-
 	function defaultChanged(on: boolean) {
 		if (on) enabled = true;
 	}
@@ -172,7 +155,8 @@
 	title={language?.native_name ?? ''}
 	description="Its names, where it is offered, and its text."
 	meta={language?.code}
-	onsubmit={submit}
+	action="/actions/languages?/save"
+	onsubmit={save}
 >
 	{#if language}
 		<Tabs {tabs} bind:value={tab} label="Languages">

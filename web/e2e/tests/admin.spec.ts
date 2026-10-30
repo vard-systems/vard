@@ -18,10 +18,11 @@ test('an administrator creates a user', async ({ page }) => {
 	await dialog.getByRole('textbox', { name: 'Password', exact: true }).fill('ada-password-123');
 	await dialog.getByLabel('Confirm password').fill('ada-password-123');
 	const created = page.waitForResponse(
-		(r) => r.url().endsWith('/api/v1/admin/users') && r.request().method() === 'POST'
+		(r) => r.url().includes('/actions/users?/create') && r.request().method() === 'POST'
 	);
 	await dialog.getByRole('button', { name: 'Create user' }).click();
-	expect((await created).status()).toBe(201);
+	expect((await created).status()).toBe(200);
+	await expect(page.getByText('User created', { exact: true })).toBeVisible();
 
 	await visit(page, `${CONSOLE}/users`);
 	await expect(page.getByText('ada@example.com', { exact: true })).toBeVisible();
