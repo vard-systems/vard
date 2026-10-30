@@ -14,11 +14,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"vard/internal/auth"
+	"vard/internal/application/auth"
 	"vard/internal/config"
-	"vard/internal/database"
-	"vard/internal/model"
-	"vard/internal/store"
+	"vard/internal/domain/model"
+	"vard/internal/infrastructure/database"
+	"vard/internal/infrastructure/store"
 )
 
 // adminCommand sets the panel up from the command line, for an installation

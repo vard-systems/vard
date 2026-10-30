@@ -14,17 +14,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"vard/internal/api"
-	"vard/internal/auth"
+	"vard/internal/application/auth"
+	"vard/internal/application/oidc"
 	"vard/internal/brand"
-	"vard/internal/cache"
 	"vard/internal/config"
-	"vard/internal/database"
+	"vard/internal/domain/model"
+	"vard/internal/infrastructure/cache"
+	"vard/internal/infrastructure/database"
+	"vard/internal/infrastructure/mail"
+	"vard/internal/infrastructure/store"
+	"vard/internal/interfaces/api"
 	"vard/internal/jose"
-	"vard/internal/mail"
-	"vard/internal/model"
-	"vard/internal/oidc"
-	"vard/internal/store"
 )
 
 // serveCommand runs the server until it is told to stop.

@@ -16,7 +16,7 @@ COPY cmd ./cmd
 COPY internal ./internal
 COPY migrations ./migrations
 # The shipped translations are a Go package (i18n/i18n.go) that embeds the JSON
-# beside it, and internal/api/respond imports it.
+# beside it, and internal/interfaces/api/respond imports it.
 COPY i18n ./i18n
 ARG VERSION=dev
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \

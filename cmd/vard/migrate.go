@@ -8,7 +8,7 @@ import (
 	"github.com/pressly/goose/v3"
 
 	"vard/internal/config"
-	"vard/internal/database"
+	"vard/internal/infrastructure/database"
 )
 
 // migrateCommand applies, rolls back, lists and creates the database

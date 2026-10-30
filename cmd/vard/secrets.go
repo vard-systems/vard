@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"vard/internal/config"
-	"vard/internal/database"
+	"vard/internal/infrastructure/database"
+	"vard/internal/infrastructure/store"
 	"vard/internal/jose"
-	"vard/internal/store"
 )
 
 // secretsCommand seals every stored secret again under the current

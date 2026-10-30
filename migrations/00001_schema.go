@@ -1,7 +1,7 @@
 // Package migrations holds the database migrations, each registering itself
 // with goose from its init function.
 //
-// Importing this package is what makes the migrations exist; internal/database
+// Importing this package is what makes the migrations exist; internal/infrastructure/database
 // imports it for that reason alone.
 //
 // This file is the whole schema in one step: schema/up.sql, written out once
@@ -23,7 +23,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"vard/internal/model"
+	"vard/internal/domain/model"
 )
 
 func init() {

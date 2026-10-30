@@ -199,8 +199,9 @@ kind of change is made, and the security invariants every change keeps.
 ```
 cmd/vard                the server, the migration runner (vard migrate), and
                            the first administrator from the shell (vard admin create)
-internal/                  the Go code: api (HTTP handlers), oidc (the provider),
-                           store (every query), model (the schema), and the rest
+internal/                  the Go code, in layers: domain (the models), infrastructure
+                           (every query, Redis, mail), application (the provider,
+                           administrators' sign-in) and interfaces (the HTTP API)
 migrations/                the schema and every change to it, in order
 i18n/                      the English that ships: sign-in pages, API messages
 web/id, web/console        the two SvelteKit apps; each keeps its own brand in

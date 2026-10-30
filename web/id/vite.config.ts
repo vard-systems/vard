@@ -34,8 +34,8 @@ export default defineConfig({
 			// are exactly what the provider takes: a backend redeeming a code, an
 			// SPA calling the token endpoint, a SAML or Apple answer posted from
 			// the provider's page. The API guards what a cookie can change
-			// itself (internal/api/kit/csrf), and this app has no form action or
-			// endpoint of its own for the check to protect; internal/api's
+			// itself (internal/interfaces/api/kit/csrf), and this app has no form action or
+			// endpoint of its own for the check to protect; internal/interfaces/api's
 			// routing test holds it to that.
 			csrf: { trustedOrigins: ['*'] },
 

@@ -3,7 +3,7 @@ import { API_URL } from '$app/env/private';
 
 /**
  * The paths the API answers. The browser calls them on this app's own origin, so cookies stay
- * host-only and nothing is cross-origin; this server passes them on. internal/api's routing test
+ * host-only and nothing is cross-origin; this server passes them on. internal/interfaces/api's routing test
  * holds every route to this list.
  */
 const API_PATHS = ['/api/v1/admin'];
