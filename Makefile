@@ -11,6 +11,10 @@ APPS    := console id
 PKGS    := ./cmd/... ./internal/... ./migrations/... ./i18n/...
 GO_DIRS := cmd internal migrations i18n
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+# The end-to-end tests borrow the console's Prettier and TypeScript, with
+# settings of their own.
+E2E_PRETTIER := web/console/node_modules/.bin/prettier --config web/e2e/prettier.config.js --ignore-path web/e2e/.gitignore
+E2E_TSC := web/console/node_modules/.bin/tsc -p web/e2e/tsconfig.json
 COMPOSE := docker compose -f compose.yaml --env-file compose.env
 
 # $(call each-app,command): run the command in every app, stopping at the
@@ -19,7 +23,7 @@ each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)) |
 
 .PHONY: help setup deps tidy dev start run build build-api build-web generate \
 	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \
-	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
+	e2e migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
 	docker-up docker-local docker-env db-backup docker-down docker-reset docker-logs docker-build docker-ps docker-config \
 	clean rename
 
@@ -74,6 +78,7 @@ rename: ## Rename the project — make rename name="Acme ID" slug=acme (each bra
 fmt: ## Format every Go and app file in place
 	gofmt -w $(GO_DIRS)
 	@$(call each-app,bun run format)
+	@$(E2E_PRETTIER) --write web/e2e >/dev/null
 
 lint: lint-go lint-web ## Check formatting, vet, staticcheck, lint and type-check, changing nothing
 
@@ -82,8 +87,9 @@ lint-go: ## Lint the Go code only
 	go vet $(PKGS)
 	go tool staticcheck $(PKGS)
 
-lint-web: ## Lint and type-check the apps only
+lint-web: ## Lint and type-check the apps and the end-to-end tests only
 	@$(call each-app,bun run lint && bun run check)
+	@$(E2E_PRETTIER) --check web/e2e && $(E2E_TSC)
 
 test: test-go test-web ## Run the Go and app unit tests
 
@@ -92,6 +98,9 @@ test-go: ## Run the Go unit tests only
 
 test-web: ## Run the apps' unit tests only
 	@$(call each-app,bun run test)
+
+e2e: ## Run the end-to-end tests (web/e2e) in a browser, against a stack of their own
+	@scripts/e2e.sh
 
 test-integration: ## Run the TestLive… tests against Postgres and Redis (throwaway databases)
 	@. scripts/lib.sh && load_env && \

@@ -29,6 +29,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                            |
 | Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                       |
 | Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs; fails with no database)     |
+| End-to-end, in a browser           | `make e2e` (web/e2e, Playwright: a stack of its own on 8290/8291/5293/5294)            |
 | Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                               |
 | Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                    |
 | Console's generated files          | `make generate` (theme tokens, fonts)                                                  |
@@ -97,6 +98,9 @@ web/<app>/src/lib/brand.ts  the app's brand (name, slug, mark, favicon from
                          lib/assets/, cookie names; the console's links and
                          pageTitle)
 web/console/scripts/     theme.ts, the generator
+web/e2e/                 Playwright tests of both apps through a real stack
+                         (scripts/e2e.sh raises it with its own database, Redis
+                         prefix and no .env); tests/stack.ts, their helpers
 scripts/                 what the Makefile runs: setup, start, docker-local,
                          docker-env, db, db-backup, rename;
                          lib.sh (load_env) is shared by all of them
@@ -513,7 +517,8 @@ ran and their result — or which were skipped and why:
 4. Every new problem code is in the catalogs, every new key in every language,
    every new permission in `types.ts`.
 5. New behaviour has a test; a security case has one without exception.
-6. A user-visible change was looked at in a browser (`/preview`).
+6. A user-visible change was looked at in a browser (`/preview`), and a change
+   to a flow web/e2e covers passes `make e2e`.
 7. `README.md` and this file say nothing the change made untrue.
 
 ## Git

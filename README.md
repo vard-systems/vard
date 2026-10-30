@@ -183,6 +183,7 @@ for whatever starts and routes to it.
 make check              # lint (formatting, vet, staticcheck, both apps) and every unit test
 make fmt                # format everything in place
 make test-integration   # tests against a real Postgres and Redis (throwaway databases)
+make e2e                # both apps in a browser (Playwright), against a stack of their own
 make ci                 # all of the above, and the Docker stack's config
 make bench              # Go benchmarks
 make vuln               # known vulnerabilities in the Go code and its modules
