@@ -222,7 +222,8 @@ scripts/                   what the Makefile runs
   License); the sign-in providers' marks in it remain their owners'
   trademarks.
 - The favicons (`internal/brand/favicon.svg`, `web/*/src/lib/assets/favicon.svg`)
-  are the Svelte logo, a placeholder until the project has its own mark.
+  are Remix Icon's `shield-keyhole-line` (4.8.0, Apache License 2.0) on the
+  brand blue — the same mark as `BRAND.icon`.
 - **Chirp is X's proprietary typeface, not an open font**, and both apps serve
   it, the sign-in pages to anyone: replace it, or confirm you have a licence,
   before distributing either publicly.
