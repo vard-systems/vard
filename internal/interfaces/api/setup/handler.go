@@ -51,6 +51,19 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// Once the panel is set up, a setup is refused before it costs a
+	// password hash and a breach lookup; CreateFirstAdmin still decides
+	// under its lock, for setups that race.
+	exists, err := h.store.AdminsExist(c.Request.Context())
+	if err != nil {
+		respond.Failure(c, h.log, err, "checking for administrators failed")
+		return
+	}
+	if exists {
+		respond.Fail(c, alreadySetUp)
+		return
+	}
+
 	admin := model.Admin{
 		Username:  req.Email,
 		Email:     req.Email,
@@ -70,7 +83,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	err := h.store.CreateFirstAdmin(c.Request.Context(), &admin)
+	err = h.store.CreateFirstAdmin(c.Request.Context(), &admin)
 	switch {
 	case errors.Is(err, store.ErrAdminExists):
 		respond.Fail(c, alreadySetUp)
