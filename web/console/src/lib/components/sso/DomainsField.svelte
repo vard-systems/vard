@@ -57,7 +57,7 @@
 				label="Add a domain"
 				bind:value={typed}
 				placeholder="acme.com"
-				hint="People with an address at these domains sign in through this connection, and it signs in nobody else. Leave it empty to trust the provider with any address but those at another connection's domains; people then reach it through its button only."
+				hint="People with an address at these domains sign in through this connection, and it signs in nobody else. Leave it empty to let the provider make accounts at any address but those at another connection's domains, never linking to one that exists; people then reach it through its button only."
 				onkeydown={keydown}
 				autocomplete="off"
 				spellcheck={false}

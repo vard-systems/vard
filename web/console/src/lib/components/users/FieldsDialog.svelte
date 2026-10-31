@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { usersApi, type FieldType, type UserField } from '#lib/api/index.js';
 	import {
@@ -14,6 +15,7 @@
 	} from '#lib/components/ui/index.js';
 	import type { SelectOption } from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import { additional, builtins } from './fields';
 	import { fieldIcons } from './fieldIcons';
 
@@ -109,23 +111,20 @@
 		};
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () =>
+	const save = submit<unknown>({
+		input: () =>
 			editing?.id
-				? usersApi.updateField(editing.id, rules())
-				: usersApi.addField({ ...rules(), name: name.trim() || suggestName(label), type }),
-		onSuccess: async () => {
+				? [editing.id, rules()]
+				: [{ ...rules(), name: name.trim() || suggestName(label), type }],
+		when: () => !busy,
+		pending: (pending) => (busy = pending),
+		done: async () => {
 			notify.success(editing?.id ? 'Field saved' : 'Field added');
 			await refill();
 			blank();
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this field');
-		},
-		onSettled: () => {
-			busy = false;
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save this field')
+	});
 
 	const remove = createMutation(() => ({
 		mutationFn: (field: UserField) => usersApi.removeField(field.id ?? ''),
@@ -142,15 +141,6 @@
 			busy = false;
 		}
 	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (busy) return;
-
-		busy = true;
-		save.mutate();
-	}
 
 	function summary(field: UserField): string[] {
 		const said: string[] = [];
@@ -249,7 +239,11 @@
 			? 'A field keeps its name and type once records hold values under them.'
 			: 'The name is what the value is stored under; the type cannot change later.'}
 	>
-		<form onsubmit={submit}>
+		<form
+			method="POST"
+			action={editing?.id ? '/actions/users?/updateField' : '/actions/users?/addField'}
+			use:enhance={save}
+		>
 			<div class="row">
 				<Input
 					label="Label"

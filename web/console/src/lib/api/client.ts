@@ -23,8 +23,20 @@ type RequestOptions = {
 	fetch?: Fetch;
 };
 
+/** On the server, the fetch of the request being answered; see `useRequestFetch`. */
+let requestFetch: (() => Fetch | undefined) | undefined;
+
+/**
+ * Has calls made on the server go through `get()`: a form action's call to the admin API then
+ * passes through this app's own hook, with the caller's cookies, as the browser's would. Set
+ * once, by hooks.server.ts.
+ */
+export function useRequestFetch(get: () => Fetch | undefined) {
+	requestFetch = get;
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-	const { method = 'GET', body, fetch: fetcher = globalThis.fetch } = options;
+	const { method = 'GET', body, fetch: fetcher = requestFetch?.() ?? globalThis.fetch } = options;
 
 	let response: Response;
 	try {
@@ -50,7 +62,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 /** The API's answer to a failed call, read only as far as it has the shape the API sends: a
  *  body from anything else in the way (a proxy's error page, a cut-off answer) gives the
  *  generic sentence rather than a broken one. */
-function failureOf(status: number, payload: unknown): ApiError {
+export function failureOf(status: number, payload: unknown): ApiError {
 	const body = isRecord(payload) ? payload : {};
 	const params = isRecord(body.params) ? body.params : {};
 

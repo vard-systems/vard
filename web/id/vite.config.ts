@@ -29,13 +29,19 @@ export default defineConfig({
 			// it, title and all, and passes the API's paths on (hooks.server.ts).
 			adapter: adapter(),
 
+			// Where browsers reach the app, given when it is built (ORIGIN): its
+			// own origin, which SvelteKit's form check and every absolute URL
+			// use. Without it adapter-node guesses from the request's headers and
+			// takes https when none say, which plain http cannot pass.
+			paths: { origin: process.env.ORIGIN || undefined },
+
 			// SvelteKit's own CSRF check refuses, in a built app, every form post
 			// from another origin or from none, before hooks.server.ts runs. Those
 			// are exactly what the provider takes: a backend redeeming a code, an
 			// SPA calling the token endpoint, a SAML or Apple answer posted from
 			// the provider's page. The API guards what a cookie can change
-			// itself (internal/api/kit/csrf), and this app has no form action or
-			// endpoint of its own for the check to protect; internal/api's
+			// itself (internal/interfaces/api/kit/csrf), and this app has no form action or
+			// endpoint of its own for the check to protect; internal/interfaces/api's
 			// routing test holds it to that.
 			csrf: { trustedOrigins: ['*'] },
 
@@ -55,7 +61,8 @@ export default defineConfig({
 					'font-src': ['self'],
 					'connect-src': ['self'],
 					'object-src': ['none'],
-					'base-uri': ['self'],
+					'base-uri': ['none'],
+					'form-action': ['self'],
 					'frame-ancestors': ['none']
 				}
 			}

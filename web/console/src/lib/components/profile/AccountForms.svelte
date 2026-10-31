@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
-	import { adminApi, type Admin } from '#lib/api/index.js';
+	import type { Admin } from '#lib/api/index.js';
 	import {
 		Button,
 		FieldGrid,
@@ -13,6 +14,7 @@
 	import { ADMIN_DEPENDENCY, MIN_ADMIN_PASSWORD } from '#lib/constants.js';
 	import { longEnoughForAdmin } from '#lib/utils/password.js';
 	import { initials } from '#lib/utils/format.js';
+	import { submit } from '#lib/forms.js';
 
 	type Props = { admin: Admin };
 
@@ -42,62 +44,59 @@
 	const preview = $derived(/^https?:\/\/\S+$/.test(avatarUrl.trim()) ? avatarUrl.trim() : '');
 	const monogram = $derived(initials(`${firstName} ${lastName}`.trim() || email));
 
-	async function saveProfile(event: SubmitEvent) {
-		event.preventDefault();
-		savingProfile = true;
-
-		try {
-			await adminApi.updateProfile({
+	const saveProfile = submit<unknown>({
+		input: () => [
+			{
 				first_name: firstName.trim(),
 				last_name: lastName.trim(),
 				email: email.trim(),
 				avatar_url: avatarUrl.trim(),
 				current_password: emailChanged ? emailPassword : undefined
-			});
+			}
+		],
+		when: () => !savingProfile,
+		pending: (busy) => (savingProfile = busy),
+		done: async () => {
 			emailPassword = '';
 			notify.success('Your profile is saved');
 			await invalidate(ADMIN_DEPENDENCY);
-		} catch (err) {
-			notify.error(err, 'Could not save your profile');
-		} finally {
-			savingProfile = false;
-		}
-	}
+		},
+		failed: (err) => notify.error(err, 'Could not save your profile')
+	});
 
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');
 	let changingPassword = $state(false);
 
-	async function changePassword(event: SubmitEvent) {
-		event.preventDefault();
-
+	/** Says what is wrong with the new password before it is sent; "" when nothing is. */
+	function passwordProblem(): string {
 		if (!longEnoughForAdmin(newPassword)) {
-			notify.problem(`The new password must be at least ${MIN_ADMIN_PASSWORD} characters.`);
-			return;
+			return `The new password must be at least ${MIN_ADMIN_PASSWORD} characters.`;
 		}
-		if (newPassword !== confirmPassword) {
-			notify.problem('The two new passwords are not the same.');
-			return;
-		}
+		if (newPassword !== confirmPassword) return 'The two new passwords are not the same.';
+		return '';
+	}
 
-		changingPassword = true;
-
-		try {
-			await adminApi.changePassword(currentPassword, newPassword);
+	const changePassword = submit<unknown>({
+		input: () => [currentPassword, newPassword],
+		when: () => {
+			const problem = passwordProblem();
+			if (problem) notify.problem(problem);
+			return problem === '' && !changingPassword;
+		},
+		pending: (busy) => (changingPassword = busy),
+		done: () => {
 			currentPassword = newPassword = confirmPassword = '';
 			notify.success('Your password is changed', 'Your other sessions are signed out.');
-		} catch (err) {
-			notify.error(err, 'Could not change your password');
-		} finally {
-			changingPassword = false;
-		}
-	}
+		},
+		failed: (err) => notify.error(err, 'Could not change your password')
+	});
 </script>
 
 <div class="sections">
 	<Panel title="Profile" icon="ri-user-line">
-		<form class="form" onsubmit={saveProfile}>
+		<form class="form" method="POST" action="/actions/me?/updateProfile" use:enhance={saveProfile}>
 			<FieldGrid>
 				<Input label="First name" bind:value={firstName} autocomplete="given-name" required />
 				<Input label="Last name" bind:value={lastName} autocomplete="family-name" />
@@ -149,7 +148,12 @@
 	</Panel>
 
 	<Panel title="Password" icon="ri-lock-password-line">
-		<form class="form" onsubmit={changePassword}>
+		<form
+			class="form"
+			method="POST"
+			action="/actions/me?/changePassword"
+			use:enhance={changePassword}
+		>
 			<PasswordInput label="Current password" bind:value={currentPassword} required />
 			<FieldGrid>
 				<PasswordInput

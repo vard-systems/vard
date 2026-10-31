@@ -41,6 +41,7 @@
 	},
 	"dependencies": {
 		"@ark-ui/svelte": "^5.24.3",
+		"@simplewebauthn/browser": "^14.0.0",
 		"@tanstack/svelte-query": "^6.3.5",
 		"@xyflow/svelte": "^1.7.0",
 		"qrcode": "^1.5.4",

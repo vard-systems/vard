@@ -89,6 +89,20 @@ const actions: Record<string, Action> = {
 		tone: 'warning',
 		icon: 'ri-shield-keyhole-line'
 	},
+	'admin.passkey_added': {
+		label: 'Passkey added',
+		verb: 'added a passkey for their sign-in',
+		category: 'access',
+		tone: 'success',
+		icon: 'ri-fingerprint-line'
+	},
+	'admin.passkey_removed': {
+		label: 'Passkey removed',
+		verb: 'removed a passkey from their sign-in',
+		category: 'access',
+		tone: 'warning',
+		icon: 'ri-fingerprint-line'
+	},
 	'admin.recovery_codes_regenerated': {
 		label: 'Recovery codes renewed',
 		verb: 'made new recovery codes',
@@ -182,6 +196,13 @@ const actions: Record<string, Action> = {
 		category: 'users',
 		tone: 'success',
 		icon: 'ri-mail-line'
+	},
+	'user.address_proved': {
+		label: 'Address proved',
+		verb: 'proved their email address for the first time, ending what the account held before',
+		category: 'access',
+		tone: 'warning',
+		icon: 'ri-shield-check-line'
 	},
 	'user.profile_updated': {
 		label: 'Profile updated',
@@ -567,6 +588,12 @@ const actions: Record<string, Action> = {
 		category: 'access',
 		icon: 'ri-shield-keyhole-line'
 	},
+	'sso_connection.domain_checked': {
+		label: 'SSO domain checked',
+		verb: 'checked the DNS proof of a domain for SSO connection',
+		category: 'access',
+		icon: 'ri-shield-check-line'
+	},
 	'sso_connection.deleted': {
 		label: 'SSO connection removed',
 		verb: 'removed SSO connection',
@@ -740,6 +767,8 @@ const selfTargeted = new Set([
 	'admin.mfa_enabled',
 	'admin.mfa_replaced',
 	'admin.mfa_disabled',
+	'admin.passkey_added',
+	'admin.passkey_removed',
 	'admin.recovery_codes_regenerated',
 	'user.login',
 	'user.logout',
@@ -754,6 +783,7 @@ const selfTargeted = new Set([
 	'user.email_changed',
 	'user.email_verification_sent',
 	'user.email_verified',
+	'user.address_proved',
 	'user.identity_connected',
 	'user.session_revoked',
 	'user.application_disconnected',

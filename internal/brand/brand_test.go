@@ -17,10 +17,11 @@ import (
 
 // brands are the apps' brand files, and the cookies each one names that the
 // server reads back: the console's admin session, the sign-in pages' user
-// session and language.
+// session (under both names, plain http's and https's __Host- one) and
+// language.
 var brands = map[string][]string{
-	"web/console/src/lib/brand.ts": {AdminSessionCookie},
-	"web/id/src/lib/brand.ts":      {UserSessionCookie, LanguageCookie},
+	"web/console/src/lib/brand.ts": {AdminSessionCookie, HostPrefix + AdminSessionCookie},
+	"web/id/src/lib/brand.ts":      {UserSessionCookie, HostPrefix + UserSessionCookie, LanguageCookie},
 }
 
 // The slug becomes cookie, Redis, URN, Postgres and environment names.
@@ -113,7 +114,7 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 			return nil
 		}
 
-		// What the code is made of. The scripts, deploy/, CI and the docs
+		// What the code is made of. The scripts, the compose and Docker files, CI and the docs
 		// spell the name too, where a tool needs it written out: scripts/rename.sh
 		// rewrites those.
 		switch filepath.Ext(name) {

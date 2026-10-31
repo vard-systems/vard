@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import { languagesApi, type Language } from '#lib/api/index.js';
 	import {
 		Button,
@@ -13,6 +13,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import { languageCode, namesOf } from './translations';
 
 	type Props = {
@@ -88,45 +89,35 @@
 		}))
 	]);
 
-	const create = createMutation(() => ({
-		mutationFn: () =>
-			languagesApi.create({
+	const create = submit<Awaited<ReturnType<typeof languagesApi.create>>>({
+		input: () => [
+			{
 				code: trimmed,
 				name: name.trim(),
 				native_name: native.trim(),
 				is_enabled: enabled || isDefault,
 				is_default: isDefault,
 				copy_from: copyFrom === NOTHING ? undefined : copyFrom
-			}),
-		onSuccess: async ({ language }) => {
+			}
+		],
+		when: () => !!ready,
+		pending: (busy) => (saving = busy),
+		done: async ({ language }) => {
 			notify.success(`${language.name} added`);
 			open = false;
 			await queryClient.invalidateQueries({ queryKey: keys.languages.list });
 			onCreated(language);
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not add this language');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!ready || saving) return;
-
-		saving = true;
-		create.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not add this language')
+	});
 </script>
 
 <FullscreenDialog
 	bind:open
 	title="New language"
 	description="It starts off, so it can be translated before anybody is offered it."
-	onsubmit={submit}
+	action="/actions/languages?/create"
+	onsubmit={create}
 >
 	<FormSection title="Names" description="The tag it is known by, and what it is called.">
 		<Input

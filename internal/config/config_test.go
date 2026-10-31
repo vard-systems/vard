@@ -105,8 +105,11 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.DB.Driver != "postgres" {
 		t.Errorf("Driver = %q, want the default postgres", cfg.DB.Driver)
 	}
-	if cfg.DB.TimeZone != "Asia/Bishkek" {
-		t.Errorf("TimeZone = %q, want the default Asia/Bishkek", cfg.DB.TimeZone)
+	if cfg.DB.TimeZone != "UTC" {
+		t.Errorf("TimeZone = %q, want the default UTC", cfg.DB.TimeZone)
+	}
+	if cfg.DB.StatementTimeout != 15*time.Second || cfg.DB.IdleInTransactionTimeout != time.Minute {
+		t.Errorf("limits = %v and %v, want the defaults 15s and 1m", cfg.DB.StatementTimeout, cfg.DB.IdleInTransactionTimeout)
 	}
 	if !cfg.DB.Migrate {
 		t.Error("Migrate = false, want the default true")
@@ -120,17 +123,13 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.SecureUserCookies || cfg.SecureAdminCookies {
 		t.Error("cookies are secure on the http defaults, which a browser would not send back")
 	}
-	// A fresh installation does not make anybody set up an authenticator:
-	// each administrator turns one on for themselves, and a super admin can
-	// require them of everybody once there is somebody to ask.
+	// A fresh installation leaves the second factor to each administrator;
+	// VARD_ADMIN_MFA=required makes every one set it up.
 	if cfg.AdminMFARequired {
 		t.Error("AdminMFARequired = true, want two-factor sign-in optional by default")
 	}
 	if cfg.Mail.Host != "" {
 		t.Errorf("Mail.Host = %q, want none: email is logged by default", cfg.Mail.Host)
-	}
-	if cfg.DB.MigrateDir != "./migrations" {
-		t.Errorf("MigrateDir = %q, want the default ./migrations", cfg.DB.MigrateDir)
 	}
 	if cfg.LogLevel != slog.LevelInfo {
 		t.Errorf("LogLevel = %v, want the default info", cfg.LogLevel)

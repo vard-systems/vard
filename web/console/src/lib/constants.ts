@@ -1,7 +1,9 @@
-/** The shortest password an administrator may have: the server's
-    model.MinAdminPasswordLength, said here too so a form can say so before
-    anything is sent. */
-export const MIN_ADMIN_PASSWORD = 10;
+/** The shortest password an administrator may have, and a user: the
+    server's model.MinAdminPasswordLength and MinUserPasswordLength, said here
+    too so a form can say so before anything is sent
+    (TestThePagesKnowThePasswordLengths holds them to the server's). */
+export const MIN_ADMIN_PASSWORD = 14;
+export const MIN_USER_PASSWORD = 12;
 
 export const ADMIN_DEPENDENCY = 'app:admin';
 

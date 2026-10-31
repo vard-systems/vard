@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+	import { submit } from '#lib/forms.js';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { ssoApi, type Role, type SSOConnection } from '#lib/api/index.js';
 	import {
@@ -61,12 +62,14 @@
 		confirmingDelete = false;
 	});
 
-	const save = createMutation(() => ({
-		mutationFn: () => {
+	const save = submit<Awaited<ReturnType<typeof ssoApi.create>>>({
+		input: () => {
 			const body = form.toInput(current === null);
-			return current ? ssoApi.update(current.id, body) : ssoApi.create(body);
+			return current ? [current.id, body] : [body];
 		},
-		onSuccess: async ({ connection: saved }) => {
+		when: () => !form.missing && !saving && canWrite,
+		pending: (busy) => (saving = busy),
+		done: async ({ connection: saved }) => {
 			const created = current === null;
 			notify.success(created ? 'Connection created' : 'Connection saved');
 			await queryClient.invalidateQueries({ queryKey: keys.sso.all });
@@ -81,13 +84,8 @@
 
 			open = false;
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this connection');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save this connection')
+	});
 
 	const remove = createMutation(() => ({
 		mutationFn: () => ssoApi.remove(current?.id ?? ''),
@@ -101,15 +99,6 @@
 			notify.error(err, 'Could not remove this connection');
 		}
 	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (form.missing || saving || !canWrite) return;
-
-		saving = true;
-		save.mutate();
-	}
 </script>
 
 {#snippet status()}
@@ -129,7 +118,8 @@
 		? 'Where it signs people in, for which domains, and what they become here.'
 		: "An organisation's identity provider. It starts off, so it can be set up and tested before anybody signs in through it."}
 	meta={current?.slug}
-	onsubmit={submit}
+	action={current ? '/actions/sso?/update' : '/actions/sso?/create'}
+	onsubmit={save}
 >
 	<Tabs {tabs} bind:value={() => tab, (value) => (tab = value as SSOTab)} label="SSO integrations">
 		{#snippet panel(value)}
@@ -144,7 +134,7 @@
 				{:else if value === 'provider'}
 					<SSOServiceProviderTab {current} {canWrite} onrefreshed={(saved) => (current = saved)} />
 				{:else if value === 'signin'}
-					<SSOSignInTab {form} readOnly={!canWrite} />
+					<SSOSignInTab {form} readOnly={!canWrite} connectionId={current?.id} />
 				{:else}
 					<SSOUsersTab {form} {roles} {canReadRoles} readOnly={!canWrite} />
 				{/if}

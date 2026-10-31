@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { adminApi, messageOf, setupApi } from '#lib/api/index.js';
+	import { messageOf, type adminApi } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
 	import GateShell from '#lib/components/layout/GateShell.svelte';
 	import { Alert, Button, FieldGrid, Input, PasswordInput } from '#lib/components/ui/index.js';
 	import { MIN_ADMIN_PASSWORD } from '#lib/constants.js';
 	import { longEnoughForAdmin } from '#lib/utils/password.js';
+	import { submit } from '#lib/forms.js';
 
 	let firstName = $state('');
 	let lastName = $state('');
@@ -19,30 +21,26 @@
 		firstName.trim() !== '' && email.trim() !== '' && longEnoughForAdmin(password) && !creating
 	);
 
-	async function create(event: SubmitEvent) {
-		event.preventDefault();
-		if (!canSubmit) return;
-
-		error = '';
-		creating = true;
-
-		try {
-			await setupApi.create({
+	const create = submit<Awaited<ReturnType<typeof adminApi.login>>>({
+		input: () => [
+			{
 				email: email.trim(),
 				password,
 				first_name: firstName.trim(),
 				last_name: lastName.trim()
-			});
-
-			const result = await adminApi.login(email.trim(), password);
-
+			}
+		],
+		when: () => canSubmit,
+		pending: (busy) => {
+			creating = busy;
+			if (busy) error = '';
+		},
+		done: async (result) => {
 			const target = result.next === 'enroll' ? '/mfa-setup' : '/(panel)';
 			await goto(resolve(target), { replace: true, refreshAll: true });
-		} catch (err) {
-			error = messageOf(err, 'Could not create the account');
-			creating = false;
-		}
-	}
+		},
+		failed: (err) => (error = messageOf(err, 'Could not create the account'))
+	});
 </script>
 
 <svelte:head><title>Set up {BRAND.name}</title></svelte:head>
@@ -52,7 +50,7 @@
 	width="md"
 	description="This panel has no administrator yet. The account you make here is the super admin: it can do everything, including making the others."
 >
-	<form onsubmit={create}>
+	<form method="POST" action="/actions/setup?/create" use:enhance={create}>
 		{#if error}<Alert>{error}</Alert>{/if}
 
 		<FieldGrid>

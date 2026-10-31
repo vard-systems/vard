@@ -20,7 +20,7 @@ it:
    go build -o bin/vard-preview ./cmd/vard
    VARD_ADDR=:8090 VARD_ADMIN_ADDR=:8091 \
      VARD_DB_DSN="postgres://postgres:postgres@localhost:5432/vard_preview?sslmode=disable" \
-     VARD_DB_DRIVER=postgres VARD_DB_MIGRATE=true VARD_DB_MIGRATE_DIR=./migrations \
+     VARD_DB_DRIVER=postgres VARD_DB_MIGRATE=true \
      VARD_ISSUER=http://localhost:5183 VARD_ACCOUNT_URL=http://localhost:5183 \
      VARD_ADMIN_URL=http://localhost:5184 VARD_ADMIN_MFA=optional \
      VARD_TRUSTED_PROXIES=127.0.0.1/32,::1/128 \

@@ -11,16 +11,20 @@ APPS    := console id
 PKGS    := ./cmd/... ./internal/... ./migrations/... ./i18n/...
 GO_DIRS := cmd internal migrations i18n
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-COMPOSE := docker compose -f deploy/compose.yaml
+# The end-to-end tests borrow the console's Prettier and TypeScript, with
+# settings of their own.
+E2E_PRETTIER := web/console/node_modules/.bin/prettier --config web/e2e/prettier.config.js --ignore-path web/e2e/.gitignore
+E2E_TSC := web/console/node_modules/.bin/tsc -p web/e2e/tsconfig.json
+COMPOSE := docker compose -f compose.yaml --env-file compose.env
 
 # $(call each-app,command): run the command in every app, stopping at the
 # first that fails.
 each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)) || exit 1; done
 
 .PHONY: help setup deps tidy dev start run build build-api build-web generate \
-	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \
-	migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
-	docker-up docker-local docker-env nginx-config db-backup docker-down docker-reset docker-logs docker-build docker-ps docker-config \
+	fmt lint lint-go lint-web lint-types test test-go test-web test-integration bench vuln check ci \
+	e2e migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
+	docker-up docker-local docker-env db-backup docker-down docker-reset docker-logs docker-build docker-ps docker-config \
 	clean rename
 
 help: ## Show this help
@@ -31,9 +35,10 @@ help: ## Show this help
 setup: ## Prepare a fresh checkout: .env, the database, dependencies
 	@scripts/setup.sh
 
-deps: ## Install the Go modules and both apps' packages
+deps: ## Install the Go modules, both apps' packages and the end-to-end tests
 	go mod download
 	@$(call each-app,bun install --frozen-lockfile)
+	cd web/e2e && bun install --frozen-lockfile
 
 tidy: ## Tidy go.mod and go.sum
 	go mod tidy
@@ -74,6 +79,7 @@ rename: ## Rename the project — make rename name="Acme ID" slug=acme (each bra
 fmt: ## Format every Go and app file in place
 	gofmt -w $(GO_DIRS)
 	@$(call each-app,bun run format)
+	@$(E2E_PRETTIER) --write web/e2e >/dev/null
 
 lint: lint-go lint-web ## Check formatting, vet, staticcheck, lint and type-check, changing nothing
 
@@ -82,8 +88,12 @@ lint-go: ## Lint the Go code only
 	go vet $(PKGS)
 	go tool staticcheck $(PKGS)
 
-lint-web: ## Lint and type-check the apps only
+lint-web: ## Lint and type-check the apps and the end-to-end tests only
 	@$(call each-app,bun run lint && bun run check)
+	@$(E2E_PRETTIER) --check web/e2e && $(E2E_TSC)
+
+lint-types: ## The type-aware lint rules (floating promises, deprecated APIs): slow, so CI's, not check's
+	@$(call each-app,LINT_TYPES=1 ./node_modules/.bin/eslint .)
 
 test: test-go test-web ## Run the Go and app unit tests
 
@@ -92,6 +102,9 @@ test-go: ## Run the Go unit tests only
 
 test-web: ## Run the apps' unit tests only
 	@$(call each-app,bun run test)
+
+e2e: ## Run the end-to-end tests (web/e2e) in a browser, against a stack of their own
+	@scripts/e2e.sh
 
 test-integration: ## Run the TestLive… tests against Postgres and Redis (throwaway databases)
 	@. scripts/lib.sh && load_env && \
@@ -109,7 +122,7 @@ vuln: ## Report known vulnerabilities in the Go code and its modules
 
 check: lint test ## Lint and unit-test everything: the check before a change is done
 
-ci: check test-integration docker-config ## Everything a CI run would do
+ci: check lint-types test-integration docker-config ## Everything a CI run would do
 
 ## Database
 
@@ -129,29 +142,26 @@ migrate-new: ## Create a migration — make migrate-new name=add_x
 db-create: ## Create the database in .env if it is missing
 	@scripts/db.sh create
 
-db-reset: ## Empty the database in .env and migrate it afresh (asks first)
+db-reset: ## Take every migration down and up again: a new installation (asks first)
 	@scripts/db.sh reset
 
 db-psql: ## Open psql on the database in .env
 	@scripts/db.sh psql
 
-## Docker (deploy/compose.yaml)
+## Docker (compose.yaml, with compose.env)
 
-docker-up: ## Build and start the stack in the background, as deploy/.env says
+docker-up: ## Build and start the stack in the background, as compose.env says
 	VERSION=$(VERSION) $(COMPOSE) build --pull
 	VERSION=$(VERSION) $(COMPOSE) up -d --wait
 
-docker-local: ## Start the stack on this machine — http://localhost:8080, :8081 (writes deploy/.env)
+docker-local: ## Start the stack on this machine — http://localhost:8080, :8081 (writes compose.env)
 	@VERSION=$(VERSION) scripts/docker-local.sh
 
-docker-env: ## Make deploy/.env for a server — make docker-env public=https://id.example.com admin=https://admin.example.com
+docker-env: ## Make compose.env for a server — make docker-env public=https://id.example.com admin=https://admin.example.com
 	@[[ -n "$(public)" && -n "$(admin)" ]] || { echo 'usage: make docker-env public=https://id.example.com admin=https://admin.example.com'; exit 1; }
 	@scripts/docker-env.sh "$(public)" "$(admin)"
 
-nginx-config: ## Make deploy/nginx/vard.conf, the TLS proxy's configuration, from deploy/.env
-	@scripts/nginx-config.sh
-
-db-backup: ## Dump the stack's database into deploy/backups, keeping the newest 14 (KEEP=n)
+db-backup: ## Dump the stack's database into backups/, keeping the newest 14 (KEEP=n)
 	@scripts/db-backup.sh
 
 docker-down: ## Stop the stack, keeping its data
@@ -169,6 +179,6 @@ docker-build: ## Build the images
 docker-ps: ## Show the stack's containers and their health
 	$(COMPOSE) ps
 
-docker-config: ## Validate deploy/compose.yaml, with placeholders for what deploy/.env would say
+docker-config: ## Validate compose.yaml, with placeholders for what compose.env would say
 	@PUBLIC_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 VARD_SECRET_KEY=x \
-		POSTGRES_PASSWORD=x REDIS_PASSWORD=x $(COMPOSE) config -q && echo "deploy/compose.yaml is valid"
+		POSTGRES_PASSWORD=x POSTGRES_APP_PASSWORD=x REDIS_PASSWORD=x docker compose -f compose.yaml --env-file /dev/null config -q && echo "compose.yaml is valid"

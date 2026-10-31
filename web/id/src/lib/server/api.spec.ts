@@ -1,8 +1,9 @@
+import type { RequestEvent } from '@sveltejs/kit';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('$app/env/private', () => ({ API_URL: 'http://api.test' }));
 
-const { isApiPath } = await import('./api');
+const { isApiPath, toApi } = await import('./api');
 
 describe('isApiPath', () => {
 	const tests: { name: string; path: string; want: boolean }[] = [
@@ -20,43 +21,37 @@ describe('isApiPath', () => {
 	}
 });
 
-describe('toApi and the client certificate', () => {
-	const send = async (certificateHeader: string, sent: Record<string, string>) => {
-		vi.resetModules();
-		vi.doMock('$app/env/private', () => ({
-			API_URL: 'http://api.test',
-			CLIENT_CERT_HEADER: certificateHeader
-		}));
-		const { toApi } = await import('./api');
+describe('toApi', () => {
+	const event = (): RequestEvent =>
+		({
+			request: new Request('http://app.test/api/v1/x', { method: 'GET' }),
+			url: new URL('http://app.test/api/v1/x'),
+			getClientAddress: () => '192.0.2.1'
+		}) as unknown as RequestEvent;
 
-		let forwarded = new Headers();
-		vi.stubGlobal('fetch', async (_: URL, init: RequestInit) => {
-			forwarded = new Headers(init.headers);
-			return new Response(null, { status: 200 });
+	const tests: { name: string; failure: unknown; want: number }[] = [
+		{
+			name: 'an API that does not answer in time',
+			failure: new DOMException('timed out', 'TimeoutError'),
+			want: 504
+		},
+		{ name: 'an API that cannot be reached', failure: new TypeError('fetch failed'), want: 502 }
+	];
+
+	for (const { name, failure, want } of tests) {
+		it(name, async () => {
+			vi.stubGlobal('fetch', vi.fn().mockRejectedValue(failure));
+			expect((await toApi(event())).status).toBe(want);
+			vi.unstubAllGlobals();
 		});
+	}
 
-		const url = new URL('http://id.test/oauth2/token');
-		await toApi({
-			request: new Request(url, { method: 'POST', headers: sent, body: '' }),
-			url,
-			getClientAddress: () => '203.0.113.7'
-		} as never);
-
+	it('gives up when the browser does, or when the API would have', async () => {
+		const fetch = vi.fn().mockResolvedValue(new Response('ok'));
+		vi.stubGlobal('fetch', fetch);
+		await toApi(event());
 		vi.unstubAllGlobals();
-		return forwarded.get('x-client-certificate');
-	};
 
-	it('drops a certificate a caller sent, with no proxy in front', async () => {
-		expect(await send('', { 'x-client-certificate': 'forged' })).toBeNull();
-	});
-
-	it("passes on the proxy's certificate", async () => {
-		expect(await send('x-ssl-client-cert', { 'x-ssl-client-cert': 'from-nginx' })).toBe(
-			'from-nginx'
-		);
-	});
-
-	it("drops a caller's copy under the API's name when the proxy names another", async () => {
-		expect(await send('x-ssl-client-cert', { 'x-client-certificate': 'forged' })).toBeNull();
+		expect(fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
 	});
 });

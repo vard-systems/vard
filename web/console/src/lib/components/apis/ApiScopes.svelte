@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import { apisApi, type API } from '#lib/api/index.js';
 	import { Button, notify } from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import ScopeEditor from './ScopeEditor.svelte';
 	import { apiInput, scopeInput, scopeProblem, scopeRow, type ScopeRow } from './scopes';
 
@@ -49,9 +51,11 @@
 		api.scopes.filter((scope) => !rows.some((row) => row.id === scope.id)).map((it) => it.name)
 	);
 
-	const save = createMutation(() => ({
-		mutationFn: () => apisApi.update(api.id, apiInput(api, { scopes: scopeInput(rows) })),
-		onSuccess: async (result) => {
+	const save = submit<Awaited<ReturnType<typeof apisApi.update>>>({
+		input: () => [api.id, apiInput(api, { scopes: scopeInput(rows) })],
+		when: () => !(!editable || !dirty || !valid),
+		pending: (busy) => (saving = busy),
+		done: async (result) => {
 			queryClient.setQueryData(keys.apis.one(api.id), result.api);
 			fill(result.api);
 			notify.success('Scopes saved');
@@ -60,25 +64,11 @@
 				queryClient.invalidateQueries({ queryKey: keys.roles.all })
 			]);
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save the scopes');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!editable || saving || !dirty || !valid) return;
-
-		saving = true;
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save the scopes')
+	});
 </script>
 
-<form onsubmit={submit}>
+<form method="POST" action="/actions/apis?/update" use:enhance={save}>
 	<p class="lead">
 		The permissions this API understands. Applications are allowed some of them on the Applications
 		tab; roles grant them to users. A <strong>default</strong> scope is added to every token for the API

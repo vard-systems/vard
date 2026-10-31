@@ -29,16 +29,6 @@ type Config struct {
 
 	AdminURL string
 
-	// MTLSURL is where clients reach the provider's endpoints with a TLS
-	// client certificate (RFC 8705 §5): a host of its own, so browsers on the
-	// sign-in pages are never asked for one. Empty, mutual TLS is off.
-	MTLSURL string
-
-	// MTLSCAFile holds the certificate authorities, in PEM, that a
-	// tls_client_auth client's certificate must chain to. Empty, only
-	// self-signed certificates are taken.
-	MTLSCAFile string
-
 	// CORSOrigins are extra origins allowed to call cookie-authenticated APIs
 	// with credentials. None by default: each listed origin can act as the
 	// signed-in user.
@@ -67,6 +57,13 @@ type Config struct {
 	// SecretKey seals stored private keys and secrets. Losing it signs everyone
 	// out; leaking it with the database lets anyone sign tokens.
 	SecretKey string
+	// PwnedPasswordsURL is the breached-password range API new passwords are
+	// checked against, "" for no check.
+	PwnedPasswordsURL string
+
+	// SecretKeyPrevious is the key SecretKey replaced: it opens what it
+	// sealed, and seals nothing. Empty once `secrets reseal` has run.
+	SecretKeyPrevious string
 
 	Mail Mail
 
@@ -104,14 +101,22 @@ type Mail struct {
 }
 
 type DB struct {
-	Driver     string
-	DSN        string
+	Driver string
+	DSN    string
+	// MigrateDSN is the schema owner's, used only to migrate; the server then
+	// runs as DSN's user, which may read and write rows and nothing more.
+	// Empty migrates as DSN's user.
+	MigrateDSN string
 	TimeZone   string
 	LogQueries bool
 	Migrate    bool
-	MigrateDir string
 
 	MaxConns int
+	// StatementTimeout and IdleInTransactionTimeout are Postgres's own
+	// limits on each connection: a query, or a transaction left open, past
+	// them is ended by the database rather than held for ever.
+	StatementTimeout         time.Duration
+	IdleInTransactionTimeout time.Duration
 }
 
 type Redis struct {
@@ -171,11 +176,12 @@ func Load() (Config, error) {
 	v.SetDefault(env("SMTP_PORT"), 587)
 	v.SetDefault(env("SMTP_FROM"), brand.Name+" <no-reply@localhost>")
 	v.SetDefault(env("DB_DRIVER"), "postgres")
-	v.SetDefault(env("DB_TIMEZONE"), "Asia/Bishkek")
+	v.SetDefault(env("DB_TIMEZONE"), "UTC")
 	v.SetDefault(env("DB_LOG_QUERIES"), false)
 	v.SetDefault(env("DB_MIGRATE"), true)
-	v.SetDefault(env("DB_MIGRATE_DIR"), "./migrations")
 	v.SetDefault(env("DB_MAX_CONNS"), 25)
+	v.SetDefault(env("DB_STATEMENT_TIMEOUT"), "15s")
+	v.SetDefault(env("DB_IDLE_IN_TRANSACTION_TIMEOUT"), "60s")
 	v.SetDefault(env("REDIS_PORT"), 6379)
 	v.SetDefault(env("REDIS_CACHE_DB"), 0)
 	v.SetDefault(env("REDIS_SESSION_DB"), 1)
@@ -187,7 +193,6 @@ func Load() (Config, error) {
 		accountURL = issuer
 	}
 	adminURL := strings.TrimRight(v.GetString(env("ADMIN_URL")), "/")
-	mtlsURL := strings.TrimRight(v.GetString(env("MTLS_URL")), "/")
 
 	cfg := Config{
 		Addr:               v.GetString(env("ADDR")),
@@ -195,8 +200,6 @@ func Load() (Config, error) {
 		Issuer:             issuer,
 		AccountURL:         accountURL,
 		AdminURL:           adminURL,
-		MTLSURL:            mtlsURL,
-		MTLSCAFile:         strings.TrimSpace(v.GetString(env("MTLS_CA_FILE"))),
 		CORSOrigins:        splitList(v.GetString(env("CORS_ORIGINS"))),
 		SecureUserCookies:  strings.HasPrefix(accountURL, "https://"),
 		SecureAdminCookies: strings.HasPrefix(adminURL, "https://"),
@@ -206,6 +209,8 @@ func Load() (Config, error) {
 		RateLimit:          v.GetInt(env("RATE_LIMIT")),
 		TrustedProxies:     splitList(v.GetString(env("TRUSTED_PROXIES"))),
 		SecretKey:          v.GetString(env("SECRET_KEY")),
+		SecretKeyPrevious:  v.GetString(env("SECRET_KEY_PREVIOUS")),
+		PwnedPasswordsURL:  strings.TrimSpace(v.GetString(env("PWNED_PASSWORDS_URL"))),
 		Mail: Mail{
 			Host:     v.GetString(env("SMTP_HOST")),
 			Port:     v.GetInt(env("SMTP_PORT")),
@@ -216,11 +221,14 @@ func Load() (Config, error) {
 		DB: DB{
 			Driver:     v.GetString(env("DB_DRIVER")),
 			DSN:        v.GetString(env("DB_DSN")),
+			MigrateDSN: v.GetString(env("DB_MIGRATE_DSN")),
 			TimeZone:   v.GetString(env("DB_TIMEZONE")),
 			LogQueries: v.GetBool(env("DB_LOG_QUERIES")),
 			Migrate:    v.GetBool(env("DB_MIGRATE")),
-			MigrateDir: v.GetString(env("DB_MIGRATE_DIR")),
 			MaxConns:   v.GetInt(env("DB_MAX_CONNS")),
+
+			StatementTimeout:         v.GetDuration(env("DB_STATEMENT_TIMEOUT")),
+			IdleInTransactionTimeout: v.GetDuration(env("DB_IDLE_IN_TRANSACTION_TIMEOUT")),
 		},
 		Redis: Redis{
 			Host:      strings.TrimSpace(v.GetString(env("REDIS_HOST"))),
@@ -261,22 +269,6 @@ func Load() (Config, error) {
 		}
 	}
 
-	// A client certificate is only ever presented over TLS, so the alias is
-	// https, and on a host of its own: on the issuer's, every browser would
-	// be asked to choose a certificate.
-	if cfg.MTLSURL != "" {
-		parsed, err := url.Parse(cfg.MTLSURL)
-		switch {
-		case err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.Path != "":
-			return Config{}, fmt.Errorf("%s must be an https URL with no path, got %q", env("MTLS_URL"), cfg.MTLSURL)
-		case Origin(cfg.MTLSURL) == Origin(cfg.Issuer) || Origin(cfg.MTLSURL) == Origin(cfg.AccountURL):
-			return Config{}, errors.New(env("MTLS_URL") + " must be a host of its own, not the issuer's")
-		}
-	}
-	if cfg.MTLSCAFile != "" && cfg.MTLSURL == "" {
-		return Config{}, errors.New(env("MTLS_CA_FILE") + " needs " + env("MTLS_URL"))
-	}
-
 	// One listener for both would put the admin API back on the public one,
 	// which is exactly what the second listener is there to prevent.
 	if cfg.AdminAddr == "" || cfg.AdminAddr == cfg.Addr {
@@ -305,6 +297,10 @@ func Load() (Config, error) {
 
 	if cfg.DB.MaxConns < 1 {
 		return Config{}, errors.New(env("DB_MAX_CONNS") + " must be one or more")
+	}
+	if cfg.DB.StatementTimeout < 0 || cfg.DB.IdleInTransactionTimeout < 0 {
+		return Config{}, fmt.Errorf("%s and %s must be zero (no limit) or more",
+			env("DB_STATEMENT_TIMEOUT"), env("DB_IDLE_IN_TRANSACTION_TIMEOUT"))
 	}
 
 	if cfg.Redis.Enabled() {

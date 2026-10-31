@@ -60,7 +60,7 @@
 <style>
 	.card {
 		width: 100%;
-		padding: var(--space-6);
+		padding: var(--space-6) var(--space-6) calc(var(--space-6) + 4px);
 		border: 1px solid var(--color-border);
 		border-radius: 18px;
 		background: var(--color-surface);
@@ -72,7 +72,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-2);
-		margin-bottom: var(--space-5);
+		margin-bottom: var(--space-6);
 		text-align: center;
 	}
 

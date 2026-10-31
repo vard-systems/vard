@@ -1,5 +1,5 @@
 /** The shapes the API returns. They mirror the response.go files under
-    internal/api/; change them together. */
+    internal/interfaces/api/; change them together. */
 
 export type Admin = {
 	id: string;
@@ -31,12 +31,21 @@ export type MfaStatus = {
 	confirmed_at: string | null;
 	last_used_at: string | null;
 	recovery_codes_left: number;
+	/** The administrator's passkeys, beside their authenticator. */
+	passkeys: AdminPasskey[];
+};
+
+export type AdminPasskey = {
+	id: string;
+	label: string;
+	added_at: string;
+	last_used_at: string | null;
 };
 
 export type MfaEnrolment = { secret: string; uri: string };
 
 /** The names in the admin permission catalog. They mirror the constants in
-    internal/model/admin_permission.go; change them together. */
+    internal/domain/model/admin_permission.go; change them together. */
 export type AdminPermissionName =
 	| 'activity.read'
 	| 'users.read'
@@ -134,15 +143,7 @@ export type AdminRoleInput = {
 
 export type ApplicationType = 'web' | 'spa' | 'native' | 'm2m';
 
-export type AuthMethod =
-	| 'client_secret_basic'
-	| 'client_secret_post'
-	| 'none'
-	| 'tls_client_auth'
-	| 'self_signed_tls_client_auth';
-
-/** The certificate field that names a tls_client_auth client (RFC 8705 §2.1.2); '' for other methods. */
-export type TLSSubjectKind = '' | 'subject_dn' | 'san_dns' | 'san_uri' | 'san_ip' | 'san_email';
+export type AuthMethod = 'client_secret_basic' | 'client_secret_post' | 'none';
 
 export type GrantType =
 	| 'authorization_code'
@@ -182,12 +183,6 @@ export type Application = {
 	require_pkce: boolean;
 	/** Authorization requests must be pushed first (RFC 9126). */
 	require_pushed_authorization_requests: boolean;
-	tls_subject_kind: TLSSubjectKind;
-	tls_subject: string;
-	/** PEM certificates of a self_signed_tls_client_auth client. */
-	tls_certificates: string[];
-	/** Access tokens are bound to the client's TLS certificate (RFC 8705 §3). */
-	tls_client_certificate_bound_access_tokens: boolean;
 	access_token_lifetime: number;
 	id_token_lifetime: number;
 	refresh_token_lifetime: number;
@@ -220,10 +215,6 @@ export type ApplicationInput = Pick<
 	| 'scopes'
 	| 'require_pkce'
 	| 'require_pushed_authorization_requests'
-	| 'tls_subject_kind'
-	| 'tls_subject'
-	| 'tls_certificates'
-	| 'tls_client_certificate_bound_access_tokens'
 	| 'access_token_lifetime'
 	| 'id_token_lifetime'
 	| 'refresh_token_lifetime'
@@ -375,8 +366,6 @@ export type UserRecord = UserBuiltins & {
 	/** Whether they turned on two-step verification. */
 	two_step_enabled: boolean;
 	last_login_at: string | null;
-	/** Until when wrong passwords keep them out; null when they are not locked. */
-	locked_until: string | null;
 	/** When they last accepted the organization's terms, on the Agreements step. */
 	agreements_accepted_at: string | null;
 	roles: UserRoleRef[];
@@ -627,12 +616,14 @@ export type SocialProviderInput = {
 
 export type AdminSecurity = {
 	require_mfa: boolean;
+	/** An unused session ends after this many minutes, within its twelve hours. */
+	idle_timeout_minutes: number;
 	administrators: number;
 	with_mfa: number;
 };
 
 /** One step a login flow can be made of. The names mirror the constants in
-    internal/model/login_flow.go; change them together. */
+    internal/domain/model/login_flow.go; change them together. */
 export type LoginStep =
 	'identifier' | 'password' | 'social' | 'email_code' | 'totp' | 'terms' | 'consent';
 
@@ -831,8 +822,20 @@ export type SSOTestResult = {
 	metadata?: string;
 };
 
+/** One of a connection's domains and its proof. A connection links to an
+    existing account only at a domain proved by a DNS TXT record. */
+export type SSODomainProof = {
+	domain: string;
+	proved: boolean;
+	method: '' | 'dns';
+	record_name: string;
+	record_value: string;
+	verified_at: string | null;
+	checked_at: string | null;
+};
+
 /** How the connection to the mail server is protected. The names mirror the
-    constants in internal/model/mail.go; change them together. */
+    constants in internal/domain/model/mail.go; change them together. */
 export type MailEncryption = 'starttls' | 'tls' | 'none';
 
 export type MailSettings = {

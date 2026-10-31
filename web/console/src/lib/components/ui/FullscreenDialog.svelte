@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { enhance, type SubmitFunction } from '$app/forms';
 	import { Dialog } from '@ark-ui/svelte/dialog';
 	import { Portal } from '@ark-ui/svelte/portal';
 	import Code from './Code.svelte';
@@ -10,7 +11,10 @@
 		title: string;
 		description?: string;
 		meta?: string;
-		onsubmit?: (event: SubmitEvent) => void;
+		/** The form action the sheet posts to (`/actions/<subject>?/<name>`); none is no form. */
+		action?: string;
+		/** What `use:enhance` does with it: `submit()` from `#lib/forms.js`. */
+		onsubmit?: SubmitFunction;
 		children: Snippet;
 		actions?: Snippet;
 		status?: Snippet;
@@ -21,6 +25,7 @@
 		title,
 		description,
 		meta,
+		action,
 		onsubmit,
 		children,
 		actions,
@@ -29,6 +34,42 @@
 
 	let sheet = $state<HTMLElement | null>(null);
 </script>
+
+{#snippet sheetContent()}
+	<header class="bar">
+		<IconButton
+			icon="ri-close-line"
+			label="Close"
+			size="sm"
+			placement="bottom"
+			onclick={() => (open = false)}
+		/>
+
+		<span class="rule" aria-hidden="true"></span>
+
+		<div class="heading">
+			<Dialog.Title>{title}</Dialog.Title>
+			{#if meta}<Code tone="quiet" truncate title={meta}>{meta}</Code>{/if}
+		</div>
+	</header>
+
+	<div class="body">
+		<div class="column">
+			{#if description}
+				<Dialog.Description>{description}</Dialog.Description>
+			{/if}
+
+			{@render children()}
+		</div>
+	</div>
+
+	{#if actions || status}
+		<div class="actions">
+			{#if status}<span class="status">{@render status()}</span>{/if}
+			{@render actions?.()}
+		</div>
+	{/if}
+{/snippet}
 
 <!--
 	lazyMount with unmountOnExit rebuilds the sheet on every opening, so it always starts fresh.
@@ -39,47 +80,22 @@
 		<Dialog.Backdrop />
 		<Dialog.Positioner class="fullscreen">
 			<Dialog.Content class="fullscreen">
-				<svelte:element
-					this={onsubmit ? 'form' : 'div'}
-					class="sheet"
-					{onsubmit}
-					bind:this={sheet}
-					tabindex="-1"
-				>
-					<header class="bar">
-						<IconButton
-							icon="ri-close-line"
-							label="Close"
-							size="sm"
-							placement="bottom"
-							onclick={() => (open = false)}
-						/>
-
-						<span class="rule" aria-hidden="true"></span>
-
-						<div class="heading">
-							<Dialog.Title>{title}</Dialog.Title>
-							{#if meta}<Code tone="quiet" truncate title={meta}>{meta}</Code>{/if}
-						</div>
-					</header>
-
-					<div class="body">
-						<div class="column">
-							{#if description}
-								<Dialog.Description>{description}</Dialog.Description>
-							{/if}
-
-							{@render children()}
-						</div>
+				{#if action}
+					<form
+						class="sheet"
+						method="POST"
+						{action}
+						use:enhance={onsubmit}
+						bind:this={sheet}
+						tabindex="-1"
+					>
+						{@render sheetContent()}
+					</form>
+				{:else}
+					<div class="sheet" bind:this={sheet} tabindex="-1">
+						{@render sheetContent()}
 					</div>
-
-					{#if actions || status}
-						<div class="actions">
-							{#if status}<span class="status">{@render status()}</span>{/if}
-							{@render actions?.()}
-						</div>
-					{/if}
-				</svelte:element>
+				{/if}
 			</Dialog.Content>
 		</Dialog.Positioner>
 	</Portal>

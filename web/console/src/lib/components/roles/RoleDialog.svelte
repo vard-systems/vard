@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import { rolesApi, type Admin, type API, type Application, type Role } from '#lib/api/index.js';
 	import {
 		Button,
@@ -14,6 +14,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import IncludedRoles from './IncludedRoles.svelte';
 	import RoleScopes from './RoleScopes.svelte';
 	import { canEditRoles, mayInherit, tidyName } from './roles';
@@ -124,9 +125,11 @@
 		};
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () => (role ? rolesApi.update(role.id, payload()) : rolesApi.create(payload())),
-		onSuccess: async () => {
+	const save = submit<Awaited<ReturnType<typeof rolesApi.update>>>({
+		input: () => (role ? [role.id, payload()] : [payload()]),
+		when: () => !(!editable || !ready),
+		pending: (busy) => (saving = busy),
+		done: async () => {
 			notify.success(role ? 'Role saved' : 'Role created');
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: keys.roles.all }),
@@ -134,22 +137,8 @@
 			]);
 			open = false;
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this role');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!editable || saving || !ready) return;
-
-		saving = true;
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save this role')
+	});
 </script>
 
 {#snippet actions()}
@@ -164,7 +153,8 @@
 	actions={editable ? actions : undefined}
 	title={role ? role.name : 'New role'}
 	meta={role ? `${role.user_count} ${role.user_count === 1 ? 'user' : 'users'}` : undefined}
-	onsubmit={submit}
+	action={role ? '/actions/roles?/update' : '/actions/roles?/create'}
+	onsubmit={save}
 >
 	<fieldset disabled={!editable}>
 		<FormSection title="Role" description="What applications check for, and where it applies.">

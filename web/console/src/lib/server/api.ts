@@ -3,7 +3,7 @@ import { API_URL } from '$app/env/private';
 
 /**
  * The paths the API answers. The browser calls them on this app's own origin, so cookies stay
- * host-only and nothing is cross-origin; this server passes them on. internal/api's routing test
+ * host-only and nothing is cross-origin; this server passes them on. internal/interfaces/api's routing test
  * holds every route to this list.
  */
 const API_PATHS = ['/api/v1/admin'];
@@ -18,6 +18,10 @@ const HOP_BY_HOP = [
 	'transfer-encoding',
 	'upgrade'
 ];
+
+// The API's own write timeout (writeTimeout, in the server's serve.go): past
+// it the API has given up too, so waiting longer only holds a connection.
+const API_TIMEOUT_MS = 2 * 60 * 1000;
 
 /** Whole segments only: `/oauth2` takes `/oauth2/token`, not a page at `/oauth2-help`. */
 export function isApiPath(pathname: string): boolean {
@@ -52,10 +56,14 @@ export async function toApi(event: RequestEvent): Promise<Response> {
 			body,
 			// A redirect is the browser's to follow: an authorization answer
 			// carries a code in its Location.
-			redirect: 'manual'
+			redirect: 'manual',
+			// A browser that has gone away needs no answer, so the API's work
+			// for it is stopped too.
+			signal: AbortSignal.any([request.signal, AbortSignal.timeout(API_TIMEOUT_MS)])
 		});
-	} catch {
-		return new Response(null, { status: 502 });
+	} catch (error) {
+		const timedOut = error instanceof DOMException && error.name === 'TimeoutError';
+		return new Response(null, { status: timedOut ? 504 : 502 });
 	}
 
 	// fetch has already decoded the body, so the encoding and length it came

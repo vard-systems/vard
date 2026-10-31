@@ -30,7 +30,6 @@ const ada = {
 	has_password: true,
 	two_step_enabled: false,
 	last_login_at: null,
-	locked_until: null,
 	agreements_accepted_at: null,
 	roles: [],
 	social_accounts: [],

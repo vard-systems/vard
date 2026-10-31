@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, refreshAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 	import { signIn, type SecondFactorAnswer, type SignedIn } from '#lib/api/index.js';
@@ -47,6 +47,9 @@
 			error = messageOf(err, t);
 			code = '';
 			sending = null;
+			// A passkey's challenge is spent on its first answer; the next
+			// try needs the fresh one the page's load asks for.
+			if (kind === 'passkey') await refreshAll();
 		}
 	}
 

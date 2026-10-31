@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import {
 		adminsApi,
 		type AdminInput,
@@ -22,6 +22,7 @@
 	import { MIN_ADMIN_PASSWORD } from '#lib/constants.js';
 	import { keys } from '#lib/query/index.js';
 	import { longEnoughForAdmin } from '#lib/utils/password.js';
+	import { submit } from '#lib/forms.js';
 	import AdminMfaReset from './AdminMfaReset.svelte';
 	import AdminRoles from './AdminRoles.svelte';
 	import { assignmentsOf, rowsFrom, type Row } from './assignments';
@@ -99,36 +100,25 @@
 		};
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () => (admin ? adminsApi.update(admin.id, payload()) : adminsApi.create(payload())),
-		onSuccess: async () => {
+	const save = submit<Awaited<ReturnType<typeof adminsApi.update>>>({
+		input: () => (admin ? [admin.id, payload()] : [payload()]),
+		when: () => !!canSubmit,
+		pending: (busy) => (saving = busy),
+		done: async () => {
 			notify.success(admin ? 'Administrator saved' : 'Administrator created');
 			await queryClient.invalidateQueries({ queryKey: keys.admins.all });
 			open = false;
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this administrator');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!canSubmit) return;
-
-		saving = true;
-		save.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not save this administrator')
+	});
 </script>
 
 <FullscreenDialog
 	bind:open
 	title={admin ? admin.full_name.trim() || admin.email : 'New administrator'}
 	meta={admin ? (isSelf ? `${admin.email} · you` : admin.email) : undefined}
-	onsubmit={submit}
+	action={admin ? '/actions/admins?/update' : '/actions/admins?/create'}
+	onsubmit={save}
 >
 	<FormSection
 		title="Account"

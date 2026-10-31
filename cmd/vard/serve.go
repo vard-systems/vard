@@ -12,16 +12,18 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
-	"vard/internal/api"
+	"vard/internal/application/auth"
+	"vard/internal/application/oidc"
 	"vard/internal/brand"
-	"vard/internal/cache"
 	"vard/internal/config"
-	"vard/internal/database"
+	"vard/internal/infrastructure/cache"
+	"vard/internal/infrastructure/database"
+	"vard/internal/infrastructure/mail"
+	"vard/internal/infrastructure/store"
+	"vard/internal/interfaces/api"
 	"vard/internal/jose"
-	"vard/internal/mail"
-	"vard/internal/oidc"
-	"vard/internal/store"
 )
 
 // serveCommand runs the server until it is told to stop.
@@ -58,19 +60,13 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 		log.Warn("VARD_SECRET_KEY does not look like 32 random bytes; a low-entropy key can be brute-forced against a database dump to recover sealed secrets — generate one with: openssl rand -base64 32")
 	}
 
-	db, err := database.Open(cfg.DB)
+	db, err := database.Connect(cfg.DB, log)
 	if err != nil {
 		return err
 	}
 	defer database.Close(db)
 
 	log.Info("database connected")
-
-	if cfg.DB.Migrate {
-		if err := database.Migrate(db, cfg.DB, log); err != nil {
-			return err
-		}
-	}
 
 	// A configured Redis that does not answer stops startup; none configured
 	// runs without one.
@@ -93,9 +89,21 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 
 	st := store.New(db).WithCache(shared)
 
-	sealer, err := jose.NewSealer(cfg.SecretKey)
+	sealer, err := jose.NewSealer(cfg.SecretKey, cfg.SecretKeyPrevious)
 	if err != nil {
 		return err
+	}
+
+	// Mid-rotation, everything the previous key sealed is sealed again under
+	// the current one before anything is served, so the previous key can be
+	// dropped as soon as this says so.
+	if cfg.SecretKeyPrevious != "" {
+		resealed, err := st.ResealAll(context.Background(), resealWith(sealer))
+		if err != nil {
+			return fmt.Errorf("sealing stored secrets under the new key: %w", err)
+		}
+		log.Warn("every stored secret is sealed under VARD_SECRET_KEY now; remove VARD_SECRET_KEY_PREVIOUS and restart",
+			"resealed", resealed)
 	}
 
 	if err := st.EnsureAdminSecurity(context.Background(), cfg.AdminMFARequired); err != nil {
@@ -110,6 +118,17 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 
 	if err := st.EnsureSystemAPIs(context.Background()); err != nil {
 		return err
+	}
+
+	// Whoever opens the setup page first makes the first administrator, so
+	// a fresh installation should be set up as soon as it is up.
+	exists, err := st.AdminsExist(context.Background())
+	if err != nil {
+		return err
+	}
+	if !exists {
+		log.Warn("no administrator exists yet: open the setup page to make the first one",
+			"url", cfg.AdminURL+auth.SetupPage)
 	}
 
 	mailer := mail.New(mail.FromStore(st, sealer), log)
@@ -153,8 +172,15 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 func ensureMailSettings(ctx context.Context, st *store.Store, sealer *jose.Sealer, cfg config.Mail) error {
 	settings, password := mail.Seed(cfg)
 
+	// Its id before it is stored, so the password is sealed to it.
+	id, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	settings.ID = id
+
 	if password != "" {
-		sealed, err := sealer.SealBytes([]byte(password))
+		sealed, err := sealer.SealFor(settings.PasswordWhere(), []byte(password))
 		if err != nil {
 			return err
 		}

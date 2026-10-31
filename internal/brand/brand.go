@@ -28,6 +28,11 @@ const (
 	EnvPrefix = "VARD_"
 )
 
+// HostPrefix starts a cookie's name over https: the browser then holds it to
+// Secure, Path=/ and no Domain, so a sibling subdomain can neither set nor
+// overwrite it.
+const HostPrefix = "__Host-"
+
 const (
 	AdminSessionCookie = Slug + "_session"
 

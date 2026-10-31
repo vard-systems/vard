@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
 	import { messageOf, mfaApi, type MfaEnrolment } from '#lib/api/index.js';
 	import { Alert, Button, CopyButton, Input } from '#lib/components/ui/index.js';
+	import { submit } from '#lib/forms.js';
 	import RecoveryCodes from './RecoveryCodes.svelte';
 
 	type Props = {
@@ -28,14 +30,19 @@
 
 	const grouped = $derived(enrolment?.secret.match(/.{1,4}/g)?.join(' ') ?? '');
 
-	async function begin(proof?: string) {
+	async function scan(started: Awaited<ReturnType<typeof mfaApi.begin>>) {
+		enrolment = started.enrolment;
+		qr = await QRCode.toString(enrolment.uri, { type: 'svg', margin: 1, width: 196 });
+		step = 'scan';
+	}
+
+	/** Starts setting up the first authenticator, which takes no proof. */
+	async function begin() {
 		busy = true;
 		error = '';
 
 		try {
-			({ enrolment } = await mfaApi.begin(proof));
-			qr = await QRCode.toString(enrolment.uri, { type: 'svg', margin: 1, width: 196 });
-			step = 'scan';
+			await scan(await mfaApi.begin());
 		} catch (err) {
 			error = messageOf(err);
 		} finally {
@@ -43,23 +50,34 @@
 		}
 	}
 
-	async function confirm(event: SubmitEvent) {
-		event.preventDefault();
-		if (code.trim().length < 6) return;
+	/** Starts replacing one, with a code from it. */
+	const beginWithCode = submit<Awaited<ReturnType<typeof mfaApi.begin>>>({
+		input: () => [currentCode],
+		when: () => !busy,
+		pending: (pending) => {
+			busy = pending;
+			if (pending) error = '';
+		},
+		done: scan,
+		failed: (err) => (error = messageOf(err))
+	});
 
-		busy = true;
-		error = '';
-
-		try {
-			({ recovery_codes: codes } = await mfaApi.confirm(code));
+	const confirm = submit<Awaited<ReturnType<typeof mfaApi.confirm>>>({
+		input: () => [code],
+		when: () => code.trim().length >= 6,
+		pending: (pending) => {
+			busy = pending;
+			if (pending) error = '';
+		},
+		done: (result) => {
+			codes = result.recovery_codes;
 			step = 'codes';
-		} catch (err) {
+		},
+		failed: (err) => {
 			error = messageOf(err);
 			code = '';
-		} finally {
-			busy = false;
 		}
-	}
+	});
 
 	onMount(() => {
 		if (!replacing) void begin();
@@ -70,12 +88,7 @@
 	{#if error}<Alert>{error}</Alert>{/if}
 
 	{#if step === 'prove'}
-		<form
-			onsubmit={(event) => {
-				event.preventDefault();
-				void begin(currentCode);
-			}}
-		>
+		<form method="POST" action="/actions/mfa?/begin" use:enhance={beginWithCode}>
 			<p class="text">
 				Enter a code from your current authenticator, or a recovery code, to replace it.
 			</p>
@@ -121,7 +134,7 @@
 				{/if}
 			</li>
 			<li>
-				<form onsubmit={confirm}>
+				<form method="POST" action="/actions/mfa?/confirm" use:enhance={confirm}>
 					<span class="text">Enter the six-digit code the app shows.</span>
 					<Input
 						label="Code"

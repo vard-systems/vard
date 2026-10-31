@@ -10,3 +10,11 @@ export function ssoOptions(initial: { connections: SSOConnection[] }) {
 		initialData: initial
 	});
 }
+
+/** A saved connection's domains and whether each is proved. */
+export function ssoDomainsOptions(id: string) {
+	return queryOptions({
+		queryKey: keys.sso.domains(id),
+		queryFn: async () => (await ssoApi.domains(id)).domains
+	});
+}

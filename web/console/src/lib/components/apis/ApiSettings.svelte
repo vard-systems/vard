@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -18,6 +19,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import { algorithms, apiInput, roleBasedAccess } from './scopes';
 
 	type Props = {
@@ -69,32 +71,28 @@
 			offlineAccess !== api.allow_offline_access
 	);
 
-	const save = createMutation(() => ({
-		mutationFn: () =>
-			apisApi.update(
-				api.id,
-				apiInput(api, {
-					name: name.trim(),
-					description: description.trim(),
-					enforce_roles: enforceRoles,
-					signing_algorithm: algorithm,
-					token_lifetime: lifetime,
-					allow_offline_access: offlineAccess
-				})
-			),
-		onSuccess: async (result) => {
+	const save = submit<Awaited<ReturnType<typeof apisApi.update>>>({
+		input: () => [
+			api.id,
+			apiInput(api, {
+				name: name.trim(),
+				description: description.trim(),
+				enforce_roles: enforceRoles,
+				signing_algorithm: algorithm,
+				token_lifetime: lifetime,
+				allow_offline_access: offlineAccess
+			})
+		],
+		when: () => !(!editable || !dirty || name.trim() === ''),
+		pending: (busy) => (saving = busy),
+		done: async (result) => {
 			queryClient.setQueryData(keys.apis.one(api.id), result.api);
 			fill(result.api);
 			notify.success('Settings saved');
 			await queryClient.invalidateQueries({ queryKey: keys.apis.all });
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this API');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save this API')
+	});
 
 	const remove = createMutation(() => ({
 		mutationFn: () => apisApi.remove(api.id),
@@ -113,18 +111,9 @@
 			confirmingDelete = false;
 		}
 	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!editable || saving || !dirty || name.trim() === '') return;
-
-		saving = true;
-		save.mutate();
-	}
 </script>
 
-<form onsubmit={submit}>
+<form method="POST" action="/actions/apis?/update" use:enhance={save}>
 	<fieldset disabled={!editable}>
 		<FormSection title="General" description="How the API is named and described in this panel.">
 			<Input label="Name" bind:value={name} required />

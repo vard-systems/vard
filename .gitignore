@@ -32,7 +32,6 @@ go.work.sum
 .DS_Store
 
 
-# Made on the server from what is committed: the proxy's configuration
-# (make nginx-config) and the database's dumps (make db-backup).
-/deploy/nginx/vard.conf
-/deploy/backups/
+# Made on the server: the database's dumps (make db-backup).
+/backups/
+compose.env

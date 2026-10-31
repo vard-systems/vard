@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import { apisApi, type SigningAlgorithm } from '#lib/api/index.js';
 	import {
 		Button,
@@ -15,6 +15,7 @@
 		notify
 	} from '#lib/components/ui/index.js';
 	import { keys } from '#lib/query/index.js';
+	import { submit } from '#lib/forms.js';
 	import ScopeEditor from './ScopeEditor.svelte';
 	import {
 		algorithms,
@@ -66,9 +67,9 @@
 		});
 	});
 
-	const create = createMutation(() => ({
-		mutationFn: () =>
-			apisApi.create({
+	const create = submit<Awaited<ReturnType<typeof apisApi.create>>>({
+		input: () => [
+			{
 				name: name.trim(),
 				identifier: identifier.trim(),
 				description: description.trim(),
@@ -77,32 +78,21 @@
 				token_lifetime: lifetimeMinutes.trim() === '' ? 0 : Number(lifetimeMinutes) * 60,
 				allow_offline_access: offlineAccess,
 				scopes: scopeInput(rows)
-			}),
-		onSuccess: async (result) => {
+			}
+		],
+		when: () => !!ready,
+		pending: (busy) => (saving = busy),
+		done: async (result) => {
 			notify.success(`${result.api.name} created`);
 			await queryClient.invalidateQueries({ queryKey: keys.apis.all });
 			open = false;
 			await goto(resolve('/(panel)/apis/[id]', { id: result.api.id }));
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not create this API');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (saving || !ready) return;
-
-		saving = true;
-		create.mutate();
-	}
+		failed: (err) => notify.error(err, 'Could not create this API')
+	});
 </script>
 
-<FullscreenDialog bind:open title="New API" onsubmit={submit}>
+<FullscreenDialog bind:open title="New API" action="/actions/apis?/create" onsubmit={create}>
 	<FormSection
 		title="API"
 		description="A protected resource applications request access tokens for. Its identifier is the audience of those tokens."

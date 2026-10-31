@@ -4,6 +4,7 @@
 	import {
 		Alert,
 		Panel,
+		Select,
 		SwitchField,
 		Tag,
 		ConfirmDialog,
@@ -16,6 +17,13 @@
 	};
 
 	let { security, selfHasMFA }: Props = $props();
+
+	/** The idle timeouts offered, in minutes; the server takes 5 to 720. */
+	const idleChoices = [15, 30, 60, 120, 240, 480, 720].map((minutes) => ({
+		value: String(minutes),
+		label:
+			minutes < 60 ? `${minutes} minutes` : `${minutes / 60} ${minutes === 60 ? 'hour' : 'hours'}`
+	}));
 
 	// svelte-ignore state_referenced_locally
 	let current = $state(security);
@@ -48,6 +56,15 @@
 		}
 	}));
 
+	const saveIdle = createMutation(() => ({
+		mutationFn: (minutes: number) => adminsApi.updateSecurity({ idle_timeout_minutes: minutes }),
+		onSuccess: (result) => {
+			notify.success('Idle timeout changed');
+			current = result;
+		},
+		onError: (err: unknown) => notify.error(err, 'Could not change the idle timeout')
+	}));
+
 	function set(required: boolean) {
 		if (required && !confirming) {
 			confirming = true;
@@ -73,6 +90,23 @@
 		checked={current.require_mfa}
 		disabled={saving}
 		onChange={(on) => set(on)}
+	/>
+
+	<Select
+		label="Sign out an idle session after"
+		value={String(current.idle_timeout_minutes)}
+		options={idleChoices.some((choice) => choice.value === String(current.idle_timeout_minutes))
+			? idleChoices
+			: [
+					{
+						value: String(current.idle_timeout_minutes),
+						label: `${current.idle_timeout_minutes} minutes`
+					},
+					...idleChoices
+				]}
+		hint="An administrator who has not used the panel for this long signs in again. Every session ends after twelve hours whatever this says."
+		disabled={saveIdle.isPending}
+		onChange={(value) => saveIdle.mutate(Number(value))}
 	/>
 </Panel>
 

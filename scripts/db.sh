@@ -3,7 +3,7 @@
 # The database named by VARD_DB_DSN (.env), or by DB_URL when set.
 #
 #   scripts/db.sh create    create it if it is missing
-#   scripts/db.sh reset     drop every table and migrate from scratch (asks first)
+#   scripts/db.sh reset     every migration down and up again: a new installation (asks first)
 #   scripts/db.sh psql      open a psql session
 
 set -euo pipefail
@@ -26,10 +26,9 @@ create)
 	fi
 	;;
 reset)
-	read -rp "Delete every table in \"$name\"? Type yes: " answer
+	read -rp "Delete every row in \"$name\"? Type yes: " answer
 	[[ $answer == yes ]] || die "cancelled"
-	psql "$url" -qc "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-	VARD_DB_DSN="$url" go run ./cmd/vard migrate up
+	VARD_DB_DSN="$url" go run ./cmd/vard migrate reset -yes
 	;;
 psql) exec psql "$url" ;;
 *) die "usage: scripts/db.sh create|reset|psql" ;;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { startRegistration } from '@simplewebauthn/browser';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { adminApi, messageOf, mfaApi, type AdminSession } from '#lib/api/index.js';
 	import RecoveryCodes from '#lib/components/mfa/RecoveryCodes.svelte';
@@ -37,8 +38,19 @@
 
 	let mode = $state<Mode>('reading');
 
-	let asking = $state<'disable' | 'codes' | null>(null);
+	let asking = $state<'disable' | 'codes' | 'passkey' | 'remove' | null>(null);
 	let code = $state('');
+	let passkeyLabel = $state('');
+	let removing = $state<string | null>(null);
+
+	const askingLabel = $derived(
+		{
+			disable: 'Code from your authenticator, to turn it off',
+			codes: 'Code from your authenticator, for new codes',
+			passkey: 'Code from your authenticator, to add a passkey',
+			remove: 'Code from your authenticator, to remove the passkey'
+		}[asking ?? 'codes']
+	);
 	let busy = $state(false);
 	let newCodes = $state<string[]>([]);
 
@@ -107,6 +119,46 @@
 			busy = false;
 		}
 	}
+
+	async function addPasskey() {
+		busy = true;
+
+		try {
+			const { passkey } = await mfaApi.beginPasskey(code.trim());
+			const made = await startRegistration({ optionsJSON: passkey });
+			await mfaApi.finishPasskey(passkeyLabel.trim(), made);
+			notify.success('Passkey added', 'You can sign in with it instead of a code.');
+			passkeyLabel = '';
+			backToReading();
+		} catch (err) {
+			if (!(err instanceof Error && err.name === 'NotAllowedError')) {
+				notify.error(err, 'Could not add the passkey');
+			}
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function removePasskey() {
+		if (!removing) return;
+		busy = true;
+
+		try {
+			await mfaApi.removePasskey(removing, code.trim());
+			notify.success('Passkey removed');
+			removing = null;
+			backToReading();
+		} catch (err) {
+			notify.error(err, 'Could not remove the passkey');
+		} finally {
+			busy = false;
+		}
+	}
+
+	const confirmAsked = () =>
+		({ disable, codes: regenerate, passkey: addPasskey, remove: removePasskey })[
+			asking ?? 'codes'
+		]();
 
 	async function regenerate() {
 		busy = true;
@@ -184,6 +236,39 @@
 						{/snippet}
 					</ListItem>
 
+					{#each mfa.passkeys as passkey (passkey.id)}
+						<ListItem
+							title={passkey.label}
+							description={passkey.last_used_at
+								? `Passkey, last used ${formatRelative(passkey.last_used_at)}`
+								: `Passkey, added ${formatRelative(passkey.added_at)}`}
+						>
+							{#snippet lead()}<Thumb icon="ri-fingerprint-line" />{/snippet}
+							{#snippet end()}
+								<Button
+									size="sm"
+									variant="subtle"
+									onclick={() => {
+										removing = passkey.id;
+										asking = 'remove';
+									}}
+								>
+									Remove
+								</Button>
+							{/snippet}
+						</ListItem>
+					{/each}
+
+					<ListItem
+						title="Passkeys"
+						description="Sign in with your device's fingerprint, face or PIN instead of a code."
+					>
+						{#snippet lead()}<Thumb icon="ri-fingerprint-line" />{/snippet}
+						{#snippet end()}
+							<Button size="sm" variant="subtle" onclick={() => (asking = 'passkey')}>Add</Button>
+						{/snippet}
+					</ListItem>
+
 					<ListItem
 						title="Recovery codes"
 						description="Each one signs you in once if you lose your phone."
@@ -214,10 +299,17 @@
 
 				{#if asking}
 					<div class="asking">
+						{#if asking === 'passkey'}
+							<Input
+								label="Name"
+								bind:value={passkeyLabel}
+								placeholder="Work laptop"
+								maxlength={100}
+								disabled={busy}
+							/>
+						{/if}
 						<Input
-							label={asking === 'disable'
-								? 'Code from your authenticator, to turn it off'
-								: 'Code from your authenticator, for new codes'}
+							label={askingLabel}
 							bind:value={code}
 							inputmode="numeric"
 							autocomplete="one-time-code"
@@ -232,6 +324,7 @@
 								disabled={busy}
 								onclick={() => {
 									asking = null;
+									removing = null;
 									code = '';
 								}}
 							>
@@ -239,12 +332,17 @@
 							</Button>
 							<Button
 								size="sm"
-								colorPalette={asking === 'disable' ? 'danger' : 'neutral'}
+								colorPalette={asking === 'disable' || asking === 'remove' ? 'danger' : 'neutral'}
 								loading={busy}
 								disabled={busy || code.trim() === ''}
-								onclick={asking === 'disable' ? disable : regenerate}
+								onclick={confirmAsked}
 							>
-								{asking === 'disable' ? 'Turn off' : 'Make new codes'}
+								{{
+									disable: 'Turn off',
+									codes: 'Make new codes',
+									passkey: 'Add a passkey',
+									remove: 'Remove passkey'
+								}[asking]}
 							</Button>
 						</div>
 					</div>

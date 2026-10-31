@@ -9,6 +9,7 @@
 </script>
 
 <script lang="ts">
+	import { submit } from '#lib/forms.js';
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import {
 		applicationsApi,
@@ -79,25 +80,19 @@
 		}
 	}
 
-	const save = createMutation(() => ({
-		mutationFn: () =>
-			current
-				? applicationsApi.update(current.id, form.toInput())
-				: applicationsApi.create(form.toInput()),
-		onSuccess: (result: ApplicationWithSecret) => {
+	const save = submit<Awaited<ReturnType<typeof applicationsApi.update>>>({
+		input: () => (current ? [current.id, form.toInput()] : [form.toInput()]),
+		when: () => !(!saveable || !form.ready),
+		pending: (busy) => (saving = busy),
+		done: (result: ApplicationWithSecret) => {
 			notify.success(
 				current ? 'Application saved' : 'Application created',
 				result.client_secret ? 'Copy its secret now: it is shown once.' : undefined
 			);
 			return saved(result);
 		},
-		onError: (err: unknown) => {
-			notify.error(err, 'Could not save this application');
-		},
-		onSettled: () => {
-			saving = false;
-		}
-	}));
+		failed: (err) => notify.error(err, 'Could not save this application')
+	});
 
 	const rotate = createMutation(() => ({
 		mutationFn: () => applicationsApi.rotateSecret(current!.id),
@@ -114,15 +109,6 @@
 			saving = false;
 		}
 	}));
-
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!saveable || saving || !form.ready) return;
-
-		saving = true;
-		save.mutate();
-	}
 
 	function rotateNow() {
 		if (!current || saving) return;
@@ -158,7 +144,8 @@
 	actions={secret || saveable ? actions : undefined}
 	title={current ? current.name : 'New application'}
 	meta={current?.client_id}
-	onsubmit={submit}
+	action={current ? '/actions/applications?/update' : '/actions/applications?/create'}
+	onsubmit={save}
 >
 	{#if current}
 		{#if secret}

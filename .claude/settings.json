@@ -34,7 +34,8 @@
       "Read(./.env)",
       "Read(./web/console/.env)",
       "Read(./web/id/.env)",
-      "Read(./deploy/.env)"
+      "Read(./deploy/.env)",
+      "Read(./compose.env)"
     ]
   },
   "hooks": {
