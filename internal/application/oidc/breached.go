@@ -60,6 +60,11 @@ func (s *Service) PasswordBreached(ctx context.Context, password string) bool {
 			return true
 		}
 	}
+	// An answer cut off part way said nothing about the rest of the range:
+	// let the password through, as when the API does not answer, but say so.
+	if err := lines.Err(); err != nil {
+		s.log.Warn("the breached password check's answer was cut off; letting the password through", "error", err)
+	}
 
 	return false
 }

@@ -411,6 +411,11 @@ func (c *Cache) server(ctx context.Context) (memory int64, version string) {
 			version = value
 		}
 	}
+	// A line past the scanner's limit stops it short: what came before it
+	// is not the whole answer, so none of it is shown.
+	if lines.Err() != nil {
+		return 0, ""
+	}
 
 	return memory, version
 }
