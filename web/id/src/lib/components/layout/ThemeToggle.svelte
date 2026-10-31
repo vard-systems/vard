@@ -1,18 +1,15 @@
 <script lang="ts">
 	import { COOKIES } from '#lib/brand.js';
 	import { useTranslator } from '#lib/i18n/index.js';
+	import { currentTheme } from '#lib/theme.js';
 	import { rememberChoice } from '#lib/utils/cookies.js';
 
 	const t = useTranslator();
 
 	function toggle() {
-		const root = document.documentElement;
-		const current =
-			root.dataset.theme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-		const next = current === 'dark' ? 'light' : 'dark';
+		const next = currentTheme() === 'dark' ? 'light' : 'dark';
 
-		root.dataset.theme = next;
-		root.style.colorScheme = next;
+		document.documentElement.dataset.theme = next;
 		rememberChoice(COOKIES.theme, next);
 	}
 </script>

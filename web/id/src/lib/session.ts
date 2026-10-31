@@ -10,7 +10,11 @@ export async function currentUser(fetch: typeof globalThis.fetch): Promise<User 
 		return (await account.me(fetch)).user;
 	} catch (err) {
 		if (err instanceof ApiError && err.status === 401) return null;
-		if (err instanceof ApiError && err.status === 0) error(503, err.message);
+		// The API unreachable or failing is an error page, not a crash: the
+		// page cannot say who is signed in, so it does not guess.
+		if (err instanceof ApiError && (err.status === 0 || err.status >= 500)) {
+			error(err.status === 0 ? 503 : err.status, err.message);
+		}
 		throw err;
 	}
 }

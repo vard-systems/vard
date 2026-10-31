@@ -466,8 +466,12 @@ shield mark does.
   on the server too: no `document`, `window` or `localStorage` outside an
   effect, an event handler or a `browser` check. What the server needs to do
   for the API is the API's job: a console form action only passes the form
-  to it (A form in the panel). The theme is applied
-  before the first paint by `static/theme.js`.
+  to it (A form in the panel). The theme is the
+  reader's cookie, which `hooks.server.ts` writes into `<html data-theme>` as
+  the page is rendered; no script applies it. A choice the reader makes (theme,
+  language, the sidebar) is written and read through `#lib/utils/cookies.js`
+  (`rememberChoice`, `readChoice`, `setChoice`): over https a `__Host-` cookie,
+  read by its whole name, never matched by a pattern.
 - **Comments** are few and short and say _why_ — a security reason, a race, a
   protocol rule — never what the next line does.
 - **Names** are spelled out; identifiers use American spelling (`Normalize`,

@@ -1,66 +1,36 @@
 import { browser } from '$app/env';
 
 import { COOKIES } from '#lib/brand.js';
+import { currentTheme, type Theme } from '#lib/theme.js';
+import { rememberChoice } from '#lib/utils/cookies.js';
 
-export type Theme = 'light' | 'dark';
-
-/** The theme is kept in a cookie, which static/theme.js reads before the
- *  first paint so the page is never drawn in the wrong one. The attribute
- *  below is what the stylesheet keys off. */
-const COOKIE = COOKIES.theme;
-const ATTRIBUTE = 'data-theme';
-const ONE_YEAR = 60 * 60 * 24 * 365;
-
-function isTheme(value: unknown): value is Theme {
-	return value === 'light' || value === 'dark';
-}
-
-function fromCookie(): Theme | null {
-	const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=([^;]*)`));
-	const value = match?.[1];
-
-	return isTheme(value) ? value : null;
-}
-
-function initial(): Theme {
-	if (!browser) return 'light';
-
-	const attribute = document.documentElement.getAttribute(ATTRIBUTE);
-	if (isTheme(attribute)) return attribute;
-
-	return (
-		fromCookie() ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-	);
-}
+export type { Theme };
 
 function wantsMotion(): boolean {
-	return browser && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	return !matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+/** The theme the page is drawn in. The server writes the chosen one into
+ *  <html> (hooks.server.ts), which the stylesheet keys off; this follows it
+ *  in the browser and keeps a new choice in the reader's cookie. */
 class ThemeState {
-	current = $state<Theme>(initial());
+	current = $state<Theme>(browser ? currentTheme() : 'light');
 
 	toggle() {
 		this.set(this.current === 'dark' ? 'light' : 'dark');
 	}
 
 	set(theme: Theme) {
-		if (!browser) {
-			this.current = theme;
-			return;
-		}
-
 		const apply = () => {
 			this.current = theme;
-			document.documentElement.setAttribute(ATTRIBUTE, theme);
-			document.cookie = `${COOKIE}=${theme}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
+			document.documentElement.dataset.theme = theme;
+			rememberChoice(COOKIES.theme, theme);
 		};
 
 		if (document.startViewTransition && wantsMotion()) {
 			document.startViewTransition(apply);
 			return;
 		}
-
 		apply();
 	}
 }

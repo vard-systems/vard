@@ -1,15 +1,14 @@
 import { COOKIES } from '#lib/brand.js';
+import { rememberChoice } from '#lib/utils/cookies.js';
 
 export type SidebarState = 'wide' | 'mini';
-
-const ONE_YEAR = 60 * 60 * 24 * 365;
 
 export function isSidebarState(value: unknown): value is SidebarState {
 	return value === 'wide' || value === 'mini';
 }
 
 export function rememberSidebar(state: SidebarState) {
-	document.cookie = `${COOKIES.sidebar}=${state}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
+	rememberChoice(COOKIES.sidebar, state);
 }
 
 export function parseClosedGroups(raw: string | undefined): string[] {
@@ -22,7 +21,5 @@ export function parseClosedGroups(raw: string | undefined): string[] {
 }
 
 export function rememberClosedGroups(closed: string[]) {
-	const value = closed.join(',');
-
-	document.cookie = `${COOKIES.branches}=${encodeURIComponent(value)}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
+	rememberChoice(COOKIES.branches, closed.join(','));
 }

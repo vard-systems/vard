@@ -1,8 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import { signIn, type PublicLanguage } from '#lib/api/index.js';
 import { COOKIES, LANGUAGE_DEPENDENCY } from '#lib/brand.js';
-import { ONE_YEAR } from '#lib/constants.js';
 import { BASE, chooseLanguage, type Messages } from '#lib/i18n/index.js';
+import { readChoice, setChoice } from '#lib/utils/cookies.js';
 import { safeNext } from '#lib/utils/next.js';
 import type { LayoutServerLoad } from './$types';
 
@@ -16,7 +16,7 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 		.catch(() => ({ languages: [] as PublicLanguage[], default: BASE }));
 
 	const language = chooseLanguage(
-		asked ?? cookies.get(COOKIES.language),
+		asked ?? readChoice(cookies, COOKIES.language, url),
 		request.headers.get('accept-language'),
 		offered.languages.map((one) => one.code),
 		offered.default
@@ -25,12 +25,7 @@ export const load: LayoutServerLoad = async ({ cookies, depends, fetch, locals, 
 	if (asked !== undefined) {
 		// Readable by the page's script too, which writes it when the reader
 		// picks another language (#lib/i18n/switch.js).
-		cookies.set(COOKIES.language, language, {
-			path: '/',
-			httpOnly: false,
-			sameSite: 'lax',
-			maxAge: ONE_YEAR
-		});
+		setChoice(cookies, COOKIES.language, language, url);
 
 		const clean = new URL(url);
 		clean.searchParams.delete('lang');
