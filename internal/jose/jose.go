@@ -27,6 +27,9 @@ const (
 
 var Algorithms = []string{RS256, PS256, ES256}
 
+// MaxRSABits is the longest RSA modulus ParseJWK takes from outside.
+const MaxRSABits = 4096
+
 var ErrInvalid = errors.New("invalid token")
 
 var b64 = base64.RawURLEncoding
@@ -268,8 +271,14 @@ func ParseJWK(jwk JWK) (Key, error) {
 		if len(n) < 256 {
 			return Key{}, fmt.Errorf("jose: an RSA key shorter than 2048 bits is not trusted")
 		}
+		// Anyone may put a key in a DPoP proof, and verifying under a huge
+		// modulus costs the server, not the sender, so the size is capped.
+		modulus := new(big.Int).SetBytes(n)
+		if modulus.BitLen() > MaxRSABits {
+			return Key{}, fmt.Errorf("jose: an RSA key longer than %d bits is not accepted", MaxRSABits)
+		}
 
-		key.PublicKey = &rsa.PublicKey{N: new(big.Int).SetBytes(n), E: int(new(big.Int).SetBytes(e).Int64())}
+		key.PublicKey = &rsa.PublicKey{N: modulus, E: int(new(big.Int).SetBytes(e).Int64())}
 		if key.Algorithm == "" {
 			key.Algorithm = RS256
 		}

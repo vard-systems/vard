@@ -133,3 +133,38 @@ func TestLiveSignInIsRateLimited(t *testing.T) {
 		t.Errorf("discovery after the limit = %d, want 200", status)
 	}
 }
+
+// The provider callbacks are reached by anyone with any state and code, and
+// each one can make the server call out (a token exchange, a key fetch), so
+// they count against the same budget as the routes that start a sign-in.
+func TestLiveProviderCallbacksAreRateLimited(t *testing.T) {
+	s := newLiveServerLimited(t, 1)
+
+	json := map[string]string{"Content-Type": "application/json"}
+	if status := raw(t, http.MethodPost, s.root+"/api/v1/account/login", `{"email":"a@example.com","password":"guess-password"}`, json); status != http.StatusUnauthorized {
+		t.Fatalf("the one attempt allowed = %d, want 401", status)
+	}
+
+	noRedirects := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	for _, route := range []struct{ method, path string }{
+		{http.MethodGet, "/oauth2/social/google/callback?state=x&code=y"},
+		{http.MethodPost, "/oauth2/social/apple/callback"},
+		{http.MethodGet, "/oauth2/sso/acme/callback?state=x&code=y"},
+	} {
+		t.Run(route.method+" "+route.path, func(t *testing.T) {
+			req, err := http.NewRequest(route.method, s.root+route.path, strings.NewReader("state=x&code=y"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			res, err := noRedirects.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			res.Body.Close()
+			if res.StatusCode != http.StatusTooManyRequests {
+				t.Errorf("past the limit = %d, want 429", res.StatusCode)
+			}
+		})
+	}
+}

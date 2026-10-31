@@ -184,7 +184,14 @@ code near it, and add a test when adding a case.
 - **Outbound requests to admin- or user-supplied URLs** (social, SSO, SAML
   metadata, back-channel logout) go through `newFederationClient` in
   `internal/application/oidc/outbound.go`, which refuses private, link-local and metadata
-  addresses at dial time. A logout token follows no redirect.
+  addresses at dial time. A logout token follows no redirect. A provider's
+  keys are fetched again because a token did not verify at most once a
+  `keyRefetchEvery` (a minute) per key set (`providerKeys`), and a social
+  id_token is checked against its kind's published keys
+  (`SocialSpec.JWKSURL`) wherever the kind names them.
+- **A key from outside is at most `jose.MaxRSABits` (4096) long.** A DPoP
+  proof brings a key of the sender's choosing, and verifying under a large
+  modulus costs the server; `ParseJWK` refuses a longer one.
 - **Redirect targets** are exact-matched redirect URIs
   (`Application.AllowsRedirect`: a native app's loopback URI on any port, RFC
   8252 §7.3, and nothing else loosened; Expo Go's `exp://` only for a native

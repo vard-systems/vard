@@ -67,7 +67,7 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | `VARD_ADMIN_URL`           | The console's URL; only this origin may change things via the admin API.                 |
 | `VARD_REDIS_HOST`          | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
 | `VARD_TRUSTED_PROXIES`     | Who may say who the caller is: the apps' servers, and nothing else.                      |
-| `VARD_RATE_LIMIT`          | Attempts per minute per address on password and email endpoints.                         |
+| `VARD_RATE_LIMIT`          | Attempts per minute per address on sign-in, password and email endpoints.                |
 | `VARD_ADMIN_MFA`           | `optional` (the default; `required` in `compose.env.example`), seeded on first start.    |
 | `VARD_ALLOW_INSECURE_HTTP` | Lets plain http beyond localhost through, for test setups; nothing else. Never set live.  |
 

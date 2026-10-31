@@ -9,6 +9,8 @@ import (
 	"math/big"
 	"strings"
 	"testing"
+
+	"vard/internal/jose/josetest"
 )
 
 func testKey(t *testing.T, alg, kid string) Key {
@@ -345,7 +347,7 @@ func signEmbedded(t *testing.T, key Key, carried JWK) string {
 	t.Helper()
 
 	carried.KeyID, carried.Use, carried.Algorithm = "", "", ""
-	header, err := json.Marshal(Header{Algorithm: ES256, Type: "dpop+jwt", JWK: &carried})
+	header, err := json.Marshal(Header{Algorithm: key.Algorithm, Type: "dpop+jwt", JWK: &carried})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -358,4 +360,56 @@ func signEmbedded(t *testing.T, key Key, carried JWK) string {
 	}
 
 	return input + "." + b64.EncodeToString(signature)
+}
+
+// Verifying under a modulus costs the verifier in proportion to its size,
+// and a DPoP proof brings a key of the sender's choosing.
+func TestParseJWKCapsTheRSAKeySize(t *testing.T) {
+	tests := []struct {
+		name string
+		bits int
+		ok   bool
+	}{
+		{name: "a 4096-bit key", bits: 4096, ok: true},
+		{name: "an 8192-bit key", bits: 8192, ok: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key := Key{Algorithm: RS256, Private: josetest.RSAKeyOfBits(t, tt.bits)}
+			public, err := key.Public()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			parsed, err := ParseJWK(public)
+			if (err == nil) != tt.ok {
+				t.Fatalf("ParseJWK() = %v, want ok %v", err, tt.ok)
+			}
+
+			var claims map[string]any
+			_, err = VerifyEmbedded(signEmbedded(t, key, public), &claims)
+			if (err == nil) != tt.ok {
+				t.Fatalf("VerifyEmbedded() = %v, want ok %v", err, tt.ok)
+			}
+			if tt.ok && parsed.PublicKey.(*rsa.PublicKey).N.BitLen() != tt.bits {
+				t.Errorf("parsed a %d-bit key", parsed.PublicKey.(*rsa.PublicKey).N.BitLen())
+			}
+		})
+	}
+}
+
+// A modulus padded with zero bytes is no longer than its value.
+func TestParseJWKMeasuresTheModulusNotItsEncoding(t *testing.T) {
+	key := testKey(t, RS256, "")
+	public, err := key.Public()
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, _ := b64.DecodeString(public.N)
+	public.N = b64.EncodeToString(append(make([]byte, 1024), n...))
+
+	if _, err := ParseJWK(public); err != nil {
+		t.Errorf("ParseJWK() = %v, want a padded 2048-bit key accepted", err)
+	}
 }

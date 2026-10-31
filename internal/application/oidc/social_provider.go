@@ -176,7 +176,7 @@ func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProv
 
 	var claims map[string]any
 	if identityInIDToken(provider) {
-		payload, err := s.idTokenClaims(provider, token.IDToken, nonce)
+		payload, err := s.idTokenClaims(ctx, provider, token.IDToken, nonce)
 		if err != nil {
 			return nil, err
 		}
@@ -213,28 +213,26 @@ func (s *Service) socialIdentity(ctx context.Context, provider *model.SocialProv
 	return identity, nil
 }
 
-// idTokenClaims reads an id_token straight from the provider's token endpoint
-// over TLS, which OpenID Connect Core 3.1.3.7 accepts in place of a signature
-// check. Its claims are still held to this client, the expected issuer, the
-// nonce this sign-in sent, and the clock.
-func (s *Service) idTokenClaims(provider *model.SocialProvider, idToken, nonce string) (map[string]any, error) {
+// idTokenClaims reads the id_token the provider's token endpoint answered
+// with. A provider that publishes its keys (SocialSpec.JWKSURL) has the
+// token's signature checked against them; one that does not is trusted on
+// the TLS of its token endpoint, which OpenID Connect Core 3.1.3.7 accepts in
+// place of a signature check. Either way its claims are held to this client,
+// the expected issuer, the nonce this sign-in sent, and the clock.
+func (s *Service) idTokenClaims(ctx context.Context, provider *model.SocialProvider, idToken, nonce string) (map[string]any, error) {
 	if idToken == "" {
 		s.log.Error("a social provider gave no id_token", "provider", provider.Slug)
 		return nil, ErrSocialUpstream
 	}
 
-	parts := strings.Split(idToken, ".")
-	if len(parts) != 3 {
-		return nil, ErrSocialUpstream
-	}
-
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return nil, ErrSocialUpstream
-	}
-
 	var claims map[string]any
-	if err := decodeClaims(payload, &claims); err != nil {
+	if jwksURL := provider.Spec().JWKSURL; jwksURL != "" {
+		if err := s.verifyPublished(ctx, jwksURL, idToken, &claims); err != nil {
+			s.log.Error("a social provider's id_token did not verify against its published keys",
+				"provider", provider.Slug, "error", err)
+			return nil, ErrSocialUpstream
+		}
+	} else if err := unverifiedClaims(idToken, &claims); err != nil {
 		return nil, ErrSocialUpstream
 	}
 
@@ -276,6 +274,21 @@ func (s *Service) idTokenClaims(provider *model.SocialProvider, idToken, nonce s
 	}
 
 	return claims, nil
+}
+
+// unverifiedClaims decodes a JWT's claims without looking at its signature.
+func unverifiedClaims(token string, claims *map[string]any) error {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return jose.ErrInvalid
+	}
+
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return jose.ErrInvalid
+	}
+
+	return decodeClaims(payload, claims)
 }
 
 func (s *Service) fetchSocialProfile(ctx context.Context, provider *model.SocialProvider, token *socialToken) (map[string]any, error) {

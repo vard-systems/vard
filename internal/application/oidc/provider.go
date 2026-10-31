@@ -299,21 +299,32 @@ type Client struct {
 
 const LanguageCookie = brand.LanguageCookie
 
+// withQuery adds the non-empty values to an address's query. Whatever query
+// the address already has is kept byte for byte, in its order: a redirect
+// URI is registered exactly, and a client may compare what comes back to it
+// the same way (OAuth 2.1 §2.3.1, RFC 6749 §3.1.2).
 func withQuery(base string, values url.Values) string {
 	u, err := url.Parse(base)
 	if err != nil {
 		return base
 	}
 
-	query := u.Query()
+	added := url.Values{}
 	for key, vals := range values {
 		for _, v := range vals {
 			if v != "" {
-				query.Add(key, v)
+				added.Add(key, v)
 			}
 		}
 	}
-	u.RawQuery = query.Encode()
+
+	switch encoded := added.Encode(); {
+	case encoded == "":
+	case u.RawQuery == "":
+		u.RawQuery = encoded
+	default:
+		u.RawQuery += "&" + encoded
+	}
 
 	return u.String()
 }

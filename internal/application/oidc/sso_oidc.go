@@ -29,10 +29,13 @@ type oidcDiscovery struct {
 
 // ssoCache holds what identity providers publish about themselves, for an
 // hour, so a sign-in does not fetch their discovery document and keys again.
+// forced is when each key set was last fetched again because a token did not
+// verify, which anyone can cause by sending a bad one.
 type ssoCache struct {
 	mu        sync.Mutex
 	discovery map[string]cached[*oidcDiscovery]
 	keys      map[string]cached[[]jose.Key]
+	forced    map[string]time.Time
 }
 
 type cached[T any] struct {
@@ -40,12 +43,19 @@ type cached[T any] struct {
 	fetched time.Time
 }
 
-const ssoCacheLifetime = time.Hour
+const (
+	ssoCacheLifetime = time.Hour
+	// keyRefetchEvery is how often a token that does not verify may make
+	// the server fetch the provider's keys again: often enough to follow a
+	// rotation, too seldom for forged tokens to make it fetch on each one.
+	keyRefetchEvery = time.Minute
+)
 
 func newSSOCache() *ssoCache {
 	return &ssoCache{
 		discovery: map[string]cached[*oidcDiscovery]{},
 		keys:      map[string]cached[[]jose.Key]{},
+		forced:    map[string]time.Time{},
 	}
 }
 
@@ -220,35 +230,9 @@ func (s *Service) verifyIDToken(
 		return nil, fmt.Errorf("no id_token")
 	}
 
-	keys, err := s.providerKeys(ctx, document.JWKSURI, false)
-	if err != nil {
-		return nil, err
-	}
-
-	// kid is optional in a JWS: a token without one may be signed by any of
-	// the provider's keys of its algorithm, and one with a kid only by that.
-	candidates := func(keys []jose.Key) func(jose.Header) []jose.Key {
-		return func(header jose.Header) []jose.Key {
-			if header.KeyID == "" {
-				return keys
-			}
-			for _, key := range keys {
-				if key.ID == header.KeyID {
-					return []jose.Key{key}
-				}
-			}
-			return nil
-		}
-	}
-
 	var claims map[string]any
-	if _, err := jose.VerifyAmong(idToken, candidates(keys), &claims); err != nil {
-		if keys, err = s.providerKeys(ctx, document.JWKSURI, true); err != nil {
-			return nil, err
-		}
-		if _, err := jose.VerifyAmong(idToken, candidates(keys), &claims); err != nil {
-			return nil, fmt.Errorf("signature: %w", err)
-		}
+	if err := s.verifyPublished(ctx, document.JWKSURI, idToken, &claims); err != nil {
+		return nil, err
 	}
 
 	now := s.now()
@@ -277,11 +261,67 @@ func (s *Service) verifyIDToken(
 	return claims, nil
 }
 
+// verifyPublished checks a token's signature against the keys a provider
+// publishes at jwksURI and decodes its claims. A token that does not verify
+// against the keys held may be signed with one the provider has just
+// rotated in, so the keys are fetched again, at most once a keyRefetchEvery.
+func (s *Service) verifyPublished(ctx context.Context, jwksURI, token string, claims any) error {
+	keys, err := s.providerKeys(ctx, jwksURI, false)
+	if err != nil {
+		return err
+	}
+
+	// kid is optional in a JWS: a token without one may be signed by any of
+	// the provider's keys of its algorithm, and one with a kid only by that.
+	candidates := func(keys []jose.Key) func(jose.Header) []jose.Key {
+		return func(header jose.Header) []jose.Key {
+			if header.KeyID == "" {
+				return keys
+			}
+			for _, key := range keys {
+				if key.ID == header.KeyID {
+					return []jose.Key{key}
+				}
+			}
+			return nil
+		}
+	}
+
+	if _, err := jose.VerifyAmong(token, candidates(keys), claims); err == nil {
+		return nil
+	}
+	if keys, err = s.providerKeys(ctx, jwksURI, true); err != nil {
+		return err
+	}
+	if _, err := jose.VerifyAmong(token, candidates(keys), claims); err != nil {
+		return fmt.Errorf("signature: %w", err)
+	}
+
+	return nil
+}
+
+// providerKeys is the key set published at jwksURI, from the cache while it
+// is fresh. refresh asks for it to be fetched again, which happens at most
+// once a keyRefetchEvery per address; in between, the keys held are the
+// answer.
 func (s *Service) providerKeys(ctx context.Context, jwksURI string, refresh bool) ([]jose.Key, error) {
 	s.ssoCache.mu.Lock()
-	if hit, ok := s.ssoCache.keys[jwksURI]; ok && !refresh && s.now().Sub(hit.fetched) < ssoCacheLifetime {
+	hit, ok := s.ssoCache.keys[jwksURI]
+	switch {
+	case ok && !refresh && s.now().Sub(hit.fetched) < ssoCacheLifetime:
 		s.ssoCache.mu.Unlock()
 		return hit.value, nil
+	case refresh && s.now().Sub(s.ssoCache.forced[jwksURI]) < keyRefetchEvery:
+		s.ssoCache.mu.Unlock()
+		if !ok {
+			return nil, fmt.Errorf("the provider's keys were fetched again less than %s ago", keyRefetchEvery)
+		}
+		return hit.value, nil
+	case refresh:
+		// Noted before fetching, so requests arriving while it is under way
+		// do not fetch too, and a failed fetch counts as much as one that
+		// worked.
+		s.ssoCache.forced[jwksURI] = s.now()
 	}
 	s.ssoCache.mu.Unlock()
 
