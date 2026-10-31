@@ -41,14 +41,14 @@
 
 	label {
 		font-size: var(--text-sm);
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	input {
 		width: 100%;
 		height: var(--control-height);
 		padding: 0 var(--space-3);
-		border: 1px solid var(--color-border);
+		border: 1px solid var(--color-border-strong);
 		border-radius: var(--radius-md);
 		background: var(--color-input);
 		font-size: var(--text-lg);
@@ -59,7 +59,7 @@
 	}
 
 	input:hover:not(:disabled):not(:read-only) {
-		background: var(--color-input-hover);
+		border-color: var(--color-text-disabled);
 	}
 
 	input:focus {

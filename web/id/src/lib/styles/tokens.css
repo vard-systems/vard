@@ -26,7 +26,7 @@
 	--text-2xl: 24px;
 
 	--radius-sm: 6px;
-	--radius-md: 8px;
+	--radius-md: 10px;
 	--radius-lg: 14px;
 	--app-radius: 18px;
 	--app-inset: 12px;
@@ -39,25 +39,25 @@
 	--space-6: 32px;
 	--space-7: 48px;
 
-	--control-height: 46px;
+	--control-height: 44px;
 	--speed: 140ms;
 
 	--color-body: #f6f7f9;
 	--color-surface: #ffffff;
 	--color-surface-alt: #f8f9fa;
-	--color-input: #eef1f4;
-	--color-input-hover: #e7ebef;
-	--color-border: #dde2e7;
-	--color-border-strong: #c8cfd6;
+	--color-input: #ffffff;
+	--color-input-hover: #ffffff;
+	--color-border: #e3e7ec;
+	--color-border-strong: #cdd3da;
 
 	--color-text: #1f2328;
 	--color-text-hint: #66707a;
 	--color-text-disabled: #a2a9ae;
 
-	--color-primary: #25272d;
-	--color-primary-hover: #3a3d45;
+	--color-primary: #2f6fdb;
+	--color-primary-hover: #255fc2;
 	--color-primary-text: #ffffff;
-	--color-accent: #263b5e;
+	--color-accent: #2f6fdb;
 	--color-accent-text: #ffffff;
 	--color-link: #2f6fdb;
 	--color-focus: #2f6fdb;
@@ -75,7 +75,7 @@
 	--toast-hint: #a2a9ae;
 	--toast-icon: #7aa7ee;
 
-	--shadow-card: 0 1px 2px rgb(16 24 40 / 4%), 0 8px 24px rgb(16 24 40 / 6%);
+	--shadow-card: 0 1px 2px rgb(16 24 40 / 4%), 0 12px 32px -8px rgb(16 24 40 / 10%);
 	--selection: #465a7340;
 
 	--color-scheme: light;
@@ -86,8 +86,8 @@
 	--color-body: #141517;
 	--color-surface: #1c1d20;
 	--color-surface-alt: #202226;
-	--color-input: #26282c;
-	--color-input-hover: #2c2e33;
+	--color-input: #18191c;
+	--color-input-hover: #18191c;
 	--color-border: #2f3237;
 	--color-border-strong: #3d4046;
 
@@ -95,10 +95,10 @@
 	--color-text-hint: #9a9ea5;
 	--color-text-disabled: #6b6f76;
 
-	--color-primary: #ececec;
-	--color-primary-hover: #ffffff;
-	--color-primary-text: #141517;
-	--color-accent: #35507d;
+	--color-primary: #3b7be0;
+	--color-primary-hover: #5b8def;
+	--color-primary-text: #ffffff;
+	--color-accent: #3b7be0;
 	--color-link: #7aa7ee;
 	--color-focus: #7aa7ee;
 
@@ -125,8 +125,8 @@
 		--color-body: #141517;
 		--color-surface: #1c1d20;
 		--color-surface-alt: #202226;
-		--color-input: #26282c;
-		--color-input-hover: #2c2e33;
+		--color-input: #18191c;
+		--color-input-hover: #18191c;
 		--color-border: #2f3237;
 		--color-border-strong: #3d4046;
 
@@ -134,10 +134,10 @@
 		--color-text-hint: #9a9ea5;
 		--color-text-disabled: #6b6f76;
 
-		--color-primary: #ececec;
-		--color-primary-hover: #ffffff;
-		--color-primary-text: #141517;
-		--color-accent: #35507d;
+		--color-primary: #3b7be0;
+		--color-primary-hover: #5b8def;
+		--color-primary-text: #ffffff;
+		--color-accent: #3b7be0;
 		--color-link: #7aa7ee;
 		--color-focus: #7aa7ee;
 
