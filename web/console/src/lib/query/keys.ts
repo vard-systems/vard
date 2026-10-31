@@ -27,6 +27,7 @@ export const keys = {
 		list: (search: string) => ['apis', 'list', search] as const,
 		one: (id: string) => ['apis', 'one', id] as const,
 		applications: (id: string) => ['apis', 'applications', id] as const,
+		introspectors: (id: string) => ['apis', 'introspectors', id] as const,
 		logs: (id: string) => ['apis', 'logs', id] as const
 	},
 

@@ -73,6 +73,8 @@
 		"api_identifier_taken": "An API with this identifier already exists.",
 		"api_too_many_scopes": "An API may have at most {max} scopes.",
 		"api_scope_foreign": "{scope} is not a scope of this API.",
+		"api_too_many_introspectors": "At most {max} applications may introspect one API's tokens.",
+		"api_introspector_public": "{name} is a public client: only an application with a secret, a signed assertion or a certificate may introspect tokens.",
 		"admin_wrong_credentials": "Wrong username or password.",
 		"admin_sign_in_expired": "Your sign-in has expired. Enter your password again.",
 		"admin_sign_in_code_wrong": "That code is not right. Check the time on your phone and try the newest code.",

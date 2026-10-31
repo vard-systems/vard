@@ -103,6 +103,8 @@ func TestErrorParametersAreSent(t *testing.T) {
 		"cache_ttl_invalid":               {"max"},
 		"api_scope_foreign":               {"scope"},
 		"api_too_many_scopes":             {"max"},
+		"api_too_many_introspectors":      {"max"},
+		"api_introspector_public":         {"name"},
 		"application_api_scope_foreign":   {"api"},
 		"application_too_many_uris":       {"max"},
 		"social_provider_kind_invalid":    {"kinds"},

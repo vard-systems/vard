@@ -68,7 +68,9 @@ func familiesRevokedIn(tx *gorm.DB, at time.Time, condition string, args ...any)
 
 // revokeUserRefreshIn revokes every live refresh token of a user and the
 // access tokens of their families: a session that ended long ago may have
-// left a family that outlived it.
+// left a family that outlived it. Devices the user allowed that have not
+// fetched their tokens yet are denied with them, or one approved before a
+// password reset would still be handed a fresh family afterwards.
 func revokeUserRefreshIn(tx *gorm.DB, at time.Time, user uuid.UUID) (int64, error) {
 	if err := familiesRevokedIn(tx, at, "user_id = ? AND revoked_at IS NULL", user); err != nil {
 		return 0, err
@@ -77,6 +79,13 @@ func revokeUserRefreshIn(tx *gorm.DB, at time.Time, user uuid.UUID) (int64, erro
 	result := tx.Model(&model.RefreshToken{}).
 		Where("user_id = ? AND revoked_at IS NULL", user).
 		Update("revoked_at", at)
+	if result.Error != nil {
+		return 0, result.Error
+	}
 
-	return result.RowsAffected, result.Error
+	err := tx.Model(&model.DeviceAuthorization{}).
+		Where("user_id = ? AND used_at IS NULL", user).
+		Update("status", model.DeviceDenied).Error
+
+	return result.RowsAffected, err
 }

@@ -8,6 +8,7 @@
 	import { can } from '#lib/permissions.js';
 	import { apiOptions } from '#lib/query/index.js';
 	import ApiApplications from '#lib/components/apis/ApiApplications.svelte';
+	import ApiIntrospectors from '#lib/components/apis/ApiIntrospectors.svelte';
 	import ApiLogs from '#lib/components/apis/ApiLogs.svelte';
 	import ApiOverview from '#lib/components/apis/ApiOverview.svelte';
 	import ApiScopes from '#lib/components/apis/ApiScopes.svelte';
@@ -104,6 +105,7 @@
 					<ApiScopes {api} editable={editable && !api.system} />
 				{:else if value === 'applications'}
 					<ApiApplications {api} admin={data.admin} />
+					<ApiIntrospectors {api} {editable} />
 				{:else if value === 'logs'}
 					<ApiLogs {api} />
 				{/if}

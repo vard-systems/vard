@@ -56,8 +56,11 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 	}
 	level.Set(cfg.LogLevel)
 
-	if config.SecretKeyLooksWeak(cfg.SecretKey) {
-		log.Warn("VARD_SECRET_KEY does not look like 32 random bytes; a low-entropy key can be brute-forced against a database dump to recover sealed secrets — generate one with: openssl rand -base64 32")
+	// Each plain http address would have stopped the server without
+	// VARD_ALLOW_INSECURE_HTTP; said on every start, so a test setup's
+	// escape never quietly reaches production.
+	for _, reason := range cfg.Insecure {
+		log.Warn("INSECURE: serving plain http because VARD_ALLOW_INSECURE_HTTP=true; passwords and sessions cross the network in the clear — never in production", "reason", reason)
 	}
 
 	db, err := database.Connect(cfg.DB, log)

@@ -459,6 +459,7 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 		readAPIs.GET("/apis", h.apis.List)
 		readAPIs.GET("/apis/:id", h.apis.Get)
 		readAPIs.GET("/apis/:id/applications", h.apis.Applications)
+		readAPIs.GET("/apis/:id/introspectors", h.apis.Introspectors)
 
 		// An API's log names every application, visible or not, so it needs
 		// apis.read itself.
@@ -468,6 +469,7 @@ func registerAdminRoutes(r *gin.Engine, service *auth.Service, provider *oidc.Se
 		writeAPIs.POST("/apis", h.apis.Create)
 		writeAPIs.PATCH("/apis/:id", h.apis.Update)
 		writeAPIs.DELETE("/apis/:id", h.apis.Delete)
+		writeAPIs.PUT("/apis/:id/introspectors", h.apis.SetIntrospectors)
 
 		// The administrators themselves, and their roles: a super
 		// admin's alone, whatever other roles grant.

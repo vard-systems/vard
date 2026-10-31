@@ -216,6 +216,12 @@ code near it, and add a test when adding a case.
 - **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
   whatever its `RequirePKCE` says, and a code asked for with a challenge is
   never exchanged without its verifier.
+- **Introspection answers a token's own client, or the API's.** A
+  confidential client may introspect its own tokens; another's access token
+  only when an administrator listed it for an API in the token's `aud`
+  (`api_introspectors`, never inferred from being allowed to request tokens
+  for that API). A refresh token only its own client. A public client is
+  refused introspection and cannot be listed.
 - **Registering a client takes an initial access token** (an admin API token
   with `applications.write`); `/oauth2/register` is never open.
 - **Passwords are Argon2id** (`model.HashPassword`; `VerifyPassword` takes

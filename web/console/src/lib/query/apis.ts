@@ -26,6 +26,13 @@ export function apiApplicationsOptions(id: string) {
 	});
 }
 
+export function apiIntrospectorsOptions(id: string) {
+	return queryOptions({
+		queryKey: keys.apis.introspectors(id),
+		queryFn: async () => (await apisApi.introspectors(id)).introspectors
+	});
+}
+
 export function apiLogsOptions(id: string) {
 	return queryOptions({
 		queryKey: keys.apis.logs(id),

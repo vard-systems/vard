@@ -475,6 +475,17 @@ export type APIApplication = {
 	allowed: string[];
 };
 
+/** An application, and whether it may introspect an API's access tokens
+ *  whichever client they were issued to. Only a confidential one may. */
+export type APIIntrospector = {
+	id: string;
+	name: string;
+	type: ApplicationType;
+	client_id: string;
+	confidential: boolean;
+	listed: boolean;
+};
+
 export type APILogEntry = {
 	id: string;
 	action: string;

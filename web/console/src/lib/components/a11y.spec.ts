@@ -3,6 +3,7 @@ import { createRawSnippet } from 'svelte';
 import { describe, it } from 'vitest';
 import type { Admin } from '#lib/api/index.js';
 import { expectAccessible } from '#lib/testing/a11y.js';
+import IntrospectorList from './apis/IntrospectorList.svelte';
 import LogoField from './organization/LogoField.svelte';
 import RoleCodes from './profile/RoleCodes.svelte';
 import DomainProofList from './sso/DomainProofList.svelte';
@@ -32,6 +33,32 @@ const admin = {
 } satisfies Admin;
 
 describe('the panel is usable without seeing it', () => {
+	it("an API's introspectors: one listed, one not, and a public client left out", () =>
+		expectAccessible(IntrospectorList, {
+			introspectors: [
+				{
+					id: '1',
+					name: 'Orders backend',
+					type: 'm2m',
+					client_id: 'a1',
+					confidential: true,
+					listed: true
+				},
+				{ id: '2', name: 'Shop', type: 'web', client_id: 'b2', confidential: true, listed: false },
+				{
+					id: '3',
+					name: 'Phone app',
+					type: 'native',
+					client_id: 'c3',
+					confidential: false,
+					listed: false
+				}
+			],
+			editable: true,
+			saving: null,
+			onChange: () => {}
+		}));
+
 	it('the logo picker with a logo uploaded', () =>
 		expectAccessible(LogoField, {
 			version: 'a1b2c3d4e5f60718',

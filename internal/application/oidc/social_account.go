@@ -72,12 +72,14 @@ func (s *Service) signInWithIdentity(
 	}
 
 	// Linking to an existing account needs the address proved by the provider,
-	// a provider trusted to prove it, and the account's own address verified;
-	// otherwise whoever pre-registered the address would keep a password to it.
+	// a provider trusted to prove it (LinksByAddress: allowed, and not one
+	// whose verification is only assumed), and the account's own address
+	// verified; otherwise whoever pre-registered the address would keep a
+	// password to it.
 	user, err := s.store.UserByEmail(ctx, email)
 	switch {
 	case err == nil:
-		if !who.EmailVerified || !provider.LinkVerifiedEmails || !user.IsEmailVerified {
+		if !who.EmailVerified || !provider.LinksByAddress() || !user.IsEmailVerified {
 			return nil, ErrSocialLinkRefused
 		}
 		if !user.CanSignIn() {
@@ -110,7 +112,7 @@ func (s *Service) signInWithIdentity(
 
 	user = &model.User{
 		Email:           email,
-		IsEmailVerified: true,
+		IsEmailVerified: provider.ProvesAddresses(),
 		FirstName:       model.Truncate(who.FirstName, 100),
 		LastName:        model.Truncate(who.LastName, 100),
 		IsActive:        true,
@@ -134,6 +136,15 @@ func (s *Service) signInWithIdentity(
 	}
 
 	s.record(ctx, user, user.Email, "user.registered", client, map[string]any{"provider": provider.Name})
+
+	// As a password registration does. A flow that requires the address
+	// mails the link itself as it refuses the session (admit), so it is
+	// sent here only when it would not be.
+	if !user.IsEmailVerified && flow.VerifyEmailOnRegister && !flow.RequireVerifiedEmail {
+		if err := s.sendVerification(ctx, user, request, client); err != nil {
+			s.log.Error("sending a verification email failed", "error", err, "user", user.ID)
+		}
+	}
 
 	return s.startSocialSession(ctx, user, provider, flow, request, client)
 }

@@ -47,8 +47,16 @@ Route `PUBLIC_URL` to `ID_PUBLISH` and `ADMIN_URL` to `CONSOLE_PUBLISH`,
 then open
 `https://admin.example.com/new-super-admin` and make the first administrator
 straight away: until someone has, whoever opens that page first can.
-They can add an authenticator app from their profile; to make every
-administrator set one up, turn on Administrators › Two-factor sign-in.
+Every administrator sets up an authenticator app at their first sign-in:
+`compose.env` says `VARD_ADMIN_MFA=required`, which a super admin can change
+later in Administrators › Two-factor sign-in.
+
+The server refuses to start on plain http addresses other than localhost.
+`VARD_ALLOW_INSECURE_HTTP` lets plain http through for a test setup, with a
+warning at every start; never set it on a real server. It never lets a weak
+`VARD_SECRET_KEY` through: a key of hex digits alone under 64 characters, or
+any other key under 43 characters or with fewer than 16 distinct characters,
+always stops the server.
 
 ## Updating
 
@@ -57,6 +65,18 @@ git pull
 make db-backup               # first, always
 make docker-up               # rebuilds what changed, migrates the database on start
 ```
+
+### Upgrading to 1.0.0
+
+1.0.0 refuses to start with a weak `VARD_SECRET_KEY`, whatever else is set: a
+key made only of hex digits needs at least 64 characters, and any other key at
+least 43 characters and 16 distinct ones. A key made with `openssl rand -base64
+32` (what `make docker-env` writes) or `openssl rand -hex 32` passes. Rotate any
+other one before upgrading: put it in `VARD_SECRET_KEY_PREVIOUS`, a new one
+from `openssl rand -base64 32` in `VARD_SECRET_KEY`, start, run
+`docker compose -f compose.yaml --env-file compose.env exec api /app/vard secrets reseal`, then empty
+`VARD_SECRET_KEY_PREVIOUS` and restart. `VARD_SECRET_KEY_PREVIOUS` is not held
+to the rule, so 1.0.0 itself can do the rotation.
 
 An installation from before the migrations were squashed into one setup
 (`migrations/setup`) cannot be stepped forward: the server refuses its

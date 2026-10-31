@@ -137,6 +137,24 @@ func (ApplicationAPIScope) TableName() string {
 	return "application_api_scopes"
 }
 
+// APIIntrospector is an application allowed to introspect the access tokens
+// issued for an API, whichever client they were issued to: the API's own
+// backend, asking whether a token it was handed is still live. Being allowed
+// to request tokens for an API (ApplicationAPI) is not this: the answer
+// names the token's user, scope and roles, so only the API's own clients are
+// listed. Only a confidential application may be.
+type APIIntrospector struct {
+	APIID         uuid.UUID    `gorm:"type:uuid;primaryKey" json:"api_id"`
+	API           *API         `gorm:"constraint:OnDelete:CASCADE" json:"-"`
+	ApplicationID uuid.UUID    `gorm:"type:uuid;primaryKey;index:idx_api_introspectors_application" json:"application_id"`
+	Application   *Application `gorm:"constraint:OnDelete:CASCADE" json:"-"`
+	CreatedAt     time.Time    `gorm:"not null" json:"created_at"`
+}
+
+func (APIIntrospector) TableName() string {
+	return "api_introspectors"
+}
+
 var scopeNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*([:._-][a-z0-9]+)*$`)
 
 func (a API) Validate() error {

@@ -17,6 +17,7 @@
 		'api.created': { label: 'API created', tone: 'success' },
 		'api.updated': { label: 'API updated', tone: 'neutral' },
 		'api.deleted': { label: 'API deleted', tone: 'danger' },
+		'api.introspectors_updated': { label: 'Introspection changed', tone: 'neutral' },
 		'application.api_authorized': { label: 'Access granted', tone: 'success' },
 		'application.api_revoked': { label: 'Access revoked', tone: 'danger' }
 	};
@@ -29,6 +30,12 @@
 		}
 		if (entry.action === 'application.api_revoked' && typeof application === 'string') {
 			return `${application} may no longer request tokens`;
+		}
+		const introspectors = entry.metadata?.introspectors;
+		if (entry.action === 'api.introspectors_updated' && typeof introspectors === 'number') {
+			return introspectors === 1
+				? 'One application may introspect its tokens'
+				: `${introspectors === 0 ? 'No' : introspectors} applications may introspect its tokens`;
 		}
 
 		return '';

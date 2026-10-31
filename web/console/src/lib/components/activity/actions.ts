@@ -465,6 +465,12 @@ const actions: Record<string, Action> = {
 		tone: 'danger',
 		icon: 'ri-code-box-line'
 	},
+	'api.introspectors_updated': {
+		label: 'API introspection changed',
+		verb: 'changed who may introspect the tokens of API',
+		category: 'apis',
+		icon: 'ri-search-eye-line'
+	},
 
 	'admin.created': {
 		label: 'Administrator added',

@@ -61,6 +61,7 @@ func All() []any {
 		&APIScope{},
 		&ApplicationAPI{},
 		&ApplicationAPIScope{},
+		&APIIntrospector{},
 		&UserRole{},
 		&User{},
 		&SigningKey{},
