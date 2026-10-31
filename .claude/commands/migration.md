@@ -5,10 +5,12 @@ argument-hint: "<what it should change>"
 
 Write a migration for: $ARGUMENTS
 
-Migrations are Go files in `migrations/`, one per change, each registering
-itself with goose from `init`. `make migrate-new name=x` makes the file.
-`migrations/00001_schema.go` is the whole first schema (`schema/up.sql`,
-frozen) and holds `gormTx`.
+A change to the schema is a changelog: a Go file in `migrations/changelogs`,
+numbered in order (`00004_x.go` is version 4), that registers itself from
+`init` with `add(4, upX, downX)`. `make migrate-new name=x` writes it with the
+next number. `migrations/setup` is version 1, the whole first schema
+(`schema/up.sql`, frozen, and `seed.go`), and is never touched;
+`migrations.All()` hands goose the setup and every changelog.
 
 - `up` takes goose's transaction and runs statements written out in full —
   `CREATE TABLE`, `ALTER TABLE … ADD COLUMN`, `CREATE INDEX` — never
@@ -26,7 +28,7 @@ frozen) and holds `gormTx`.
   so bump the count.
 - An index on a table that grows (refresh_tokens, audit_logs, users) is made
   `CREATE INDEX CONCURRENTLY`, which cannot run in a transaction: register
-  that migration with `goose.AddMigrationNoTxContext`, so an upgrade does not
+  that changelog with `goose.GoFunc{RunDB: …}` instead of `add`, so an upgrade does not
   hold up writes while it builds.
 - The server's connections end a statement after `VARD_DB_STATEMENT_TIMEOUT`
   (15 s). A step that may take longer on a large database starts with

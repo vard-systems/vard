@@ -55,8 +55,6 @@ trap cleanup EXIT
 
 psql "$admin_dsn" -qc "CREATE DATABASE \"$name\""
 go build -o "$work/vard" ./cmd/vard
-# The migrations are compiled in; goose only needs the directory to exist.
-mkdir "$work/migrations"
 
 (
 	cd "$work"

@@ -2,8 +2,9 @@
 //
 // With no command, or with serve, it runs the provider and account API on one
 // listener and the admin API on the other until it is told to stop. migrate
-// up, down or status steps the database through migrations/, and migrate new
-// <name> writes a new, empty migration there. admin create makes the first
+// up, down, status or reset steps the database through the migrations
+// compiled in (migrations/), and migrate new <name> writes the next
+// changelog. admin create makes the first
 // administrator from the command line, and secrets reseal seals every stored
 // secret again under the current key.
 package main
@@ -20,7 +21,8 @@ var version = "dev"
 const usage = `usage: %s [command]
 
   serve     run the server (the default)
-  migrate   up, down or status of the database migrations, or new <name>
+  migrate   up, down or status of the database migrations; reset -yes to
+            take them all down and up again; new <name> for a changelog
   admin     create the first administrator: admin create -email … -first-name …,
             with the password on standard input
   secrets   reseal: every stored secret sealed again under VARD_SECRET_KEY

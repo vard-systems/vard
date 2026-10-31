@@ -131,9 +131,6 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.Mail.Host != "" {
 		t.Errorf("Mail.Host = %q, want none: email is logged by default", cfg.Mail.Host)
 	}
-	if cfg.DB.MigrateDir != "./migrations" {
-		t.Errorf("MigrateDir = %q, want the default ./migrations", cfg.DB.MigrateDir)
-	}
 	if cfg.LogLevel != slog.LevelInfo {
 		t.Errorf("LogLevel = %v, want the default info", cfg.LogLevel)
 	}

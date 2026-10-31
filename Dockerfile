@@ -30,9 +30,6 @@ LABEL org.opencontainers.image.title="vard-api" \
 RUN apk add --no-cache ca-certificates tzdata && adduser -D -H -u 10001 vard
 WORKDIR /app
 COPY --from=build /out/vard ./vard
-# The migrations are compiled in and applied on start; goose only needs the
-# directory it is pointed at to exist.
-RUN mkdir migrations
 USER 10001:10001
 ENV GIN_MODE=release VARD_ADDR=:8080 VARD_ADMIN_ADDR=:8081
 # 8080 public, 8081 admin: neither is published; the apps reach them.

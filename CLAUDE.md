@@ -34,7 +34,7 @@ overview for people; update it when a change makes a sentence in it untrue.
 | Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                                  |
 | Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                       |
 | Console's generated files          | `make generate` (theme tokens, fonts)                                                     |
-| Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`                 |
+| Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`, `db-reset`     |
 | Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                                 |
 | Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                           |
 | Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                        |
@@ -82,8 +82,11 @@ internal/                in layers, each importing only those below it
                            csrf, ratelimit, middleware; signedin (what account,
                            profile, steps and twostep share); tstypes (holds the
                            panel's types.ts to the answers)
-migrations/              00001_schema.go (schema/up.sql, frozen), then one file
-                         per change, applied in order
+migrations/              All(): every migration, compiled in, run by goose's
+                         Provider (database/migrate.go). setup/ is version 1
+                         (schema/up.sql, frozen, and seed.go); changelogs/ one
+                         file per change after it, 00002_x.go is version 2;
+                         reset/ takes them all down and up again (make db-reset)
 i18n/                    the English that ships, read with go-i18n: id/*.en.json
                          for the sign-in pages, console/*.en.json for the admin
                          API's problems; Catalog formats any language's text
@@ -326,11 +329,12 @@ relation with a deliberate `constraint:OnDelete:` and an index; JSON is
 `type:jsonb;serializer:json`. Anything with an `ExpiresAt` goes in the
 sweep's `expiring` list (`TestEverythingThatExpiresIsSwept`).
 
-**A migration.** `migrations/00001_schema.go` builds a fresh database from
-`migrations/schema/up.sql`, written out once and frozen, and seeds it with
-named columns. Every change after it gets its own file (`make migrate-new
-name=x`; `/migration`) whose statements are written out, never read from the
-models, and whose `down` undoes it. `TestLiveTheMigrationsMakeWhatTheModelsDescribe`
+**A migration.** `migrations/setup` builds a fresh database from
+`schema/up.sql`, written out once and frozen, and seeds it with named
+columns (`seed.go`). Every change after it is a changelog, its own file in
+`migrations/changelogs` (`make migrate-new name=x`; `/migration`), whose
+statements are written out, never read from the models, and whose `down`
+undoes it. `TestLiveTheMigrationsMakeWhatTheModelsDescribe`
 fails when a model and the migrations disagree — a column, a constraint or an
 index — so a model change and its migration land together. Test the upgrade
 of an existing database, not just a fresh one.

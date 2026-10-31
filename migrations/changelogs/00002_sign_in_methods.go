@@ -1,15 +1,13 @@
-package migrations
+package changelogs
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	"github.com/pressly/goose/v3"
 )
 
 func init() {
-	goose.AddMigrationContext(upSignInMethods, downSignInMethods)
+	add(2, upSignInMethods, downSignInMethods)
 }
 
 // signInMethodTables are where how a person signed in is kept, from the

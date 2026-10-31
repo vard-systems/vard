@@ -142,7 +142,7 @@ migrate-new: ## Create a migration — make migrate-new name=add_x
 db-create: ## Create the database in .env if it is missing
 	@scripts/db.sh create
 
-db-reset: ## Empty the database in .env and migrate it afresh (asks first)
+db-reset: ## Take every migration down and up again: a new installation (asks first)
 	@scripts/db.sh reset
 
 db-psql: ## Open psql on the database in .env

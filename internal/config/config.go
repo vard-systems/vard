@@ -110,7 +110,6 @@ type DB struct {
 	TimeZone   string
 	LogQueries bool
 	Migrate    bool
-	MigrateDir string
 
 	MaxConns int
 	// StatementTimeout and IdleInTransactionTimeout are Postgres's own
@@ -180,7 +179,6 @@ func Load() (Config, error) {
 	v.SetDefault(env("DB_TIMEZONE"), "UTC")
 	v.SetDefault(env("DB_LOG_QUERIES"), false)
 	v.SetDefault(env("DB_MIGRATE"), true)
-	v.SetDefault(env("DB_MIGRATE_DIR"), "./migrations")
 	v.SetDefault(env("DB_MAX_CONNS"), 25)
 	v.SetDefault(env("DB_STATEMENT_TIMEOUT"), "15s")
 	v.SetDefault(env("DB_IDLE_IN_TRANSACTION_TIMEOUT"), "60s")
@@ -227,7 +225,6 @@ func Load() (Config, error) {
 			TimeZone:   v.GetString(env("DB_TIMEZONE")),
 			LogQueries: v.GetBool(env("DB_LOG_QUERIES")),
 			Migrate:    v.GetBool(env("DB_MIGRATE")),
-			MigrateDir: v.GetString(env("DB_MIGRATE_DIR")),
 			MaxConns:   v.GetInt(env("DB_MAX_CONNS")),
 
 			StatementTimeout:         v.GetDuration(env("DB_STATEMENT_TIMEOUT")),

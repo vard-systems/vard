@@ -2,42 +2,36 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"hash/fnv"
 	"log/slog"
-	"os"
-	"strings"
+	"time"
 
 	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/lock"
 	"gorm.io/gorm"
 
 	"vard/internal/brand"
-	"vard/internal/config"
-	_ "vard/migrations"
+	"vard/migrations"
+	"vard/migrations/reset"
 )
 
-func Migrate(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
-	sqlDB, err := prepareGoose(db)
+// Migrate applies every migration that has not run.
+func Migrate(db *gorm.DB, log *slog.Logger) error {
+	ctx := context.Background()
+	provider, err := newProvider(db)
 	if err != nil {
 		return err
 	}
 
-	unlock, err := migrationLock(sqlDB)
+	before, err := provider.GetDBVersion(ctx)
 	if err != nil {
 		return err
 	}
-	defer unlock()
-
-	before, err := goose.GetDBVersion(sqlDB)
-	if err != nil {
+	if _, err := provider.Up(ctx); err != nil {
 		return err
 	}
-
-	if err := goose.Up(sqlDB, cfg.MigrateDir); err != nil {
-		return err
-	}
-
-	after, err := goose.GetDBVersion(sqlDB)
+	after, err := provider.GetDBVersion(ctx)
 	if err != nil {
 		return err
 	}
@@ -47,93 +41,116 @@ func Migrate(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
 	} else {
 		log.Info("migrations applied", "from", before, "to", after)
 	}
-
 	return nil
 }
 
-func MigrateDown(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
-	sqlDB, err := prepareGoose(db)
+// MigrateDown rolls back the newest migration.
+func MigrateDown(db *gorm.DB, log *slog.Logger) error {
+	ctx := context.Background()
+	provider, err := newProvider(db)
 	if err != nil {
 		return err
 	}
 
-	unlock, err := migrationLock(sqlDB)
-	if err != nil {
+	if _, err := provider.Down(ctx); err != nil {
 		return err
 	}
-	defer unlock()
-
-	if err := goose.Down(sqlDB, cfg.MigrateDir); err != nil {
-		return err
-	}
-
-	version, err := goose.GetDBVersion(sqlDB)
+	version, err := provider.GetDBVersion(ctx)
 	if err != nil {
 		return err
 	}
 
 	log.Info("rolled back", "version", version)
-
 	return nil
 }
 
-func MigrateStatus(db *gorm.DB, cfg config.DB) error {
-	sqlDB, err := prepareGoose(db)
+// MigrateReset takes every migration down and up again (migrations/reset).
+func MigrateReset(db *gorm.DB, log *slog.Logger) error {
+	provider, err := newProvider(db)
 	if err != nil {
 		return err
 	}
 
-	goose.SetLogger(printLogger{})
+	if err := reset.Run(context.Background(), provider); err != nil {
+		return err
+	}
 
-	return goose.Status(sqlDB, cfg.MigrateDir)
+	log.Info("database reset")
+	return nil
 }
 
-type printLogger struct{}
-
-// Printf ends every line, as the log package goose writes through by default
-// does; goose's own lines carry no newline, so a status would be one line.
-func (printLogger) Printf(format string, v ...any) {
-	fmt.Println(strings.TrimRight(fmt.Sprintf(format, v...), "\n"))
+// MigrationState is one migration and whether it has run.
+type MigrationState struct {
+	Version   int64
+	Applied   bool
+	AppliedAt time.Time
 }
 
-func (printLogger) Fatalf(format string, v ...any) {
-	fmt.Fprintf(os.Stderr, format, v...)
-	os.Exit(1)
-}
-
-// migrationLock makes instances started together, as replicas are, migrate
-// one at a time: the rest wait, then find nothing left to do. The lock is a
-// session's, so it is held on a connection of its own until unlock.
-func migrationLock(db *sql.DB) (unlock func(), err error) {
-	ctx := context.Background()
-	conn, err := db.Conn(ctx)
+// MigrateStatus says which migrations have run, oldest first.
+func MigrateStatus(db *gorm.DB) ([]MigrationState, error) {
+	provider, err := newProvider(db)
 	if err != nil {
 		return nil, err
 	}
 
-	const lock = "SELECT pg_advisory_lock(hashtext($1))"
-	if _, err := conn.ExecContext(ctx, lock, brand.Slug+" migrations"); err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("wait for other instances' migrations: %w", err)
+	statuses, err := provider.Status(context.Background())
+	if err != nil {
+		return nil, err
 	}
 
-	return func() {
-		_, _ = conn.ExecContext(ctx, "SELECT pg_advisory_unlock(hashtext($1))", brand.Slug+" migrations")
-		_ = conn.Close()
-	}, nil
+	states := make([]MigrationState, 0, len(statuses))
+	for _, status := range statuses {
+		states = append(states, MigrationState{
+			Version:   status.Source.Version,
+			Applied:   status.State == goose.StateApplied,
+			AppliedAt: status.AppliedAt,
+		})
+	}
+	return states, nil
 }
 
-func prepareGoose(db *gorm.DB) (*sql.DB, error) {
+// newProvider is goose over the migrations compiled in, and nothing in its
+// global registry or on disk.
+//
+// Its lock makes instances started together, as replicas are, migrate one
+// at a time: the rest wait, then find nothing left to do. The lock is a
+// session's, held on a connection of its own while goose works.
+func newProvider(db *gorm.DB) (*goose.Provider, error) {
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, err
 	}
 
-	if err := goose.SetDialect("postgres"); err != nil {
+	locker, err := lock.NewPostgresSessionLocker(
+		lock.WithLockID(migrationLockID()),
+		// Asked for every second, for up to ten minutes: a long migration
+		// on another instance is waited for, not failed.
+		lock.WithLockTimeout(1, 600),
+		lock.WithUnlockTimeout(1, 60),
+	)
+	if err != nil {
 		return nil, err
 	}
 
-	goose.SetLogger(goose.NopLogger())
+	return goose.NewProvider(goose.DialectPostgres, sqlDB, nil,
+		goose.WithGoMigrations(migrations.All()...),
+		goose.WithDisableGlobalRegistry(true),
+		goose.WithSessionLocker(locker),
+	)
+}
 
-	return sqlDB, nil
+// migrationLockID is this project's advisory lock, so another program
+// migrating with goose on the same server waits for nothing of ours.
+func migrationLockID() int64 {
+	sum := fnv.New64a()
+	_, _ = sum.Write([]byte(brand.Slug + " migrations"))
+	return int64(sum.Sum64() >> 1)
+}
+
+// String prints a state as `migrate status` lists it.
+func (s MigrationState) String() string {
+	if !s.Applied {
+		return fmt.Sprintf("%05d  pending", s.Version)
+	}
+	return fmt.Sprintf("%05d  applied %s", s.Version, s.AppliedAt.Local().Format(time.DateTime))
 }

@@ -1,15 +1,13 @@
-package migrations
+package changelogs
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	"github.com/pressly/goose/v3"
 )
 
 func init() {
-	goose.AddMigrationContext(upDropSetupTokens, downDropSetupTokens)
+	add(3, upDropSetupTokens, downDropSetupTokens)
 }
 
 // upDropSetupTokens drops the one-time tokens the first administrator was

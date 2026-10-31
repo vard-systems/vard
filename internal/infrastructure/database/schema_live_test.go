@@ -74,7 +74,7 @@ func TestLiveTheMigrationsMakeWhatTheModelsDescribe(t *testing.T) {
 // Going down, one step at a time, takes away everything the migrations
 // made, and up builds it again.
 func TestLiveTheMigrationsGoDownAndUpAgain(t *testing.T) {
-	db, cfg := databasetest.Open(t)
+	db, _ := databasetest.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	applied := func() int64 {
@@ -85,7 +85,7 @@ func TestLiveTheMigrationsGoDownAndUpAgain(t *testing.T) {
 		return version
 	}
 	for applied() > 0 {
-		if err := database.MigrateDown(db, cfg, log); err != nil {
+		if err := database.MigrateDown(db, log); err != nil {
 			t.Fatalf("down from %d: %v", applied(), err)
 		}
 	}
@@ -94,12 +94,39 @@ func TestLiveTheMigrationsGoDownAndUpAgain(t *testing.T) {
 		t.Errorf("down left %v", left)
 	}
 
-	if err := database.Migrate(db, cfg, log); err != nil {
+	if err := database.Migrate(db, log); err != nil {
 		t.Fatalf("up again: %v", err)
 	}
 	var roles int64
 	if err := db.Table("admin_roles").Count(&roles).Error; err != nil || roles == 0 {
 		t.Errorf("up again seeded %d admin roles (%v), want the starting ones", roles, err)
+	}
+}
+
+// A reset leaves what a new installation starts with: every row added since
+// is gone, and the seeded ones are back.
+func TestLiveAResetStartsTheDatabaseAgain(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	if err := db.Exec("UPDATE organizations SET name = 'Renamed'").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := database.MigrateReset(db, log); err != nil {
+		t.Fatalf("reset: %v", err)
+	}
+
+	if names := rows(t, db, "SELECT name FROM organizations"); slices.Contains(names, "Renamed") || len(names) != 1 {
+		t.Errorf("after a reset the organizations are %v, want the one a new installation has", names)
+	}
+	states, err := database.MigrateStatus(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, state := range states {
+		if !state.Applied {
+			t.Errorf("after a reset migration %d is pending, want every one applied", state.Version)
+		}
 	}
 }
 
@@ -163,13 +190,13 @@ func TestLiveTheDatabaseRefusesWhatGoNeverWrites(t *testing.T) {
 // Instances started together, as replicas are, migrate one at a time: the
 // second waits for the first and finds nothing left to do.
 func TestLiveInstancesStartingTogetherMigrateOnce(t *testing.T) {
-	db, cfg := databasetest.Empty(t)
+	db, _ := databasetest.Empty(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	errs := make(chan error, 4)
 	var started sync.WaitGroup
 	for range 4 {
-		started.Go(func() { errs <- database.Migrate(db, cfg, log) })
+		started.Go(func() { errs <- database.Migrate(db, log) })
 	}
 	started.Wait()
 	close(errs)

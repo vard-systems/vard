@@ -201,7 +201,7 @@ cmd/vard                the server, the migration runner (vard migrate), and
 internal/                  the Go code, in layers: domain (the models), infrastructure
                            (every query, Redis, mail), application (the provider,
                            administrators' sign-in) and interfaces (the HTTP API)
-migrations/                the schema and every change to it, in order
+migrations/                the schema (setup), every change to it (changelogs), in order
 i18n/                      the English that ships: sign-in pages, API messages
 web/id, web/console        the two SvelteKit apps; each keeps its own brand in
                            src/lib/brand.ts, the server in internal/brand, and

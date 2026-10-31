@@ -34,7 +34,7 @@ func Connect(cfg config.DB, log *slog.Logger) (*gorm.DB, error) {
 	}
 
 	if cfg.Migrate && cfg.MigrateDSN == "" {
-		if err := Migrate(db, cfg, log); err != nil {
+		if err := Migrate(db, log); err != nil {
 			_ = Close(db)
 			return nil, err
 		}
@@ -56,7 +56,7 @@ func MigrateAsOwner(cfg config.DB, log *slog.Logger) error {
 	}
 	defer Close(owner)
 
-	if err := Migrate(owner, ownerCfg, log); err != nil {
+	if err := Migrate(owner, log); err != nil {
 		return err
 	}
 

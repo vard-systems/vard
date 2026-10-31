@@ -10,8 +10,6 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"gorm.io/gorm"
@@ -32,7 +30,7 @@ func Open(t testing.TB) (*gorm.DB, config.DB) {
 	t.Helper()
 
 	db, cfg := Empty(t)
-	if err := database.Migrate(db, cfg, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
+	if err := database.Migrate(db, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 
@@ -71,7 +69,7 @@ func Empty(t testing.TB) (*gorm.DB, config.DB) {
 	}
 	address.Path = "/" + name
 
-	cfg := config.DB{Driver: "postgres", DSN: address.String(), TimeZone: "UTC", MigrateDir: migrationsDir(t)}
+	cfg := config.DB{Driver: "postgres", DSN: address.String(), TimeZone: "UTC"}
 
 	db, err := database.Open(cfg, quiet)
 	if err != nil {
@@ -83,15 +81,4 @@ func Empty(t testing.TB) (*gorm.DB, config.DB) {
 	})
 
 	return db, cfg
-}
-
-// migrationsDir is found from this file rather than from wherever the tests
-// run.
-func migrationsDir(t testing.TB) string {
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("cannot find the migrations")
-	}
-
-	return filepath.Join(filepath.Dir(file), "..", "..", "..", "..", "migrations")
 }
