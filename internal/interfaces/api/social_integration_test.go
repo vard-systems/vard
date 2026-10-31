@@ -844,3 +844,38 @@ func TestLiveSocialTokenAuthentication(t *testing.T) {
 		})
 	}
 }
+
+// An application that makes no new accounts is not got round by letting its
+// sign-in expire part way through a social sign-in: no account is made.
+func TestLiveAnExpiredSignInIsNoWayPastClosedRegistration(t *testing.T) {
+	f := newOAuthFixture(t)
+	f.withSteps("identifier", "password", "social")
+	if err := f.s.db.Exec("UPDATE applications SET allow_registration = false WHERE id = ?", f.appID).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	provider := newFakeProvider(t, map[string]any{
+		"sub": "provider-subject-9", "email": "latecomer@example.com", "email_verified": true,
+	})
+	b, start := provider.register(t, f.s, f.super, nil)
+
+	_, challenge := pkce(t)
+	handle := b.visit(f.authorizeURL(challenge, nil)).Query().Get("request")
+	atProvider := b.visit(start + "?request=" + url.QueryEscape(handle))
+
+	if err := f.s.db.Exec("UPDATE authorization_requests SET expires_at = now() - interval '1 second'").Error; err != nil {
+		t.Fatal(err)
+	}
+	landed := b.visit(b.visit(atProvider.String()).String())
+
+	if got := landed.Query().Get("reason"); got != "social_expired" {
+		t.Errorf("the sign-in landed on %s, want it told the sign-in expired", landed)
+	}
+	var users struct {
+		Users []struct{} `json:"users"`
+	}
+	f.super.must(http.StatusOK, http.MethodGet, "/users?search=latecomer@example.com", nil, &users)
+	if len(users.Users) != 0 {
+		t.Errorf("%d accounts were made, want none", len(users.Users))
+	}
+}

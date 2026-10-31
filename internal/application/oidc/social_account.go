@@ -153,9 +153,15 @@ func (s *Service) socialRegistrationAllowed(ctx context.Context, request string)
 		return nil
 	}
 
+	// The application named decides, so a request that cannot be read makes
+	// no account: an expired one is a sign-in to start again, anything else
+	// a failure, never a way past a closed registration.
 	req, err := s.pending(ctx, request)
-	if err != nil {
-		return nil
+	switch {
+	case errors.Is(err, ErrRequestExpired):
+		return ErrSocialExpired
+	case err != nil:
+		return err
 	}
 
 	if !req.Application.AllowRegistration || !req.Application.IsEnabled {
