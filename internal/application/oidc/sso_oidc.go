@@ -262,9 +262,11 @@ func (s *Service) verifyIDToken(
 }
 
 // verifyPublished checks a token's signature against the keys a provider
-// publishes at jwksURI and decodes its claims. A token that does not verify
-// against the keys held may be signed with one the provider has just
-// rotated in, so the keys are fetched again, at most once a keyRefetchEvery.
+// publishes at jwksURI and decodes its claims. A token naming a key not held,
+// or naming none, may be signed with one the provider has just rotated in,
+// so the keys are fetched again, at most once a keyRefetchEvery. One naming a
+// key held is simply refused: fetching again cannot help it, and it would
+// spend the refetch a real rotation may need.
 func (s *Service) verifyPublished(ctx context.Context, jwksURI, token string, claims any) error {
 	keys, err := s.providerKeys(ctx, jwksURI, false)
 	if err != nil {
@@ -287,8 +289,16 @@ func (s *Service) verifyPublished(ctx context.Context, jwksURI, token string, cl
 		}
 	}
 
-	if _, err := jose.VerifyAmong(token, candidates(keys), claims); err == nil {
+	read, held := false, false
+	first := func(header jose.Header) []jose.Key {
+		found := candidates(keys)(header)
+		read, held = true, header.KeyID != "" && len(found) > 0
+		return found
+	}
+	if _, err := jose.VerifyAmong(token, first, claims); err == nil {
 		return nil
+	} else if !read || held {
+		return fmt.Errorf("signature: %w", err)
 	}
 	if keys, err = s.providerKeys(ctx, jwksURI, true); err != nil {
 		return err

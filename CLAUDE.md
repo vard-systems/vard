@@ -185,8 +185,9 @@ code near it, and add a test when adding a case.
   metadata, back-channel logout) go through `newFederationClient` in
   `internal/application/oidc/outbound.go`, which refuses private, link-local and metadata
   addresses at dial time. A logout token follows no redirect. A provider's
-  keys are fetched again because a token did not verify at most once a
-  `keyRefetchEvery` (a minute) per key set (`providerKeys`), and a social
+  keys are fetched again only for a token naming a key not held (or none),
+  and at most once a `keyRefetchEvery` (a minute) per key set
+  (`verifyPublished`, `providerKeys`), and a social
   id_token is checked against its kind's published keys
   (`SocialSpec.JWKSURL`) wherever the kind names them.
 - **A key from outside is at most `jose.MaxRSABits` (4096) long.** A DPoP

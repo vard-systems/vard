@@ -78,9 +78,9 @@ func serviceWithKeys(published *publishedKeys, c *clock) *Service {
 
 const testJWKS = "https://idp.example/jwks"
 
-// Anyone can send a token that does not verify, and each such token used to
-// make the server fetch the provider's keys again. Now a forced fetch
-// happens at most once a minute per key set.
+// Anyone can send a token naming a key the server does not hold, and each
+// such token used to make it fetch the provider's keys again. Now a forced
+// fetch happens at most once a minute per key set.
 func TestForcedKeyRefetchesAreThrottled(t *testing.T) {
 	c := &clock{at: time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)}
 	known := signingKey(t, "known")
@@ -92,7 +92,7 @@ func TestForcedKeyRefetchesAreThrottled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	forged, err := jose.Sign(signingKey(t, "known"), "JWT", map[string]any{"sub": "mallory"})
+	forged, err := jose.Sign(signingKey(t, "invented"), "JWT", map[string]any{"sub": "mallory"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestConcurrentFailuresShareOneForcedFetch(t *testing.T) {
 	if _, err := s.providerKeys(ctx, testJWKS, false); err != nil {
 		t.Fatal(err)
 	}
-	forged, err := jose.Sign(signingKey(t, "known"), "JWT", map[string]any{"sub": "mallory"})
+	forged, err := jose.Sign(signingKey(t, "invented"), "JWT", map[string]any{"sub": "mallory"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,5 +157,49 @@ func TestConcurrentFailuresShareOneForcedFetch(t *testing.T) {
 
 	if got := published.count(); got != 2 {
 		t.Errorf("fetches = %d, want 2 (the first and one forced)", got)
+	}
+}
+
+// Only a key the server does not hold is worth fetching the keys again for.
+// A token naming a key it holds, with a signature that key does not make, is
+// refused without a fetch, so it cannot spend the refetch a real rotation
+// would need; a token naming no key may be signed with any, so it may.
+func TestOnlyAnUnknownKeyForcesAFetch(t *testing.T) {
+	known := signingKey(t, "known")
+	sign := func(key jose.Key) string {
+		token, err := jose.Sign(key, "JWT", map[string]any{"sub": "mallory"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return token
+	}
+
+	tests := []struct {
+		name    string
+		token   string
+		fetches int
+	}{
+		{name: "a known kid with a bad signature", token: sign(signingKey(t, "known")), fetches: 1},
+		{name: "an unknown kid", token: sign(signingKey(t, "invented")), fetches: 2},
+		{name: "no kid at all", token: sign(signingKey(t, "")), fetches: 2},
+		{name: "not a token", token: "not.a-token", fetches: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			published := &publishedKeys{keys: []jose.Key{known}}
+			s := serviceWithKeys(published, &clock{at: time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)})
+			if _, err := s.providerKeys(context.Background(), testJWKS, false); err != nil {
+				t.Fatal(err)
+			}
+
+			var claims map[string]any
+			if err := s.verifyPublished(context.Background(), testJWKS, tt.token, &claims); err == nil {
+				t.Fatal("the token verified")
+			}
+			if got := published.count(); got != tt.fetches {
+				t.Errorf("fetches = %d, want %d", got, tt.fetches)
+			}
+		})
 	}
 }

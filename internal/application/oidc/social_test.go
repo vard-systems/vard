@@ -41,7 +41,8 @@ func signedIDToken(t *testing.T, key jose.Key, claims map[string]any) string {
 // A provider that publishes its keys has its id_tokens' signatures checked
 // against them, so a token from anyone else is refused even when it comes
 // back through the token endpoint. A key the provider has rotated in since
-// the keys were fetched makes them be fetched again, once.
+// the keys were fetched makes them be fetched again, once; a key already
+// held does not.
 func TestIDTokenClaimsChecksThePublishedSignature(t *testing.T) {
 	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
 	const nonce = "this-sign-in"
@@ -61,7 +62,7 @@ func TestIDTokenClaimsChecksThePublishedSignature(t *testing.T) {
 		fetches int
 	}{
 		{name: "signed with the published key", token: signedIDToken(t, current, claims), fetches: 1},
-		{name: "signed by somebody else under the published kid", token: signedIDToken(t, impostor, claims), want: ErrSocialUpstream, fetches: 2},
+		{name: "signed by somebody else under the published kid", token: signedIDToken(t, impostor, claims), want: ErrSocialUpstream, fetches: 1},
 		{name: "not signed at all", token: unsignedIDToken(t, claims), want: ErrSocialUpstream, fetches: 2},
 		{name: "signed with a key published since", token: signedIDToken(t, rotated, claims), fetches: 2},
 	}
