@@ -47,7 +47,8 @@ Route `PUBLIC_URL` to `ID_PUBLISH` and `ADMIN_URL` to `CONSOLE_PUBLISH`,
 then open
 `https://admin.example.com/new-super-admin` and make the first administrator
 straight away: until someone has, whoever opens that page first can.
-They are asked to set up an authenticator app straight away.
+They can add an authenticator app from their profile; to make every
+administrator set one up, turn on Administrators › Two-factor sign-in.
 
 ## Updating
 

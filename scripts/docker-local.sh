@@ -29,8 +29,7 @@ if [[ ! -f compose.env ]]; then
 	set_value VARD_SECRET_KEY "$(openssl rand -base64 32)"
 	set_value POSTGRES_PASSWORD "$(openssl rand -hex 32)"
 	set_value POSTGRES_APP_PASSWORD "$(openssl rand -hex 32)"
-	# So the first administrator can be created without an authenticator app.
-	# A server runs this as required; compose.yaml asks for that.
+	# Each administrator sets up an authenticator from their profile, if at all.
 	set_value VARD_ADMIN_MFA optional
 
 	echo "created compose.env for http://localhost:8080 — it is gitignored"

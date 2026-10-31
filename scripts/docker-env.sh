@@ -39,7 +39,7 @@ if [[ ! -f compose.env ]]; then
 	set_value POSTGRES_PASSWORD "$(openssl rand -hex 32)"
 	set_value POSTGRES_APP_PASSWORD "$(openssl rand -hex 32)"
 	set_value REDIS_PASSWORD "$(openssl rand -hex 32)"
-	set_value VARD_ADMIN_MFA required
+	set_value VARD_ADMIN_MFA optional
 	echo "==> made compose.env with new secrets: back it up somewhere safe"
 else
 	echo "==> compose.env is there: its secrets are kept"

@@ -169,7 +169,7 @@ func Load() (Config, error) {
 	v.SetDefault(env("TRUSTED_PROXIES"), "")
 	v.SetDefault(env("RATE_LIMIT"), 20)
 	v.SetDefault(env("LOG_LEVEL"), "info")
-	v.SetDefault(env("ADMIN_MFA"), "required")
+	v.SetDefault(env("ADMIN_MFA"), "optional")
 	v.SetDefault(env("KEY_ROTATION_DAYS"), 90)
 	v.SetDefault(env("AUDIT_RETENTION_DAYS"), 365)
 	v.SetDefault(env("ISSUER"), "http://localhost:8080")

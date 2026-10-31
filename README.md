@@ -68,7 +68,7 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | `VARD_REDIS_HOST`          | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
 | `VARD_TRUSTED_PROXIES`     | Who may say who the caller is: the apps' servers, and nothing else.                      |
 | `VARD_RATE_LIMIT`          | Attempts per minute per address on password and email endpoints.                         |
-| `VARD_ADMIN_MFA`           | `required` (the default) or `optional`, seeded on first start.                           |
+| `VARD_ADMIN_MFA`           | `optional` (the default) or `required`, seeded on first start.                           |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.

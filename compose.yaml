@@ -142,11 +142,10 @@ services:
       VARD_REDIS_HOST: redis
       VARD_REDIS_PORT: 6379
       VARD_REDIS_PASSWORD: ${REDIS_PASSWORD}
-      # A second factor for every administrator. The server's own default is
-      # optional, so that a fresh installation can be got into at all; a
-      # deployment that is going to face the internet starts the other way.
-      # After the first start the setting lives in the database.
-      VARD_ADMIN_MFA: ${VARD_ADMIN_MFA:-required}
+      # A second factor for administrators: optional (each sets one up from
+      # their profile) unless compose.env says required. After the first start
+      # the setting lives in the database.
+      VARD_ADMIN_MFA: ${VARD_ADMIN_MFA:-optional}
       VARD_RATE_LIMIT: ${VARD_RATE_LIMIT:-20}
       VARD_LOG_LEVEL: ${VARD_LOG_LEVEL:-info}
       # Only the two apps forward a caller's address, from their fixed
