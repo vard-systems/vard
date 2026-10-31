@@ -21,24 +21,25 @@ overview for people; update it when a change makes a sentence in it untrue.
 
 ## Commands
 
-| What                               | Command                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------- |
-| Run everything (hot reload)        | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/`              |
-| Run everything (production builds) | `make start` — the API and both apps built, on the same ports; `env=dev` is `make dev` |
-| Run only the API                   | `make run`                                                                             |
-| Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                            |
-| Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                       |
-| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs; fails with no database)     |
-| End-to-end, in a browser           | `make e2e` (web/e2e, Playwright: a stack of its own on 8290/8291/5293/5294)            |
-| Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                               |
-| Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                    |
-| Console's generated files          | `make generate` (theme tokens, fonts)                                                  |
-| Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`              |
-| Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                              |
-| Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                        |
-| Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                     |
-| A server                           | `make docker-env`, `make docker-up`, `make db-backup` (DEPLOY.md)                      |
-| Everything else                    | `make` lists every target                                                              |
+| What                               | Command                                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| Run everything (hot reload)        | `make dev` — API, id (Vite :5173), console (Vite :5174); logs in `.logs/`                 |
+| Run everything (production builds) | `make start` — the API and both apps built, on the same ports; `env=dev` is `make dev`    |
+| Run only the API                   | `make run`                                                                                |
+| Lint and unit-test everything      | `make check` (`lint` + `test`; each also as `-go` / `-web`)                               |
+| The slow, type-aware lint rules    | `make lint-types` (floating promises, deprecated APIs; CI runs it, `make check` does not) |
+| Format everything                  | `make fmt` (`lint` only reports, never rewrites)                                          |
+| Go: tests against Postgres         | `make test-integration` (every `TestLive…`, throwaway DBs; fails with no database)        |
+| End-to-end, in a browser           | `make e2e` (web/e2e, Playwright: a stack of its own on 8290/8291/5293/5294)               |
+| Everything CI runs                 | `make ci` (`check`, `test-integration`, `docker-config`)                                  |
+| Build                              | `make build` (`build-api` → `bin/vard`, `build-web` → `node build`)                       |
+| Console's generated files          | `make generate` (theme tokens, fonts)                                                     |
+| Migrations                         | `make migrate-new name=x`, `migrate-up`, `migrate-down`, `migrate-status`                 |
+| Benchmarks, vulnerabilities        | `make bench`, `make vuln`                                                                 |
+| Rename the project                 | `make rename name="New Name" slug=newslug` (see A brand, below)                           |
+| Production stack on this machine   | `make docker-local` → http://localhost:8080, http://localhost:8081                        |
+| A server                           | `make docker-env`, `make docker-up`, `make db-backup` (DEPLOY.md)                         |
+| Everything else                    | `make` lists every target                                                                 |
 
 Project commands in `.claude/commands/`: `/check` (every check), `/preview`
 (the app in a browser on spare ports), `/endpoint` (add an admin endpoint),

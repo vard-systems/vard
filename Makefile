@@ -22,7 +22,7 @@ COMPOSE := docker compose -f compose.yaml --env-file compose.env
 each-app = for app in $(APPS); do echo "==> web/$$app"; (cd web/$$app && $(1)) || exit 1; done
 
 .PHONY: help setup deps tidy dev start run build build-api build-web generate \
-	fmt lint lint-go lint-web test test-go test-web test-integration bench vuln check ci \
+	fmt lint lint-go lint-web lint-types test test-go test-web test-integration bench vuln check ci \
 	e2e migrate-up migrate-down migrate-status migrate-new db-create db-reset db-psql \
 	docker-up docker-local docker-env db-backup docker-down docker-reset docker-logs docker-build docker-ps docker-config \
 	clean rename
@@ -92,6 +92,9 @@ lint-web: ## Lint and type-check the apps and the end-to-end tests only
 	@$(call each-app,bun run lint && bun run check)
 	@$(E2E_PRETTIER) --check web/e2e && $(E2E_TSC)
 
+lint-types: ## The type-aware lint rules (floating promises, deprecated APIs): slow, so CI's, not check's
+	@$(call each-app,LINT_TYPES=1 ./node_modules/.bin/eslint .)
+
 test: test-go test-web ## Run the Go and app unit tests
 
 test-go: ## Run the Go unit tests only
@@ -119,7 +122,7 @@ vuln: ## Report known vulnerabilities in the Go code and its modules
 
 check: lint test ## Lint and unit-test everything: the check before a change is done
 
-ci: check test-integration docker-config ## Everything a CI run would do
+ci: check lint-types test-integration docker-config ## Everything a CI run would do
 
 ## Database
 
