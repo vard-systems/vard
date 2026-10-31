@@ -136,7 +136,7 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		if code.ApplicationID != app.ID {
 			return nil, oauthError(ErrInvalidGrant, "the authorization code was issued to another client")
 		}
-		if err := s.store.RevokeRefreshTokensForCode(ctx, code.ID, now); err != nil {
+		if err := s.store.RevokeCodeGrant(ctx, code, app.ClientID, now); err != nil {
 			return nil, err
 		}
 		return nil, oauthError(ErrInvalidGrant, "the authorization code has already been used")

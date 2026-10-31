@@ -120,10 +120,6 @@ func (s *Store) RevokeUserSession(ctx context.Context, id uuid.UUID, at time.Tim
 	return s.revokeUserSessions(ctx, at, "id = ?", id)
 }
 
-func (s *Store) RevokeUserSessionsFor(ctx context.Context, user uuid.UUID, at time.Time) error {
-	return s.revokeUserSessions(ctx, at, "user_id = ?", user)
-}
-
 func (s *Store) revokeUserSessions(ctx context.Context, at time.Time, condition string, args ...any) error {
 	var ended endedSessions
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

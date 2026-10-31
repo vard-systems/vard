@@ -96,25 +96,24 @@ func (s *Store) RevokeRefreshFamily(ctx context.Context, family uuid.UUID, at ti
 	})
 }
 
-// RevokeRefreshTokensForCode revokes what a code's first exchange issued,
-// its access tokens included, once the code is presented again.
-func (s *Store) RevokeRefreshTokensForCode(ctx context.Context, code uuid.UUID, at time.Time) error {
+// RevokeCodeGrant ends what a code's first exchange issued, once the code is
+// presented again: its refresh tokens, and every access token of the user's
+// grant to the application. An access token issued without a refresh token
+// carries no family, so the grant is the one key that reaches it.
+func (s *Store) RevokeCodeGrant(ctx context.Context, code *model.AuthorizationCode, clientID string, at time.Time) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(&model.RefreshToken{}).
-			Where("code_id = ? AND revoked_at IS NULL", code).
+			Where("code_id = ? AND revoked_at IS NULL", code.ID).
 			Update("revoked_at", at).Error
 		if err != nil {
 			return err
 		}
+		if err := familiesRevokedIn(tx, at, "code_id = ?", code.ID); err != nil {
+			return err
+		}
 
-		return familiesRevokedIn(tx, at, "code_id = ?", code)
+		return revokeTokensIn(tx, at, model.RevokedGrant(code.UserID, clientID))
 	})
-}
-
-func (s *Store) RevokeRefreshTokensForUser(ctx context.Context, user uuid.UUID, at time.Time) error {
-	return s.db.WithContext(ctx).Model(&model.RefreshToken{}).
-		Where("user_id = ? AND revoked_at IS NULL", user).
-		Update("revoked_at", at).Error
 }
 
 type Grant struct {

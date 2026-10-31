@@ -1313,3 +1313,38 @@ func TestLiveOAuthAudienceDecidesTheToken(t *testing.T) {
 		})
 	}
 }
+
+// A code presented twice has leaked: whatever its first exchange issued is
+// ended, an access token issued without a refresh token included.
+func TestLiveAReplayedCodeEndsTheAccessTokenItIssued(t *testing.T) {
+	f := newOAuthFixture(t)
+	b := f.s.browser()
+	verifier, challenge := pkce(t)
+	// Without offline_access: no refresh token, so no family to end.
+	code := f.signInWith(b, challenge, url.Values{"scope": {"openid email"}}).Query().Get("code")
+
+	tokens := f.exchange(code, verifier)
+	if tokens.status != http.StatusOK || tokens.str("refresh_token") != "" {
+		t.Fatalf("exchange = %d %v, want an access token alone", tokens.status, tokens.body)
+	}
+	userinfo := func() int {
+		req, _ := http.NewRequest(http.MethodGet, f.s.root+"/oauth2/userinfo", nil)
+		req.Header.Set("Authorization", "Bearer "+tokens.str("access_token"))
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		return res.StatusCode
+	}
+	if status := userinfo(); status != http.StatusOK {
+		t.Fatalf("userinfo before the replay = %d, want 200", status)
+	}
+
+	if reused := f.exchange(code, verifier); reused.str("error") != "invalid_grant" {
+		t.Fatalf("reused code = %d %v, want invalid_grant", reused.status, reused.body)
+	}
+	if status := userinfo(); status != http.StatusUnauthorized {
+		t.Errorf("userinfo after the replay = %d, want 401: the access token should have ended", status)
+	}
+}
