@@ -57,12 +57,15 @@ func (s *Service) passkeyCredentials(factors []model.UserFactor) ([]webauthn.Cre
 }
 
 func (s *Service) checkPasskey(ctx context.Context, user *model.User, pending *model.PendingSignIn, response []byte, now time.Time) (bool, error) {
-	if pending.Passkey == "" {
-		return false, nil
+	// The ceremony is spent on its first answer, right or wrong: a retry
+	// answers the fresh one the page asks for.
+	offered, err := s.store.TakePasskey(ctx, pending.ID)
+	if err != nil || offered == "" {
+		return false, err
 	}
 
 	var ceremony webauthn.SessionData
-	if err := json.Unmarshal([]byte(pending.Passkey), &ceremony); err != nil {
+	if err := json.Unmarshal([]byte(offered), &ceremony); err != nil {
 		return false, err
 	}
 

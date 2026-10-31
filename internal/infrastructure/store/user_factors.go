@@ -199,6 +199,23 @@ func (s *Store) OfferPasskey(ctx context.Context, pending *model.PendingSignIn, 
 	return err
 }
 
+// TakePasskey spends the passkey ceremony a waiting sign-in offered, with one
+// conditional UPDATE, so its challenge is answered once: "" when none is on
+// offer, or another answer took it first.
+func (s *Store) TakePasskey(ctx context.Context, pending uuid.UUID) (string, error) {
+	var taken []string
+	err := s.db.WithContext(ctx).Raw(`
+		UPDATE pending_sign_ins SET passkey = ''
+		FROM (SELECT id, passkey FROM pending_sign_ins WHERE id = ? FOR UPDATE) offered
+		WHERE pending_sign_ins.id = offered.id AND offered.passkey <> ''
+		RETURNING offered.passkey`, pending).Scan(&taken).Error
+	if err != nil || len(taken) == 0 {
+		return "", err
+	}
+
+	return taken[0], nil
+}
+
 // ResetTwoStep removes a user's every factor, recovery code and sign-in
 // waiting for one: an administrator's way back in for someone who lost them
 // all. It reports how many factors went.

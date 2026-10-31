@@ -426,10 +426,25 @@ func TestLiveTwoStepWithAPasskey(t *testing.T) {
 		t.Errorf("an answer replayed into another sign-in = %s, want second_factor_invalid", code)
 	}
 
+	// A challenge is spent on its first answer, even a wrong one: the right
+	// answer to it afterwards is refused, and a fresh challenge is needed.
+	if _, code := answerSecondFactor(other, map[string]any{"passkey": key.get(t, offer.SecondFactor.Passkey)}); code != "second_factor_invalid" {
+		t.Errorf("the right answer to a challenge already answered = %s, want second_factor_invalid", code)
+	}
+
 	// A copy of the key, whose counter is behind the original's, is refused.
+	other.account(http.MethodGet, "/login/second-factor", nil, &offer)
+	saved := key.count
 	key.count = 0
 	if _, code := answerSecondFactor(other, map[string]any{"passkey": key.get(t, offer.SecondFactor.Passkey)}); code != "second_factor_invalid" {
 		t.Errorf("a key whose counter went backwards = %s, want second_factor_invalid", code)
+	}
+
+	// The real key, on a fresh challenge, still signs in.
+	key.count = saved
+	other.account(http.MethodGet, "/login/second-factor", nil, &offer)
+	if status, to := answerSecondFactor(other, map[string]any{"passkey": key.get(t, offer.SecondFactor.Passkey)}); status != http.StatusOK || to == "" {
+		t.Errorf("the key on a fresh challenge = %d %s, want the application", status, to)
 	}
 }
 
