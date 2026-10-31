@@ -796,7 +796,16 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 
 	// A token for a user who has since been turned off is spent, not live:
 	// the refresh grant itself would refuse it, so introspection says so too.
-	if user, err := s.store.User(ctx, refresh.UserID); err != nil || !user.IsActive {
+	// Only a user who is gone or off: a database that does not answer is an
+	// error the caller can retry, not every token reported dead.
+	user, err := s.store.User(ctx, refresh.UserID)
+	if errors.Is(err, store.ErrNotFound) {
+		return inactive, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !user.IsActive {
 		return inactive, nil
 	}
 
