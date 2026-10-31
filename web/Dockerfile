@@ -21,6 +21,9 @@ ARG APP=web/id
 # installs exactly what they say.
 FROM oven/bun:1.4.2-alpine AS build
 ARG APP
+# Where browsers reach the app (compose.yaml passes PUBLIC_URL or ADMIN_URL):
+# it is built into the app, which adapter-node no longer reads at run time.
+ARG ORIGIN
 WORKDIR /src/web
 
 # The apps are one Bun workspace with the design they share (web/ui): its
@@ -35,7 +38,7 @@ RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lock
 COPY i18n /src/i18n
 COPY web/ui ui
 COPY ${APP} /src/${APP}
-RUN cd /src/${APP} && bun run build
+RUN cd /src/${APP} && ORIGIN="${ORIGIN}" bun run build
 
 # What the server needs at run time is the app's own dependencies: the rest,
 # web/ui among them, is in the build. Hoisted into one plain tree, so it can be

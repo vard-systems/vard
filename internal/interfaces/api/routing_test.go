@@ -93,6 +93,28 @@ func TestTheAppsPoliciesHoldTheirPagesIn(t *testing.T) {
 	}
 }
 
+// adapter-node no longer reads ORIGIN at run time: an app knows its own
+// address only if it was built with it, and without it takes https, so the
+// console refuses its own forms over plain http. Each app reads ORIGIN as it
+// is built, and the stack builds each with its own address.
+func TestEachAppIsBuiltWithItsOwnAddress(t *testing.T) {
+	for _, app := range []string{"id", "console"} {
+		if config := read(t, "../../../web/"+app+"/vite.config.ts"); !strings.Contains(config, "paths: { origin: process.env.ORIGIN") {
+			t.Errorf("web/%s/vite.config.ts does not take its origin from ORIGIN as it is built", app)
+		}
+	}
+
+	compose := read(t, "../../../compose.yaml")
+	for app, url := range map[string]string{"web/id": "PUBLIC_URL", "web/console": "ADMIN_URL"} {
+		if !strings.Contains(compose, "APP: "+app+`, VERSION: "${VERSION:-dev}", ORIGIN: "${`+url+`}"`) {
+			t.Errorf("compose.yaml does not build %s with ORIGIN ${%s}", app, url)
+		}
+	}
+	if dockerfile := read(t, "../../../web/Dockerfile"); !strings.Contains(dockerfile, `ORIGIN="${ORIGIN}" bun run build`) {
+		t.Error("web/Dockerfile does not build the app with its ORIGIN")
+	}
+}
+
 func read(t *testing.T, path string) string {
 	t.Helper()
 

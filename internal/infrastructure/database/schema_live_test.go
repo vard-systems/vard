@@ -221,7 +221,7 @@ func TestLiveTheServerRunsAsARoleThatCannotChangeTheSchema(t *testing.T) {
 
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	for range 2 { // the second start finds the role already made
-		if err := database.MigrateAsOwner(owner, cfg, log); err != nil {
+		if err := database.MigrateAsOwner(cfg, log); err != nil {
 			t.Fatalf("migrate as the owner: %v", err)
 		}
 	}
@@ -248,5 +248,40 @@ func TestLiveTheServerRunsAsARoleThatCannotChangeTheSchema(t *testing.T) {
 			!strings.Contains(err.Error(), "must be owner") {
 			t.Errorf("%s as the runtime role = %v, want it refused", statement, err)
 		}
+	}
+}
+
+// A fresh installation starts with no runtime role: the server connects as
+// the owner first, which makes it, and only then as the role — in that
+// order, or it can never start.
+func TestLiveAFreshInstallationStartsAsItsRuntimeRole(t *testing.T) {
+	role := fmt.Sprintf("app_fresh_%d", time.Now().UnixNano())
+	server, err := database.Open(config.DB{Driver: "postgres", DSN: os.Getenv(databasetest.Env), TimeZone: "UTC"},
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Skip(err)
+	}
+	t.Cleanup(func() {
+		_ = server.Exec(`DROP ROLE IF EXISTS "` + role + `"`).Error
+		_ = database.Close(server)
+	})
+
+	owner, cfg := databasetest.Empty(t)
+	runtime, _ := url.Parse(cfg.DSN)
+	runtime.User = url.UserPassword(role, "runtime-password")
+	cfg.MigrateDSN, cfg.DSN, cfg.Migrate = cfg.DSN, runtime.String(), true
+
+	db, err := database.Connect(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatalf("a fresh installation could not start: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = database.Close(db)
+		_ = owner.Exec(`DROP OWNED BY "` + role + `"`).Error
+	})
+
+	var user string
+	if err := db.Raw("SELECT current_user").Scan(&user).Error; err != nil || user != role {
+		t.Errorf("connected as %q (%v), want the runtime role %q", user, err, role)
 	}
 }

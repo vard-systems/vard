@@ -17,16 +17,37 @@ import (
 // GRANT, which takes no parameters.
 var rolePattern = regexp.MustCompile(`^[a-z_][a-z0-9_]{0,62}$`)
 
-// MigrateAsOwner migrates the database the server runs on. With a
-// MigrateDSN it connects as the schema's owner to do it, makes the runtime
-// role named by DSN if there is none, and grants that role the rows of every
-// table and nothing else, so the running server cannot change the schema or
-// read what other roles keep. Without one it migrates as DSN's user.
-func MigrateAsOwner(db *gorm.DB, cfg config.DB, log *slog.Logger) error {
-	if cfg.MigrateDSN == "" {
-		return Migrate(db, cfg, log)
+// Connect opens the connection the server runs on, migrating first when
+// cfg.Migrate says to. With a MigrateDSN the owner migrates before the
+// runtime role connects: on a fresh installation that migration is what makes
+// the role, so the other order could never start.
+func Connect(cfg config.DB, log *slog.Logger) (*gorm.DB, error) {
+	if cfg.Migrate && cfg.MigrateDSN != "" {
+		if err := MigrateAsOwner(cfg, log); err != nil {
+			return nil, err
+		}
 	}
 
+	db, err := Open(cfg, log)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.Migrate && cfg.MigrateDSN == "" {
+		if err := Migrate(db, cfg, log); err != nil {
+			_ = Close(db)
+			return nil, err
+		}
+	}
+
+	return db, nil
+}
+
+// MigrateAsOwner connects as the schema's owner (cfg.MigrateDSN) and migrates,
+// makes the runtime role named by cfg.DSN if there is none, and grants that
+// role the rows of every table and nothing else, so the running server cannot
+// change the schema or read what other roles keep.
+func MigrateAsOwner(cfg config.DB, log *slog.Logger) error {
 	ownerCfg := cfg
 	ownerCfg.DSN = cfg.MigrateDSN
 	owner, err := Open(ownerCfg, log)

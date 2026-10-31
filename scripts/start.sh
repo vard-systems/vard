@@ -77,8 +77,9 @@ echo "==> building ($mode)"
 if [[ $mode == prod ]]; then
 	go build -trimpath -o bin/vard ./cmd/vard
 	for app in "${apps[@]}"; do
-		read -r name _ <<<"$app"
-		(cd "web/$name" && bun run build) >"$logs/$name.log" 2>&1 || {
+		read -r name port _ <<<"$app"
+		# The app's own address is built into it (vite.config.ts).
+		(cd "web/$name" && ORIGIN="http://localhost:$port" bun run build) >"$logs/$name.log" 2>&1 || {
 			tail -n 20 "$logs/$name.log"
 			die "web/$name did not build — .logs/$name.log"
 		}

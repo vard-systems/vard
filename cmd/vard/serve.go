@@ -61,19 +61,13 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 		log.Warn("VARD_SECRET_KEY does not look like 32 random bytes; a low-entropy key can be brute-forced against a database dump to recover sealed secrets — generate one with: openssl rand -base64 32")
 	}
 
-	db, err := database.Open(cfg.DB, log)
+	db, err := database.Connect(cfg.DB, log)
 	if err != nil {
 		return err
 	}
 	defer database.Close(db)
 
 	log.Info("database connected")
-
-	if cfg.DB.Migrate {
-		if err := database.MigrateAsOwner(db, cfg.DB, log); err != nil {
-			return err
-		}
-	}
 
 	// A configured Redis that does not answer stops startup; none configured
 	// runs without one.

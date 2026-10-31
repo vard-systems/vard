@@ -167,11 +167,9 @@ services:
     build:
       context: .
       dockerfile: web/Dockerfile
-      args: { APP: web/id, VERSION: "${VERSION:-dev}" }
+      args: { APP: web/id, VERSION: "${VERSION:-dev}", ORIGIN: "${PUBLIC_URL}" }
     environment:
       <<: *web-environment
-      # Where browsers reach it, so a page knows its own https address.
-      ORIGIN: ${PUBLIC_URL}
       API_URL: http://api:8080
     ports: ["${ID_PUBLISH:-127.0.0.1:3000}:3000"]
     networks:
@@ -185,10 +183,9 @@ services:
     build:
       context: .
       dockerfile: web/Dockerfile
-      args: { APP: web/console, VERSION: "${VERSION:-dev}" }
+      args: { APP: web/console, VERSION: "${VERSION:-dev}", ORIGIN: "${ADMIN_URL}" }
     environment:
       <<: *web-environment
-      ORIGIN: ${ADMIN_URL}
       API_URL: http://api:8081
     ports: ["${CONSOLE_PUBLISH:-127.0.0.1:3001}:3000"]
     networks:

@@ -41,26 +41,25 @@ func migrate(log *slog.Logger, args []string) error {
 		return err
 	}
 
-	db, err := database.Open(cfg.DB, log)
+	// Migrating is the schema owner's: with a MigrateDSN it connects as the
+	// owner, and never as the runtime role, which may not exist yet and may
+	// not drop a table or read goose's.
+	ownerCfg := cfg.DB
+	if cfg.DB.MigrateDSN != "" {
+		ownerCfg.DSN = cfg.DB.MigrateDSN
+	}
+	owner, err := database.Open(ownerCfg, log)
 	if err != nil {
 		return err
 	}
-	defer database.Close(db)
-
-	// Going down and reading the version are the schema owner's, as going up
-	// is; the runtime role may not drop a table or read goose's.
-	owner, ownerCfg := db, cfg.DB
-	if cfg.DB.MigrateDSN != "" {
-		ownerCfg.DSN = cfg.DB.MigrateDSN
-		if owner, err = database.Open(ownerCfg, log); err != nil {
-			return err
-		}
-		defer database.Close(owner)
-	}
+	defer database.Close(owner)
 
 	switch command := args[0]; command {
 	case "up":
-		return database.MigrateAsOwner(db, cfg.DB, log)
+		if cfg.DB.MigrateDSN != "" {
+			return database.MigrateAsOwner(cfg.DB, log)
+		}
+		return database.Migrate(owner, ownerCfg, log)
 	case "down":
 		return database.MigrateDown(owner, ownerCfg, log)
 	case "status":

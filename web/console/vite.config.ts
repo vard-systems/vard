@@ -30,6 +30,12 @@ export default defineConfig({
 			// it, title and all, and passes the API's paths on (hooks.server.ts).
 			adapter: adapter(),
 
+			// Where browsers reach the app, given when it is built (ORIGIN): its
+			// own origin, which SvelteKit's form check and every absolute URL
+			// use. Without it adapter-node guesses from the request's headers and
+			// takes https when none say, which plain http cannot pass.
+			paths: { origin: process.env.ORIGIN || undefined },
+
 			// Every script is the app's own: the ones SvelteKit writes into a
 			// page carry a fresh nonce, the rest are files from 'self', so an
 			// injected <script> does not run. Styles stay inline-able (Svelte's

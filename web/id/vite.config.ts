@@ -29,6 +29,12 @@ export default defineConfig({
 			// it, title and all, and passes the API's paths on (hooks.server.ts).
 			adapter: adapter(),
 
+			// Where browsers reach the app, given when it is built (ORIGIN): its
+			// own origin, which SvelteKit's form check and every absolute URL
+			// use. Without it adapter-node guesses from the request's headers and
+			// takes https when none say, which plain http cannot pass.
+			paths: { origin: process.env.ORIGIN || undefined },
+
 			// SvelteKit's own CSRF check refuses, in a built app, every form post
 			// from another origin or from none, before hooks.server.ts runs. Those
 			// are exactly what the provider takes: a backend redeeming a code, an
