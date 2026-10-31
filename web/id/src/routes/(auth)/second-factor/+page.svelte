@@ -141,7 +141,7 @@
 		</Form>
 
 		{#if offers.authenticator}
-			<Note align="center">
+			<Note size="sm" align="center">
 				<button type="button" class="switch" onclick={switchMode}>
 					{recovering ? t('second_factor.use_authenticator') : t('second_factor.use_recovery')}
 				</button>
@@ -176,7 +176,7 @@
 		padding: 0;
 		border: 0;
 		background: none;
-		color: var(--color-info);
+		color: var(--color-link);
 		font: inherit;
 		cursor: pointer;
 	}

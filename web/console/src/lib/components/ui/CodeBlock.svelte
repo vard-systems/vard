@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CopyButton } from 'ui';
+	import CopyButton from './CopyButton.svelte';
 	import { highlighted } from './highlight.svelte';
 
 	type Props = {

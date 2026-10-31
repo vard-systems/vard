@@ -64,7 +64,7 @@
 		border: 1px solid var(--color-border);
 		border-radius: 18px;
 		background: var(--color-surface);
-		box-shadow: var(--shadow-panel);
+		box-shadow: var(--shadow-card);
 	}
 
 	header {

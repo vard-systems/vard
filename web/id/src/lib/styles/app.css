@@ -1,5 +1,5 @@
-/* The sign-in pages' stylesheet: the shared design (web/ui) — its fonts,
-   tokens and element defaults, the same as the panel's — and the few values
-   only these pages lay out with. */
-@import 'ui/styles/index.css';
-@import './layout.css';
+/* Every stylesheet, in order: fonts, the tokens everything refers to, and the
+   element defaults. */
+@import './fonts.css';
+@import './tokens.css';
+@import './base.css';

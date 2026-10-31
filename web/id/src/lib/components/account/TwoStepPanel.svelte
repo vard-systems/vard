@@ -97,6 +97,7 @@
 <Panel title={t('security.two_step_title')} description={t('security.two_step_description')}>
 	{#snippet aside()}
 		<Badge
+			size="md"
 			tone={twoStep.enabled ? 'success' : 'neutral'}
 			icon={twoStep.enabled ? 'ri-shield-check-line' : undefined}
 		>
@@ -109,7 +110,7 @@
 	{/if}
 
 	{#if !twoStep.offered && !twoStep.enabled}
-		<Note>{t('security.two_step_not_offered')}</Note>
+		<Note size="sm">{t('security.two_step_not_offered')}</Note>
 	{:else}
 		<ItemList>
 			{#if twoStep.authenticator}

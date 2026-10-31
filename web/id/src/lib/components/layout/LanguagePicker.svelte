@@ -141,7 +141,7 @@
 	}
 
 	summary:focus-visible {
-		outline: 2px solid var(--color-info);
+		outline: 2px solid var(--color-focus);
 		outline-offset: 2px;
 	}
 
@@ -172,7 +172,7 @@
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md);
 		background: var(--color-surface);
-		box-shadow: var(--shadow-panel);
+		box-shadow: var(--shadow-card);
 		list-style: none;
 		animation: drop var(--speed) ease-out;
 	}
@@ -208,7 +208,7 @@
 	}
 
 	a[aria-current='true'] {
-		color: var(--color-info);
+		color: var(--color-link);
 	}
 
 	.names {

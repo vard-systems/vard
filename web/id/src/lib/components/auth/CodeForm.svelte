@@ -136,7 +136,7 @@
 	}
 
 	.again button:disabled {
-		color: var(--color-text-hint);
+		color: var(--color-text-muted);
 		cursor: default;
 	}
 

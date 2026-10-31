@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Field as ArkField } from '@ark-ui/svelte/field';
-	import { Field } from 'ui';
+	import Field from './Field.svelte';
 	import { highlighted } from './highlight.svelte';
 
 	type Props = {

@@ -24,27 +24,14 @@ ARG APP
 # Where browsers reach the app (compose.yaml passes PUBLIC_URL or ADMIN_URL):
 # it is built into the app, which adapter-node no longer reads at run time.
 ARG ORIGIN
-WORKDIR /src/web
-
-# The apps are one Bun workspace with the design they share (web/ui): its
-# manifests first, so the install is cached until one of them changes.
-COPY web/package.json web/bun.lock ./
-COPY web/console/package.json console/
-COPY web/id/package.json id/
-COPY web/ui/package.json ui/
-COPY web/e2e/package.json e2e/
+WORKDIR /src/${APP}
+COPY ${APP}/package.json ${APP}/bun.lock ./
 RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
-
 COPY i18n /src/i18n
-COPY web/ui ui
 COPY ${APP} /src/${APP}
-RUN cd /src/${APP} && ORIGIN="${ORIGIN}" bun run build
-
-# What the server needs at run time is the app's own dependencies: the rest,
-# web/ui among them, is in the build. Hoisted into one plain tree, so it can be
-# copied as it is.
-RUN rm -rf node_modules */node_modules \
-	&& bun install --frozen-lockfile --production --ignore-scripts --linker hoisted --filter "./${APP#web/}"
+RUN ORIGIN="${ORIGIN}" bun run build \
+	&& rm -rf node_modules \
+	&& bun install --frozen-lockfile --production --ignore-scripts
 
 FROM node:24-alpine
 ARG APP
@@ -55,7 +42,7 @@ LABEL org.opencontainers.image.title="vard-${APP#web/}" \
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000
 COPY --from=build --chown=root:root /src/${APP}/package.json ./
-COPY --from=build --chown=root:root /src/web/node_modules ./node_modules
+COPY --from=build --chown=root:root /src/${APP}/node_modules ./node_modules
 COPY --from=build --chown=root:root /src/${APP}/build ./build
 # The files belong to root and the server runs as node, so it can read its
 # code and change none of it.

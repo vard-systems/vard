@@ -1,18 +1,15 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { IconName } from './icon';
 
 	type Props = {
 		tone?: 'neutral' | 'success' | 'warning' | 'danger';
-		icon?: IconName;
 		children: Snippet;
 	};
 
-	let { tone = 'neutral', icon, children }: Props = $props();
+	let { tone = 'neutral', children }: Props = $props();
 </script>
 
 <span class="badge {tone}">
-	{#if icon}<i class={icon} aria-hidden="true"></i>{/if}
 	{@render children()}
 </span>
 
@@ -20,7 +17,6 @@
 	.badge {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
 		justify-self: start;
 		height: 25px;
 		padding: 0 7px;

@@ -36,7 +36,7 @@
 
 <Panel title={t('security.sessions_title')} description={t('security.sessions_description')}>
 	{#snippet aside()}
-		<Badge>{sessions.length}</Badge>
+		<Badge size="md">{sessions.length}</Badge>
 	{/snippet}
 
 	<ItemList>
@@ -72,6 +72,6 @@
 	</ItemList>
 
 	{#if others === 0}
-		<Note>{t('security.no_other_sessions')}</Note>
+		<Note size="sm">{t('security.no_other_sessions')}</Note>
 	{/if}
 </Panel>

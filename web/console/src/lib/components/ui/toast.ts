@@ -1,13 +1,5 @@
 import { createToaster } from '@ark-ui/svelte/toast';
-
-/** What an error says, for a toast about it: an app's own reading (its API's sentence) once it has
- *  given one to `readErrorsWith`, the error's message until then. */
-let messageOf = (err: unknown, fallback: string): string =>
-	err instanceof Error && err.message ? err.message : fallback;
-
-export function readErrorsWith(read: (err: unknown, fallback: string) => string) {
-	messageOf = read;
-}
+import { messageOf } from '#lib/api/index.js';
 
 export const toaster = createToaster({
 	placement: 'bottom',

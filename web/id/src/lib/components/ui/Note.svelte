@@ -1,19 +1,27 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { Note } from 'ui';
 
 	type Props = {
 		align?: 'start' | 'center';
+		size?: 'sm' | 'md';
 		children: Snippet;
 	};
 
-	let { align = 'start', children }: Props = $props();
+	let { align = 'start', size = 'md', children }: Props = $props();
 </script>
 
-<div class={['note', align]}><Note>{@render children()}</Note></div>
+<p class={['note', align, size]}>{@render children()}</p>
 
 <style>
+	.note {
+		color: var(--color-text-hint);
+	}
+
 	.center {
 		text-align: center;
+	}
+
+	.sm {
+		font-size: var(--text-sm);
 	}
 </style>

@@ -1,5 +1,5 @@
 /**
- * Writes the shared design's tokens.css and fonts.css (web/ui/src/styles) from lib/theme.
+ * Writes lib/styles/tokens.css and lib/styles/fonts.css from lib/theme.
  *
  *   bun run theme          write them
  *   bun run theme:check    fail if either is behind the theme (run by check)
@@ -10,7 +10,7 @@ import prettier from 'prettier';
 import { renderFonts, renderTokens } from '../src/lib/theme/render';
 import { theme } from '../src/lib/theme/theme';
 
-const styles = new URL('../../ui/src/styles/', import.meta.url);
+const styles = new URL('../src/lib/styles/', import.meta.url);
 
 const outputs = [
 	{ file: new URL('tokens.css', styles), css: renderTokens(theme) },

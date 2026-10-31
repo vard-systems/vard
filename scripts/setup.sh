@@ -41,6 +41,6 @@ scripts/db.sh create
 go run ./cmd/vard migrate up
 
 # The apps' dependencies.
-(cd web && bun install --frozen-lockfile)
+for app in console id; do (cd "web/$app" && bun install --frozen-lockfile); done
 
 echo "Ready. Start everything with: make dev"

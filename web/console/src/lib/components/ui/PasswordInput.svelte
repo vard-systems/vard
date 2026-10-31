@@ -10,9 +10,6 @@
 		name?: string;
 		autocomplete?: 'current-password' | 'new-password';
 		hint?: string;
-		error?: string;
-		/** What the eye button is called: the app's words. */
-		revealLabel?: string;
 	};
 
 	let {
@@ -22,16 +19,14 @@
 		required,
 		name,
 		autocomplete = 'current-password',
-		hint,
-		error,
-		revealLabel = 'Show password'
+		hint
 	}: Props = $props();
 
 	const uid = $props.id();
 	const hintId = `${uid}-hint`;
 </script>
 
-<PasswordInput.Root class="field-root" {disabled} {required} invalid={error !== undefined}>
+<PasswordInput.Root class="field-root" {disabled} {required}>
 	<div class="field-box" data-float={value !== '' || undefined}>
 		<PasswordInput.Label><FieldText {label} {required} /></PasswordInput.Label>
 		<PasswordInput.Control>
@@ -39,9 +34,9 @@
 				{name}
 				bind:value
 				{autocomplete}
-				aria-describedby={error || hint ? hintId : undefined}
+				aria-describedby={hint ? hintId : undefined}
 			/>
-			<PasswordInput.VisibilityTrigger aria-label={revealLabel}>
+			<PasswordInput.VisibilityTrigger aria-label="Show password">
 				<PasswordInput.Indicator>
 					{#snippet fallback()}
 						<i class="ri-eye-line" style:font-size="17px" aria-hidden="true"></i>
@@ -52,9 +47,7 @@
 		</PasswordInput.Control>
 	</div>
 
-	{#if error}
-		<p id={hintId} data-part="error-text">{error}</p>
-	{:else if hint}
+	{#if hint}
 		<p id={hintId} data-part="helper-text">{hint}</p>
 	{/if}
 </PasswordInput.Root>

@@ -53,7 +53,7 @@
 
 		<Decision yes={t('consent.allow')} no={t('consent.deny')} {sending} onanswer={answer} />
 
-		<Note align="center">{t('consent.later')}</Note>
+		<Note size="sm" align="center">{t('consent.later')}</Note>
 	</AuthCard>
 {/if}
 

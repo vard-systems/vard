@@ -15,7 +15,6 @@
 		loading = false,
 		disabled = false,
 		icon,
-		block = false,
 		type = 'button',
 		children,
 		...rest
@@ -28,7 +27,6 @@
 	data-size={size}
 	data-variant={variant}
 	data-palette={colorPalette}
-	data-block={block || undefined}
 	data-loading={loading || undefined}
 	disabled={disabled || loading}
 	{...rest}

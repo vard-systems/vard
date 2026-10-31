@@ -16,7 +16,6 @@
 		colorPalette = 'neutral',
 		disabled = false,
 		icon,
-		block = false,
 		children,
 		...rest
 	}: Props = $props();
@@ -29,7 +28,6 @@
 	data-size={size}
 	data-variant={variant}
 	data-palette={colorPalette}
-	data-block={block || undefined}
 	aria-disabled={disabled || undefined}
 	role={disabled ? 'link' : undefined}
 	{...rest}

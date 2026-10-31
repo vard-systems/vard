@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { theme } from '#lib/state/theme.svelte.js';
 	import { resolve } from '$app/paths';
 	import { organizationApi, type Admin, type OrganizationBrand } from '#lib/api/index.js';
 	import { BRAND } from '#lib/brand.js';
@@ -64,7 +63,7 @@
 	<div class="end">
 		<CommandPalette />
 		<HelpMenu />
-		<ThemeToggle {theme} size="sm" variant="ghost" />
+		<ThemeToggle size="sm" variant="ghost" />
 		<span class="rule" aria-hidden="true"></span>
 		<AccountMenu {admin} />
 	</div>

@@ -1,9 +1,7 @@
 *
 !i18n
 !web
-web/node_modules
 web/*/node_modules
-web/e2e/test-results
 web/*/build
 web/*/.svelte-kit
 web/*/.env

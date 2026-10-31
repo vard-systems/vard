@@ -35,9 +35,10 @@ help: ## Show this help
 setup: ## Prepare a fresh checkout: .env, the database, dependencies
 	@scripts/setup.sh
 
-deps: ## Install the Go modules and the web workspace (both apps, ui, the end-to-end tests)
+deps: ## Install the Go modules, both apps' packages and the end-to-end tests
 	go mod download
-	cd web && bun install --frozen-lockfile
+	@$(call each-app,bun install --frozen-lockfile)
+	cd web/e2e && bun install --frozen-lockfile
 
 tidy: ## Tidy go.mod and go.sum
 	go mod tidy
@@ -61,8 +62,7 @@ build-api: ## Build the API into bin/vard
 	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o bin/vard ./cmd/vard
 
 build-web: ## Build both apps into web/*/build (run each with `node build`)
-	cd web && bun install --frozen-lockfile
-	@$(call each-app,bun run build)
+	@$(call each-app,bun install --frozen-lockfile && bun run build)
 
 generate: ## Rewrite the console's generated files: theme tokens and fonts
 	cd web/console && bun run theme
@@ -80,7 +80,6 @@ fmt: ## Format every Go and app file in place
 	gofmt -w $(GO_DIRS)
 	@$(call each-app,bun run format)
 	@$(E2E_PRETTIER) --write web/e2e >/dev/null
-	@cd web/ui && bun run format >/dev/null
 
 lint: lint-go lint-web ## Check formatting, vet, staticcheck, lint and type-check, changing nothing
 
@@ -92,7 +91,6 @@ lint-go: ## Lint the Go code only
 lint-web: ## Lint and type-check the apps and the end-to-end tests only
 	@$(call each-app,bun run lint && bun run check)
 	@$(E2E_PRETTIER) --check web/e2e && $(E2E_TSC)
-	@echo "==> web/ui" && cd web/ui && bun run lint && bun run check
 
 test: test-go test-web ## Run the Go and app unit tests
 
