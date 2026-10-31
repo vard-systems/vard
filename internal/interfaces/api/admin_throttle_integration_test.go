@@ -125,3 +125,35 @@ func TestLiveAdminCurrentPasswordGuessesAreThrottled(t *testing.T) {
 		t.Error("signing in after five wrong current passwords = 200, want the account waiting")
 	}
 }
+
+// A username nobody has is counted before anything is looked up, exactly as
+// one somebody has, so neither the answer nor the work done says which exist;
+// and its wait is reached like theirs.
+func TestLiveAnUnknownAdminUsernameIsCountedLikeAKnownOne(t *testing.T) {
+	s := newLiveServer(t)
+	s.client().must(http.StatusCreated, http.MethodPost, "/setup", map[string]string{
+		"email": superEmail, "password": superPassword, "first_name": "Root",
+	}, nil)
+
+	failures := func() []int {
+		var counts []int
+		if err := s.db.Raw("SELECT failures FROM sign_in_throttles WHERE key LIKE 'admin:%' ORDER BY failures").Scan(&counts).Error; err != nil {
+			t.Fatal(err)
+		}
+		return counts
+	}
+
+	guesser := s.client()
+	for range 2 {
+		if status, _ := guesser.loginAnswer(superEmail, "wrong-password-123"); status != http.StatusUnauthorized {
+			t.Fatalf("a wrong password = %d, want 401", status)
+		}
+		if status, _ := guesser.loginAnswer("nobody@example.com", "wrong-password-123"); status != http.StatusUnauthorized {
+			t.Fatalf("an unknown username = %d, want 401", status)
+		}
+	}
+
+	if got := failures(); !slices.Equal(got, []int{2, 2}) {
+		t.Errorf("the counts = %v, want the known and the unknown username at 2 each", got)
+	}
+}

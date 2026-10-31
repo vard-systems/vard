@@ -200,8 +200,9 @@ code near it, and add a test when adding a case.
   count while a second factor is still to come; only the right second factor
   does, and a success only gives the network its one attempt back. The
   waiting sign-in is named by an httpOnly cookie, never by anything the page
-  or the address holds. Administrators are throttled the same way, on one key
-  per administrator (`internal/application/auth/throttle.go`); nothing is ever locked.
+  or the address holds. Administrators are throttled the same way, on a keyed
+  hash of the username typed, counted before it is looked up
+  (`internal/application/auth/throttle.go`); nothing is ever locked.
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.

@@ -87,7 +87,7 @@ func (s *Service) withPassword(ctx context.Context, admin *model.Admin) error {
 // guess is counted before comparing, like a sign-in, so a session left open
 // cannot be used to find the password; a waiting account is refused outright.
 func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, password string) error {
-	allowed, err := s.reserve(ctx, admin)
+	allowed, err := s.reserve(ctx, admin.Username)
 	if err != nil {
 		return err
 	}

@@ -76,12 +76,17 @@ type Request struct {
 }
 
 func (s *Service) Login(ctx context.Context, username, password string, req Request) (string, *model.Admin, State, error) {
-	admin, err := s.store.AdminByUsername(ctx, username)
+	// The attempt is reserved before anything is looked up or compared, so
+	// parallel guesses cannot pass the throttle, and an unknown username, a
+	// waiting one and a wrong password all cost the same to refuse.
+	allowed, err := s.reserve(ctx, username)
+	if err != nil {
+		return "", nil, StateNone, err
+	}
 
+	admin, err := s.store.AdminByUsername(ctx, username)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		// Still hash something, so a missing username and a wrong password
-		// take the same time to answer.
 		model.CompareDummyPassword(password)
 		s.record(ctx, nil, username, "admin.login_failed", req, "unknown username")
 		return "", nil, StateNone, ErrInvalidCredentials
@@ -89,13 +94,6 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 		return "", nil, StateNone, err
 	}
 
-	// The attempt is reserved before comparing, so parallel guesses cannot pass
-	// the throttle, and a waiting account takes as long to refuse as a wrong
-	// password.
-	allowed, err := s.reserve(ctx, admin)
-	if err != nil {
-		return "", nil, StateNone, err
-	}
 	if !allowed {
 		model.CompareDummyPassword(password)
 		s.record(ctx, &admin.ID, admin.Username, "admin.login_blocked", req, "throttled")

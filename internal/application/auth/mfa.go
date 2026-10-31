@@ -286,7 +286,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 
 	// Reserved before comparing, so parallel guesses are bounded by the
 	// throttle.
-	allowed, err := s.reserve(ctx, admin)
+	allowed, err := s.reserve(ctx, admin.Username)
 	if err != nil {
 		return "", err
 	}
