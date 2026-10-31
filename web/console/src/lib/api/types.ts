@@ -243,8 +243,6 @@ export type SetupInput = {
 	password: string;
 	first_name: string;
 	last_name: string;
-	/** The one-time token the server logged at startup. */
-	setup_token: string;
 };
 
 export type ActivityTarget = {

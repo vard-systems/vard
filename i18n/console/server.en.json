@@ -82,7 +82,6 @@
 		"mfa_passkey_refused": "The passkey's answer was not accepted. Try again, or use another passkey.",
 		"mfa_passkey_not_found": "There is no such passkey on your account.",
 		"admin_idle_timeout_out_of_range": "The idle timeout must be between {min} and {max} minutes.",
-		"setup_token_invalid": "That setup token is not valid. Use the one the server wrote to its log when it started; restarting the server writes a new one.",
 		"admin_role_not_found": "There is no such admin role.",
 		"admin_role_built_in": "super_admin is built in and cannot be changed or removed.",
 		"admin_role_name_taken": "An admin role with this name already exists.",

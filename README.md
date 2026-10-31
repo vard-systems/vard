@@ -47,8 +47,7 @@ app is one origin and the browser never talks to the API directly.
 | console | http://localhost:5174/login   | http://localhost:8081/login     |
 | API     | `:8080` public, `:8081` admin | inside the stack, not published |
 
-Open the console and create the first administrator with the one-time setup
-token the API writes to its log at startup (`setup_token=…`, at WARN), or, on a
+Open the console and create the first administrator on its setup page, or, on a
 server without a browser at hand, `bin/vard admin create -email you@example.com
 -first-name You` with the password on standard input. Run `make` to see every
 target.
@@ -158,9 +157,8 @@ for whatever starts and routes to it.
   instead; here the consent step is what asks the person, so a login flow
   without it grants `offline_access` on the administrator's say alone — add
   the consent step to a flow used by applications you do not run yourself.
-- Setting up a fresh panel takes the one-time token the server logged, not just
-  reaching the console first; it works once, and only while nobody is an
-  administrator.
+- A fresh panel is set up once, by whoever opens its setup page first, and
+  only while nobody is an administrator: set it up as soon as it is up.
 - An address is proved before an account is used: new login flows require a
   verified address, social sign-in makes no account for an address the
   provider has not verified, and the first proof of an address (a reset or

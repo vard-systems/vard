@@ -4,7 +4,6 @@ import { expect, request, type APIRequestContext, type Page } from '@playwright/
 /** Where scripts/e2e.sh raised the stack. */
 export const ID = required('E2E_ID_URL');
 export const CONSOLE = required('E2E_CONSOLE_URL');
-export const SETUP_TOKEN = required('E2E_SETUP_TOKEN');
 
 /** The first administrator, made by setup.spec.ts. */
 export const ROOT = { email: 'root@example.com', password: 'root-password-123', firstName: 'Root' };

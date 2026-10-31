@@ -7,6 +7,4 @@ type setupRequest struct {
 	Password  string `json:"password" validate:"required,max=128"`
 	FirstName string `json:"first_name" validate:"required,max=100"`
 	LastName  string `json:"last_name" validate:"max=100"`
-	// SetupToken is the one the server logged at startup.
-	SetupToken string `json:"setup_token" validate:"max=64"`
 }

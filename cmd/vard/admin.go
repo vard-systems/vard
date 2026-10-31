@@ -11,10 +11,8 @@ import (
 	"net/mail"
 	"os"
 	"strings"
-	"time"
 	"unicode/utf8"
 
-	"vard/internal/application/auth"
 	"vard/internal/config"
 	"vard/internal/domain/model"
 	"vard/internal/infrastructure/database"
@@ -22,8 +20,7 @@ import (
 )
 
 // adminCommand sets the panel up from the command line, for an installation
-// nobody can open a browser on yet. Reaching the database is the proof the
-// setup token stands in for over the web, so it issues one and spends it.
+// nobody can open a browser on yet.
 func adminCommand(args []string) int {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
@@ -90,15 +87,7 @@ func admin(args []string, stdin io.Reader, stdout io.Writer) error {
 		return err
 	}
 
-	token, err := auth.IssueSetupToken(ctx, st, time.Now())
-	if err != nil {
-		return err
-	}
-	if token == "" {
-		return store.ErrAdminExists
-	}
-
-	if err := st.CreateFirstAdmin(ctx, &created, model.HashSecret(token), time.Now()); err != nil {
+	if err := st.CreateFirstAdmin(ctx, &created); err != nil {
 		return err
 	}
 

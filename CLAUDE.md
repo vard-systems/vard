@@ -270,10 +270,11 @@ code near it, and add a test when adding a case.
   written at most once a `model.SeenEvery`). A passkey answers only the
   ceremony its session was offered (`passkey_ceremony`), spent on the first
   answer, and is counted against the lockout as a code is.
-- **Setting up the panel takes the logged setup token.** While no
-  administrator exists, each start issues a 256-bit `setup_tokens` row
-  (hash only) and logs the token at WARN; `CreateFirstAdmin` spends it with
-  one conditional UPDATE in the transaction that makes the admin.
+- **The panel is set up once.** While no administrator exists, the setup
+  page makes the first, a super admin; `CreateFirstAdmin` counts them under
+  an advisory lock in the transaction that makes it, so racing setups make
+  one and any after is refused. Whoever reaches a fresh panel first sets it
+  up, so an installation is set up as soon as it is up.
 - **Nothing internal reaches a browser.** Every answer is a defined problem;
   anything else goes through `respond.Failure`, which logs it and answers 500.
   The request log records the path, never the query string.

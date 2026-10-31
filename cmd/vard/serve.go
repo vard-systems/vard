@@ -18,7 +18,6 @@ import (
 	"vard/internal/application/oidc"
 	"vard/internal/brand"
 	"vard/internal/config"
-	"vard/internal/domain/model"
 	"vard/internal/infrastructure/cache"
 	"vard/internal/infrastructure/database"
 	"vard/internal/infrastructure/mail"
@@ -121,16 +120,15 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 		return err
 	}
 
-	// Until someone is an administrator, setting the panel up takes a token
-	// only the server's log shows, not merely reaching the console first.
-	setupToken, err := auth.IssueSetupToken(context.Background(), st, time.Now())
+	// Whoever opens the setup page first makes the first administrator, so
+	// a fresh installation should be set up as soon as it is up.
+	exists, err := st.AdminsExist(context.Background())
 	if err != nil {
 		return err
 	}
-	if setupToken != "" {
-		log.Warn("no administrator exists yet: open the setup page and enter this one-time setup token",
-			"url", cfg.AdminURL+auth.SetupPage, "setup_token", setupToken,
-			"expires_in", model.SetupTokenLifetime.String())
+	if !exists {
+		log.Warn("no administrator exists yet: open the setup page to make the first one",
+			"url", cfg.AdminURL+auth.SetupPage)
 	}
 
 	mailer := mail.New(mail.FromStore(st, sealer), log)

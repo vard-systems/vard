@@ -45,8 +45,8 @@ make docker-up               # build and start; waits until everything is health
 
 Route `PUBLIC_URL` to `ID_PUBLISH` and `ADMIN_URL` to `CONSOLE_PUBLISH`,
 then open
-`https://admin.example.com/login` and make the first administrator with the
-setup token the API logged (`make docker-logs service=api`, `setup_token=…`).
+`https://admin.example.com/new-super-admin` and make the first administrator
+straight away: until someone has, whoever opens that page first can.
 They are asked to set up an authenticator app straight away.
 
 ## Updating

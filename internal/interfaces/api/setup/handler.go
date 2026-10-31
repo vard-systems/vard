@@ -1,6 +1,5 @@
 // Package setup reports whether an administrator exists and creates the first
-// one. Both endpoints are open, but creating takes the one-time token the
-// server logged at startup, and the store refuses it once anyone exists.
+// one. Both endpoints are open; the store refuses creating once anyone exists.
 package setup
 
 import (
@@ -8,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -72,13 +70,10 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	err := h.store.CreateFirstAdmin(c.Request.Context(), &admin, model.HashSecret(req.SetupToken), time.Now())
+	err := h.store.CreateFirstAdmin(c.Request.Context(), &admin)
 	switch {
 	case errors.Is(err, store.ErrAdminExists):
 		respond.Fail(c, alreadySetUp)
-		return
-	case errors.Is(err, store.ErrSetupTokenInvalid):
-		respond.Fail(c, tokenRefused)
 		return
 	case err != nil:
 		respond.Failure(c, h.log, err, "creating the first administrator failed")

@@ -19,7 +19,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"vard/internal/application/auth"
 	"vard/internal/application/oidc"
 	"vard/internal/config"
 	"vard/internal/infrastructure/cache"
@@ -54,9 +53,6 @@ type liveServer struct {
 	cache *cache.Redis
 	db    *gorm.DB
 	cfg   config.Config
-	// setupToken is the one-time token the first node logged, as a fresh
-	// installation's server does.
-	setupToken string
 }
 
 // testAccountURL is where the provider sends browsers to sign in. Nothing is
@@ -196,9 +192,8 @@ func startNode(t *testing.T, db *gorm.DB, dbCfg config.DB, shared *cache.Redis, 
 	// prefix of its own, so every test here also proves that a write is seen
 	// by the next read through the cache.
 	st := store.New(db).WithCache(shared)
-	var setupToken string
 	if first {
-		setupToken = seed(t, st, serverCfg)
+		seed(t, st, serverCfg)
 	}
 
 	sealer, err := jose.NewSealer(serverCfg.SecretKey)
@@ -227,13 +222,12 @@ func startNode(t *testing.T, db *gorm.DB, dbCfg config.DB, shared *cache.Redis, 
 	return &liveServer{
 		t: t, url: adminRoot + "/api/v1/admin", root: root, adminRoot: adminRoot,
 		mail: mailer, store: st, cache: shared, db: db, cfg: serverCfg,
-		setupToken: setupToken,
 	}
 }
 
 // seed writes what main writes before serving: the administrators' sign-in
-// settings, the server's own APIs, and the setup token, which it returns.
-func seed(t *testing.T, st *store.Store, cfg config.Config) string {
+// settings and the server's own APIs.
+func seed(t *testing.T, st *store.Store, cfg config.Config) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -244,12 +238,6 @@ func seed(t *testing.T, st *store.Store, cfg config.Config) string {
 		t.Fatal(err)
 	}
 
-	token, err := auth.IssueSetupToken(ctx, st, time.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return token
 }
 
 // client is one browser: it keeps its own session cookie.
@@ -329,7 +317,6 @@ func (s *liveServer) superAdmin() *client {
 	c := s.client()
 	c.must(http.StatusCreated, http.MethodPost, "/setup", map[string]string{
 		"email": superEmail, "password": superPassword, "first_name": "Root",
-		"setup_token": s.setupToken,
 	}, nil)
 
 	if status := c.login(superEmail, superPassword); status != http.StatusOK {
