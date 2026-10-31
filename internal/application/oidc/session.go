@@ -137,10 +137,13 @@ func (s *Service) SignIn(ctx context.Context, email, password, request string, r
 	if err != nil {
 		return nil, err
 	}
-	if !secondFactor {
-		if err := s.succeeded(ctx, keys); err != nil {
-			return nil, err
-		}
+	if secondFactor {
+		err = s.passwordRight(ctx, keys)
+	} else {
+		err = s.succeeded(ctx, keys)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	if user.IsPasswordTemporary {

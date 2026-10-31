@@ -84,9 +84,13 @@ func (s *Store) ClearSignIn(ctx context.Context, keys ...string) error {
 
 // ReturnSignIn gives back the attempt a successful sign-in was counted for,
 // on a key a success must not clear: a network address, where a stranger's
-// own account would otherwise wipe the count of their guesses at others.
-func (s *Store) ReturnSignIn(ctx context.Context, key string) error {
+// own account would otherwise wipe the count of their guesses at others. A
+// wait that very attempt started ends with it: the count is back under it.
+func (s *Store) ReturnSignIn(ctx context.Context, key model.ThrottleKey) error {
 	return s.db.WithContext(ctx).Model(&model.SignInThrottle{}).
-		Where("key = ? AND failures > 0", key).
-		Update("failures", gorm.Expr("failures - 1")).Error
+		Where("key = ? AND failures > 0", key.Key).
+		Updates(map[string]any{
+			"failures":      gorm.Expr("failures - 1"),
+			"blocked_until": gorm.Expr("CASE WHEN failures - 1 < ? THEN NULL ELSE blocked_until END", key.Free),
+		}).Error
 }

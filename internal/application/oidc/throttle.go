@@ -22,18 +22,15 @@ type signInKeys struct {
 	// account is the key a success forgets; network is the one it only
 	// gives its attempt back to.
 	account string
-	network string
+	network model.ThrottleKey
 }
 
 func (s *Service) keysFor(email string, client Client) signInKeys {
 	account := "email:" + s.accountKey(email)
-	network := "network:" + networkOf(client.IP)
+	network := model.ThrottleKey{Key: "network:" + networkOf(client.IP), Free: model.ThrottleFreeNetwork}
 
 	return signInKeys{
-		keys: []model.ThrottleKey{
-			{Key: account, Free: model.ThrottleFree},
-			{Key: network, Free: model.ThrottleFreeNetwork},
-		},
+		keys:    []model.ThrottleKey{{Key: account, Free: model.ThrottleFree}, network},
 		account: account,
 		network: network,
 	}
@@ -50,6 +47,14 @@ func (s *Service) succeeded(ctx context.Context, keys signInKeys) error {
 	if err := s.store.ClearSignIn(ctx, keys.account); err != nil {
 		return err
 	}
+	return s.store.ReturnSignIn(ctx, keys.network)
+}
+
+// passwordRight gives the network back the attempt a right password took
+// when a second factor is still to come. The address typed keeps its count,
+// which only the right second factor clears; the second factor's own
+// attempt is counted, and given back, by itself.
+func (s *Service) passwordRight(ctx context.Context, keys signInKeys) error {
 	return s.store.ReturnSignIn(ctx, keys.network)
 }
 

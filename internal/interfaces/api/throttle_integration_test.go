@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"vard/internal/config"
+	"vard/internal/domain/model"
+	"vard/internal/domain/totp"
 )
 
 // Users' sign-ins are throttled, not locked: past a few failures each attempt
@@ -185,5 +187,61 @@ func TestLiveForgotPasswordTakesAsLongForAnyAddress(t *testing.T) {
 	known, unknown := fastest(adaEmail), fastest("nobody@example.com")
 	if ratio := float64(known) / float64(unknown); ratio > 1.5 {
 		t.Errorf("an account's address took %v and nobody's %v, want about the same", known, unknown)
+	}
+}
+
+// networkFailures is the count against `address`'s network, 0 without one.
+func (f *oauthFixture) networkFailures(t *testing.T, address string) int {
+	t.Helper()
+	var failures int
+	err := f.s.db.Raw("SELECT COALESCE(MAX(failures), 0) FROM sign_in_throttles WHERE key = ?", "network:"+address).
+		Scan(&failures).Error
+	if err != nil {
+		t.Fatal(err)
+	}
+	return failures
+}
+
+// A network at the edge of its free attempts, as an office's typos leave it,
+// is not made to wait by somebody signing in correctly from it.
+func TestLiveARightPasswordDoesNotMakeItsNetworkWait(t *testing.T) {
+	f := throttledFixture(t)
+	const office = "203.0.113.7"
+
+	err := f.s.db.Exec(`INSERT INTO sign_in_throttles (id, created_at, updated_at, key, failures, expires_at)
+		VALUES (gen_random_uuid(), now(), now(), ?, ?, now() + interval '1 hour')`,
+		"network:"+office, model.ThrottleFreeNetwork-1).Error
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := range 2 {
+		if status, code := f.s.browser().signInFrom(office, adaEmail, adaPassword); status != http.StatusOK {
+			t.Fatalf("right password %d from the office = %d %s, want 200", i+1, status, code)
+		}
+	}
+	if got := f.networkFailures(t, office); got != model.ThrottleFreeNetwork-1 {
+		t.Errorf("the office's count = %d after two right passwords, want it left at %d", got, model.ThrottleFreeNetwork-1)
+	}
+}
+
+// A sign-in with a second factor takes nothing from its network: the right
+// password and the right code each give back the attempt they took.
+func TestLiveASignInWithASecondFactorLeavesItsNetworkAsItWas(t *testing.T) {
+	f := newOAuthFixture(t)
+	f.withSteps("identifier", "password", "social", "totp")
+
+	owner := f.s.browser()
+	_, challenge := pkce(t)
+	f.signIn(owner, challenge)
+	secret, _ := addAuthenticator(t, owner)
+
+	before := f.networkFailures(t, "127.0.0.1")
+	held := f.heldSignIn(t)
+	if status, code := answerSecondFactor(held, map[string]any{"code": codeAt(t, secret, totp.Step(time.Now()))}); status != http.StatusOK {
+		t.Fatalf("the right code = %d %s, want 200", status, code)
+	}
+	if after := f.networkFailures(t, "127.0.0.1"); after != before {
+		t.Errorf("the network's count went from %d to %d over a right sign-in, want it unchanged", before, after)
 	}
 }
