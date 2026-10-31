@@ -521,6 +521,12 @@ shield mark does.
   grants rows only — no DDL, not goose's table. A store query that needs more
   than SELECT, INSERT, UPDATE or DELETE fails there; it belongs in a
   migration.
+- **Each app's address is built into it.** adapter-node no longer reads
+  `ORIGIN` at run time: `vite.config.ts` takes `paths.origin` from `ORIGIN`
+  when the app is built (compose passes `PUBLIC_URL` / `ADMIN_URL` as build
+  arguments, `make start` the local ones). Built without it, an app guesses
+  https from the headers and the console refuses its own forms over http;
+  changing an address means building the images again.
 - **Redis is optional.** Every path must work with a nil cache, and Redis is
   never the only copy of anything.
 - **The shell is zsh.** An unquoted glob such as `--include=*.go` fails with
