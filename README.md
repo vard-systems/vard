@@ -12,7 +12,8 @@ with two web apps:
 credentials), pushed authorization requests (PAR), the device authorization
 grant (sign-in on TVs and command lines), refresh token rotation with reuse
 detection and a short grace for a retried refresh, client credentials,
-DPoP-bound tokens, native apps'
+DPoP-bound tokens and authorization codes (`dpop_jkt`, or a pushed
+request's own proof), native apps'
 redirects (private-use schemes, `127.0.0.1` / `[::1]` loopback on any port,
 Expo Go's `exp://` for an app marked as in development),
 dynamic client registration, userinfo, introspection, revocation, ID tokens
@@ -153,6 +154,11 @@ for whatever starts and routes to it.
   Every copy a client holds stays good, the retry is held to the same client
   authentication and DPoP binding as any refresh, and the
   family still has exactly one live token.
+- A code asked for with `dpop_jkt`, or pushed with a DPoP proof, is
+  redeemed only with a proof from that key; tried without it, the code is
+  spent. `dpop_jkt` in a plain authorization request travels through the
+  browser and can be stripped on the way, so for a binding that cannot be
+  removed in transit a client pushes its request (PAR) with a DPoP proof.
 - A refresh token is issued only for `offline_access`, and only to an
   application an administrator gave the refresh-token grant, for APIs that
   allow offline access. OpenID Connect Core §11 asks for `prompt=consent`

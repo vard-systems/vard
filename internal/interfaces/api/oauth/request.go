@@ -50,23 +50,30 @@ func requestParams(form url.Values) oidc.AuthorizeParams {
 		MaxAge:              form.Get("max_age"),
 		LoginHint:           form.Get("login_hint"),
 		RequestURI:          form.Get("request_uri"),
+		DPoPKey:             form.Get("dpop_jkt"),
 	}
 }
 
 // pushedParams is a pushed authorization request: the client's credentials,
-// and the request as the authorization endpoint would read it.
-func pushedParams(c *gin.Context) (oidc.ClientAuth, oidc.AuthorizeParams, error) {
+// the request as the authorization endpoint would read it, and its DPoP
+// proof, "" when it sent none.
+func pushedParams(c *gin.Context) (oidc.ClientAuth, oidc.AuthorizeParams, string, error) {
 	form, err := readForm(c)
 	if err != nil {
-		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, err
+		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, "", err
 	}
 
 	auth, err := clientAuth(c, form)
 	if err != nil {
-		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, err
+		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, "", err
 	}
 
-	return auth, requestParams(form), nil
+	proof, err := dpopProof(c)
+	if err != nil {
+		return oidc.ClientAuth{}, oidc.AuthorizeParams{}, "", err
+	}
+
+	return auth, requestParams(form), proof, nil
 }
 
 func logoutParams(c *gin.Context) (oidc.LogoutParams, error) {

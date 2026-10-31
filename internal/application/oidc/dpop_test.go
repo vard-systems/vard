@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,5 +46,34 @@ func TestCheckDPoPRefusesAnOversizedKey(t *testing.T) {
 	var refused *Error
 	if !errors.As(err, &refused) || refused.Code != ErrInvalidDPoPProof {
 		t.Fatalf("checkDPoP = %v, want %s", err, ErrInvalidDPoPProof)
+	}
+}
+
+// dpop_jkt is a key's SHA-256 thumbprint and nothing else: anything that is
+// not 32 bytes in canonical unpadded base64url is refused before it is
+// stored, and a code is never bound to a value no key could match.
+func TestIsThumbprint(t *testing.T) {
+	sum := sha256.Sum256([]byte("a key"))
+	good := base64.RawURLEncoding.EncodeToString(sum[:])
+
+	tests := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{name: "a thumbprint", value: good, want: true},
+		{name: "the RFC 7638 example", value: "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs", want: true},
+		{name: "empty", value: "", want: false},
+		{name: "one character short", value: good[:42], want: false},
+		{name: "padded", value: good + "=", want: false},
+		{name: "standard base64", value: strings.Repeat("+", 43), want: false},
+		{name: "spare bits set in the last character", value: good[:42] + "B", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isThumbprint(tt.value); got != tt.want {
+				t.Errorf("isThumbprint(%q) = %v, want %v", tt.value, got, tt.want)
+			}
+		})
 	}
 }

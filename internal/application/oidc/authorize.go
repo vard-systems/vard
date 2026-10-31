@@ -28,6 +28,10 @@ type AuthorizeParams struct {
 	MaxAge              string
 	LoginHint           string
 	ResponseMode        string
+	// DPoPKey is dpop_jkt (RFC 9449 §10): the thumbprint of the DPoP key the
+	// code may only be redeemed with. A pushed request also takes it from
+	// the push's own proof.
+	DPoPKey string
 	// RequestURI names a request the client pushed first (RFC 9126); the
 	// parameters are then the pushed ones, not the address's.
 	RequestURI string `json:"-"`
@@ -164,6 +168,7 @@ func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Ses
 		Audience:            p.Audience,
 		LoginHint:           p.LoginHint,
 		ForceConsent:        slices.Contains(prompts, "consent"),
+		DPoPKey:             p.DPoPKey,
 		ExpiresAt:           now.Add(model.AuthorizationRequestLifetime),
 	}
 	req.Application = app
@@ -226,6 +231,8 @@ func (s *Service) requestProblem(ctx context.Context, app *model.Application, p 
 		return ErrInvalidRequest, "code_challenge must be the base64url SHA-256 of the code verifier", nil
 	case strings.TrimSpace(p.Scope) == "":
 		return ErrInvalidScope, "scope is required", nil
+	case p.DPoPKey != "" && !isThumbprint(p.DPoPKey):
+		return ErrInvalidRequest, "dpop_jkt must be the base64url SHA-256 thumbprint of the DPoP key", nil
 	}
 
 	if p.Audience != "" {
@@ -373,6 +380,7 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, h
 		Audience:            req.Audience,
 		AuthenticatedAt:     session.AuthenticatedAt,
 		Methods:             session.Methods,
+		DPoPKey:             req.DPoPKey,
 		ExpiresAt:           now.Add(model.AuthorizationCodeLifetime),
 	})
 	if err != nil {

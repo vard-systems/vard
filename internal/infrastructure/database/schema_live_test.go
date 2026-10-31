@@ -334,3 +334,58 @@ func TestLiveADatabaseFromBeforeTheSquashIsRefused(t *testing.T) {
 		t.Errorf("migrating it = %v, want ErrSquashedHistory", err)
 	}
 }
+
+// An installation upgraded to the DPoP binding keeps the requests and codes
+// it had, each bound to no key, which is what they were; going back down
+// keeps them too, without the column.
+func TestLiveTheDPoPBindingUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	if err := database.MigrateDown(db, log); err != nil {
+		t.Fatal(err)
+	}
+	if has := rows(t, db, `SELECT table_name FROM information_schema.columns
+		WHERE column_name = 'dpop_key' AND table_name IN ('authorization_requests', 'authorization_codes')`); len(has) != 0 {
+		t.Fatalf("before the binding, dpop_key is on %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{Name: "Shop", ClientID: "shop", Type: model.AppWeb, TokenAuthMethod: model.AuthNone, IsEnabled: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	request := &model.AuthorizationRequest{HandleHash: "request", ApplicationID: app.ID, RedirectURI: "https://shop.example/cb", Scope: "openid", ExpiresAt: later}
+	code := &model.AuthorizationCode{CodeHash: "code", ApplicationID: app.ID, UserID: user.ID, RedirectURI: "https://shop.example/cb", Scope: "openid", AuthenticatedAt: time.Now(), ExpiresAt: later}
+	for _, row := range []any{request, code} {
+		if err := db.Omit(clause.Associations, "DPoPKey").Create(row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to the binding: %v", err)
+	}
+	for _, table := range []string{"authorization_requests", "authorization_codes"} {
+		if keys := rows(t, db, "SELECT dpop_key FROM "+table); !slices.Equal(keys, []string{""}) {
+			t.Errorf("%s after the upgrade holds keys %q, want the one row, bound to none", table, keys)
+		}
+	}
+
+	if err := database.MigrateDown(db, log); err != nil {
+		t.Fatalf("down from the binding: %v", err)
+	}
+	if has := rows(t, db, `SELECT table_name FROM information_schema.columns
+		WHERE column_name = 'dpop_key' AND table_name IN ('authorization_requests', 'authorization_codes')`); len(has) != 0 {
+		t.Errorf("down left dpop_key on %v", has)
+	}
+	for _, table := range []string{"authorization_requests", "authorization_codes"} {
+		if left := rows(t, db, "SELECT id::text FROM "+table); len(left) != 1 {
+			t.Errorf("down left %d rows in %s, want 1", len(left), table)
+		}
+	}
+}

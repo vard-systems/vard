@@ -221,6 +221,10 @@ code near it, and add a test when adding a case.
   and entering them is rate-limited.
 - **A DPoP-bound access token is never taken as a bearer token.** Userinfo
   checks its proof; the account and admin APIs, which do not, refuse it.
+  A code bound to a key (`dpop_jkt`, or a pushed request's proof, RFC 9449
+  §10; `DPoPKey`) is exchanged only with a proof from that key, checked
+  after the code is claimed, so a code tried without it is spent; a pushed
+  request whose proof and `dpop_jkt` disagree is refused.
 - **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
   whatever its `RequirePKCE` says, and a code asked for with a challenge is
   never exchanged without its verifier.

@@ -294,13 +294,13 @@ func (h *Handler) Token(c *gin.Context) {
 func (h *Handler) PushAuthorization(c *gin.Context) {
 	noStore(c)
 
-	client, params, err := pushedParams(c)
+	client, params, proof, err := pushedParams(c)
 	if err != nil {
 		h.oauthError(c, err)
 		return
 	}
 
-	pushed, err := h.provider.PushAuthorization(c.Request.Context(), client, params)
+	pushed, err := h.provider.PushAuthorization(c.Request.Context(), client, params, proof)
 	if err != nil {
 		h.oauthError(c, err)
 		return

@@ -26,6 +26,9 @@ type AuthorizationRequest struct {
 	// ForceConsent is prompt=consent: the consent page is shown even when
 	// the user has allowed everything asked before.
 	ForceConsent bool `gorm:"not null"`
+	// DPoPKey is the thumbprint of the DPoP key the code is bound to
+	// (dpop_jkt, RFC 9449 §10), "" when it is not bound.
+	DPoPKey string `gorm:"column:dpop_key;size:43;not null;default:''"`
 
 	ExpiresAt   time.Time `gorm:"not null;index"`
 	CompletedAt *time.Time

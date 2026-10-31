@@ -157,6 +157,10 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		return nil, oauthError(ErrInvalidGrant, "code_verifier does not match the code_challenge")
 	case code.CodeChallenge == "" && p.CodeVerifier != "":
 		return nil, oauthError(ErrInvalidGrant, "code_verifier was sent, but the authorization request had no code_challenge")
+	case code.DPoPKey != "" && p.dpopKey != code.DPoPKey:
+		// Checked after the claim, as PKCE is, so a code tried without its
+		// key is spent and cannot be tried again with a stolen one.
+		return nil, oauthError(ErrInvalidGrant, "the authorization code is bound to a DPoP key: send a DPoP proof from that key")
 	}
 
 	user, err := s.store.User(ctx, code.UserID)
