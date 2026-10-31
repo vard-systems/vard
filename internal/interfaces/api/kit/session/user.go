@@ -63,6 +63,13 @@ func UserToken(c *gin.Context) string {
 	return read(c, UserCookie)
 }
 
+// Language is the language the reader chose on the sign-in pages, which
+// write it under the same name this listener's cookies have (__Host- over
+// https); "" when they chose none.
+func Language(c *gin.Context) string {
+	return read(c, brand.LanguageCookie)
+}
+
 func single(c *gin.Context, name string) string {
 	named := c.Request.CookiesNamed(name)
 	if len(named) != 1 {

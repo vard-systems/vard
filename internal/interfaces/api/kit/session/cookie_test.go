@@ -104,3 +104,32 @@ func TestSessionCookiesAreReadUnderTheirListenersName(t *testing.T) {
 		})
 	}
 }
+
+// The sign-in pages write the reader's language under the __Host- name over
+// https; the API reads it under the same one, so emails come in that language.
+func TestTheLanguageIsReadUnderTheNameThePagesWrite(t *testing.T) {
+	cases := []struct {
+		name   string
+		secure bool
+		cookie string
+		want   string
+	}{
+		{"over https, the prefixed one", true, brand.HostPrefix + brand.LanguageCookie + "=fr", "fr"},
+		{"over https, a bare one planted by a sibling", true, brand.LanguageCookie + "=xx", ""},
+		{"over http, the bare one", false, brand.LanguageCookie + "=fr", "fr"},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+			c.Request.Header.Set("Cookie", tt.cookie)
+			CookieMode(tt.secure)(c)
+
+			if got := Language(c); got != tt.want {
+				t.Errorf("Language = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

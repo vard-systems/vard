@@ -14,6 +14,7 @@ import (
 	"vard/internal/application/oidc"
 	"vard/internal/domain/model"
 	"vard/internal/interfaces/api/kit/respond"
+	"vard/internal/interfaces/api/kit/session"
 )
 
 const sessionKey = "user_session"
@@ -47,8 +48,7 @@ func Session(c *gin.Context) *oidc.Session {
 
 // Client is who is calling, as the provider records it.
 func Client(c *gin.Context) oidc.Client {
-	language, _ := c.Cookie(oidc.LanguageCookie)
-	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: language}
+	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c)}
 }
 
 // Problem is the API problem a provider problem is answered with.

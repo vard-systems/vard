@@ -485,8 +485,7 @@ func cookie(c *gin.Context) string {
 }
 
 func client(c *gin.Context) oidc.Client {
-	language, _ := c.Cookie(oidc.LanguageCookie)
-	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: language}
+	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c)}
 }
 
 // FrontchannelLogout is the page that tells a signing-out browser's
