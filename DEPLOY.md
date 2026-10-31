@@ -58,6 +58,11 @@ make db-backup               # first, always
 make docker-up               # rebuilds what changed, migrates the database on start
 ```
 
+An installation from before the migrations were squashed into one setup
+(`migrations/setup`) cannot be stepped forward: the server refuses its
+database and says so. Back it up and start on a new, empty database; its
+rows are not carried over.
+
 ## Backups
 
 `make db-backup` writes `backups/vard-<time>.dump` and keeps the newest

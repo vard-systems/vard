@@ -1,6 +1,7 @@
 package database_test
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -310,5 +311,26 @@ func TestLiveAFreshInstallationStartsAsItsRuntimeRole(t *testing.T) {
 	var user string
 	if err := db.Raw("SELECT current_user").Scan(&user).Error; err != nil || user != role {
 		t.Errorf("connected as %q (%v), want the runtime role %q", user, err, role)
+	}
+}
+
+// A database the migrations from before the squash made says by its goose
+// versions that it is up to date; it is refused rather than started on.
+func TestLiveADatabaseFromBeforeTheSquashIsRefused(t *testing.T) {
+	db, _ := databasetest.Empty(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	for _, statement := range []string{
+		"CREATE TABLE goose_db_version (id serial PRIMARY KEY, version_id bigint NOT NULL, is_applied boolean NOT NULL, tstamp timestamp DEFAULT now())",
+		"INSERT INTO goose_db_version (version_id, is_applied) VALUES (0, true), (1, true), (6, true)",
+		"CREATE TABLE users (id uuid PRIMARY KEY)",
+	} {
+		if err := db.Exec(statement).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := database.Migrate(db, log); !errors.Is(err, database.ErrSquashedHistory) {
+		t.Errorf("migrating it = %v, want ErrSquashedHistory", err)
 	}
 }
