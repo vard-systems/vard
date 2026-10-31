@@ -6,12 +6,28 @@
 		".": "./src/index.ts",
 		"./*": "./src/*"
 	},
+	"scripts": {
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write .",
+		"check": "svelte-check --tsconfig ./tsconfig.json"
+	},
 	"peerDependencies": {
 		"@ark-ui/svelte": "^5.24.3",
 		"svelte": "^5.57.2"
 	},
 	"devDependencies": {
+		"@ark-ui/svelte": "^5.24.3",
+		"@eslint/js": "^10.0.1",
+		"@sveltejs/kit": "^3.1.0",
+		"eslint": "^10.13.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.23.1",
+		"globals": "^17.13.0",
 		"prettier": "^3.9.10",
-		"prettier-plugin-svelte": "^4.1.1"
+		"prettier-plugin-svelte": "^4.1.1",
+		"svelte": "^5.57.2",
+		"svelte-check": "^4.7.7",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.72.0"
 	}
 }

@@ -80,7 +80,7 @@ fmt: ## Format every Go and app file in place
 	gofmt -w $(GO_DIRS)
 	@$(call each-app,bun run format)
 	@$(E2E_PRETTIER) --write web/e2e >/dev/null
-	@cd web/ui && ./node_modules/.bin/prettier --write . >/dev/null
+	@cd web/ui && bun run format >/dev/null
 
 lint: lint-go lint-web ## Check formatting, vet, staticcheck, lint and type-check, changing nothing
 
@@ -92,7 +92,7 @@ lint-go: ## Lint the Go code only
 lint-web: ## Lint and type-check the apps and the end-to-end tests only
 	@$(call each-app,bun run lint && bun run check)
 	@$(E2E_PRETTIER) --check web/e2e && $(E2E_TSC)
-	@cd web/ui && ./node_modules/.bin/prettier --check .
+	@echo "==> web/ui" && cd web/ui && bun run lint && bun run check
 
 test: test-go test-web ## Run the Go and app unit tests
 
