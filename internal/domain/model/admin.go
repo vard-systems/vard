@@ -43,7 +43,7 @@ func (a *Admin) SetPassword(password string) error {
 		return err
 	}
 
-	a.PasswordHash = string(hash)
+	a.PasswordHash = hash
 
 	return nil
 }

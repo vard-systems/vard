@@ -46,7 +46,7 @@ func (r *providerRequest) applyTo(provider *model.SocialProvider, sealer *jose.S
 	provider.AuthorizeURL = validate.Text(r.AuthorizeURL, provider.AuthorizeURL)
 	provider.TokenURL = validate.Text(r.TokenURL, provider.TokenURL)
 	provider.UserinfoURL = validate.Text(r.UserInfoURL, provider.UserinfoURL)
-	provider.TokenAuth = model.SocialTokenAuth(lower((*string)(r.TokenAuth), string(provider.TokenAuth)))
+	provider.TokenAuth = model.SocialTokenAuth(lower(r.TokenAuth, string(provider.TokenAuth)))
 
 	provider.IsEnabled = validate.Flag(r.IsEnabled, provider.IsEnabled)
 	provider.LinkVerifiedEmails = validate.Flag(r.LinkVerifiedEmails, provider.LinkVerifiedEmails)

@@ -73,7 +73,7 @@ func (u *User) SetPassword(password string) error {
 		return err
 	}
 
-	u.PasswordHash = string(hash)
+	u.PasswordHash = hash
 	u.HasPassword = true
 
 	return nil

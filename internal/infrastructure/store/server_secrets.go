@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/gorm/clause"
 
@@ -16,7 +17,7 @@ func (s *Store) ServerSecret(ctx context.Context, name string, make func() ([]by
 	if err == nil {
 		return found.Value, nil
 	}
-	if err := translate(err); err != ErrNotFound {
+	if err := translate(err); !errors.Is(err, ErrNotFound) {
 		return nil, err
 	}
 
