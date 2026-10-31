@@ -211,6 +211,16 @@ code near it, and add a test when adding a case.
   or the address holds. Administrators are throttled the same way, on a keyed
   hash of the username typed, counted before it is looked up
   (`internal/application/auth/throttle.go`); nothing is ever locked.
+- **A flow that requires a second factor is met only by a session that
+  passed one of the account's own** (`model.MethodSecondFactor` in its
+  `Methods`, never an amr value; an emailed code is `otp` and does not
+  count), checked by `sessionMeets` and again in `finish` before any code.
+  A signed-in session without one steps up in place: the waiting sign-in
+  names it (`step_up_session_id`) and is finished only from a browser whose
+  session cookie names that session, for the same user, by one conditional
+  UPDATE that rotates its token and keeps its id and expiry. A step-up
+  renews `authenticated_at` (auth_time, `max_age`); the flow's lifetime runs
+  from `created_at`. `amr` says `mfa` only with the marker.
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.

@@ -17,12 +17,15 @@ request's own proof), native apps'
 redirects (private-use schemes, `127.0.0.1` / `[::1]` loopback on any port,
 Expo Go's `exp://` for an app marked as in development),
 dynamic client registration, userinfo, introspection, revocation, ID tokens
-that say how the person signed in (`amr`: `pwd`, `otp`, `hwk`, `user`, `mfa`),
+that say how the person signed in (`amr`: `pwd`, `otp`, `hwk`, `user`, and
+`mfa` only once one of the account's own second factors was passed),
 logout (RP-initiated, back-channel and front-channel), a consent page, terms
 acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
 OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
 configurable login flows, emailed one-time codes, TOTP for administrators,
-optional two-step verification (authenticator app or passkeys) for users,
+two-step verification (authenticator app or passkeys) for users, optional
+or required by a login flow, with a signed-in person asked for it in the
+session they have,
 passwordless sign-in with a passkey, roles and API scopes, an activity log, and
 the sign-in pages in English, with more languages added, translated and made the
 default from the panel.

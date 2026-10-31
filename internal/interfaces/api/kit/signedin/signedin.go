@@ -103,6 +103,7 @@ var problems = func() map[string]respond.Problem {
 		oidc.ErrDeviceCodeInvalid.Code:     http.StatusNotFound,
 		oidc.ErrDeviceRefused.Code:         http.StatusForbidden,
 		oidc.ErrSignInAgain.Code:           http.StatusForbidden,
+		oidc.ErrSecondFactorRequired.Code:  http.StatusForbidden,
 	}
 
 	out := map[string]respond.Problem{}

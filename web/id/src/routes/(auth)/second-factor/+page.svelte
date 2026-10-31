@@ -91,8 +91,12 @@
 	<AuthCard
 		organization={data.organization}
 		application={app}
-		title={t('second_factor.title')}
-		subtitle={app ? t('second_factor.subtitle_app', { app: app.name }) : undefined}
+		title={challenge.step_up ? t('second_factor.step_up_title') : t('second_factor.title')}
+		subtitle={app
+			? t(challenge.step_up ? 'second_factor.step_up_app' : 'second_factor.subtitle_app', {
+					app: app.name
+				})
+			: undefined}
 	>
 		{#if error}<Alert tone="danger">{error}</Alert>{/if}
 

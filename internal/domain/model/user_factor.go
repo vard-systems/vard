@@ -102,6 +102,12 @@ type PendingSignIn struct {
 	LinkSubject      string         `gorm:"size:512;not null;default:''"`
 	LinkEmail        string         `gorm:"size:255;not null;default:''"`
 
+	// StepUpSessionID is the session a step-up adds its second factor to,
+	// nil for a sign-in that opens a new one. Only that session's own
+	// cookie may finish it.
+	StepUpSessionID *uuid.UUID   `gorm:"type:uuid;index"`
+	StepUpSession   *UserSession `gorm:"constraint:OnDelete:CASCADE"`
+
 	ExpiresAt time.Time `gorm:"not null;index"`
 	UsedAt    *time.Time
 }

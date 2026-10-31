@@ -72,11 +72,14 @@ func (s *Service) stepBefore(ctx context.Context, req *model.AuthorizationReques
 // silentRefusal is what prompt=none answers when the user would have to see
 // a page: the client is told, and nothing is shown.
 func silentRefusal(page string) (code, description string) {
-	if page == PageConsent {
+	switch page {
+	case PageConsent:
 		return ErrConsentRequired, "the user has not allowed this application what it asks for"
+	case PageSecondFactor:
+		return ErrInteractionRequired, "the application requires a second factor this session has not passed"
+	default:
+		return ErrInteractionRequired, "the user has to accept the terms before signing in"
 	}
-
-	return ErrInteractionRequired, "the user has to accept the terms before signing in"
 }
 
 // RequestedScope is one thing an application asks for, as the consent page

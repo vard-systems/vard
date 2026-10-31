@@ -342,9 +342,7 @@ func TestLiveTheDPoPBindingUpgradesAnExistingDatabase(t *testing.T) {
 	db, _ := databasetest.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	if err := database.MigrateDown(db, log); err != nil {
-		t.Fatal(err)
-	}
+	migrateDownTo(t, db, log, 4)
 	if has := rows(t, db, `SELECT table_name FROM information_schema.columns
 		WHERE column_name = 'dpop_key' AND table_name IN ('authorization_requests', 'authorization_codes')`); len(has) != 0 {
 		t.Fatalf("before the binding, dpop_key is on %v", has)
@@ -376,9 +374,7 @@ func TestLiveTheDPoPBindingUpgradesAnExistingDatabase(t *testing.T) {
 		}
 	}
 
-	if err := database.MigrateDown(db, log); err != nil {
-		t.Fatalf("down from the binding: %v", err)
-	}
+	migrateDownTo(t, db, log, 4)
 	if has := rows(t, db, `SELECT table_name FROM information_schema.columns
 		WHERE column_name = 'dpop_key' AND table_name IN ('authorization_requests', 'authorization_codes')`); len(has) != 0 {
 		t.Errorf("down left dpop_key on %v", has)
@@ -387,5 +383,89 @@ func TestLiveTheDPoPBindingUpgradesAnExistingDatabase(t *testing.T) {
 		if left := rows(t, db, "SELECT id::text FROM "+table); len(left) != 1 {
 			t.Errorf("down left %d rows in %s, want 1", len(left), table)
 		}
+	}
+}
+
+// migrateDownTo takes the migrations down, one at a time, until version is
+// the last one applied.
+func migrateDownTo(t *testing.T, db *gorm.DB, log *slog.Logger, version int64) {
+	t.Helper()
+
+	applied := func() int64 {
+		var at int64
+		if err := db.Raw("SELECT COALESCE(MAX(version_id), 0) FROM goose_db_version WHERE is_applied").Scan(&at).Error; err != nil {
+			t.Fatal(err)
+		}
+		return at
+	}
+	for applied() > version {
+		if err := database.MigrateDown(db, log); err != nil {
+			t.Fatalf("down from %d: %v", applied(), err)
+		}
+	}
+	if at := applied(); at != version {
+		t.Fatalf("the database is at %d, want %d", at, version)
+	}
+}
+
+// An installation from before a flow could require a second factor upgrades
+// with every flow requiring none and every waiting sign-in its own; going
+// back down removes the step-ups still waiting, which would otherwise read
+// as sign-ins their first factor never proved.
+func TestLiveStepUpUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 5)
+	stepUpColumns := `SELECT table_name || '.' || column_name FROM information_schema.columns
+		WHERE (table_name = 'login_flows' AND column_name = 'require_second_factor')
+			OR (table_name = 'pending_sign_ins' AND column_name = 'step_up_session_id')
+		ORDER BY 1`
+	if has := rows(t, db, stepUpColumns); len(has) != 0 {
+		t.Fatalf("before step-up, the database has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	session := &model.UserSession{TokenHash: "session", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later}
+	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(session).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Omit(clause.Associations, "StepUpSessionID").Create(waiting).Error; err != nil {
+		t.Fatal(err)
+	}
+	flows := rows(t, db, "SELECT id::text FROM login_flows")
+	if len(flows) == 0 {
+		t.Fatal("the database has no login flow to upgrade")
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to step-up: %v", err)
+	}
+	if required := rows(t, db, "SELECT id::text FROM login_flows WHERE require_second_factor"); len(required) != 0 {
+		t.Errorf("after the upgrade, flows %v require a second factor", required)
+	}
+	if steps := rows(t, db, "SELECT handle_hash FROM pending_sign_ins WHERE step_up_session_id IS NOT NULL"); len(steps) != 0 {
+		t.Errorf("after the upgrade, %v are step-ups", steps)
+	}
+
+	stepUp := &model.PendingSignIn{HandleHash: "step-up", UserID: user.ID, StepUpSessionID: &session.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(stepUp).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 5)
+	if has := rows(t, db, stepUpColumns); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM pending_sign_ins ORDER BY 1"); !slices.Equal(left, []string{"waiting"}) {
+		t.Errorf("down left the waiting sign-ins %v, want only the one that was not a step-up", left)
+	}
+	if left := rows(t, db, "SELECT id::text FROM login_flows"); len(left) != len(flows) {
+		t.Errorf("down left %d login flows, want %d", len(left), len(flows))
 	}
 }

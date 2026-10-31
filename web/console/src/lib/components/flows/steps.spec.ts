@@ -43,6 +43,16 @@ describe('problemsOf', () => {
 			['Add Password or Other accounts: without one, nobody can sign in.']
 		],
 		[
+			'a second factor required without the step that asks for it',
+			{ require_second_factor: true },
+			['Add Two-step verification: a second factor is set up and asked for there.']
+		],
+		[
+			'a second factor required with its step',
+			{ steps: ['identifier', 'password', 'totp'], require_second_factor: true },
+			[]
+		],
+		[
 			'the default turned off',
 			{ is_default: true, is_enabled: false },
 			['The default flow cannot be turned off.']
@@ -78,7 +88,12 @@ describe('identifiers', () => {
 
 describe('files', () => {
 	it('come back as the flow that went out, minus being the default', () => {
-		const draft = flow({ is_default: true, require_verified_email: true });
+		const draft = flow({
+			is_default: true,
+			require_verified_email: true,
+			steps: ['identifier', 'password', 'totp'],
+			require_second_factor: true
+		});
 		const back = fromFile(JSON.stringify(toFile(draft)), kinds);
 
 		expect(back).toEqual({ ...draftOf(draft), is_default: false });

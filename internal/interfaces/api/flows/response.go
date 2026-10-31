@@ -27,6 +27,7 @@ type flowResponse struct {
 	AllowRememberMe       bool `json:"allow_remember_me"`
 	VerifyEmailOnRegister bool `json:"verify_email_on_register"`
 	RequireVerifiedEmail  bool `json:"require_verified_email"`
+	RequireSecondFactor   bool `json:"require_second_factor"`
 	AllowEmailChange      bool `json:"allow_email_change"`
 	SessionLifetimeHours  int  `json:"session_lifetime_hours"`
 
@@ -81,6 +82,7 @@ func newFlowResponse(flow model.LoginFlow, applications int) flowResponse {
 		AllowRememberMe:       flow.AllowRememberMe,
 		VerifyEmailOnRegister: flow.VerifyEmailOnRegister,
 		RequireVerifiedEmail:  flow.RequireVerifiedEmail,
+		RequireSecondFactor:   flow.RequireSecondFactor,
 		AllowEmailChange:      flow.AllowEmailChange,
 		SessionLifetimeHours:  flow.SessionLifetimeHours,
 		Applications:          applications,

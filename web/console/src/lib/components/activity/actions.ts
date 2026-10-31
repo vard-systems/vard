@@ -131,6 +131,13 @@ const actions: Record<string, Action> = {
 		tone: 'success',
 		icon: 'ri-login-box-line'
 	},
+	'user.step_up': {
+		label: 'Second factor passed',
+		verb: 'passed a second factor to continue in a session',
+		category: 'access',
+		tone: 'success',
+		icon: 'ri-shield-check-line'
+	},
 	'user.logout': {
 		label: 'User signed out',
 		verb: 'signed out',
@@ -777,6 +784,7 @@ const selfTargeted = new Set([
 	'admin.passkey_removed',
 	'admin.recovery_codes_regenerated',
 	'user.login',
+	'user.step_up',
 	'user.logout',
 	'user.login_failed',
 	'user.login_blocked',

@@ -88,6 +88,9 @@
 
 	function remove(step: LoginStep) {
 		draft.steps = draft.steps.filter((one) => one !== step);
+		// The requirement lives on the step that sets a factor up and asks
+		// for it, so it goes with it.
+		if (step === 'totp') draft.require_second_factor = false;
 		if (selected === step) selected = 'start';
 		waiting = null;
 	}
@@ -105,6 +108,8 @@
 				];
 			case 'password':
 				return [draft.allow_password_reset ? 'reset link' : 'no reset link'];
+			case 'totp':
+				return [draft.require_second_factor ? 'required' : 'optional'];
 			default:
 				return [];
 		}

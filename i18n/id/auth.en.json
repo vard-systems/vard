@@ -139,6 +139,8 @@
 		"head": "Two-step verification",
 		"title": "Confirm it’s you",
 		"subtitle_app": "to continue to {app}",
+		"step_up_title": "This application asks for more",
+		"step_up_app": "{app} asks for two-step verification. Use your second factor to continue.",
 		"passkey": "Use your passkey",
 		"passkey_failed": "Your passkey didn’t answer. Try again, or use a code.",
 		"or": "or",

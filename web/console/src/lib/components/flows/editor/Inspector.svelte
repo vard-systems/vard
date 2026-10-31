@@ -218,6 +218,19 @@
 					bind:checked={draft.allow_remember_me}
 					disabled={!editable}
 				/>
+			{:else if step === 'totp'}
+				<SwitchField
+					label="Require it"
+					description="Every sign-in to the applications on this flow passes a second factor: an authenticator app, a passkey or a recovery code. Someone already signed in without one is asked for it before going on."
+					bind:checked={draft.require_second_factor}
+					disabled={!editable}
+				/>
+				{#if draft.require_second_factor}
+					<Note>
+						An emailed code does not count. Until people can set a factor up while signing in, an
+						account without one is turned away and told to turn it on from its account page.
+					</Note>
+				{/if}
 			{:else if step === 'social'}
 				<Note>
 					Shows a button for each provider turned on at

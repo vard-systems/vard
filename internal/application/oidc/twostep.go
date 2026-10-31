@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"slices"
 	"time"
 
@@ -56,6 +57,9 @@ var (
 	ErrAuthenticatorExists = problem("authenticator_exists")
 	ErrPasskeyLimit        = problem("passkey_limit")
 	ErrPasskeyRefused      = problem("passkey_refused")
+	// ErrSecondFactorRequired refuses a sign-in to an application whose flow
+	// requires a second factor the account does not have.
+	ErrSecondFactorRequired = problem("second_factor_required")
 )
 
 // SecondFactorChallenge is what the second-factor page offers. The handle
@@ -63,6 +67,9 @@ var (
 type SecondFactorChallenge struct {
 	Methods   []string  `json:"methods"`
 	ExpiresAt time.Time `json:"expires_at"`
+	// StepUp is a signed-in person asked for a second factor in the session
+	// they have, for an application that requires one.
+	StepUp bool `json:"step_up"`
 	// Passkey is the request for navigator.credentials.get, when the user
 	// has a passkey.
 	Passkey *protocol.PublicKeyCredentialRequestOptions `json:"passkey,omitempty"`
@@ -142,6 +149,41 @@ func (s *Service) hold(ctx context.Context, user *model.User, request string, re
 	return &SignInResult{SecondFactorHandle: handle, Request: request, Remember: remember}, nil
 }
 
+// holdStepUp sends a signed-in browser to pass a second factor in the
+// session it has, for an application whose flow requires one. held gets the
+// handle for the browser's cookie.
+func (s *Service) holdStepUp(ctx context.Context, req *model.AuthorizationRequest, request string, session *Session, held *string) (string, error) {
+	has, err := s.store.HasUserFactor(ctx, session.User.ID)
+	if err != nil {
+		return "", err
+	}
+	if !has {
+		return s.redirectError(req.RedirectURI, req.State, ErrAccessDenied,
+			"the application requires two-step verification, which this account has not turned on"), nil
+	}
+
+	handle, hash, err := model.NewSecret()
+	if err != nil {
+		return "", err
+	}
+
+	pending := model.PendingSignIn{
+		HandleHash:      hash,
+		UserID:          session.User.ID,
+		Request:         request,
+		Methods:         session.Record.Methods,
+		StepUpSessionID: &session.Record.ID,
+		ExpiresAt:       s.now().Add(model.PendingSignInLifetime),
+	}
+	if err := s.store.CreatePendingSignIn(ctx, &pending); err != nil {
+		return "", err
+	}
+
+	*held = handle
+
+	return withQuery(s.accountURL+PageSecondFactor, url.Values{"request": {request}}), nil
+}
+
 // SecondFactorFor is what the second-factor page offers for a waiting
 // sign-in. Each call starts a fresh passkey ceremony, so the page always
 // answers the latest one.
@@ -156,7 +198,7 @@ func (s *Service) SecondFactorFor(ctx context.Context, handle string) (*SecondFa
 		return nil, err
 	}
 
-	challenge := &SecondFactorChallenge{Methods: []string{}, ExpiresAt: pending.ExpiresAt}
+	challenge := &SecondFactorChallenge{Methods: []string{}, ExpiresAt: pending.ExpiresAt, StepUp: pending.StepUpSessionID != nil}
 
 	if slices.ContainsFunc(factors, isAuthenticator) {
 		challenge.Methods = append(challenge.Methods, MethodAuthenticator)
@@ -192,10 +234,19 @@ func (s *Service) SecondFactorFor(ctx context.Context, handle string) (*SecondFa
 // SubmitSecondFactor finishes a waiting sign-in with its second factor. Every
 // answer counts towards the account's throttle before it is checked, as a
 // password does, so guessing codes across many sign-ins is bounded too.
-func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer SecondFactorAnswer, client Client) (*SignInResult, error) {
+// current is the session the browser's cookie names, nil for none: a step-up
+// is finished only in the session it was started for.
+func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, current *Session, answer SecondFactorAnswer, client Client) (*SignInResult, error) {
 	pending, err := s.waitingSignIn(ctx, handle)
 	if err != nil {
 		return nil, err
+	}
+
+	// A step-up's cookie alone upgrades nothing: the browser must still hold
+	// the session it was for, as the same person.
+	stepUp := pending.StepUpSessionID != nil
+	if stepUp && (current == nil || current.Record.ID != *pending.StepUpSessionID || current.User.ID != pending.UserID) {
+		return nil, ErrSecondFactorExpired
 	}
 
 	user := pending.User
@@ -243,12 +294,41 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, answer 
 		return nil, err
 	}
 
+	if stepUp {
+		return s.stepUp(ctx, current, pending.Request, factorAMR[method], method, client)
+	}
+
 	if err := s.linkHeld(ctx, user, pending, client); err != nil {
 		return nil, err
 	}
 
-	methods := append(slices.Clone(pending.Methods), factorAMR[method])
+	methods := model.WithSecondFactor(pending.Methods, factorAMR[method])
 	return s.openSession(ctx, user, flow, pending.Request, pending.RememberMe, methods, client, "user.login")
+}
+
+// stepUp adds a second factor to the session the browser has, under a new
+// token: a cookie seen before the factor is worth nothing after it. The
+// session keeps its id, so nothing issued in it ends, and its expiry, so a
+// step-up never makes it last longer. The new cookie lasts as long as the
+// browser does: whether the old one was kept longer is not recorded.
+func (s *Service) stepUp(ctx context.Context, current *Session, request, proved, method string, client Client) (*SignInResult, error) {
+	token, hash, err := model.NewSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	record := current.Record
+	stepped, err := s.store.StepUpUserSession(ctx, &record, hash, model.WithSecondFactor(record.Methods, proved), s.now())
+	if err != nil {
+		return nil, err
+	}
+	if !stepped {
+		return nil, ErrSecondFactorExpired
+	}
+
+	s.record(ctx, current.User, current.User.Email, "user.step_up", client, map[string]any{"method": method})
+
+	return &SignInResult{Session: &Session{Record: record, User: current.User}, Token: token, Request: request}, nil
 }
 
 func (s *Service) waitingSignIn(ctx context.Context, handle string) (*model.PendingSignIn, error) {

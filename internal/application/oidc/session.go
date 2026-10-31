@@ -203,6 +203,12 @@ func (s *Service) startSession(
 		return held, err
 	}
 
+	if flow.RequireSecondFactor {
+		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "no second factor"})
+
+		return nil, ErrSecondFactorRequired
+	}
+
 	return s.openSession(ctx, user, flow, request, remember, methods, client, action)
 }
 
@@ -261,7 +267,10 @@ func (s *Service) openSession(
 		return nil, err
 	}
 
+	// CreatedAt is set here, not by the database layer, because a flow's
+	// session lifetime is measured from it on the service's clock.
 	record := model.UserSession{
+		Base:            model.Base{CreatedAt: now},
 		TokenHash:       hash,
 		UserID:          user.ID,
 		AuthenticatedAt: now,

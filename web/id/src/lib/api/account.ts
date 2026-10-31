@@ -90,6 +90,8 @@ export type SecondFactorMethod = 'totp' | 'passkey' | 'recovery_code';
 export type SecondFactorChallenge = {
 	methods: SecondFactorMethod[];
 	expires_at: string;
+	/** A signed-in person asked for a second factor in the session they have. */
+	step_up: boolean;
 	passkey?: PublicKeyCredentialRequestOptionsJSON;
 };
 

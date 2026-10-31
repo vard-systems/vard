@@ -33,6 +33,7 @@ func (r *flowRequest) applyTo(flow *model.LoginFlow, creating bool) error {
 	flow.AllowRememberMe = validate.Flag(r.AllowRememberMe, flow.AllowRememberMe)
 	flow.VerifyEmailOnRegister = validate.Flag(r.VerifyEmailOnRegister, flow.VerifyEmailOnRegister)
 	flow.RequireVerifiedEmail = validate.Flag(r.RequireVerifiedEmail, flow.RequireVerifiedEmail)
+	flow.RequireSecondFactor = validate.Flag(r.RequireSecondFactor, flow.RequireSecondFactor)
 	flow.AllowEmailChange = validate.Flag(r.AllowEmailChange, flow.AllowEmailChange)
 
 	if r.SessionLifetimeHours != nil {

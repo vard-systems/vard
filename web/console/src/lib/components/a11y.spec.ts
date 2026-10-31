@@ -4,6 +4,8 @@ import { describe, it } from 'vitest';
 import type { Admin } from '#lib/api/index.js';
 import { expectAccessible } from '#lib/testing/a11y.js';
 import IntrospectorList from './apis/IntrospectorList.svelte';
+import Inspector from './flows/editor/Inspector.svelte';
+import { TEMPLATES } from './flows/steps';
 import LogoField from './organization/LogoField.svelte';
 import RoleCodes from './profile/RoleCodes.svelte';
 import DomainProofList from './sso/DomainProofList.svelte';
@@ -68,6 +70,32 @@ describe('the panel is usable without seeing it', () => {
 
 	it('the logo picker showing the default, read only', () =>
 		expectAccessible(LogoField, { version: '', editable: false, onsaved: () => {} }));
+
+	it("a flow's two-step step, with a second factor required", () =>
+		expectAccessible(Inspector, {
+			draft: {
+				...TEMPLATES[0].draft,
+				name: 'Staff',
+				slug: 'staff',
+				steps: ['identifier', 'password', 'totp'],
+				require_second_factor: true
+			},
+			kinds: [
+				{
+					step: 'totp',
+					label: 'Two-step verification',
+					description: 'An authenticator app or passkeys.',
+					fixed: false,
+					implemented: true
+				}
+			],
+			selected: 'totp',
+			editable: true,
+			creating: false,
+			savedDefault: false,
+			applications: 1,
+			onRemove: () => {}
+		}));
 
 	it('a text input', () => expectAccessible(Input, { label: 'Name', value: '' }));
 

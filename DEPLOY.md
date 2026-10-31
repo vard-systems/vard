@@ -66,6 +66,19 @@ make db-backup               # first, always
 make docker-up               # rebuilds what changed, migrates the database on start
 ```
 
+### Upgrading to 1.1.0
+
+The ID token's `amr` now says `mfa` only when the sign-in passed one of the
+account's own second factors (an authenticator app, a recovery code or a
+passkey). A password and an emailed code is `pwd` and `otp`, no longer `mfa`:
+the emailed code proves only the mailbox a password reset also goes to. An
+application that reads `mfa` to decide anything gets it less often; one that
+needs it can ask for it with a login flow that requires a second factor.
+
+Migration `00006_step_up` runs on start. A login flow can now require a
+second factor (the Two-step verification step, "Require it"); every
+existing flow requires none.
+
 ### Upgrading to 1.0.0
 
 1.0.0 refuses to start with a weak `VARD_SECRET_KEY`, whatever else is set: a

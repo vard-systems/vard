@@ -660,6 +660,7 @@ export type LoginFlow = {
 	allow_remember_me: boolean;
 	verify_email_on_register: boolean;
 	require_verified_email: boolean;
+	require_second_factor: boolean;
 	allow_email_change: boolean;
 	session_lifetime_hours: number;
 	applications: number;
@@ -681,6 +682,7 @@ export type LoginFlowInput = {
 	allow_remember_me?: boolean;
 	verify_email_on_register?: boolean;
 	require_verified_email?: boolean;
+	require_second_factor?: boolean;
 	allow_email_change?: boolean;
 	session_lifetime_hours?: number;
 };

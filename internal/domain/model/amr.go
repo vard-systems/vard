@@ -13,6 +13,13 @@ const (
 	AMRMultiFactor  = "mfa"
 )
 
+// MethodSecondFactor is kept among a sign-in's methods when it passed one of
+// the account's own second factors: an authenticator app, a recovery code or
+// a passkey. It is never an amr value. An emailed code is otp too, and proves
+// only the mailbox a password reset goes to, so otp alone cannot say a
+// second factor was passed.
+const MethodSecondFactor = "second_factor"
+
 // amrKind is the kind of factor each method is: something known, something
 // held, or the person verified on the device that holds the key.
 var amrKind = map[string]string{
@@ -23,22 +30,39 @@ var amrKind = map[string]string{
 }
 
 // AMR is the amr claim for a sign-in's methods: each method once, in the
-// order used, and mfa when more than one kind of factor was proved. Nothing
-// proved here (a sign-in through another provider alone) is no claim.
+// order used, and mfa when the sign-in passed a second factor of the
+// account's own. Nothing proved here (a sign-in through another provider
+// alone) is no claim.
 func AMR(methods []string) []string {
 	out := []string{}
-	kinds := map[string]bool{}
 	for _, method := range methods {
-		if kind, ok := amrKind[method]; ok && !slices.Contains(out, method) {
+		if _, ok := amrKind[method]; ok && !slices.Contains(out, method) {
 			out = append(out, method)
-			kinds[kind] = true
 		}
 	}
 	if len(out) == 0 {
 		return nil
 	}
-	if len(kinds) > 1 {
+	if ProvedSecondFactor(methods) {
 		out = append(out, AMRMultiFactor)
+	}
+	return out
+}
+
+// ProvedSecondFactor reports whether a sign-in with these methods passed one
+// of the account's own second factors.
+func ProvedSecondFactor(methods []string) bool {
+	return slices.Contains(methods, MethodSecondFactor)
+}
+
+// WithSecondFactor is methods with what a second factor proved added, each
+// once.
+func WithSecondFactor(methods []string, proved string) StringList {
+	out := slices.Clone(StringList(methods))
+	for _, method := range []string{proved, MethodSecondFactor} {
+		if method != "" && !slices.Contains(out, method) {
+			out = append(out, method)
+		}
 	}
 	return out
 }

@@ -33,6 +33,11 @@ type LoginFlow struct {
 
 	RequireVerifiedEmail bool `gorm:"not null" json:"require_verified_email"`
 
+	// RequireSecondFactor asks every sign-in to the flow's applications for
+	// one of the account's own second factors, not only those of people who
+	// turned one on; a session that has not passed one is asked for it.
+	RequireSecondFactor bool `gorm:"not null" json:"require_second_factor"`
+
 	AllowEmailChange bool `gorm:"not null" json:"allow_email_change"`
 
 	SessionLifetimeHours int `gorm:"not null" json:"session_lifetime_hours"`
@@ -181,6 +186,12 @@ func (f LoginFlow) Validate() error {
 
 	if err := f.validateSteps(); err != nil {
 		return err
+	}
+
+	// A factor is set up and answered through the two-step step; without
+	// it nobody could meet the requirement.
+	if f.RequireSecondFactor && !f.Offers(StepTOTP) {
+		return fmt.Errorf("require_second_factor needs the %s step", StepTOTP)
 	}
 
 	if f.SessionLifetimeHours < 1 || f.SessionLifetimeHours > maxSessionLifetimeHours {

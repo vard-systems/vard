@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -334,4 +335,34 @@ func (s *Store) UseDPoPProof(ctx context.Context, hash string, expires time.Time
 	result := s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&proof)
 
 	return result.RowsAffected == 1, result.Error
+}
+
+// StepUpUserSession records a second factor passed in a session, under a new
+// token, in one conditional UPDATE: the old token stops naming the session,
+// which keeps its id, its expiry and everything issued in it. False when the
+// session has ended or its token has already moved on.
+func (s *Store) StepUpUserSession(ctx context.Context, session *model.UserSession, hash string, methods model.StringList, at time.Time) (bool, error) {
+	encoded, err := json.Marshal(methods)
+	if err != nil {
+		return false, err
+	}
+
+	result := s.db.WithContext(ctx).Model(&model.UserSession{}).
+		Where("id = ? AND token_hash = ? AND revoked_at IS NULL AND expires_at > ?", session.ID, session.TokenHash, at).
+		Updates(map[string]any{"token_hash": hash, "methods": string(encoded), "authenticated_at": at})
+	if result.Error != nil {
+		return false, translate(result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return false, nil
+	}
+
+	// The old token is written as ended, never only dropped, so a reader
+	// that loaded it a moment ago cannot put it back.
+	old := *session
+	old.RevokedAt = &at
+	session.TokenHash, session.Methods, session.AuthenticatedAt = hash, methods, at
+	s.putUserSessions(ctx, old, *session)
+
+	return true, nil
 }

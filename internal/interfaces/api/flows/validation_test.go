@@ -3,6 +3,7 @@ package flows
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"vard/internal/domain/model"
@@ -230,6 +231,36 @@ func TestSlugify(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := slugify(nil, &tt.from); got != tt.want {
 				t.Errorf("slugify(%q) = %q, want %q", tt.from, got, tt.want)
+			}
+		})
+	}
+}
+
+// A flow requires a second factor only with the step that sets one up and
+// asks for it; the panel cannot save one without the other.
+func TestRequiringASecondFactorNeedsTheTwoStepStep(t *testing.T) {
+	tests := []struct {
+		name  string
+		steps []model.LoginStep
+		want  string
+	}{
+		{"with the two-step step", []model.LoginStep{model.StepIdentifier, model.StepPassword, model.StepTOTP}, ""},
+		{"without it", []model.LoginStep{model.StepIdentifier, model.StepPassword}, "require_second_factor needs the totp step"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flow := model.DefaultLoginFlow()
+			request := flowRequest{Steps: &tt.steps, RequireSecondFactor: new(true)}
+
+			err := request.applyTo(&flow, false)
+			switch {
+			case tt.want == "" && err != nil:
+				t.Fatalf("applyTo() = %v", err)
+			case tt.want == "" && !flow.RequireSecondFactor:
+				t.Error("the flow does not require a second factor")
+			case tt.want != "" && (err == nil || !strings.Contains(err.Error(), tt.want)):
+				t.Errorf("applyTo() = %v, want %q", err, tt.want)
 			}
 		})
 	}

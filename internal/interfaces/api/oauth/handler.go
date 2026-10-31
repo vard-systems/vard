@@ -71,14 +71,20 @@ func (h *Handler) Authorize(c *gin.Context) {
 		return
 	}
 
-	location, err := h.provider.Authorize(ctx, params, current)
+	authorization, err := h.provider.Authorize(ctx, params, current)
 	if err != nil {
 		h.serverError(c, err, "authorization failed")
 		return
 	}
 
+	// A session that has to pass a second factor first: the cookie names
+	// the waiting step-up, and the second-factor page finishes it.
+	if authorization.SecondFactorHandle != "" {
+		session.SetSecondFactor(c, authorization.SecondFactorHandle, time.Now().Add(model.PendingSignInLifetime), h.secure)
+	}
+
 	c.Header("Cache-Control", "no-store")
-	c.Redirect(http.StatusFound, location)
+	c.Redirect(http.StatusFound, authorization.Location)
 }
 
 // SocialStart sends the browser to a provider and leaves the state in a cookie,

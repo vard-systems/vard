@@ -506,7 +506,14 @@ func (h *Handler) SubmitSecondFactor(c *gin.Context) {
 		return
 	}
 
-	result, err := h.provider.SubmitSecondFactor(c.Request.Context(), session.SecondFactor(c), oidc.SecondFactorAnswer{
+	ctx := c.Request.Context()
+	current, err := h.provider.SessionFor(ctx, session.UserToken(c))
+	if err != nil {
+		h.fail(c, err, "loading the user session failed")
+		return
+	}
+
+	result, err := h.provider.SubmitSecondFactor(ctx, session.SecondFactor(c), current, oidc.SecondFactorAnswer{
 		Code:    req.Code,
 		Passkey: req.Passkey,
 	}, signedin.Client(c))

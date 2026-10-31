@@ -74,7 +74,25 @@ func (p AuthorizeParams) oversized() string {
 	return ""
 }
 
-func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Session) (string, error) {
+// Authorization is where /oauth2/authorize sends the browser, and, for a
+// session that has to pass a second factor first, the waiting step-up the
+// browser's cookie is to name.
+type Authorization struct {
+	Location           string
+	SecondFactorHandle string
+}
+
+func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Session) (Authorization, error) {
+	var held string
+	location, err := s.authorize(ctx, p, session, &held)
+	if err != nil {
+		return Authorization{}, err
+	}
+
+	return Authorization{Location: location, SecondFactorHandle: held}, nil
+}
+
+func (s *Service) authorize(ctx context.Context, p AuthorizeParams, session *Session, held *string) (string, error) {
 	if p.Repeated != "" {
 		return s.errorPage(ErrInvalidRequest, p.Repeated+" is repeated"), nil
 	}
@@ -135,15 +153,20 @@ func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Ses
 		}
 	}
 
-	// A session made by a looser flow must still meet this application's flow,
-	// or the user is sent to sign in again.
+	// A session made by a looser flow must still meet this application's flow:
+	// the user signs in again, or, when only a second factor is missing,
+	// passes one in the session they have.
+	stepUp := false
 	if session != nil {
 		flow, err := s.store.EffectiveLoginFlow(ctx, app)
 		if err != nil {
 			return "", err
 		}
-		if !sessionSatisfies(flow, session, now) {
+		switch sessionMeets(flow, session, now) {
+		case sessionSignInAgain:
 			session = nil
+		case sessionStepUp:
+			stepUp = true
 		}
 	}
 
@@ -175,6 +198,14 @@ func (s *Service) Authorize(ctx context.Context, p AuthorizeParams, session *Ses
 
 	if err := s.store.CreateAuthorizationRequest(ctx, req); err != nil {
 		return "", err
+	}
+
+	if stepUp {
+		if slices.Contains(prompts, "none") {
+			return back(silentRefusal(PageSecondFactor))
+		}
+
+		return s.holdStepUp(ctx, req, handle, session, held)
 	}
 
 	if session != nil {
@@ -257,22 +288,36 @@ func (s *Service) requestProblem(ctx context.Context, app *model.Application, p 
 	return "", "", nil
 }
 
-// sessionSatisfies reports whether this flow would have made the session.
-// Sessions do not record the steps they passed, so a flow with the emailed-code
-// step is never satisfied by an existing session.
-func sessionSatisfies(flow *model.LoginFlow, session *Session, now time.Time) bool {
+// sessionVerdict is what an existing session needs before an application
+// may be signed in with it.
+type sessionVerdict int
+
+const (
+	sessionSatisfied sessionVerdict = iota
+	sessionSignInAgain
+	sessionStepUp
+)
+
+// sessionMeets says whether this flow would have made the session, and if
+// not, whether a second factor passed in it now would do. Sessions do not
+// record the steps they passed, so a flow with the emailed-code step is never
+// met by an existing session. The flow's lifetime runs from when the session
+// began: a step-up renews auth_time, never how long a session may last.
+func sessionMeets(flow *model.LoginFlow, session *Session, now time.Time) sessionVerdict {
 	switch {
 	case !flow.AllowSignIn:
-		return false
+		return sessionSignInAgain
 	case flow.RequireVerifiedEmail && !session.User.IsEmailVerified:
-		return false
-	case now.Sub(session.Record.AuthenticatedAt) > time.Duration(flow.SessionLifetimeHours)*time.Hour:
-		return false
+		return sessionSignInAgain
+	case now.Sub(session.Record.CreatedAt) > time.Duration(flow.SessionLifetimeHours)*time.Hour:
+		return sessionSignInAgain
 	case flow.Offers(model.StepEmailCode):
-		return false
+		return sessionSignInAgain
+	case flow.RequireSecondFactor && !model.ProvedSecondFactor(session.Record.Methods):
+		return sessionStepUp
 	}
 
-	return true
+	return sessionSatisfied
 }
 
 type PendingRequest struct {
@@ -345,6 +390,16 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, h
 	}
 	if !token.Issued {
 		return s.redirectError(req.RedirectURI, req.State, ErrAccessDenied, token.Reason), nil
+	}
+
+	// Every way to a code passes here, so a flow's second factor is checked
+	// here too, whatever the way in did.
+	flow, err := s.store.EffectiveLoginFlow(ctx, app)
+	if err != nil {
+		return "", err
+	}
+	if flow.RequireSecondFactor && !model.ProvedSecondFactor(session.Methods) {
+		return "", ErrSecondFactorRequired
 	}
 
 	page, err := s.stepBefore(ctx, req, user)
