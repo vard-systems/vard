@@ -18,12 +18,16 @@ export type CacheKeyParams = {
 
 export const CACHE_PAGE_SIZE = 100;
 
+// Redis changes under the page, so its numbers are never trusted for long;
+// but what the load has just fetched is not fetched again as the page mounts.
+const LIVE = 5_000;
+
 export function cacheOverviewOptions(initial: CacheOverview) {
 	return queryOptions({
 		queryKey: keys.cache.overview,
 		queryFn: () => cacheApi.overview(),
 		initialData: initial,
-		staleTime: 0
+		staleTime: LIVE
 	});
 }
 
@@ -41,7 +45,7 @@ export function cacheKeysOptions(params: CacheKeyParams, initial?: CacheKeyPage)
 		initialPageParam: '',
 		getNextPageParam: (last: CacheKeyPage) => last.cursor || undefined,
 		initialData: initial ? { pages: [initial], pageParams: [''] } : undefined,
-		staleTime: 0
+		staleTime: LIVE
 	});
 }
 
