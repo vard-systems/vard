@@ -741,7 +741,7 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 	if err != nil {
 		return nil, err
 	}
-	if app.TokenAuthMethod == model.AuthNone {
+	if !app.Confidential() {
 		return nil, oauthError(ErrInvalidClient, "introspection needs a confidential client")
 	}
 
@@ -751,10 +751,18 @@ func (s *Service) Introspect(ctx context.Context, client ClientAuth, token strin
 	}
 
 	if claims, raw, err := s.verifyAccessToken(ctx, token); err == nil {
-		// Another client's token reads as inactive: the answer carries the
-		// subject, scope and roles.
+		// Another client's token reads as inactive, unless the caller is
+		// listed for an API the token is for: the answer carries the
+		// subject, scope and roles, so only the API's own backend, named by
+		// an administrator, may read them.
 		if claims.ClientID != app.ClientID {
-			return inactive, nil
+			listed, err := s.store.MayIntrospect(ctx, app.ID, claims.Audience)
+			if err != nil {
+				return nil, err
+			}
+			if !listed {
+				return inactive, nil
+			}
 		}
 
 		// A user turned off or deleted since is no longer vouched for, as

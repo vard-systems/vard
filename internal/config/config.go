@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -70,6 +71,11 @@ type Config struct {
 	DB DB
 
 	Redis Redis
+
+	// Insecure names each plain http URL VARD_ALLOW_INSECURE_HTTP let
+	// through that would otherwise have stopped the server; the server warns
+	// of each as it starts. Empty without it.
+	Insecure []string
 }
 
 func Origin(raw string) string {
@@ -83,14 +89,48 @@ func Origin(raw string) string {
 
 const minSecretKeyLength = 32
 
+// loopback says whether a host is this machine: localhost, a name under
+// .localhost, 127.0.0.0/8 or ::1. Plain http is safe only there, where no
+// network sits between the browser and the server.
+func loopback(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+// SecretKeyLooksWeak says whether a key falls short of 32 random bytes as
+// they are written down. A key of hex digits alone carries 4 bits a
+// character, so it needs 64 of them (`openssl rand -hex 32`); counting its
+// distinct characters would refuse a quarter of real ones, which often miss
+// one of the 16 digits, so it is held only to a floor no random key comes
+// near but one digit repeated does. Any other key, such as `openssl rand
+// -base64 32`, needs 43 characters and 16 distinct ones, which rules out a
+// phrase or a pattern typed by hand.
 func SecretKeyLooksWeak(key string) bool {
 	distinct := map[rune]struct{}{}
+	hex := true
 	for _, r := range key {
 		distinct[r] = struct{}{}
+		if !strings.ContainsRune("0123456789abcdefABCDEF", r) {
+			hex = false
+		}
 	}
 
-	return len(key) < 43 || len(distinct) < 16
+	if hex {
+		return len(key) < minHexSecretKeyLength || len(distinct) < minHexSecretKeyDigits
+	}
+	return len(key) < minSecretKeyCharacters || len(distinct) < minSecretKeyDistinct
 }
+
+const (
+	minHexSecretKeyLength  = 64
+	minHexSecretKeyDigits  = 8
+	minSecretKeyCharacters = 43
+	minSecretKeyDistinct   = 16
+)
 
 type Mail struct {
 	Host     string
@@ -242,9 +282,18 @@ func Load() (Config, error) {
 	}
 
 	if v.IsSet(env("SECURE_COOKIES")) && v.GetString(env("SECURE_COOKIES")) != "" {
-		cfg.SecureUserCookies = v.GetBool(env("SECURE_COOKIES"))
-		cfg.SecureAdminCookies = cfg.SecureUserCookies
+		secure := v.GetBool(env("SECURE_COOKIES"))
+		// It may only turn Secure on: a session cookie sent over plain http
+		// from an https site is one anybody on the path can read.
+		if !secure && (cfg.SecureUserCookies || cfg.SecureAdminCookies) {
+			return Config{}, fmt.Errorf("%s=false cannot be used while %s or %s is https: it only turns Secure on, never off",
+				env("SECURE_COOKIES"), env("ACCOUNT_URL"), env("ADMIN_URL"))
+		}
+		cfg.SecureUserCookies = secure
+		cfg.SecureAdminCookies = secure
 	}
+
+	allowInsecure := v.GetBool(env("ALLOW_INSECURE_HTTP"))
 
 	// No default for the DSN: it names the database and carries the password,
 	// so a missing one should stop the server, not quietly connect somewhere.
@@ -258,15 +307,38 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("%s must be at least %d characters; make one with: openssl rand -base64 32", env("SECRET_KEY"), minSecretKeyLength)
 	}
 
-	urls := map[string]string{
-		env("ISSUER"):      cfg.Issuer,
-		env("ACCOUNT_URL"): cfg.AccountURL,
-		env("ADMIN_URL"):   cfg.AdminURL,
+	// In this order, so the account URL, which is the issuer's unless set,
+	// is not blamed for the issuer.
+	urls := []struct{ name, value string }{
+		{env("ISSUER"), cfg.Issuer},
+		{env("ACCOUNT_URL"), cfg.AccountURL},
+		{env("ADMIN_URL"), cfg.AdminURL},
 	}
-	for name, value := range urls {
-		if parsed, err := url.Parse(value); err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+	for _, setting := range urls {
+		name, value := setting.name, setting.value
+		parsed, err := url.Parse(value)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
 			return Config{}, fmt.Errorf("%s must be an http or https URL, got %q", name, value)
 		}
+		// Over http beyond this machine every password, code and session
+		// crosses the network in the clear.
+		if parsed.Scheme == "http" && !loopback(parsed.Hostname()) {
+			if !allowInsecure {
+				return Config{}, fmt.Errorf("%s is %q: plain http is only for localhost; use https, or set %s=true for a test setup",
+					name, value, env("ALLOW_INSECURE_HTTP"))
+			}
+			cfg.Insecure = append(cfg.Insecure, name+" is plain http on "+parsed.Hostname())
+		}
+	}
+
+	// A key a person typed can be guessed against a database dump, which
+	// then opens every sealed secret in it: refused always, test setup or
+	// not. The key it replaces (SECRET_KEY_PREVIOUS) is not held to this,
+	// so a weak one can be rotated out.
+	if SecretKeyLooksWeak(cfg.SecretKey) {
+		return Config{}, fmt.Errorf("%s does not look like 32 random bytes: rotate it, as .env.example says beside %s — "+
+			"put this one in %s, a new one from `openssl rand -base64 32` in %s, start, run `secrets reseal`, then empty %s",
+			env("SECRET_KEY"), env("SECRET_KEY_PREVIOUS"), env("SECRET_KEY_PREVIOUS"), env("SECRET_KEY"), env("SECRET_KEY_PREVIOUS"))
 	}
 
 	// One listener for both would put the admin API back on the public one,

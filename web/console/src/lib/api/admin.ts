@@ -12,6 +12,7 @@ import type {
 	Overview,
 	OverviewDays,
 	APIApplication,
+	APIIntrospector,
 	APILogEntry,
 	APIAccess,
 	APIInput,
@@ -516,6 +517,14 @@ export const apisApi = {
 
 	logs: (id: string, fetcher?: Fetch) =>
 		api.get<{ logs: APILogEntry[] }>(`/admin/apis/${id}/logs`, fetcher),
+
+	introspectors: (id: string, fetcher?: Fetch) =>
+		api.get<{ introspectors: APIIntrospector[] }>(`/admin/apis/${id}/introspectors`, fetcher),
+
+	setIntrospectors: (id: string, applicationIds: string[]) =>
+		api.put<{ introspectors: APIIntrospector[] }>(`/admin/apis/${id}/introspectors`, {
+			application_ids: applicationIds
+		}),
 
 	create: (input: APIInput) => api.post<{ api: API }>('/admin/apis', input),
 

@@ -181,6 +181,84 @@ func TestLiveDeviceAuthorization(t *testing.T) {
 	}
 }
 
+// allowedDevice registers a device client, starts a device, has ada allow
+// it from browser b, and answers the device code and a poll that asks for
+// its tokens. The device has not asked yet.
+func (f *oauthFixture) allowedDevice(t *testing.T, b *browser) (deviceCode string, poll func() tokenResult) {
+	t.Helper()
+
+	tvID, _, _ := f.register(map[string]any{
+		"name": "Kitchen TV", "type": "native",
+		"grant_types": []string{"urn:ietf:params:oauth:grant-type:device_code", "refresh_token"},
+		"scopes":      []string{"openid", "email", "offline_access"},
+	})
+	started := f.token("/oauth2/device_authorization", tvID, "", url.Values{"scope": {"openid email offline_access"}})
+	if started.status != http.StatusOK {
+		t.Fatalf("starting a device = %d %v", started.status, started.body)
+	}
+	deviceCode = started.str("device_code")
+
+	if status := b.account(http.MethodPost, "/login", map[string]any{"email": adaEmail, "password": adaPassword}, nil); status != http.StatusOK {
+		t.Fatalf("signing in = %d", status)
+	}
+	if status := b.account(http.MethodPost, "/device", map[string]any{"user_code": started.str("user_code"), "yes": true}, nil); status != http.StatusNoContent {
+		t.Fatalf("allowing the device = %d", status)
+	}
+
+	return deviceCode, func() tokenResult {
+		return f.token("/oauth2/token", tvID, "", url.Values{
+			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
+			"device_code": {deviceCode},
+		})
+	}
+}
+
+// A password reset ends whatever the account allowed before it, a device
+// that has not fetched its tokens yet included.
+func TestLiveAPasswordResetDeniesADeviceAllowedBeforeIt(t *testing.T) {
+	f := newOAuthFixture(t)
+	// Already proved, so the reset is not the address's first proof, which
+	// clears devices on its own.
+	if err := f.s.db.Exec("UPDATE users SET is_email_verified = true WHERE id = ?", f.userID).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	b := f.s.browser()
+	_, poll := f.allowedDevice(t, b)
+
+	if status := b.account(http.MethodPost, "/forgot-password", map[string]string{"email": adaEmail}, nil); status != http.StatusAccepted {
+		t.Fatalf("forgot password = %d", status)
+	}
+	token := linkIn(t, f.s.mail.wait(t, adaEmail).Body, "/reset-password").Query().Get("token")
+	if status := f.s.browser().account(http.MethodPost, "/reset-password", map[string]string{"token": token, "password": "ada-new-password"}, nil); status != http.StatusOK {
+		t.Fatalf("reset = %d", status)
+	}
+
+	if got := poll(); got.status == http.StatusOK || got.str("error") != "access_denied" {
+		t.Errorf("the device after a reset = %d %v, want access_denied", got.status, got.body)
+	}
+}
+
+// A device allowed in a session that has since been signed out is given no
+// tokens: the device is no more alive than the session that vouched for it.
+func TestLiveADeviceAllowedInASignedOutSessionGetsNothing(t *testing.T) {
+	f := newOAuthFixture(t)
+
+	b := f.s.browser()
+	_, poll := f.allowedDevice(t, b)
+
+	if status := b.account(http.MethodPost, "/logout", nil, nil); status >= 300 {
+		t.Fatalf("signing out = %d", status)
+	}
+
+	if got := poll(); got.status == http.StatusOK || got.str("error") != "invalid_grant" {
+		t.Errorf("the device after its session signed out = %d %v, want invalid_grant", got.status, got.body)
+	}
+	if again := poll(); again.str("error") != "invalid_grant" {
+		t.Errorf("asking again = %v, want the device still spent", again.body)
+	}
+}
+
 // A client registers itself with its metadata (RFC 7591) — with an initial
 // access token, an admin API token allowed applications.write, never without
 // one — and becomes an application like any made in the panel.

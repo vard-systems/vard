@@ -156,3 +156,33 @@ func newLogResponse(events []model.AuditLog) gin.H {
 
 	return gin.H{"logs": out}
 }
+
+// introspector is one application, and whether it may introspect the API's
+// tokens. Only a confidential one may be listed.
+type introspector struct {
+	ID           uuid.UUID             `json:"id"`
+	Name         string                `json:"name"`
+	Type         model.ApplicationType `json:"type"`
+	ClientID     string                `json:"client_id"`
+	Confidential bool                  `json:"confidential"`
+	Listed       bool                  `json:"listed"`
+}
+
+type introspectorsResponse struct {
+	Introspectors []introspector `json:"introspectors"`
+}
+
+func newIntrospectorsResponse(apps []store.APIIntrospector) introspectorsResponse {
+	out := make([]introspector, 0, len(apps))
+	for _, it := range apps {
+		out = append(out, introspector{
+			ID:           it.Application.ID,
+			Name:         it.Application.Name,
+			Type:         it.Application.Type,
+			ClientID:     it.Application.ClientID,
+			Confidential: it.Application.Confidential(),
+			Listed:       it.Listed,
+		})
+	}
+	return introspectorsResponse{Introspectors: out}
+}

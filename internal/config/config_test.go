@@ -43,7 +43,7 @@ func TestLoadReadsEnvFile(t *testing.T) {
 VARD_ADDR=:9000
 VARD_CORS_ORIGINS=http://a.test, http://b.test
 VARD_DB_DSN=postgres://user:pw@localhost:5432/mydb
-VARD_SECRET_KEY=0123456789abcdef0123456789abcdef
+VARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=
 VARD_ISSUER=https://auth.example.com/
 VARD_DB_LOG_QUERIES=true
 VARD_DB_MIGRATE=false
@@ -92,7 +92,7 @@ VARD_TRUSTED_PROXIES=10.0.0.1, 192.168.0.0/16
 }
 
 func TestLoadUsesDefaults(t *testing.T) {
-	writeEnv(t, "VARD_DB_DSN=postgres://u:p@localhost:5432/db\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n")
+	writeEnv(t, "VARD_DB_DSN=postgres://u:p@localhost:5432/db\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\n")
 
 	cfg, err := Load()
 	if err != nil {
@@ -142,7 +142,7 @@ func TestLoadUsesDefaults(t *testing.T) {
 // What would leave the server unable to reach its database, or sweeping the
 // activity log backwards, stops it at startup.
 func TestLoadRefusesLimitsThatCannotWork(t *testing.T) {
-	const base = "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n"
+	const base = "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\n"
 
 	tests := []struct {
 		name    string
@@ -171,7 +171,7 @@ func TestLoadRefusesLimitsThatCannotWork(t *testing.T) {
 // The environment has to win over .env, or a container could not change a
 // single setting without rewriting the file.
 func TestEnvironmentOverridesEnvFile(t *testing.T) {
-	writeEnv(t, "VARD_ADDR=:8080\nVARD_DB_DSN=postgres://u:p@localhost:5432/from_file\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n")
+	writeEnv(t, "VARD_ADDR=:8080\nVARD_DB_DSN=postgres://u:p@localhost:5432/from_file\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\n")
 	t.Setenv("VARD_ADDR", ":7777")
 
 	cfg, err := Load()
@@ -203,7 +203,7 @@ func TestLoadFailsWithoutSecretKey(t *testing.T) {
 func TestLoadDerivesFromPublicURLs(t *testing.T) {
 	writeEnv(t, `
 VARD_DB_DSN=postgres://u:p@localhost:5432/db
-VARD_SECRET_KEY=0123456789abcdef0123456789abcdef
+VARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=
 VARD_ISSUER=https://id.mywebsite.com
 VARD_ADMIN_URL=https://admin-id.mywebsite.com
 `)
@@ -229,7 +229,7 @@ VARD_ADMIN_URL=https://admin-id.mywebsite.com
 func TestLoadKeepsCookiesPlainOnHTTP(t *testing.T) {
 	writeEnv(t, `
 VARD_DB_DSN=postgres://u:p@localhost:5432/db
-VARD_SECRET_KEY=0123456789abcdef0123456789abcdef
+VARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=
 VARD_ISSUER=http://localhost:5173
 VARD_ADMIN_URL=http://localhost:5174
 `)
@@ -246,7 +246,7 @@ VARD_ADMIN_URL=http://localhost:5174
 
 // The admin API must never share the public listener.
 func TestLoadRefusesOneListenerForBoth(t *testing.T) {
-	writeEnv(t, "VARD_DB_DSN=postgres://u:p@localhost:5432/db\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\nVARD_ADDR=:9000\nVARD_ADMIN_ADDR=:9000\n")
+	writeEnv(t, "VARD_DB_DSN=postgres://u:p@localhost:5432/db\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\nVARD_ADDR=:9000\nVARD_ADMIN_ADDR=:9000\n")
 
 	if _, err := Load(); err == nil {
 		t.Fatal("want an error when the admin listener is the public one")
@@ -267,7 +267,7 @@ func TestLoadWithoutEnvFile(t *testing.T) {
 	clearEnv(t)
 	t.Chdir(t.TempDir())
 	t.Setenv("VARD_DB_DSN", "postgres://u:p@localhost:5432/db")
-	t.Setenv("VARD_SECRET_KEY", "0123456789abcdef0123456789abcdef")
+	t.Setenv("VARD_SECRET_KEY", "xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=")
 
 	cfg, err := Load()
 	if err != nil {
@@ -281,7 +281,7 @@ func TestLoadWithoutEnvFile(t *testing.T) {
 // Redis is optional: without a host every read goes to the database, which
 // is how the integration tests and a bare checkout run.
 func TestLoadRedis(t *testing.T) {
-	const base = "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n"
+	const base = "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\n"
 
 	tests := []struct {
 		name    string
@@ -336,6 +336,130 @@ func TestLoadRedis(t *testing.T) {
 			}
 			if cfg.Redis.Enabled() != (tt.want.Host != "") {
 				t.Errorf("Enabled() = %v", cfg.Redis.Enabled())
+			}
+		})
+	}
+}
+
+// What would put a production server on plain http, send its session
+// cookies without Secure, or seal its secrets under a guessable key stops it
+// at startup. VARD_ALLOW_INSECURE_HTTP lets a test setup's plain http through,
+// said out loud, and nothing else.
+func TestLoadRefusesInsecureProductionSettings(t *testing.T) {
+	const base = "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\n"
+	const escape = "VARD_ALLOW_INSECURE_HTTP=true\n"
+	const httpsSite = "VARD_ISSUER=https://id.example.com\nVARD_ADMIN_URL=https://admin.example.com\n"
+
+	tests := []struct {
+		name         string
+		env          string
+		wantErr      string
+		wantInsecure int
+	}{
+		{name: "https everywhere", env: base + httpsSite},
+		{name: "an http issuer on a public host", env: base + "VARD_ISSUER=http://id.example.com\n", wantErr: "VARD_ISSUER"},
+		{name: "an http account URL on a public host", env: base + httpsSite + "VARD_ACCOUNT_URL=http://account.example.com\n", wantErr: "VARD_ACCOUNT_URL"},
+		{name: "an http admin URL on a private address", env: base + "VARD_ADMIN_URL=http://10.0.0.5:8081\n", wantErr: "VARD_ADMIN_URL"},
+		{name: "localhost", env: base + "VARD_ISSUER=http://localhost:5173\nVARD_ADMIN_URL=http://localhost:5174\n"},
+		{name: "a name under .localhost", env: base + "VARD_ISSUER=http://id.example.localhost\nVARD_ADMIN_URL=http://admin.example.localhost\n"},
+		{name: "localhost in capitals", env: base + "VARD_ISSUER=http://LOCALHOST:5173\n"},
+		{name: "127.0.0.1", env: base + "VARD_ISSUER=http://127.0.0.1:5173\n"},
+		{name: "anywhere in 127.0.0.0/8", env: base + "VARD_ISSUER=http://127.8.9.10\n"},
+		{name: "::1", env: base + "VARD_ISSUER=http://[::1]:5173\nVARD_ADMIN_URL=http://[::1]:5174\n"},
+		{name: "a name that only starts like localhost", env: base + "VARD_ISSUER=http://localhost.example.com\n", wantErr: "VARD_ISSUER"},
+		{
+			name:         "the escape, for a test setup on a public host",
+			env:          base + escape + "VARD_ISSUER=http://id.test\nVARD_ADMIN_URL=http://admin.test\n",
+			wantInsecure: 3,
+		},
+		{name: "secure cookies turned on over http", env: base + "VARD_SECURE_COOKIES=true\n"},
+		{name: "secure cookies turned off over https", env: base + httpsSite + "VARD_SECURE_COOKIES=false\n", wantErr: "VARD_SECURE_COOKIES"},
+		{
+			name:    "secure cookies turned off with only the admin URL https",
+			env:     base + "VARD_ADMIN_URL=https://admin.example.com\nVARD_SECURE_COOKIES=false\n",
+			wantErr: "VARD_SECURE_COOKIES",
+		},
+		{
+			name:    "secure cookies turned off over https even with the escape",
+			env:     base + escape + httpsSite + "VARD_SECURE_COOKIES=false\n",
+			wantErr: "VARD_SECURE_COOKIES",
+		},
+		{
+			name:    "a weak key",
+			env:     "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n",
+			wantErr: "VARD_SECRET_KEY",
+		},
+		{
+			name:    "a weak key with the escape, which is for http alone",
+			env:     "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n" + escape,
+			wantErr: "VARD_SECRET_KEY_PREVIOUS",
+		},
+		{
+			name: "a 64-digit hex key missing one digit",
+			env:  "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=" + strings.Repeat("0123456789abcde", 5)[:64] + "\n",
+		},
+		{
+			name:    "a 32-digit hex key",
+			env:     "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n",
+			wantErr: "VARD_SECRET_KEY",
+		},
+		{
+			name:    "a long key with too few distinct characters",
+			env:     "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=xyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxy\n",
+			wantErr: "VARD_SECRET_KEY",
+		},
+		{
+			name: "a weak key being rotated out",
+			env: "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\n" +
+				"VARD_SECRET_KEY_PREVIOUS=0123456789abcdef0123456789abcdef\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writeEnv(t, tt.env)
+
+			cfg, err := Load()
+			switch {
+			case tt.wantErr != "":
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("Load() error = %v, want one naming %s", err, tt.wantErr)
+				}
+				return
+			case err != nil:
+				t.Fatalf("Load() error = %v, want none", err)
+			}
+			if len(cfg.Insecure) != tt.wantInsecure {
+				t.Errorf("Insecure = %q, want %d warnings", cfg.Insecure, tt.wantInsecure)
+			}
+		})
+	}
+}
+
+// A key is judged by what it is written in: hex digits carry 4 bits each, so
+// a hex key needs 64 of them whatever digits it happens to use; any other
+// needs 43 characters and 16 distinct ones.
+func TestSecretKeyLooksWeak(t *testing.T) {
+	tests := []struct {
+		name string
+		key  string
+		weak bool
+	}{
+		{"64 hex digits missing one of the 16, as random ones often are", strings.Repeat("0123456789abcde", 5)[:64], false},
+		{"64 hex digits in capitals", strings.ToUpper(strings.Repeat("0123456789abcdef", 4)), false},
+		{"32 hex digits, 16 random bytes", "0123456789abcdef0123456789abcdef", true},
+		{"63 hex digits", strings.Repeat("0123456789abcdef", 4)[:63], true},
+		{"64 of one hex digit", strings.Repeat("a", 64), true},
+		{"44 base64 characters, 32 random bytes", "xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=", false},
+		{"43 characters of few distinct ones", strings.Repeat("xyz", 15)[:43], true},
+		{"42 base64 characters", "xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5Q", true},
+		{"a phrase typed by hand", "correct horse battery staple correct horse!", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SecretKeyLooksWeak(tt.key); got != tt.weak {
+				t.Errorf("SecretKeyLooksWeak(%q) = %v, want %v", tt.key, got, tt.weak)
 			}
 		})
 	}

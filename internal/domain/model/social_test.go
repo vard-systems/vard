@@ -183,3 +183,46 @@ func DefaultSocialProvider(kind SocialKind) SocialProvider {
 		AllowRegistration:  true,
 	}
 }
+
+// Only a provider that says an address is verified, and is allowed to, takes
+// over the existing account with that address. Facebook's verification is
+// assumed, never said, so it never does, whatever the panel's setting.
+func TestOnlyAProviderThatSaysAnAddressIsVerifiedLinksByIt(t *testing.T) {
+	tests := []struct {
+		name string
+		kind SocialKind
+		link bool
+		want bool
+	}{
+		{"Google, allowed to link", SocialGoogle, true, true},
+		{"Google, not allowed to", SocialGoogle, false, false},
+		{"a provider of the administrator's own, allowed to link", SocialOIDC, true, true},
+		{"Facebook, allowed to link", SocialFacebook, true, false},
+		{"Facebook, not allowed to", SocialFacebook, false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := SocialProvider{Kind: tt.kind, LinkVerifiedEmails: tt.link}
+			if got := p.LinksByAddress(); got != tt.want {
+				t.Errorf("LinksByAddress() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+	// Every kind that assumes verification is covered, not just Facebook.
+	for _, spec := range SocialSpecs {
+		if !spec.AssumeEmailVerified {
+			continue
+		}
+		if (SocialProvider{Kind: spec.Kind, LinkVerifiedEmails: true}).LinksByAddress() {
+			t.Errorf("%s assumes addresses are verified, and still links by them", spec.Kind)
+		}
+		if (SocialProvider{Kind: spec.Kind}).ProvesAddresses() {
+			t.Errorf("%s assumes addresses are verified, and still makes accounts verified", spec.Kind)
+		}
+	}
+	if !(SocialProvider{Kind: SocialGoogle}).ProvesAddresses() {
+		t.Error("Google says itself that an address is verified, and its accounts start unverified")
+	}
+}

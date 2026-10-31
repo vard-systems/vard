@@ -24,7 +24,7 @@ it:
      VARD_ISSUER=http://localhost:5183 VARD_ACCOUNT_URL=http://localhost:5183 \
      VARD_ADMIN_URL=http://localhost:5184 VARD_ADMIN_MFA=optional \
      VARD_TRUSTED_PROXIES=127.0.0.1/32,::1/128 \
-     VARD_SECRET_KEY=preview-secret-key-0123456789abcdef \
+     VARD_SECRET_KEY="$(openssl rand -base64 32)" \
      VARD_REDIS_PREFIX=vard-preview: \
      bin/vard-preview &
    ```

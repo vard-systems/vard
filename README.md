@@ -68,7 +68,8 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | `VARD_REDIS_HOST`          | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
 | `VARD_TRUSTED_PROXIES`     | Who may say who the caller is: the apps' servers, and nothing else.                      |
 | `VARD_RATE_LIMIT`          | Attempts per minute per address on password and email endpoints.                         |
-| `VARD_ADMIN_MFA`           | `optional` (the default) or `required`, seeded on first start.                           |
+| `VARD_ADMIN_MFA`           | `optional` (the default; `required` in `compose.env.example`), seeded on first start.    |
+| `VARD_ALLOW_INSECURE_HTTP` | Lets plain http beyond localhost through, for test setups; nothing else. Never set live.  |
 
 Mail, admin MFA and one-time code settings are seeded from the environment on
 the first start and are managed in the panel afterwards.
@@ -109,7 +110,8 @@ for whatever starts and routes to it.
 ### Before going live
 
 - [ ] `PUBLIC_URL` and `ADMIN_URL` are `https` (session cookies become Secure
-      `__Host-` cookies).
+      `__Host-` cookies); the server refuses plain http beyond localhost.
+- [ ] `VARD_ALLOW_INSECURE_HTTP` is not set: the server warns at start when it is.
 - [ ] The admin host is reachable only from staff networks or a VPN.
 - [ ] `VARD_SECRET_KEY` is stored in a secret manager.
 - [ ] SMTP is configured, or reset emails only reach the log.

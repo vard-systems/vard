@@ -56,3 +56,12 @@ func (r *apiRequest) clean() {
 		r.Scopes[i].Description = strings.TrimSpace(r.Scopes[i].Description)
 	}
 }
+
+// maxIntrospectors caps how many applications one API may list.
+const maxIntrospectors = 50
+
+// introspectorsRequest names every application that may introspect the API's
+// tokens; one left out no longer may.
+type introspectorsRequest struct {
+	ApplicationIDs []uuid.UUID `json:"application_ids"`
+}

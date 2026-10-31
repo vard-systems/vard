@@ -190,6 +190,11 @@ type SocialSpec struct {
 	// record of a custom kind may say otherwise.
 	TokenAuth SocialTokenAuth `json:"token_auth"`
 
+	// AssumeEmailVerified is for a provider that says nothing about whether
+	// an address is confirmed (Facebook): its addresses are let through to
+	// make an account, but have proved nothing (ProvesAddresses), so such a
+	// provider never links to an existing account, and one it makes starts
+	// unverified.
 	AssumeEmailVerified bool `json:"-"`
 
 	// Docs is where an administrator registers this server with the provider.
@@ -356,6 +361,25 @@ func SocialSpecFor(kind SocialKind) (SocialSpec, bool) {
 func (p SocialProvider) Spec() SocialSpec {
 	spec, _ := SocialSpecFor(p.Kind)
 	return spec
+}
+
+// ProvesAddresses says whether this provider says itself that an address is
+// verified, rather than having it assumed. Only then does an account it
+// makes start verified: one that starts unverified is cleared of the
+// provider's identity by its owner's first proof of the address
+// (clearBeforeProofIn), so an address registered through it by somebody
+// else is taken back.
+func (p SocialProvider) ProvesAddresses() bool {
+	return !p.Spec().AssumeEmailVerified
+}
+
+// LinksByAddress says whether a first sign-in through this provider may take
+// over the existing account with the same verified address. Only when the
+// administrator allows it and the provider proves addresses: one whose
+// verification is only assumed proves nothing about who holds the address,
+// and the account is somebody's.
+func (p SocialProvider) LinksByAddress() bool {
+	return p.LinkVerifiedEmails && p.ProvesAddresses()
 }
 
 func (p SocialProvider) Endpoints() (authorize, token, userInfo string) {

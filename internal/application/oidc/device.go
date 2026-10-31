@@ -169,6 +169,22 @@ func (s *Service) deviceToken(ctx context.Context, app *model.Application, p Tok
 		return nil, err
 	}
 
+	// The session the device was allowed in must still be alive, as for a
+	// code: signing out, or a password reset, between the approval and the
+	// poll must not leave the device a fresh refresh-token family. Checked
+	// after the claim, so a refused device stays spent.
+	if device.SessionID != nil {
+		session, err := s.store.UserSession(ctx, *device.SessionID)
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			return nil, oauthError(ErrInvalidGrant, "the session the device was allowed in has ended")
+		case err != nil:
+			return nil, err
+		case !session.Active(now):
+			return nil, oauthError(ErrInvalidGrant, "the session the device was allowed in has ended")
+		}
+	}
+
 	response, err := s.issue(ctx, grant{
 		app:      app,
 		user:     user,

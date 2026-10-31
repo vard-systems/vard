@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -177,6 +178,67 @@ func (h *Handler) Applications(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, newApplicationsResponse(apps))
+}
+
+// Introspectors lists the visible applications, each saying whether it may
+// introspect the API's access tokens whichever client they were issued to.
+func (h *Handler) Introspectors(c *gin.Context) {
+	api, ok := h.find(c)
+	if !ok {
+		return
+	}
+
+	apps, err := h.store.APIIntrospectors(c.Request.Context(), api.ID, session.Reach(c, model.PermApplicationsRead))
+	if err != nil {
+		respond.Failure(c, h.log, err, "listing the API's introspectors failed")
+		return
+	}
+
+	c.JSON(http.StatusOK, newIntrospectorsResponse(apps))
+}
+
+// SetIntrospectors replaces the applications that may introspect the API's
+// access tokens. Each has to be confidential; an empty list leaves the API's
+// tokens answered only to the clients they were issued to.
+func (h *Handler) SetIntrospectors(c *gin.Context) {
+	api, ok := h.find(c)
+	if !ok {
+		return
+	}
+
+	var req introspectorsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+
+	ctx := c.Request.Context()
+	found, _, err := h.store.Applications(ctx, store.ApplicationQuery{Only: req.ApplicationIDs, Limit: maxIntrospectors + 1})
+	if err != nil {
+		respond.Failure(c, h.log, err, "loading the applications failed")
+		return
+	}
+	ids, err := req.introspectors(found)
+	if err != nil {
+		respond.Failure(c, h.log, err, "checking the API's introspectors failed")
+		return
+	}
+
+	if err := h.store.SetAPIIntrospectors(ctx, api.ID, ids, time.Now()); err != nil {
+		respond.Failure(c, h.log, err, "saving the API's introspectors failed")
+		return
+	}
+
+	h.audit.RecordWith(c, "api.introspectors_updated", targetType, api.ID.String(), map[string]any{
+		"api": api.Name, "introspectors": len(ids),
+	})
+
+	apps, err := h.store.APIIntrospectors(ctx, api.ID, session.Reach(c, model.PermApplicationsRead))
+	if err != nil {
+		respond.Failure(c, h.log, err, "listing the API's introspectors failed")
+		return
+	}
+	c.JSON(http.StatusOK, newIntrospectorsResponse(apps))
 }
 
 // Logs lists changes to the API and applications gaining or losing access,

@@ -12,5 +12,6 @@ func TestAnswersMatchThePanelsTypes(t *testing.T) {
 	tstypes.Match(t, "API", apiResponse{})
 	tstypes.Match(t, "APIScope", scopeResponse{})
 	tstypes.Match(t, "APIApplication", applicationAccess{})
+	tstypes.Match(t, "APIIntrospector", introspector{})
 	tstypes.Match(t, "APILogEntry", logEntry{})
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -266,6 +267,95 @@ func TestLiveAStrangersSocialLinkDiesWithTheOwnersReset(t *testing.T) {
 	}
 	if status := again.account(http.MethodGet, "/me", nil, nil); status == http.StatusOK {
 		t.Error("the stranger is signed in to the owner's account")
+	}
+}
+
+// assumingProvider is a provider of the Facebook kind, which only assumes
+// an address is verified, with its endpoints pointed at a fake one for the
+// length of the test, registered under the slug "fake".
+func (f *oauthFixture) assumingProvider(t *testing.T, claims map[string]any) (*fakeProvider, string) {
+	t.Helper()
+
+	provider := newFakeProvider(t, claims)
+	i := slices.IndexFunc(model.SocialSpecs, func(spec model.SocialSpec) bool { return spec.Kind == model.SocialFacebook })
+	if i < 0 || !model.SocialSpecs[i].AssumeEmailVerified {
+		t.Fatal("the Facebook spec no longer assumes verification; pick the kind that does")
+	}
+	original := model.SocialSpecs[i]
+	t.Cleanup(func() { model.SocialSpecs[i] = original })
+	model.SocialSpecs[i].AuthorizeURL = provider.server.URL + "/authorize"
+	model.SocialSpecs[i].TokenURL = provider.server.URL + "/token"
+	model.SocialSpecs[i].UserInfoURL = provider.server.URL + "/userinfo"
+
+	_, start := provider.register(t, f.s, f.super, map[string]any{"kind": "facebook"})
+	return provider, start
+}
+
+// A provider that only assumes addresses are verified makes an account that
+// starts unverified, so when the address's owner first proves it, the
+// stranger who registered it there loses the identity and every session.
+func TestLiveAnAccountMadeThroughAnAssumingProviderIsTheOwnersOnceProved(t *testing.T) {
+	f := newOAuthFixture(t)
+	// A flow that lets an unverified address in, as an existing
+	// installation's may, so the stranger has something to lose.
+	f.super.must(http.StatusOK, http.MethodPatch, "/login-flows/"+defaultFlow(t, f.super), map[string]any{
+		"steps":                    []string{"identifier", "password", "social"},
+		"require_verified_email":   false,
+		"verify_email_on_register": true,
+	}, nil)
+	_, start := f.assumingProvider(t, map[string]any{"id": "stranger-9", "email": victimEmail})
+
+	stranger := f.s.browser()
+	if landed := through(t, stranger, start); strings.HasPrefix(landed.String(), testAccountURL+"/error") {
+		t.Fatalf("the sign-up failed: %s", landed)
+	}
+	var verified bool
+	if err := f.s.db.Table("users").Select("is_email_verified").Where("email = ?", victimEmail).Scan(&verified).Error; err != nil {
+		t.Fatal(err)
+	}
+	if verified {
+		t.Fatal("the account was made verified on the provider's assumption")
+	}
+	// The address is asked to prove itself, as a password registration's is.
+	f.s.mail.waitFor(t, victimEmail, "/verify-email")
+	if f.held(t, "social_identities") != 1 || f.held(t, "user_sessions") == 0 {
+		t.Fatal("the stranger holds no identity or session to lose, so this proves nothing")
+	}
+
+	f.s.browser().account(http.MethodPost, "/forgot-password", map[string]string{"email": victimEmail}, nil)
+	token := tokenIn(t, f.s.mail.waitFor(t, victimEmail, "/reset-password").Body, "/reset-password")
+	if status := f.s.browser().account(http.MethodPost, "/reset-password", map[string]string{
+		"token": token, "password": "owner-chose-this-1",
+	}, nil); status != http.StatusOK {
+		t.Fatalf("the owner's reset = %d", status)
+	}
+
+	if n := f.held(t, "social_identities"); n != 0 {
+		t.Errorf("%d provider identities survived the owner's proof, want none", n)
+	}
+	if status := stranger.account(http.MethodGet, "/me", nil, nil); status == http.StatusOK {
+		t.Error("the stranger's session survived the owner's proof")
+	}
+	if landed := through(t, f.s.browser(), start); !strings.HasPrefix(landed.String(), testAccountURL+"/error") {
+		t.Errorf("signing in through the provider again landed at %s, want it refused: it may not link by address", landed)
+	}
+}
+
+// Where the flow requires a verified address, the account is made but not
+// let in, and its verification is mailed at once.
+func TestLiveAnAssumingProviderSignUpIsAskedToProveTheAddress(t *testing.T) {
+	f := newOAuthFixture(t)
+	f.withSteps("identifier", "password", "social")
+	_, start := f.assumingProvider(t, map[string]any{"id": "newcomer-1", "email": victimEmail})
+
+	b := f.s.browser()
+	landed := through(t, b, start)
+	if landed.Query().Get("reason") != "email_not_verified" {
+		t.Fatalf("the sign-up landed at %s, want email_not_verified", landed)
+	}
+	f.s.mail.waitFor(t, victimEmail, "/verify-email")
+	if status := b.account(http.MethodGet, "/me", nil, nil); status == http.StatusOK {
+		t.Error("an unproved address was let in by a flow that requires it")
 	}
 }
 

@@ -179,6 +179,13 @@ func (a Application) HasSecret() bool {
 // code_challenge. A client with no credentials of its own always does
 // (RFC 9700 §2.1.1, OAuth 2.1): nothing else ties the code to the app that
 // asked for it, whatever RequirePKCE says.
+// Confidential says whether the application proves who it is at the token
+// endpoint: a secret, a signed assertion or a certificate. A public one
+// cannot, so whatever it is allowed is allowed to anyone holding its id.
+func (a Application) Confidential() bool {
+	return a.TokenAuthMethod != AuthNone
+}
+
 func (a Application) MustUsePKCE() bool {
 	return a.RequirePKCE || a.TokenAuthMethod == AuthNone
 }
