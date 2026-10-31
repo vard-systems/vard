@@ -65,3 +65,17 @@ test('a form posted from another site is refused', async ({ page }) => {
 	await visit(page, `${CONSOLE}/settings`);
 	await expect(page.getByRole('textbox', { name: 'Name', exact: true })).not.toHaveValue('Evil');
 });
+
+// Pages arrive rendered: the HTML the server sends already holds the data,
+// before any script runs, as SvelteKit renders it with the page's load.
+test('the panel arrives rendered, with its data', async ({ page }) => {
+	await visit(page, `${CONSOLE}/login`);
+	await page.getByLabel('Email').fill(ROOT.email);
+	await page.getByRole('textbox', { name: 'Password', exact: true }).fill(ROOT.password);
+	await page.getByRole('button', { name: 'Sign in' }).click();
+	await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible();
+
+	const html = await (await page.request.get(`${CONSOLE}/users`)).text();
+	expect(html).toContain('ada@example.com');
+	expect(html).toContain('<title>');
+});

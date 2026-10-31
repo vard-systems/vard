@@ -3,6 +3,8 @@ import { adminAPI, call, ID, makeUser, pkce, signIn, totp, withSteps, visit } fr
 
 const CALLBACK = 'https://shop.example.test/callback';
 const GRACE = { email: 'grace@example.com', password: 'grace-password-123' };
+// Grace turns an authenticator on below; Linus keeps a one-step sign-in.
+const LINUS = { email: 'linus@example.com', password: 'linus-password-123' };
 
 let client: { id: string; secret: string };
 
@@ -10,6 +12,7 @@ test.beforeAll(async () => {
 	const api = await adminAPI();
 	await withSteps(api, 'identifier', 'password', 'social', 'totp');
 	await makeUser(api, GRACE.email, GRACE.password);
+	await makeUser(api, LINUS.email, LINUS.password);
 
 	const made = await call<{ application: { client_id: string }; client_secret: string }>(
 		api,
@@ -122,4 +125,15 @@ test('an authenticator is asked for once it is turned on', async ({ page, browse
 
 	const claims = await redeem(fresh, verifier);
 	expect(claims.amr).toEqual(['pwd', 'otp', 'mfa']);
+});
+
+// The account pages arrive rendered with who is signed in, before any script.
+test('the account page arrives rendered', async ({ page }) => {
+	await visit(page, `${ID}/login`);
+	await signIn(page, LINUS.email, LINUS.password);
+	await expect(page).not.toHaveURL(/\/login/);
+
+	const answer = await page.request.get(`${ID}/`, { maxRedirects: 0 });
+	expect(answer.status()).toBe(200);
+	expect(await answer.text()).toContain(LINUS.email);
 });
