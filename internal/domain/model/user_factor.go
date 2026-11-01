@@ -113,6 +113,10 @@ type PendingSignIn struct {
 	// nil otherwise.
 	ApplicationID *uuid.UUID   `gorm:"type:uuid;index"`
 	Application   *Application `gorm:"constraint:OnDelete:CASCADE"`
+	// DeviceAuthorizationID is the device a step-up was started to allow,
+	// which leaving it ("Not now") denies; nil otherwise.
+	DeviceAuthorizationID *uuid.UUID           `gorm:"type:uuid;index"`
+	DeviceAuthorization   *DeviceAuthorization `gorm:"constraint:OnDelete:CASCADE"`
 
 	ExpiresAt time.Time `gorm:"not null;index"`
 	UsedAt    *time.Time

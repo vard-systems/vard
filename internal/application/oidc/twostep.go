@@ -72,6 +72,9 @@ type SecondFactorChallenge struct {
 	// StepUp is a signed-in person asked for a second factor in the session
 	// they have, for an application that requires one.
 	StepUp bool `json:"step_up"`
+	// Application is the application the sign-in is for when no
+	// authorization request names it: a device being allowed.
+	Application *PublicApplication `json:"application,omitempty"`
 	// Enrol is a person without a second factor signing in to an application
 	// that requires one: Methods are what they may set up, and setting one up
 	// finishes the sign-in.
@@ -190,7 +193,7 @@ func (s *Service) holdStepUp(ctx context.Context, request string, session *Sessi
 		return withQuery(s.accountURL+PageLogin, url.Values{"request": {request}}), nil
 	}
 
-	handle, err := s.waitForStepUp(ctx, session, request, nil)
+	handle, err := s.waitForStepUp(ctx, session, request, nil, nil)
 	if err != nil {
 		return "", err
 	}
@@ -199,22 +202,43 @@ func (s *Service) holdStepUp(ctx context.Context, request string, session *Sessi
 	return withQuery(s.accountURL+PageSecondFactor, url.Values{"request": {request}}), nil
 }
 
+// denyLeftDevice denies the device a step-up that was left was started to
+// allow, while it is still unanswered, so its next poll is told
+// access_denied rather than waiting it out.
+func (s *Service) denyLeftDevice(ctx context.Context, pending *model.PendingSignIn, client Client) error {
+	if pending.DeviceAuthorizationID == nil {
+		return nil
+	}
+
+	device := &model.DeviceAuthorization{Base: model.Base{ID: *pending.DeviceAuthorizationID}}
+	denied, err := s.store.AnswerDevice(ctx, device, false, pending.UserID, nil, s.now())
+	if err != nil || !denied {
+		return err
+	}
+
+	s.record(ctx, pending.User, pending.User.Email, "user.device_denied", client, map[string]any{"step_up": "left"})
+
+	return nil
+}
+
 // waitForStepUp keeps a step-up of the session waiting, for an authorization
-// request or, with none, the application named, and returns its handle.
-func (s *Service) waitForStepUp(ctx context.Context, session *Session, request string, app *uuid.UUID) (string, error) {
+// request or, with none, the application and device named, and returns its
+// handle.
+func (s *Service) waitForStepUp(ctx context.Context, session *Session, request string, app, device *uuid.UUID) (string, error) {
 	handle, hash, err := model.NewSecret()
 	if err != nil {
 		return "", err
 	}
 
 	pending := model.PendingSignIn{
-		HandleHash:      hash,
-		UserID:          session.User.ID,
-		Request:         request,
-		Methods:         session.Record.Methods,
-		StepUpSessionID: &session.Record.ID,
-		ApplicationID:   app,
-		ExpiresAt:       s.now().Add(model.PendingSignInLifetime),
+		HandleHash:            hash,
+		UserID:                session.User.ID,
+		Request:               request,
+		Methods:               session.Record.Methods,
+		StepUpSessionID:       &session.Record.ID,
+		ApplicationID:         app,
+		DeviceAuthorizationID: device,
+		ExpiresAt:             s.now().Add(model.PendingSignInLifetime),
 	}
 	if err := s.store.CreatePendingSignIn(ctx, &pending); err != nil {
 		return "", err
@@ -243,6 +267,9 @@ func (s *Service) LeaveSignIn(ctx context.Context, handle string, current *Sessi
 	}
 
 	if pending.Request == "" {
+		if err := s.denyLeftDevice(ctx, pending, client); err != nil {
+			return "", err
+		}
 		return s.accountURL + "/", nil
 	}
 
@@ -281,6 +308,19 @@ func (s *Service) SecondFactorFor(ctx context.Context, handle string) (*SecondFa
 	}
 
 	challenge := &SecondFactorChallenge{Methods: []string{}, ExpiresAt: pending.ExpiresAt, StepUp: pending.StepUpSessionID != nil}
+
+	// With no authorization request to name it, the application is the one
+	// the waiting sign-in names (a device being allowed).
+	if pending.Request == "" && pending.ApplicationID != nil {
+		app, err := s.store.Application(ctx, *pending.ApplicationID)
+		if err != nil && !errors.Is(err, store.ErrNotFound) {
+			return nil, err
+		}
+		if app != nil && err == nil {
+			public := NewPublicApplication(app)
+			challenge.Application = &public
+		}
+	}
 
 	if len(factors) == 0 {
 		challenge.Enrol = true

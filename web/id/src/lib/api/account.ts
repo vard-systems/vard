@@ -97,6 +97,8 @@ export type SecondFactorChallenge = {
 	/** The account has no second factor and the application requires one: `methods` are what
 	    may be set up, and setting one up finishes the sign-in. */
 	enrol: boolean;
+	/** The application, when no sign-in request names it: a device being allowed. */
+	application?: Application;
 	passkey?: PublicKeyCredentialRequestOptionsJSON;
 };
 

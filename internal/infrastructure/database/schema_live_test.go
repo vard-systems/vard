@@ -435,7 +435,7 @@ func TestLiveStepUpUpgradesAnExistingDatabase(t *testing.T) {
 	if err := db.Omit(clause.Associations, "Remember").Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Omit(clause.Associations, "StepUpSessionID", "ApplicationID").Create(waiting).Error; err != nil {
+	if err := db.Omit(clause.Associations, "StepUpSessionID", "ApplicationID", "DeviceAuthorizationID").Create(waiting).Error; err != nil {
 		t.Fatal(err)
 	}
 	flows := rows(t, db, "SELECT id::text FROM login_flows")
@@ -538,7 +538,7 @@ func TestLiveSignInApplicationUpgradesAnExistingDatabase(t *testing.T) {
 	}
 	later := time.Now().Add(time.Hour)
 	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ExpiresAt: later}
-	if err := db.Omit(clause.Associations, "ApplicationID").Create(waiting).Error; err != nil {
+	if err := db.Omit(clause.Associations, "ApplicationID", "DeviceAuthorizationID").Create(waiting).Error; err != nil {
 		t.Fatal(err)
 	}
 
@@ -550,7 +550,7 @@ func TestLiveSignInApplicationUpgradesAnExistingDatabase(t *testing.T) {
 	}
 
 	device := &model.PendingSignIn{HandleHash: "device", UserID: user.ID, ApplicationID: &app.ID, ExpiresAt: later}
-	if err := db.Omit(clause.Associations).Create(device).Error; err != nil {
+	if err := db.Omit(clause.Associations, "DeviceAuthorizationID").Create(device).Error; err != nil {
 		t.Fatal(err)
 	}
 
@@ -560,5 +560,57 @@ func TestLiveSignInApplicationUpgradesAnExistingDatabase(t *testing.T) {
 	}
 	if left := rows(t, db, "SELECT handle_hash FROM pending_sign_ins ORDER BY 1"); !slices.Equal(left, []string{"waiting"}) {
 		t.Errorf("down left the waiting sign-ins %v, want only the one naming no application", left)
+	}
+}
+
+// Step-ups waiting before 00009 name no device; going down keeps every
+// waiting sign-in, which then only stops naming its device.
+func TestLiveSignInDeviceUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 8)
+	column := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'pending_sign_ins' AND column_name = 'device_authorization_id'`
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Fatalf("before 00009, pending_sign_ins has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{Name: "Telly", ClientID: "telly", Type: model.AppNative, TokenAuthMethod: model.AuthNone, IsEnabled: true}
+	for _, row := range []any{user, app} {
+		if err := db.Create(row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	later := time.Now().Add(time.Hour)
+	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ApplicationID: &app.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "DeviceAuthorizationID").Create(waiting).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00009: %v", err)
+	}
+	if named := rows(t, db, "SELECT handle_hash FROM pending_sign_ins WHERE device_authorization_id IS NOT NULL"); len(named) != 0 {
+		t.Errorf("after the upgrade, %v name a device", named)
+	}
+
+	device := &model.DeviceAuthorization{DeviceCodeHash: "device", UserCodeHash: "user", ApplicationID: app.ID, Scope: "openid",
+		Status: model.DevicePending, Interval: 5, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(device).Error; err != nil {
+		t.Fatal(err)
+	}
+	stepUp := &model.PendingSignIn{HandleHash: "step-up", UserID: user.ID, ApplicationID: &app.ID, DeviceAuthorizationID: &device.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(stepUp).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 8)
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM pending_sign_ins ORDER BY 1"); !slices.Equal(left, []string{"step-up", "waiting"}) {
+		t.Errorf("down left the waiting sign-ins %v, want both", left)
 	}
 }

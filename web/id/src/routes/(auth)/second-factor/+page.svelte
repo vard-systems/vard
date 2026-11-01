@@ -18,8 +18,9 @@
 
 	const t = useTranslator();
 
-	const app = $derived(data.application);
 	const challenge = $derived(data.challenge);
+	/** The sign-in request's application, or the one a device step-up names. */
+	const app = $derived(data.application ?? challenge?.application ?? null);
 	const offers = $derived({
 		authenticator: challenge?.methods.includes('totp') ?? false,
 		passkey: (challenge?.methods.includes('passkey') ?? false) && challenge?.passkey !== undefined

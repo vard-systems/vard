@@ -101,6 +101,9 @@ func TestLiveADeviceIsAllowedOnlyAsItsFlowAsks(t *testing.T) {
 	if !offer.SecondFactor.StepUp || !offer.SecondFactor.Enrol {
 		t.Fatalf("the second-factor page = %+v, want a factor set up in this session", offer.SecondFactor)
 	}
+	if offer.SecondFactor.Application == nil || offer.SecondFactor.Application.Name != "Vault TV" {
+		t.Errorf("the device's step-up names %+v, want the device's application", offer.SecondFactor.Application)
+	}
 
 	// The waiting step-up is held to the device's flow, which requires a
 	// factor, not the default one, which only offers it.
@@ -248,10 +251,20 @@ func TestLiveNotNowAnswersTheApplication(t *testing.T) {
 	grace := f.s.browser()
 	f.makeUser("grace@example.com", adaPassword, true)
 	grace.signInAs("grace@example.com", adaPassword, "", false, nil)
-	userCode, _ := f.requiringDevice(t, vault)
+	userCode, poll := f.requiringDevice(t, vault)
+	_, otherPoll := f.requiringDevice(t, vault)
 	grace.account(http.MethodPost, "/step-up", map[string]any{"user_code": userCode}, nil)
 	if status := grace.account(http.MethodPost, "/login/second-factor/leave", nil, &left); status != http.StatusOK || left.RedirectTo != testAccountURL+"/" {
 		t.Errorf("leaving a device's step-up = %d %s, want the account page", status, left.RedirectTo)
+	}
+
+	// Leaving it denies that device, which is told so at its next poll
+	// rather than waiting out its code; another device waits on.
+	if got := poll().str("error"); got != "access_denied" {
+		t.Errorf("the device after its step-up was left = %s, want access_denied", got)
+	}
+	if got := otherPoll().str("error"); got != "authorization_pending" {
+		t.Errorf("another device after the step-up was left = %s, want authorization_pending", got)
 	}
 }
 

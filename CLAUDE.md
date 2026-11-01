@@ -236,7 +236,8 @@ code near it, and add a test when adding a case.
   family that never passed a factor gets `invalid_grant` once its flow
   requires one. "Not now" (`LeaveSignIn`) spends the waiting sign-in and its
   authorization request, each by one conditional UPDATE, and answers the
-  client `access_denied`.
+  client `access_denied`; a device's step-up names its device
+  (`device_authorization_id`), which leaving denies while unanswered.
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.

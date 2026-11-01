@@ -352,5 +352,5 @@ func (s *Service) StepUpForDevice(ctx context.Context, userCode string, session 
 		return "", ErrEmailNotVerified
 	}
 
-	return s.waitForStepUp(ctx, session, "", &device.Application.ID)
+	return s.waitForStepUp(ctx, session, "", &device.Application.ID, &device.ID)
 }

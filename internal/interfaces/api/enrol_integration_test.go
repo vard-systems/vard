@@ -27,6 +27,10 @@ type enrolOffer struct {
 		Enrol   bool     `json:"enrol"`
 		StepUp  bool     `json:"step_up"`
 		Methods []string `json:"methods"`
+		// Application is named when no sign-in request does: a device.
+		Application *struct {
+			Name string `json:"name"`
+		} `json:"application"`
 	} `json:"second_factor"`
 }
 
