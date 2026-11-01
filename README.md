@@ -8,30 +8,41 @@ with two web apps:
 | `web/id`      | Hosted sign-in pages and each user's own account |
 | `web/console` | The admin panel                                  |
 
-**Features:** authorization code with PKCE (always, for clients without
-credentials), pushed authorization requests (PAR), the device authorization
-grant (sign-in on TVs and command lines), refresh token rotation with reuse
-detection and a short grace for a retried refresh, client credentials,
-DPoP-bound tokens and authorization codes (`dpop_jkt`, or a pushed
-request's own proof), native apps'
-redirects (private-use schemes, `127.0.0.1` / `[::1]` loopback on any port,
-Expo Go's `exp://` for an app marked as in development),
-dynamic client registration, userinfo, introspection, revocation, ID tokens
-that say how the person signed in (`amr`: `pwd`, `otp`, `hwk`, `user`, and
-`mfa` only once one of the account's own second factors was passed),
-logout (RP-initiated, back-channel and front-channel), a consent page, terms
-acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
-OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
-configurable login flows, emailed one-time codes, TOTP for administrators,
-two-step verification (authenticator app or passkeys) for users, optional
-or required by a login flow — set up while signing in where it is required,
-asked of a signed-in person in the session they have (devices and refresh
-tokens included), answered by an SSO provider's own second factor where a
-connection trusts it, and emailed to the account each time a factor is
-added —
-passwordless sign-in with a passkey, roles and API scopes, an activity log, and
-the sign-in pages in English, with more languages added, translated and made the
-default from the panel.
+**Features:**
+
+- **OAuth 2.0:** authorization code with PKCE (always, for clients without
+  credentials), pushed authorization requests (PAR), the device
+  authorization grant (sign-in on TVs and command lines), refresh token
+  rotation with reuse detection and a short grace for a retried refresh,
+  client credentials, dynamic client registration, introspection and
+  revocation.
+- **DPoP:** sender-constrained tokens, and authorization codes bound to a
+  key (`dpop_jkt`, or a pushed request's own proof).
+- **Native apps:** private-use scheme redirects, `127.0.0.1` / `[::1]`
+  loopback on any port, Expo Go's `exp://` for an app marked as in
+  development.
+- **OpenID Connect:** ID tokens that say how the person signed in (`amr`:
+  `pwd`, `otp`, `hwk`, `user`, and `mfa` only once one of the account's own
+  second factors was passed), userinfo, and logout (RP-initiated,
+  back-channel and front-channel).
+- **Signing in:** configurable login flows, a consent page, terms
+  acceptance, emailed one-time codes, passwordless sign-in with a passkey,
+  social sign-in (Google, Apple, Facebook, Yandex, VK, any OIDC/OAuth
+  provider; id_tokens checked against the provider's published keys where
+  it publishes them) and enterprise SSO (OpenID Connect and SAML 2.0).
+- **Two-step verification** with an authenticator app or passkeys,
+  optional or required by a login flow: set up while signing in where it is
+  required, asked of a signed-in person in the session they have (devices
+  and refresh tokens included), answered by an SSO provider's own second
+  factor where a connection trusts it, and emailed to the account each time
+  a factor is added. TOTP and passkeys for administrators too.
+- **Administration:** roles and API scopes, an activity log, and the
+  sign-in pages in English, with more languages added, translated and made
+  the default from the panel.
+- **Hardening:** throttled (never locked) sign-in, keys from outside capped
+  at 4096-bit RSA, outbound calls to providers that refuse private and
+  metadata addresses, and a provider's keys fetched again at most once a
+  minute.
 
 ## Quick start
 
