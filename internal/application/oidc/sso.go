@@ -181,6 +181,12 @@ type ssoPerson struct {
 	LastName  string
 	Groups    []string
 
+	// Proved is what the provider says its sign-in proved, read only from
+	// what its signature covers: an id_token's amr, or the verified SAML
+	// assertion's AuthnContextClassRef values. A connection that trusts its
+	// provider's second factor matches it against its own list.
+	Proved []string
+
 	Sent []string
 }
 

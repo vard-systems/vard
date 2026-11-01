@@ -238,6 +238,14 @@ code near it, and add a test when adding a case.
   authorization request, each by one conditional UPDATE, and answers the
   client `access_denied`; a device's step-up names its device
   (`device_authorization_id`), which leaving denies while unanswered.
+  Single sign-on meets the requirement by the account's own factor
+  (`second_factor = local`, the default), or by the provider's when the
+  connection trusts it (`provider`) and its signed answer shows a listed
+  value — an id_token's `amr` (`accepted_amr`, read before userinfo fills
+  anything in) or the verified assertion's `AuthnContextClassRef`
+  (`mfa_contexts`) — which gives the session only the marker, never an amr.
+  Otherwise it falls back to the account's own factor, and the fallback is
+  logged (`user.sso_second_factor_fallback`).
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.

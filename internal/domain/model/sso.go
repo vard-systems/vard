@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 var domainPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)
@@ -91,10 +92,40 @@ type SSOConnection struct {
 	// SyncRoles also takes a mapped role away from someone no longer in its
 	// group. Off, mapped roles are only ever added.
 	SyncRoles bool `gorm:"not null" json:"sync_roles"`
+
+	// SecondFactor is who answers for the second factor a login flow that
+	// requires one asks of the people this connection signs in: this
+	// server, with the account's own factor (local), or the provider, when
+	// its answer shows one (provider) — falling back to the account's own
+	// factor when it does not.
+	SecondFactor SSOSecondFactor `gorm:"type:varchar(8);not null;default:'local';check:chk_sso_connections_second_factor,second_factor IN ('local','provider')" json:"second_factor"`
+	// AcceptedAMR are the values of an OpenID Connect id_token's amr that
+	// count as the provider's second factor.
+	AcceptedAMR StringList `gorm:"type:jsonb;serializer:json;not null" json:"accepted_amr"`
+	// MFAContexts are the SAML AuthnContextClassRef values that count as the
+	// provider's second factor: SAML names no standard one.
+	MFAContexts StringList `gorm:"type:jsonb;serializer:json;not null" json:"mfa_contexts"`
 }
 
 func (SSOConnection) TableName() string {
 	return "sso_connections"
+}
+
+// BeforeSave gives a connection saved without its second-factor settings
+// the safe ones: this server's own factor, accepting amr mfa should it be
+// switched to its provider, and no SAML context. A jsonb column never takes
+// a list that was left out.
+func (c *SSOConnection) BeforeSave(*gorm.DB) error {
+	if c.SecondFactor == "" {
+		c.SecondFactor = SSOSecondFactorLocal
+	}
+	if c.AcceptedAMR == nil {
+		c.AcceptedAMR = slices.Clone(DefaultAcceptedAMR)
+	}
+	if c.MFAContexts == nil {
+		c.MFAContexts = StringList{}
+	}
+	return nil
 }
 
 type SSOProtocol string
@@ -103,6 +134,35 @@ const (
 	SSOProtocolOIDC SSOProtocol = "oidc"
 	SSOProtocolSAML SSOProtocol = "saml"
 )
+
+// SSOSecondFactor is who answers for a second factor at a connection.
+type SSOSecondFactor string
+
+const (
+	SSOSecondFactorLocal    SSOSecondFactor = "local"
+	SSOSecondFactorProvider SSOSecondFactor = "provider"
+)
+
+// DefaultAcceptedAMR is what an OpenID Connect provider's amr has to say for
+// its sign-in to count as a second factor (RFC 8176's mfa).
+var DefaultAcceptedAMR = StringList{AMRMultiFactor}
+
+// MaxSecondFactorValues bounds the accepted amr values and SAML contexts.
+const MaxSecondFactorValues = 20
+
+// ProvedSecondFactor reports whether a provider's answer, as its amr
+// (OpenID Connect) or its assertion's AuthnContextClassRef values (SAML),
+// counts as a second factor at this connection. Only in provider mode.
+func (c SSOConnection) ProvedSecondFactor(said []string) bool {
+	if c.SecondFactor != SSOSecondFactorProvider {
+		return false
+	}
+	accepted := c.AcceptedAMR
+	if c.Protocol == SSOProtocolSAML {
+		accepted = c.MFAContexts
+	}
+	return slices.ContainsFunc(said, func(value string) bool { return value != "" && slices.Contains(accepted, value) })
+}
 
 type SSOMatching string
 
@@ -265,6 +325,30 @@ func (c SSOConnection) Validate() error {
 	for _, domain := range c.Domains {
 		if domain != NormalizeDomain(domain) || !domainPattern.MatchString(domain) {
 			return fmt.Errorf("%q is not a domain", domain)
+		}
+	}
+
+	switch c.SecondFactor {
+	case SSOSecondFactorLocal, SSOSecondFactorProvider:
+	default:
+		return fmt.Errorf("second factor must be local or provider")
+	}
+	for _, list := range []StringList{c.AcceptedAMR, c.MFAContexts} {
+		if len(list) > MaxSecondFactorValues {
+			return fmt.Errorf("at most %d accepted values", MaxSecondFactorValues)
+		}
+		for _, value := range list {
+			if strings.TrimSpace(value) != value || value == "" || len(value) > 255 {
+				return fmt.Errorf("%q is not an accepted value: no spaces around it, at most 255 characters", value)
+			}
+		}
+	}
+	if c.SecondFactor == SSOSecondFactorProvider {
+		switch {
+		case c.Protocol == SSOProtocolOIDC && len(c.AcceptedAMR) == 0:
+			return fmt.Errorf("trusting the provider's second factor needs at least one accepted amr value")
+		case c.Protocol == SSOProtocolSAML && len(c.MFAContexts) == 0:
+			return fmt.Errorf("trusting the provider's second factor needs at least one authentication context, since SAML names none")
 		}
 	}
 

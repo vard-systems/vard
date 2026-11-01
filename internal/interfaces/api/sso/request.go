@@ -59,6 +59,10 @@ type connectionRequest struct {
 	GroupsAttribute    *string `json:"groups_attribute" validate:"omitnil,max=255"`
 
 	RoleMappings *[]roleMapping `json:"role_mappings" validate:"omitnil,max=100"`
+
+	SecondFactor *string   `json:"second_factor" validate:"omitnil,oneof=local provider"`
+	AcceptedAMR  *[]string `json:"accepted_amr" validate:"omitnil,max=20,dive,max=255"`
+	MFAContexts  *[]string `json:"mfa_contexts" validate:"omitnil,max=20,dive,max=255"`
 }
 
 type roleMapping struct {

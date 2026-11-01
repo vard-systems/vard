@@ -174,6 +174,10 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 		return nil, upstream("id_token", err)
 	}
 
+	// What the sign-in proved is the signed id_token's to say: read before
+	// userinfo, unsigned, fills in what the token left out.
+	proved := idTokenAMR(claims)
+
 	if claimFirst(claims, connection.Attribute("email")) == "" && document.UserInfoEndpoint != "" && token.AccessToken != "" {
 		if extra, err := s.oidcUserInfo(ctx, document.UserInfoEndpoint, token.AccessToken); err == nil &&
 			claimString(extra, "sub") == claimString(claims, "sub") {
@@ -198,8 +202,22 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 		FirstName: claimFirst(claims, connection.Attribute("first_name")),
 		LastName:  claimFirst(claims, connection.Attribute("last_name")),
 		Groups:    claimList(claims, connection.Attribute("groups")),
+		Proved:    proved,
 		Sent:      slices.Sorted(maps.Keys(claims)),
 	}, nil
+}
+
+// idTokenAMR is an id_token's amr: an array of strings (RFC 8176), and
+// nothing else read as one.
+func idTokenAMR(claims map[string]any) []string {
+	values, _ := claims["amr"].([]any)
+	var amr []string
+	for _, value := range values {
+		if text, ok := value.(string); ok && text != "" {
+			amr = append(amr, text)
+		}
+	}
+	return amr
 }
 
 // emailVerified reads email_verified as a boolean or, as Cognito and others

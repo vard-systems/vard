@@ -614,3 +614,46 @@ func TestLiveSignInDeviceUpgradesAnExistingDatabase(t *testing.T) {
 		t.Errorf("down left the waiting sign-ins %v, want both", left)
 	}
 }
+
+// Connections from before 00010 answer for nobody's second factor: each is
+// local, accepts amr mfa should it be switched to its provider, and lists
+// no SAML context. Going down keeps every connection.
+func TestLiveSSOSecondFactorUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 9)
+	columns := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'sso_connections' AND column_name IN ('second_factor', 'accepted_amr', 'mfa_contexts')`
+	if has := rows(t, db, columns); len(has) != 0 {
+		t.Fatalf("before 00010, sso_connections has %v", has)
+	}
+
+	acme := &model.SSOConnection{Slug: "acme", Name: "Acme", Protocol: model.SSOProtocolOIDC, Domains: model.StringList{"acme.test"},
+		Issuer: "https://acme.test", ClientID: "acme", Matching: model.SSOMatchLink, RoleMappings: model.SSORoleMappings{}}
+	if err := db.Omit(clause.Associations, "SecondFactor", "AcceptedAMR", "MFAContexts").Create(acme).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00010: %v", err)
+	}
+	got := rows(t, db, "SELECT second_factor || ' ' || accepted_amr::text || ' ' || mfa_contexts::text FROM sso_connections")
+	if want := []string{`local ["mfa"] []`}; !slices.Equal(got, want) {
+		t.Errorf("after the upgrade the connection is %v, want %v", got, want)
+	}
+	if err := db.Exec(`UPDATE sso_connections SET second_factor = 'both'`).Error; err == nil {
+		t.Error("a second factor nobody named was stored")
+	}
+	if err := db.Exec(`UPDATE sso_connections SET second_factor = 'provider'`).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 9)
+	if has := rows(t, db, columns); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT slug FROM sso_connections"); !slices.Equal(left, []string{"acme"}) {
+		t.Errorf("down left the connections %v, want acme", left)
+	}
+}

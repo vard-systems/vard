@@ -9,6 +9,8 @@ import { TEMPLATES } from './flows/steps';
 import LogoField from './organization/LogoField.svelte';
 import RoleCodes from './profile/RoleCodes.svelte';
 import DomainProofList from './sso/DomainProofList.svelte';
+import SSOSignInTab from './sso/SSOSignInTab.svelte';
+import { SSOForm } from './sso/form.svelte';
 import Button from './ui/Button.svelte';
 import EmptyState from './ui/EmptyState.svelte';
 import Input from './ui/Input.svelte';
@@ -98,6 +100,28 @@ describe('the panel is usable without seeing it', () => {
 		}));
 
 	it('a text input', () => expectAccessible(Input, { label: 'Name', value: '' }));
+
+	it("a connection's sign-in settings, trusting the provider's second factor", () =>
+		expectAccessible(SSOSignInTab, {
+			form: Object.assign(new SSOForm(), {
+				name: 'Acme',
+				domains: ['acme.com'],
+				secondFactor: 'provider'
+			}),
+			readOnly: false
+		}));
+
+	it("a SAML connection's authentication contexts", () =>
+		expectAccessible(SSOSignInTab, {
+			form: Object.assign(new SSOForm(), {
+				name: 'Globex',
+				protocol: 'saml',
+				domains: ['globex.com'],
+				secondFactor: 'provider',
+				mfaContexts: 'urn:example:mfa'
+			}),
+			readOnly: false
+		}));
 
 	it("a connection's domain proofs: proved and waiting for its record", () =>
 		expectAccessible(DomainProofList, {

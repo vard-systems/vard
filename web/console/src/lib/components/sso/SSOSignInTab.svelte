@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { FormSection, SwitchField } from '#lib/components/ui/index.js';
+	import {
+		FormSection,
+		Input,
+		Note,
+		Select,
+		SwitchField,
+		Textarea
+	} from '#lib/components/ui/index.js';
 	import DomainProofs from './DomainProofs.svelte';
 	import DomainsField from './DomainsField.svelte';
 	import type { SSOForm } from './form.svelte';
@@ -12,6 +19,11 @@
 	};
 
 	let { form, readOnly, connectionId }: Props = $props();
+
+	const secondFactors = [
+		{ value: 'local', label: 'This server' },
+		{ value: 'provider', label: 'The provider' }
+	] as const;
 </script>
 
 <FormSection
@@ -48,4 +60,41 @@
 		bind:checked={form.showOnLogin}
 		disabled={readOnly}
 	/>
+</FormSection>
+
+<FormSection
+	title="Second factor"
+	description="Asked only by a login flow that requires two-step verification."
+>
+	<Select
+		label="Second factor"
+		bind:value={form.secondFactor}
+		options={secondFactors}
+		hint={form.secondFactor === 'local'
+			? 'People are asked for their account’s own second factor here, after the provider.'
+			: 'The provider’s own second factor counts when its answer shows one.'}
+		{readOnly}
+	/>
+	{#if form.secondFactor === 'provider'}
+		{#if form.protocol === 'oidc'}
+			<Input
+				label="Accepted amr values"
+				bind:value={form.acceptedAmr}
+				hint="Space separated. The id_token’s amr has to hold one of them; mfa is the standard one."
+				placeholder="mfa"
+				{readOnly}
+			/>
+		{:else}
+			<Textarea
+				label="Authentication contexts"
+				bind:value={form.mfaContexts}
+				rows={3}
+				hint="One per line: the AuthnContextClassRef values that mean the provider asked for a second factor. SAML names no standard one."
+			/>
+		{/if}
+		<Note>
+			When the provider’s answer shows none of them, the account’s own second factor is asked for
+			instead, and the activity log says so.
+		</Note>
+	{/if}
 </FormSection>

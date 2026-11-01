@@ -753,6 +753,8 @@ export type SSOProtocol = 'oidc' | 'saml';
 
 export type SSORoleMapping = { group: string; role_id: string };
 
+export type SSOSecondFactor = 'local' | 'provider';
+
 export type SSOConnection = {
 	id: string;
 	slug: string;
@@ -782,6 +784,14 @@ export type SSOConnection = {
 	groups_attribute: string;
 	role_mappings: SSORoleMapping[];
 	sync_roles: boolean;
+
+	/** Who answers for the second factor a flow requires: this server, or the provider when its
+	    answer shows one (falling back to this server's when it does not). */
+	second_factor: SSOSecondFactor;
+	/** OpenID Connect: the id_token amr values that count as the provider's second factor. */
+	accepted_amr: string[];
+	/** SAML: the AuthnContextClassRef values that count as the provider's second factor. */
+	mfa_contexts: string[];
 
 	users: number;
 	service_provider: {

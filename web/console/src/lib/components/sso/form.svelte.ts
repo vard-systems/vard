@@ -3,6 +3,7 @@ import type {
 	SSOConnectionInput,
 	SSOProtocol,
 	SSORoleMapping,
+	SSOSecondFactor,
 	SSOTestInput
 } from '#lib/api/index.js';
 
@@ -43,6 +44,17 @@ export class SSOForm {
 	mappings = $state<SSORoleMapping[]>([]);
 	syncRoles = $state(false);
 
+	secondFactor = $state<SSOSecondFactor>('local');
+	/** OpenID Connect's accepted amr values, space separated. */
+	acceptedAmr = $state('mfa');
+	/** SAML's accepted authentication contexts, one per line. */
+	mfaContexts = $state('');
+
+	/** The values the provider's answer may show for its second factor to count, as listed. */
+	accepted = $derived(
+		this.protocol === 'oidc' ? splitList(this.acceptedAmr) : splitList(this.mfaContexts)
+	);
+
 	/** SSO is required only of addresses at some domain: none, nothing to require. */
 	enforced = $derived(this.domains.length > 0 && this.enforceDomains);
 
@@ -55,6 +67,14 @@ export class SSOForm {
 			return {
 				text: 'Give the metadata URL or paste the metadata to create it.',
 				tab: 'connection'
+			};
+		if (this.secondFactor === 'provider' && this.accepted.length === 0)
+			return {
+				text:
+					this.protocol === 'oidc'
+						? 'List an amr value that counts as the provider’s second factor, on Domains & sign-in.'
+						: 'List an authentication context that counts as the provider’s second factor, on Domains & sign-in.',
+				tab: 'signin'
 			};
 		if (this.domains.length === 0 && !this.showOnLogin)
 			return {
@@ -94,6 +114,9 @@ export class SSOForm {
 		this.groupsAttribute = from?.groups_attribute ?? '';
 		this.mappings = (from?.role_mappings ?? []).map((mapping) => ({ ...mapping }));
 		this.syncRoles = from?.sync_roles ?? false;
+		this.secondFactor = from?.second_factor ?? 'local';
+		this.acceptedAmr = (from?.accepted_amr ?? ['mfa']).join(' ');
+		this.mfaContexts = (from?.mfa_contexts ?? []).join('\n');
 	}
 
 	/** The body to save. The protocol and identifier are only given once, when it is created. */
@@ -113,7 +136,8 @@ export class SSOForm {
 			last_name_attribute: this.lastNameAttribute.trim(),
 			groups_attribute: this.groupsAttribute.trim(),
 			role_mappings: this.mappings.filter((mapping) => mapping.group.trim() !== ''),
-			sync_roles: this.syncRoles
+			sync_roles: this.syncRoles,
+			second_factor: this.secondFactor
 		};
 
 		if (creating) {
@@ -126,11 +150,13 @@ export class SSOForm {
 			body.client_id = this.clientId.trim();
 			body.scopes = this.scopeList();
 			if (this.clientSecret.trim()) body.client_secret = this.clientSecret.trim();
+			body.accepted_amr = splitList(this.acceptedAmr);
 		} else {
 			body.metadata_url = this.metadataUrl.trim();
 			if (!this.metadataUrl.trim()) body.metadata = this.metadata.trim();
 			body.name_id_format = this.nameIdFormat;
 			body.sign_requests = this.signRequests;
+			body.mfa_contexts = splitList(this.mfaContexts);
 		}
 
 		return body;
@@ -150,4 +176,9 @@ export class SSOForm {
 	private scopeList(): string[] {
 		return this.scopes.split(/\s+/).filter(Boolean);
 	}
+}
+
+/** A typed list's values: split on spaces and lines, each once. */
+function splitList(typed: string): string[] {
+	return [...new Set(typed.split(/\s+/).filter((value) => value !== ''))];
 }

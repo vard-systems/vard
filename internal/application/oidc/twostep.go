@@ -25,8 +25,9 @@ import (
 // in, on the second-factor page. Once a user has a confirmed factor, every
 // sign-in with a password, an emailed code or another account waits for one
 // before its session starts — whichever flow it comes through, so turning
-// the step off later does not undo anyone's protection. Single sign-on is left to the enterprise's own
-// provider, which answers for its people's second factor.
+// the step off later does not undo anyone's protection. Single sign-on asks
+// for one only where the flow requires it: the account's own, or the
+// provider's when the connection trusts it and its answer shows one.
 
 // PageSecondFactor is where a sign-in waiting for its second factor is
 // finished.
