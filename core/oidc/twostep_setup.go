@@ -11,12 +11,12 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"vard/internal/brand"
-	"vard/internal/domain/model"
-	"vard/internal/domain/recovery"
-	"vard/internal/domain/totp"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/infrastructure/store"
+	"vard/core/brand"
+	"vard/core/mail"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/recovery"
+	"vard/tools/totp"
 )
 
 // Two-step verification from the account page: what the user has, adding an

@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm/clause"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // ServerSecret is the sealed secret by that name, made with make the first

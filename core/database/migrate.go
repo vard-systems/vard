@@ -12,7 +12,7 @@ import (
 	"github.com/pressly/goose/v3/lock"
 	"gorm.io/gorm"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 	"vard/migrations"
 	"vard/migrations/reset"
 )

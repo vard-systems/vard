@@ -3,8 +3,8 @@ package mfa
 import (
 	"testing"
 
-	"vard/internal/application/auth"
-	"vard/internal/interfaces/api/kit/tstypes"
+	"vard/api/kit/tstypes"
+	"vard/core/auth"
 )
 
 // The panel's types for these answers are written by hand in

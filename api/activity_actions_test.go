@@ -14,7 +14,7 @@ import (
 // shows its raw name, "social_provider.created something".
 func TestEveryRecordedActionHasASentence(t *testing.T) {
 	known := map[string]bool{}
-	for _, match := range regexp.MustCompile(`(?m)^\t'([a-z_]+\.[a-z_]+)': \{`).FindAllStringSubmatch(read(t, "../../../web/console/src/lib/components/activity/actions.ts"), -1) {
+	for _, match := range regexp.MustCompile(`(?m)^\t'([a-z_]+\.[a-z_]+)': \{`).FindAllStringSubmatch(read(t, "../web/console/src/lib/components/activity/actions.ts"), -1) {
 		known[match[1]] = true
 	}
 	if len(known) == 0 {
@@ -26,9 +26,9 @@ func TestEveryRecordedActionHasASentence(t *testing.T) {
 	action := regexp.MustCompile(`"((?:admin|admin_role|admin_security|api|application|cache|language|login_flow|mail|organization|otp|signing_keys|social_provider|sso_connection|user|user_field|user_role)\.[a-z_]+)"`)
 
 	var missing []string
-	// Every layer records: the handlers here and the use cases in
-	// internal/application alike, so the whole of internal/ is read.
-	err := filepath.WalkDir("../../..", func(path string, entry fs.DirEntry, err error) error {
+	// Every layer records: the handlers here and the use cases in core/
+	// alike, so the whole project is read.
+	err := filepath.WalkDir("..", func(path string, entry fs.DirEntry, err error) error {
 		if err != nil || entry.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return err
 		}

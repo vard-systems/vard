@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"vard/internal/config"
+	"vard/core/config"
 )
 
 func Open(cfg config.DB, log *slog.Logger) (*gorm.DB, error) {

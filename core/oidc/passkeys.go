@@ -12,8 +12,8 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 // Passkeys, through go-webauthn, and keeping factors sealed: a passkey's
@@ -142,7 +142,7 @@ func (s *Service) unseal(factor uuid.UUID, stored string) ([]byte, error) {
 		return nil, fmt.Errorf("oidc: a stored factor is not base64: %w", err)
 	}
 
-	plain, _, err := s.sealer.OpenFor(factorSecret(factor), sealed)
+	plain, err := s.sealer.OpenFor(factorSecret(factor), sealed)
 	return plain, err
 }
 

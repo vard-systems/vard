@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 // codesAtOnce is how many codes each case types together: well past the

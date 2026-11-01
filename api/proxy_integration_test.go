@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"vard/internal/config"
+	"vard/core/config"
 )
 
 // These tests put a reverse proxy in front of the server, as a deployment

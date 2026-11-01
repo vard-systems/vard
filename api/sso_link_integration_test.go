@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/domain/totp"
+	"vard/tools/totp"
 )
 
 // A single sign-on connection that links to existing accounts takes over

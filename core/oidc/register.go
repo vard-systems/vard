@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 type Registration struct {

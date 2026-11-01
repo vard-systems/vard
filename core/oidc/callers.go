@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/brand"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/brand"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 var ErrTokenRefused = errors.New("oidc: the access token is not accepted by this API")

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"vard/api/kit/respond"
+	"vard/core/oidc"
 	"vard/i18n"
-	"vard/internal/application/oidc"
-	"vard/internal/interfaces/api/kit/respond"
 )
 
 // clientCodes are the `error.*` keys an app says about a request that never

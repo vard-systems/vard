@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // Changing how someone signs in needs them at the keyboard. Without a

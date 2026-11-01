@@ -20,9 +20,9 @@ import (
 	"github.com/crewjam/saml/samlsp"
 	dsig "github.com/russellhaering/goxmldsig"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 func ParseSAMLMetadata(metadata []byte) (*saml.EntityDescriptor, error) {
@@ -90,7 +90,7 @@ func (s *Service) FetchSAMLMetadata(ctx context.Context, address string) (string
 }
 
 func (s *Service) samlProvider(connection *model.SSOConnection) (*saml.ServiceProvider, error) {
-	key, _, err := s.sealer.Open(connection.SPKeyWhere(), connection.SPKey)
+	key, err := s.sealer.Open(connection.SPKeyWhere(), connection.SPKey)
 	if err != nil {
 		return nil, fmt.Errorf("open the connection's key: %w", err)
 	}
@@ -345,7 +345,7 @@ func (s *Service) SSOMetadata(ctx context.Context, slug string) ([]byte, error) 
 }
 
 func (s *Service) bareSAMLProvider(connection *model.SSOConnection) (*saml.ServiceProvider, error) {
-	key, _, err := s.sealer.Open(connection.SPKeyWhere(), connection.SPKey)
+	key, err := s.sealer.Open(connection.SPKeyWhere(), connection.SPKey)
 	if err != nil {
 		return nil, err
 	}

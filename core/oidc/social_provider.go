@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 // Talking to a social provider: trading the code for tokens, proving who the
@@ -102,7 +102,7 @@ func (s *Service) exchangeSocialCode(ctx context.Context, provider *model.Social
 
 func (s *Service) socialClientSecret(provider *model.SocialProvider) (string, error) {
 	if !provider.Spec().SignedSecret {
-		secret, _, err := s.sealer.OpenFor(provider.ClientSecretWhere(), provider.ClientSecret)
+		secret, err := s.sealer.OpenFor(provider.ClientSecretWhere(), provider.ClientSecret)
 		if err != nil {
 			return "", fmt.Errorf("unseal the client secret of %s: %w", provider.Slug, err)
 		}
@@ -114,7 +114,7 @@ func (s *Service) socialClientSecret(provider *model.SocialProvider) (string, er
 }
 
 func (s *Service) appleClientSecret(provider *model.SocialProvider) (string, error) {
-	pemBytes, _, err := s.sealer.OpenFor(provider.PrivateKeyWhere(), provider.PrivateKey)
+	pemBytes, err := s.sealer.OpenFor(provider.PrivateKeyWhere(), provider.PrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("unseal the signing key of %s: %w", provider.Slug, err)
 	}

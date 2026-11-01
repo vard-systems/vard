@@ -52,36 +52,36 @@ cmd/vard/main.go         the commands: serve (the default), migrate, and admin
                          create (the first administrator from the shell)
 cmd/vard/serve.go        startup, in order, in one function
 cmd/vard/migrate.go      the migration runner (up, down, status, new)
-internal/                in layers, each importing only those below it
-                         (internal/layers_test.go):
-  config, brand, jose      shared by all: settings from .env; the brand (name,
-                           slug, favicon, every name built from them; each app
-                           has its own, lib/brand.ts); JWT signing and
-                           verifying, and Sealer (secrets at rest)
-  domain/                  what the server is about, with no database or HTTP:
-    model                  one file per table; every model listed in model.All
-    totp, recovery         time-based one-time codes; recovery codes
-  infrastructure/          what it is kept in and talks to:
-    store                  every query in the project, one file per subject
-    cache                  Redis: the cache and session databases, rate-limit counts
-    database               the Postgres connection and the migration runner
-    mail, passkey          sending email; the WebAuthn relying party
-  application/             the use cases, on the domain and the infrastructure:
-    oidc                   the provider (authorize, tokens, userinfo, logout,
+tools/                   building blocks that know nothing of this server
+                         (they import only each other):
+  jose                     JWT signing and verifying, and Sealer (secrets at rest)
+  totp, recovery           time-based one-time codes; recovery codes
+core/                    the server itself, in layers (layers_test.go):
+  brand, config            shared by all: the brand (name, slug, favicon,
+                           every name built from them; each app has its own,
+                           lib/brand.ts); settings from .env
+  model                    what the server is about, with no database or HTTP:
+                           one file per table; every model listed in model.All
+  store                    every query in the project, one file per subject
+  database                 the Postgres connection and the migration runner
+  cache                    Redis: the cache and session databases, rate-limit counts
+  mail, passkey            sending email; the WebAuthn relying party
+  oidc                     the provider (authorize, tokens, userinfo, logout,
                            social, SSO) and how users sign themselves in:
                            session.go, register.go, reset.go, verify.go, account.go
-    auth                   signing administrators in, and what they may do
-  interfaces/api/          HTTP: server.go, the engine and the route table
-                           (registerPublicRoutes, registerAdminRoutes);
-                           <subject>/, one package per subject the API answers
-                           about (handler.go, request.go, response.go,
-                           validation.go); kit/, what every handler shares:
-                           respond (answers and the problem catalog; shared.go:
-                           problems several packages use), validate, query,
-                           session (who is calling, route guards), audit, cors,
-                           csrf, ratelimit, middleware; signedin (what account,
-                           profile, steps and twostep share); tstypes (holds the
-                           panel's types.ts to the answers)
+  auth                     signing administrators in, and what they may do
+api/                     HTTP: server.go, the engine and the route table
+                         (registerPublicRoutes, registerAdminRoutes), and the
+                         integration tests (*_integration_test.go);
+  <subject>/               one package per subject the API answers about
+                           (handler.go, request.go, response.go, validation.go)
+  kit/                     what every handler shares: respond (answers and the
+                           problem catalog; shared.go: problems several
+                           packages use), validate, query, session (who is
+                           calling, route guards), audit, cors, csrf,
+                           ratelimit, middleware; signedin (what account,
+                           profile, steps and twostep share); tstypes (holds
+                           the panel's types.ts to the answers)
 migrations/              All(): every migration, compiled in, run by goose's
                          Provider (database/migrate.go). setup/ is version 1
                          (schema/up.sql, frozen, and seed.go); changelogs/ one
@@ -115,14 +115,18 @@ Dockerfile, web/Dockerfile  the API's image and the apps'
 DEPLOY.md                a server, from DNS to backups
 ```
 
-**Layering.** `domain` → `infrastructure` → `application` → `interfaces`, each
-importing only what is to its left (and the shared `brand`, `config`, `jose`);
-`TestEachLayerImportsOnlyWhatIsBelowIt` fails otherwise. Nothing but `store`
-writes a query; nothing but `interfaces` answers a request. A handler reads a
-request, asks the application or the store, and answers. Rules live in
+**Layering.** Three folders, as PocketBase lays itself out: `tools/` (knows
+nothing of the server), `core/` (the server) and `api/` (HTTP). Inside them,
+`tools` → `brand`, `config` → `model` → the infrastructure (`store`,
+`database`, `cache`, `mail`, `passkey`) → the services (`oidc`, `auth`) →
+`api`, each importing only what is to its left;
+`TestEachLayerImportsOnlyWhatIsBelowIt` (`layers_test.go`) fails otherwise,
+and a new folder under `core/` is added to its `layerOf`. Nothing but `store`
+writes a query; nothing but `api` answers a request. A handler reads a
+request, asks a service or the store, and answers. Rules live in
 `validation.go` and the model. The layers are folders and the import rule,
-not interfaces: the application calls the store it is given, with no
-repository abstraction between them.
+not interfaces: a service calls the store it is given, with no repository
+abstraction between them.
 
 **The origins.** Each app's `hooks.server.ts` passes the paths in its
 `API_PATHS` (`src/lib/server/api.ts`) on to `API_URL` — `/oauth2`,
@@ -154,12 +158,11 @@ code near it, and add a test when adding a case.
   `SealFor(model.X.YWhere(), …)`, table, column and row, as AEAD additional
   data — so a value moved to another column or row does not open; the row's
   id is given before the value is sealed. A new sealed column gets its
-  `…Where` method in `internal/domain/model/sealed.go` and a line in
-  `store.sealedColumns`, which `secrets reseal` walks — and the server walks
-  as it starts while `VARD_SECRET_KEY_PREVIOUS` is set. Recovery codes, device
-  user codes and throttle keys are keyed hashes (`Sealer.Tag`) under the
-  installation's own tag key (`server_secrets`, sealed like the rest), so
-  they survive a rotation of `VARD_SECRET_KEY`. The one
+  `…Where` method in `core/model/sealed.go`. `VARD_SECRET_KEY` is one key,
+  set once and never rotated: under another nothing stored opens. Recovery
+  codes, device user codes and throttle keys are keyed hashes (`Sealer.Tag`)
+  under the installation's own tag key (`server_secrets`, sealed like the
+  rest). The one
   secret also kept recoverable is a refresh token that has just replaced
   another: sealed on the replaced row (`successor_sealed`) for the grace
   below, and cleared within one more — when read past it, at the family's
@@ -183,7 +186,7 @@ code near it, and add a test when adding a case.
   bare names, which a browser requires there.
 - **Outbound requests to admin- or user-supplied URLs** (social, SSO, SAML
   metadata, back-channel logout) go through `newFederationClient` in
-  `internal/application/oidc/outbound.go`, which refuses private, link-local and metadata
+  `core/oidc/outbound.go`, which refuses private, link-local and metadata
   addresses at dial time. A logout token follows no redirect. A provider's
   keys are fetched again only for a token naming a key not held (or none),
   and at most once a `keyRefetchEvery` (a minute) per key set
@@ -210,7 +213,7 @@ code near it, and add a test when adding a case.
   waiting sign-in is named by an httpOnly cookie, never by anything the page
   or the address holds. Administrators are throttled the same way, on a keyed
   hash of the username typed, counted before it is looked up
-  (`internal/application/auth/throttle.go`); nothing is ever locked.
+  (`core/auth/throttle.go`); nothing is ever locked.
 - **A flow that requires a second factor is met only by a session that
   passed one of the account's own** (`model.MethodSecondFactor` in its
   `Methods`, never an amr value; an emailed code is `otp` and does not
@@ -355,8 +358,8 @@ code near it, and add a test when adding a case.
 
 ## How things are added
 
-**An endpoint.** The method in its package under `internal/interfaces/api/`, keeping the
-four files; mounted in `internal/interfaces/api/server.go` behind `session.Require` and
+**An endpoint.** The method in its package under `api/`, keeping the
+four files; mounted in `api/server.go` behind `session.Require` and
 the permission it needs. A route under `managed` (`session.RequireAny`) also
 takes an admin-cli token; a route for a person alone goes under `signedIn`.
 `/endpoint` walks through it.
@@ -372,7 +375,7 @@ sentence is listed in `TestErrorParametersAreSent`. A malformed id is answered
 like a missing one: `*_not_found`. The one exception is `respond.Invalid`,
 which passes on a model's own validation sentence.
 
-**A model.** A struct in its own file in `internal/domain/model`, embedding `Base`,
+**A model.** A struct in its own file in `core/model`, embedding `Base`,
 registered in `model.All()` — bump the count in `TestAllListsEveryModel`. A
 plain `string` column is `not null;default:''`, a `bool` or `int` is
 `not null`, anything that may be absent is a pointer. Nothing is soft-deleted.
@@ -394,7 +397,7 @@ index — so a model change and its migration land together. Test the upgrade
 of an existing database, not just a fresh one.
 
 **A permission.** A constant and catalog entry in
-`internal/domain/model/admin_permission.go`, routes guarded with `session.Can` or
+`core/model/admin_permission.go`, routes guarded with `session.Can` or
 `session.CanAnywhere`, and the name added to `AdminPermissionName` in
 `web/console/src/lib/api/types.ts`. `store.EnsureSystemAPIs` makes it an
 admin API scope on the next start.
@@ -403,11 +406,11 @@ admin API scope on the next start.
 a sentence, icon and category in
 `web/console/src/lib/components/activity/actions.ts`. If the log can name the
 target, say who may see that name in `maySeeName`
-(`internal/interfaces/api/activity/handler.go`).
+(`api/activity/handler.go`).
 
-**A setting the outside world sees.** Follow `internal/interfaces/api/organization/`: the
+**A setting the outside world sees.** Follow `api/organization/`: the
 panel writes it, the discovery document publishes the agreements
-(`internal/application/oidc/provider.go`), and the sign-in pages read the rest from
+(`core/oidc/provider.go`), and the sign-in pages read the rest from
 `GET /api/v1/account/organization`, which takes no session — so only what a
 stranger may see goes in `PublicOrganization`.
 
@@ -420,13 +423,13 @@ entry in `model.LoginStepSpecs`; `Implemented` says whether the server runs it.
 
 **A cached read.** Only in the store, with `cached(ctx, s, group, field, load)`,
 only for what every request asks for and almost nothing changes. A new group
-is a constant in `internal/infrastructure/cache` listed in `cache.Groups`. Every write calls
+is a constant in `core/cache` listed in `cache.Groups`. Every write calls
 `s.forget(ctx, group)` (or returns `s.forgetting(ctx, err, group)`) after it
 commits. Cache a projection, never a model carrying a secret, and add it to
 `TestCachedTypesSurviveJSON`. Never cache users, codes or refresh tokens.
 Everything must work with a nil cache.
 
-**A brand.** Each application has its own: the server's in `internal/brand`
+**A brand.** Each application has its own: the server's in `core/brand`
 (Go constants and `favicon.svg`), each app's in `src/lib/brand.ts` (`BRAND`,
 the cookie names built from `BRAND.slug`; the console's Help links and
 `pageTitle` too) with its favicon in `src/lib/assets/favicon.svg`. Each may
@@ -507,7 +510,7 @@ shield mark does.
   Panel: the opposite — English in the markup; an error shown is the sentence
   the API sent (`messageOf` from `#lib/api/index.js`).
 - **The project's own name is never spelled out.** It is written only in the
-  brands: `internal/brand` and each app's `src/lib/brand.ts`
+  brands: `core/brand` and each app's `src/lib/brand.ts`
   (`import { BRAND, pageTitle } from '#lib/brand.js'`).
   `TestNothingElseSpellsTheName` fails on it anywhere else in the code.
 - **SvelteKit 3.** Imports from `src/lib` use `#lib` and name the file

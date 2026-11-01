@@ -107,7 +107,7 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 		}
 
 		// The brands themselves: this package, and each app's brand file.
-		if strings.HasPrefix(relative, filepath.FromSlash("internal/brand/")) {
+		if strings.HasPrefix(relative, filepath.FromSlash("core/brand/")) {
 			return nil
 		}
 		if _, isBrand := brands[filepath.ToSlash(relative)]; isBrand {
@@ -131,7 +131,7 @@ func TestNothingElseSpellsTheName(t *testing.T) {
 
 		for _, spelling := range spellings {
 			if strings.Contains(source, spelling) {
-				t.Errorf("%s spells %q; the name belongs in the brands: internal/brand and each app's src/lib/brand.ts",
+				t.Errorf("%s spells %q; the name belongs in the brands: core/brand and each app's src/lib/brand.ts",
 					filepath.ToSlash(relative), spelling)
 			}
 		}

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/mail"
+	"vard/core/mail"
+	"vard/core/model"
 )
 
 // Pre-hijacking: someone registers an address before its owner does, gives

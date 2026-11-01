@@ -19,8 +19,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/config"
-	"vard/internal/domain/model"
+	"vard/core/config"
+	"vard/core/model"
 )
 
 // These tests walk the provider the way a real application and a real browser

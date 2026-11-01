@@ -3,7 +3,7 @@ package flows
 import (
 	"testing"
 
-	"vard/internal/interfaces/api/kit/tstypes"
+	"vard/api/kit/tstypes"
 )
 
 // The panel's types for these answers are written by hand in

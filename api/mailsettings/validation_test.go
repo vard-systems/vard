@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/jose"
+	"vard/api/kit/respond"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 // sealer is the one these tests seal a password with. The key is only ever

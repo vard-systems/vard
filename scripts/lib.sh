@@ -20,7 +20,7 @@ need() { command -v "$1" >/dev/null || die "$1 is missing — $2"; }
 # The line is cut at its first "=" by hand. `IFS='=' read` would drop a lone
 # trailing "=", which every base64 VARD_SECRET_KEY ends with: the scripts
 # then ran the server with a different key from the one `make run` reads.
-# internal/config's tests hold this function to the server's reading.
+# core/config's tests hold this function to the server's reading.
 load_env() {
 	[[ -f .env ]] || return 0
 	local line key value inherited=" "

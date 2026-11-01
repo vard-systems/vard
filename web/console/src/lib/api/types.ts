@@ -1,5 +1,5 @@
 /** The shapes the API returns. They mirror the response.go files under
-    internal/interfaces/api/; change them together. */
+    api/; change them together. */
 
 export type Admin = {
 	id: string;
@@ -45,7 +45,7 @@ export type AdminPasskey = {
 export type MfaEnrolment = { secret: string; uri: string };
 
 /** The names in the admin permission catalog. They mirror the constants in
-    internal/domain/model/admin_permission.go; change them together. */
+    core/model/admin_permission.go; change them together. */
 export type AdminPermissionName =
 	| 'activity.read'
 	| 'users.read'
@@ -634,7 +634,7 @@ export type AdminSecurity = {
 };
 
 /** One step a login flow can be made of. The names mirror the constants in
-    internal/domain/model/login_flow.go; change them together. */
+    core/model/login_flow.go; change them together. */
 export type LoginStep =
 	'identifier' | 'password' | 'social' | 'email_code' | 'totp' | 'terms' | 'consent';
 
@@ -858,7 +858,7 @@ export type SSODomainProof = {
 };
 
 /** How the connection to the mail server is protected. The names mirror the
-    constants in internal/domain/model/mail.go; change them together. */
+    constants in core/model/mail.go; change them together. */
 export type MailEncryption = 'starttls' | 'tls' | 'none';
 
 export type MailSettings = {

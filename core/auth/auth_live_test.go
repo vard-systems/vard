@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/database/databasetest"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/database/databasetest"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 const (

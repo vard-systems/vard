@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // Consent is what a user has allowed an application; ErrNotFound if nothing.

@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 // OpenID Connect Back-Channel Logout 1.0.

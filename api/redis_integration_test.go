@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"vard/internal/infrastructure/cache/cachetest"
+	"vard/core/cache/cachetest"
 )
 
 // The session database keeps administrators without their password, so a

@@ -78,7 +78,6 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | Variable                   | Purpose                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------- |
 | `VARD_SECRET_KEY`          | Encrypts signing keys and secrets at rest. **Back it up**: losing it signs everyone out. |
-| `VARD_SECRET_KEY_PREVIOUS` | The key `VARD_SECRET_KEY` replaced, while rotating; it opens and never seals.            |
 | `VARD_PWNED_PASSWORDS_URL` | The Pwned Passwords range API new passwords are checked against; empty for none.         |
 | `VARD_DB_DSN`              | PostgreSQL connection string.                                                            |
 | `VARD_ISSUER`              | Public URL of the provider (the id app's origin).                                        |
@@ -151,7 +150,7 @@ for whatever starts and routes to it.
   30 seconds.
 - Signing keys and stored secrets are sealed with a key derived from
   `VARD_SECRET_KEY` (HKDF, AES-256-GCM), each bound to the table, column and
-  row it is kept in, and marked with its key, so the key can be rotated.
+  row it is kept in. The key is set once and never changed.
 - Signing keys rotate automatically and stay published until their tokens expire.
 - Access tokens are short-lived JWTs that name the session and refresh family
   they were issued in; ending either ends them at this server's endpoints.
@@ -223,13 +222,17 @@ kind of change is made, and the security invariants every change keeps.
 ```
 cmd/vard                the server, the migration runner (vard migrate), and
                            the first administrator from the shell (vard admin create)
-internal/                  the Go code, in layers: domain (the models), infrastructure
-                           (every query, Redis, mail), application (the provider,
-                           administrators' sign-in) and interfaces (the HTTP API)
+api/                       the HTTP API: the route table (server.go) and one
+                           package per subject (users/, applications/, …)
+core/                      the server itself: the models, every query, Postgres,
+                           Redis, mail, the provider (oidc) and administrators'
+                           sign-in (auth)
+tools/                     building blocks that know nothing of the server: JWT
+                           and sealing (jose), one-time codes, recovery codes
 migrations/                the schema (setup), every change to it (changelogs), in order
 i18n/                      the English that ships: sign-in pages, API messages
 web/id, web/console        the two SvelteKit apps; each keeps its own brand in
-                           src/lib/brand.ts, the server in internal/brand, and
+                           src/lib/brand.ts, the server in core/brand, and
                            `make rename` renames all three
 compose.yaml, Dockerfile   the Docker stack (web/Dockerfile for the apps);
                            DEPLOY.md, the server guide
@@ -245,7 +248,7 @@ scripts/                   what the Makefile runs
   4.8.0, under the Apache License 2.0 (later versions use the Remix Icon
   License); the sign-in providers' marks in it remain their owners'
   trademarks.
-- The favicons (`internal/brand/favicon.svg`, `web/*/src/lib/assets/favicon.svg`)
+- The favicons (`core/brand/favicon.svg`, `web/*/src/lib/assets/favicon.svg`)
   are the Svelte logo, a placeholder until the project has its own mark.
 - **Chirp is X's proprietary typeface, not an open font**, and both apps serve
   it, the sign-in pages to anyone: replace it, or confirm you have a licence,

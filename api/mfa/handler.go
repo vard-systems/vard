@@ -10,9 +10,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/application/auth"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/session"
+	"vard/api/kit/respond"
+	"vard/api/kit/session"
+	"vard/core/auth"
 )
 
 type Handler struct {

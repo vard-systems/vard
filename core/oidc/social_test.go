@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 // unsignedIDToken is a JWT with these claims and nothing else worth reading,

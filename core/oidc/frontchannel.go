@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // OpenID Connect Front-Channel Logout 1.0. An application that ends its

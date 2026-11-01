@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/cache"
+	"vard/core/cache"
+	"vard/core/model"
 )
 
 func (s *Store) LoginFlows(ctx context.Context) ([]model.LoginFlow, error) {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"vard/core/model"
 	"vard/i18n"
-	"vard/internal/domain/model"
 )
 
 // languageResponse is one language as the panel sees it: its settings, and

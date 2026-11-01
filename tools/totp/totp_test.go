@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 // The SHA-1 vectors of RFC 6238 appendix B, which use eight digits; six-digit

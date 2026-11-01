@@ -1,7 +1,7 @@
 /**
  * The sign-in pages' brand: what they call the product, its mark, their favicon, and every name
  * they build from the slug. The console keeps its own (web/console/src/lib/brand.ts) and the
- * server its own (internal/brand); internal/brand's tests hold the three to the same slug and to
+ * server its own (core/brand); core/brand's tests hold the three to the same slug and to
  * the cookie names the server reads back. `make rename` renames all three.
  *
  * An installation's own name, logo, terms and privacy links are not here: an administrator sets

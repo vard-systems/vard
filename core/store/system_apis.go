@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/cache"
+	"vard/core/cache"
+	"vard/core/model"
 )
 
 func (s *Store) EnsureSystemAPIs(ctx context.Context) error {

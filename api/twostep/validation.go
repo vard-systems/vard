@@ -3,8 +3,8 @@ package twostep
 import (
 	"strings"
 
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/validate"
+	"vard/api/kit/respond"
+	"vard/api/kit/validate"
 )
 
 // maxPasskeyResponse is far more than any authenticator's answer, and keeps a

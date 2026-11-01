@@ -53,7 +53,7 @@ func source(t *testing.T) string {
 	}
 
 	_, here, _, _ := runtime.Caller(0)
-	root := filepath.Join(filepath.Dir(here), "..", "..", "..", "..", "..")
+	root := filepath.Join(filepath.Dir(here), "..", "..", "..")
 
 	data, err := os.ReadFile(filepath.Join(root, Panel))
 	if err != nil {

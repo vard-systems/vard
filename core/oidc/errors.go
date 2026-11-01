@@ -43,7 +43,7 @@ func oauthError(code, description string) *Error {
 
 // Problem is why a user's sign-in or change was refused. It carries only its
 // code: what the user reads is `error.<code>` in i18n/id, and the HTTP status
-// is chosen in internal/interfaces/api/account (`provided`), since this package knows
+// is chosen in api/account (`provided`), since this package knows
 // nothing of HTTP.
 type Problem struct {
 	Code string

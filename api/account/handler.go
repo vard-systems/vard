@@ -12,14 +12,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/application/oidc"
-	"vard/internal/brand"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/session"
-	"vard/internal/interfaces/api/kit/signedin"
-	"vard/internal/interfaces/api/kit/validate"
+	"vard/api/kit/respond"
+	"vard/api/kit/session"
+	"vard/api/kit/signedin"
+	"vard/api/kit/validate"
+	"vard/core/brand"
+	"vard/core/model"
+	"vard/core/oidc"
+	"vard/core/store"
 )
 
 type Handler struct {

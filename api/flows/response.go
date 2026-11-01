@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // flowResponse is a flow plus how many applications use it and whether all its

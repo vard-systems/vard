@@ -12,7 +12,7 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // An administrator's passkeys sit beside their authenticator, never in place
@@ -343,7 +343,7 @@ func (s *Service) openJSON(factor uuid.UUID, stored string, into any) error {
 		return err
 	}
 
-	plain, _, err := s.sealer.OpenFor(factorSecret(factor), sealed)
+	plain, err := s.sealer.OpenFor(factorSecret(factor), sealed)
 	if err != nil {
 		return err
 	}

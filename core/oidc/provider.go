@@ -1,9 +1,9 @@
 // Package oidc is the OAuth 2.0 authorization server and OpenID Connect
 // provider, and everything users do to sign themselves in: passwords,
 // registration, resets, email verification, social sign-in and SSO, and their
-// own account. Administrators sign in through internal/application/auth instead.
+// own account. Administrators sign in through core/auth instead.
 //
-// It knows nothing of HTTP: handlers in internal/interfaces/api call it, and what a token
+// It knows nothing of HTTP: handlers in api call it, and what a token
 // carries is decided by model.EvaluateToken alone.
 package oidc
 
@@ -18,13 +18,13 @@ import (
 
 	"github.com/go-webauthn/webauthn/webauthn"
 
-	"vard/internal/brand"
-	"vard/internal/config"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/infrastructure/passkey"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/brand"
+	"vard/core/config"
+	"vard/core/mail"
+	"vard/core/model"
+	"vard/core/passkey"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 const (
@@ -132,7 +132,7 @@ func loadTagKey(ctx context.Context, st *store.Store, sealer *jose.Sealer) error
 		return err
 	}
 
-	key, _, err := sealer.OpenFor(where, sealed)
+	key, err := sealer.OpenFor(where, sealed)
 	if err != nil {
 		return fmt.Errorf("the installation's tag key: %w", err)
 	}

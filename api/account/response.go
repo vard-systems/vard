@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"vard/internal/application/oidc"
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
+	"vard/core/oidc"
 )
 
 var (

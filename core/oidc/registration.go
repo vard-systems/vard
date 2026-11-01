@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // Dynamic client registration (RFC 7591). Registering is not open: it takes

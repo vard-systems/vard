@@ -14,16 +14,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"vard/internal/application/auth"
-	"vard/internal/application/oidc"
-	"vard/internal/brand"
-	"vard/internal/config"
-	"vard/internal/infrastructure/cache"
-	"vard/internal/infrastructure/database"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api"
-	"vard/internal/jose"
+	"vard/api"
+	"vard/core/auth"
+	"vard/core/brand"
+	"vard/core/cache"
+	"vard/core/config"
+	"vard/core/database"
+	"vard/core/mail"
+	"vard/core/oidc"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 // serveCommand runs the server until it is told to stop.
@@ -92,21 +92,9 @@ func run(log *slog.Logger, level *slog.LevelVar) error {
 
 	st := store.New(db).WithCache(shared)
 
-	sealer, err := jose.NewSealer(cfg.SecretKey, cfg.SecretKeyPrevious)
+	sealer, err := jose.NewSealer(cfg.SecretKey)
 	if err != nil {
 		return err
-	}
-
-	// Mid-rotation, everything the previous key sealed is sealed again under
-	// the current one before anything is served, so the previous key can be
-	// dropped as soon as this says so.
-	if cfg.SecretKeyPrevious != "" {
-		resealed, err := st.ResealAll(context.Background(), resealWith(sealer))
-		if err != nil {
-			return fmt.Errorf("sealing stored secrets under the new key: %w", err)
-		}
-		log.Warn("every stored secret is sealed under VARD_SECRET_KEY now; remove VARD_SECRET_KEY_PREVIOUS and restart",
-			"resealed", resealed)
 	}
 
 	if err := st.EnsureAdminSecurity(context.Background(), cfg.AdminMFARequired); err != nil {

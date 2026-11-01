@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 // SSODomainVerification is whether a connection has proved it holds one of

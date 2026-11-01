@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // The pages say how long a password must be before a form is sent; what they
@@ -17,10 +17,10 @@ func TestThePagesKnowThePasswordLengths(t *testing.T) {
 		pattern string
 		want    int
 	}{
-		{"../../../web/id/src/lib/constants.ts", `passwordMin: (\d+)`, model.MinUserPasswordLength},
-		{"../../../web/id/src/lib/constants.ts", `passwordMax: (\d+)`, model.MaxPasswordLength},
-		{"../../../web/console/src/lib/constants.ts", `MIN_ADMIN_PASSWORD = (\d+)`, model.MinAdminPasswordLength},
-		{"../../../web/console/src/lib/constants.ts", `MIN_USER_PASSWORD = (\d+)`, model.MinUserPasswordLength},
+		{"../web/id/src/lib/constants.ts", `passwordMin: (\d+)`, model.MinUserPasswordLength},
+		{"../web/id/src/lib/constants.ts", `passwordMax: (\d+)`, model.MaxPasswordLength},
+		{"../web/console/src/lib/constants.ts", `MIN_ADMIN_PASSWORD = (\d+)`, model.MinAdminPasswordLength},
+		{"../web/console/src/lib/constants.ts", `MIN_USER_PASSWORD = (\d+)`, model.MinUserPasswordLength},
 	}
 
 	for _, c := range cases {

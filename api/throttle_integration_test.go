@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/config"
-	"vard/internal/domain/model"
-	"vard/internal/domain/totp"
+	"vard/core/config"
+	"vard/core/model"
+	"vard/tools/totp"
 )
 
 // Users' sign-ins are throttled, not locked: past a few failures each attempt

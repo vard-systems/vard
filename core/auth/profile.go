@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 var ErrWrongPassword = errors.New("the current password is not right")

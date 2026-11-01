@@ -3,7 +3,7 @@ package usersessions
 import (
 	"net/http"
 
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
 )
 
 // targetType is what the activity log records these actions against: the

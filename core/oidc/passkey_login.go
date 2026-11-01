@@ -10,8 +10,8 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // Signing in with a passkey alone. The browser offers whichever passkey the

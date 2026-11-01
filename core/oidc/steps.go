@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // The Agreements and Consent steps run after the user is known and before a

@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // userResponse is built by hand so new columns, roles and organisation fields

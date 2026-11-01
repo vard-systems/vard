@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/session"
+	"vard/api/kit/respond"
+	"vard/api/kit/session"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 var filterInvalid = respond.Define(http.StatusBadRequest, "logs_filter_invalid", respond.Admin)

@@ -2,6 +2,8 @@
 !go.mod
 !go.sum
 !cmd
-!internal
+!api
+!core
+!tools
 !migrations
 !i18n

@@ -11,10 +11,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/application/oidc"
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/session"
+	"vard/api/kit/respond"
+	"vard/api/kit/session"
+	"vard/core/model"
+	"vard/core/oidc"
 )
 
 const sessionKey = "user_session"

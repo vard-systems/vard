@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/cache"
+	"vard/core/cache"
+	"vard/core/model"
 )
 
 func (s *Store) OTPSettings(ctx context.Context) (*model.OTPSettings, error) {

@@ -8,7 +8,7 @@
 // holds together.
 //
 // What changes with a deployment (addresses, mail sender) is configuration,
-// in internal/config. `make rename` renames the project everywhere.
+// in core/config. `make rename` renames the project everywhere.
 package brand
 
 import (

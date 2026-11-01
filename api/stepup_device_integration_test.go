@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/domain/totp"
-	"vard/internal/interfaces/api/kit/session"
+	"vard/api/kit/session"
+	"vard/core/model"
+	"vard/tools/totp"
 )
 
 // A device, a refresh and leaving a second factor for later, each held to the

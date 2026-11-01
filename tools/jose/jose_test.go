@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"vard/internal/jose/josetest"
+	"vard/tools/jose/josetest"
 )
 
 func testKey(t *testing.T, alg, kid string) Key {
@@ -204,7 +204,7 @@ func TestSealOpensOnlyWithTheSameSecret(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	opened, _, err := sealer.Open(where, sealed)
+	opened, err := sealer.Open(where, sealed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +213,7 @@ func TestSealOpensOnlyWithTheSameSecret(t *testing.T) {
 	}
 
 	wrong, _ := NewSealer("another secret that is long enough!!")
-	if _, _, err := wrong.Open(where, sealed); err == nil {
+	if _, err := wrong.Open(where, sealed); err == nil {
 		t.Error("opened with the wrong secret")
 	}
 }

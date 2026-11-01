@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"vard/internal/config"
+	"vard/core/config"
 )
 
 // A password hashed with bcrypt before the move to Argon2id still signs in,

@@ -7,8 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"vard/internal/infrastructure/cache"
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
+	"vard/core/cache"
 )
 
 var (

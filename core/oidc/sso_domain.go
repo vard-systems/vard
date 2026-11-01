@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // dnsTimeout bounds a domain's TXT lookup: the administrator is waiting.

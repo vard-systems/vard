@@ -14,7 +14,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 type Config struct {
@@ -61,10 +61,6 @@ type Config struct {
 	// PwnedPasswordsURL is the breached-password range API new passwords are
 	// checked against, "" for no check.
 	PwnedPasswordsURL string
-
-	// SecretKeyPrevious is the key SecretKey replaced: it opens what it
-	// sealed, and seals nothing. Empty once `secrets reseal` has run.
-	SecretKeyPrevious string
 
 	Mail Mail
 
@@ -249,7 +245,6 @@ func Load() (Config, error) {
 		RateLimit:          v.GetInt(env("RATE_LIMIT")),
 		TrustedProxies:     splitList(v.GetString(env("TRUSTED_PROXIES"))),
 		SecretKey:          v.GetString(env("SECRET_KEY")),
-		SecretKeyPrevious:  v.GetString(env("SECRET_KEY_PREVIOUS")),
 		PwnedPasswordsURL:  strings.TrimSpace(v.GetString(env("PWNED_PASSWORDS_URL"))),
 		Mail: Mail{
 			Host:     v.GetString(env("SMTP_HOST")),
@@ -333,12 +328,10 @@ func Load() (Config, error) {
 
 	// A key a person typed can be guessed against a database dump, which
 	// then opens every sealed secret in it: refused always, test setup or
-	// not. The key it replaces (SECRET_KEY_PREVIOUS) is not held to this,
-	// so a weak one can be rotated out.
+	// not.
 	if SecretKeyLooksWeak(cfg.SecretKey) {
-		return Config{}, fmt.Errorf("%s does not look like 32 random bytes: rotate it, as .env.example says beside %s — "+
-			"put this one in %s, a new one from `openssl rand -base64 32` in %s, start, run `secrets reseal`, then empty %s",
-			env("SECRET_KEY"), env("SECRET_KEY_PREVIOUS"), env("SECRET_KEY_PREVIOUS"), env("SECRET_KEY"), env("SECRET_KEY_PREVIOUS"))
+		return Config{}, fmt.Errorf("%s does not look like 32 random bytes: make one with `openssl rand -base64 32`",
+			env("SECRET_KEY"))
 	}
 
 	// One listener for both would put the admin API back on the public one,

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/infrastructure/store"
+	"vard/core/mail"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // ForgotPassword sends a reset link if the address has an account that may sign

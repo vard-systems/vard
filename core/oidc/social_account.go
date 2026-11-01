@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // The account a social sign-in lands on: the one already linked to the

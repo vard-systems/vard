@@ -8,12 +8,12 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/cache"
+	"vard/core/cache"
+	"vard/core/model"
 )
 
 // Administrator sessions are cached by token hash. Every write puts the changed
-// sessions (revoked ones included) after commit; see internal/infrastructure/cache/sessions.go
+// sessions (revoked ones included) after commit; see core/cache/sessions.go
 // for why an in-flight reader cannot undo that.
 
 func (s *Store) CreateAdminSession(ctx context.Context, session *model.AdminSession) error {

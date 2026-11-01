@@ -17,7 +17,7 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 
-	"vard/internal/domain/totp"
+	"vard/tools/totp"
 )
 
 // heldSignIn signs ada in from a fresh browser and expects the sign-in to

@@ -9,14 +9,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"vard/api/kit/audit"
+	"vard/api/kit/respond"
+	"vard/core/brand"
+	"vard/core/mail"
+	"vard/core/model"
+	"vard/core/store"
 	"vard/i18n"
-	"vard/internal/brand"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/audit"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/jose"
+	"vard/tools/jose"
 )
 
 type Handler struct {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 // The scripts (make dev, make test-integration, the db targets) read .env with

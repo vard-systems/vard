@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 type oidcDiscovery struct {
@@ -131,7 +131,7 @@ func (s *Service) completeOIDC(ctx context.Context, connection *model.SSOConnect
 
 	secret := ""
 	if len(connection.ClientSecret) > 0 {
-		plain, _, err := s.sealer.OpenFor(connection.ClientSecretWhere(), connection.ClientSecret)
+		plain, err := s.sealer.OpenFor(connection.ClientSecretWhere(), connection.ClientSecret)
 		if err != nil {
 			return nil, err
 		}

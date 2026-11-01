@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"vard/core/model"
+	"vard/core/store"
 	"vard/i18n"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
 )
 
 const (

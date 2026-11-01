@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/mail"
 
-	"vard/internal/config"
-	"vard/internal/domain/model"
-	"vard/internal/jose"
+	"vard/core/config"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 type Store interface {
@@ -15,7 +15,7 @@ type Store interface {
 }
 
 type Opener interface {
-	OpenFor(where jose.Context, sealed []byte) ([]byte, bool, error)
+	OpenFor(where jose.Context, sealed []byte) ([]byte, error)
 }
 
 func FromStore(st Store, opener Opener) Source {
@@ -27,7 +27,7 @@ func FromStore(st Store, opener Opener) Source {
 
 		password := ""
 		if len(stored.Password) > 0 {
-			plain, _, err := opener.OpenFor(stored.PasswordWhere(), stored.Password)
+			plain, err := opener.OpenFor(stored.PasswordWhere(), stored.Password)
 			if err != nil {
 				return Settings{}, fmt.Errorf("unseal the mail password: %w", err)
 			}

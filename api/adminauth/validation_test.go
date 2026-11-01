@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
 )
 
 // TestLoginRequestValidate covers the sign-in form: both fields are wanted,

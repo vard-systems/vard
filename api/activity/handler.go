@@ -12,11 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/query"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/session"
+	"vard/api/kit/query"
+	"vard/api/kit/respond"
+	"vard/api/kit/session"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 const (

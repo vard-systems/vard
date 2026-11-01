@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 func (s *Service) LoginOptions(ctx context.Context, handle string) (model.PublicLoginOptions, error) {

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"net"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // Users' sign-ins are throttled, not locked. Each attempt is counted, before

@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
+	"vard/core/model"
 )
 
 func TestAPIRequestApplyTo(t *testing.T) {

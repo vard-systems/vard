@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/infrastructure/cache/cachetest"
+	"vard/core/cache/cachetest"
 )
 
 func TestLimiterAllowsABurstThenRefills(t *testing.T) {

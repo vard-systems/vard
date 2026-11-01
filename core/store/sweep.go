@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/cache"
+	"vard/core/cache"
+	"vard/core/model"
 )
 
 const sweepInterval = time.Hour

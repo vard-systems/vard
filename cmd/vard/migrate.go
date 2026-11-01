@@ -12,8 +12,8 @@ import (
 	"strings"
 	"text/template"
 
-	"vard/internal/config"
-	"vard/internal/infrastructure/database"
+	"vard/core/config"
+	"vard/core/database"
 	"vard/migrations"
 )
 

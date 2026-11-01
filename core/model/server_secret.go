@@ -3,13 +3,11 @@ package model
 import (
 	"time"
 
-	"vard/internal/jose"
+	"vard/tools/jose"
 )
 
 // ServerSecret is a secret the installation makes for itself once and keeps
-// sealed: the key its keyed hashes are made with (ServerSecretTag). Kept
-// apart from VARD_SECRET_KEY, it is resealed when that key rotates, and what
-// it hashed stays valid.
+// sealed: the key its keyed hashes are made with (ServerSecretTag).
 type ServerSecret struct {
 	Name      string    `gorm:"size:32;primaryKey"`
 	Value     []byte    `gorm:"not null"`

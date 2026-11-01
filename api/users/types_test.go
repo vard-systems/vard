@@ -3,8 +3,8 @@ package users
 import (
 	"testing"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/tstypes"
+	"vard/api/kit/tstypes"
+	"vard/core/model"
 )
 
 // The panel's types for these answers are written by hand in

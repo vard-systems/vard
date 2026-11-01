@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 // idTokenAlgorithm signs every ID token. RS256 is the one algorithm every
@@ -538,7 +538,7 @@ func (s *Service) retried(ctx context.Context, replaced *model.RefreshToken, now
 		}
 
 		if next.Usable(now) {
-			plain, _, err := s.sealer.OpenFor(current.SuccessorWhere(), current.SuccessorSealed)
+			plain, err := s.sealer.OpenFor(current.SuccessorWhere(), current.SuccessorSealed)
 			if err != nil {
 				return "", err
 			}

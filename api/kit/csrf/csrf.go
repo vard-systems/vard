@@ -18,7 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
 )
 
 var (

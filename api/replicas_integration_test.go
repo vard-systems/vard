@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // These tests run two servers on one database and one Redis, the way a

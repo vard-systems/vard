@@ -11,9 +11,9 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 const SessionLifetime = 12 * time.Hour

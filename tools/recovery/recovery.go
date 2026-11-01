@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"vard/internal/jose"
+	"vard/tools/jose"
 )
 
 // Count is how many codes are handed out at once.

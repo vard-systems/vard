@@ -2,7 +2,7 @@
 #
 # Rename the project: scripts/rename.sh "Acme ID" acme (make rename).
 #
-# Each application keeps its own brand: internal/brand for the server, and
+# Each application keeps its own brand: core/brand for the server, and
 # src/lib/brand.ts in each app. This rewrites all three, and what cannot read
 # them and spells the name itself: the Go module path in go.mod and every
 # import, cmd/<slug>/, the VARD_-style environment prefix, the scripts,
@@ -18,23 +18,23 @@ source "$(dirname "$0")/lib.sh"
 new_name="$1" new_slug="$2"
 
 # The slug becomes cookie names, a Redis prefix, URNs, Postgres names and the
-# environment's prefix; internal/brand's tests refuse anything else.
+# environment's prefix; core/brand's tests refuse anything else.
 [[ "$new_slug" =~ ^[a-z][a-z0-9]*$ ]] || die "the slug is lower-case letters and digits, starting with a letter"
 # The name is written into a Go string and a TypeScript one.
 [[ -n "${new_name// /}" && "$new_name" != *[\"\'\\]* ]] || die "the name is not empty and has no quote or backslash"
 
 [[ -z "$(git status --porcelain)" ]] || die "commit or stash your changes first, so the rename is a diff of its own"
 
-field() { sed -n "s/^[[:space:]]*$1 = \"\(.*\)\"$/\1/p" internal/brand/brand.go; }
+field() { sed -n "s/^[[:space:]]*$1 = \"\(.*\)\"$/\1/p" core/brand/brand.go; }
 old_name="$(field Name)" old_slug="$(field Slug)"
-[[ -n "$old_name" && -n "$old_slug" ]] || die "internal/brand/brand.go has no Name or Slug"
+[[ -n "$old_name" && -n "$old_slug" ]] || die "core/brand/brand.go has no Name or Slug"
 [[ "$old_slug" != "$new_slug" || "$old_name" != "$new_name" ]] || die "it is already called $new_name ($new_slug)"
 
-# internal/brand's tests fail on the name written outside the brands, so a
+# core/brand's tests fail on the name written outside the brands, so a
 # name the code already holds for something else (a fixture's
 # acme.example.com) would fail them after the rename. These are the files they
 # read.
-code=('*.go' '*.ts' '*.svelte' '*.js' '*.json' '*.html' '*.css' '*.svg' ':!internal/brand' ':!web/*/src/lib/brand.ts')
+code=('*.go' '*.ts' '*.svelte' '*.js' '*.json' '*.html' '*.css' '*.svg' ':!core/brand' ':!web/*/src/lib/brand.ts')
 for word in "$new_slug" "$new_name"; do
 	if [[ "$word" != "$old_slug" && "$word" != "$old_name" ]] &&
 		git grep -q -F -e "$word" -- "${code[@]}"; then
@@ -76,7 +76,7 @@ cat <<EOF
 ==> done: review it with git diff, then run make check.
     Still yours to do:
     - the console's links (web/console/src/lib/brand.ts), if the repository moved
-    - a new mark: each favicon (internal/brand/favicon.svg,
+    - a new mark: each favicon (core/brand/favicon.svg,
       web/*/src/lib/assets/favicon.svg) and icon (web/*/src/lib/brand.ts)
     - .env: rename every ${old_upper}_ variable to ${new_upper}_ (this never reads .env)
 EOF

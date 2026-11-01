@@ -3,8 +3,8 @@ package mailsettings
 import (
 	"net/http"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
+	"vard/core/model"
 )
 
 // The problems these endpoints answer with.

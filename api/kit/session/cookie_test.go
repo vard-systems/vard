@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 // set runs one writer and returns the cookies it set, by name.

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/jose"
+	"vard/tools/jose"
 )
 
 // dpopKey is a client's key, making DPoP proofs as a client library would.

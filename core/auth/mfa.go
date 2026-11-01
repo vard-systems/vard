@@ -10,10 +10,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/domain/recovery"
-	"vard/internal/domain/totp"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/tools/jose"
+	"vard/tools/recovery"
+	"vard/tools/totp"
 )
 
 var (
@@ -356,7 +356,7 @@ func (s *Service) secretOf(factor model.MFA) (string, error) {
 		return "", fmt.Errorf("auth: stored TOTP secret is not base64: %w", err)
 	}
 
-	plain, _, err := s.sealer.OpenFor(factorSecret(factor.ID), sealed)
+	plain, err := s.sealer.OpenFor(factorSecret(factor.ID), sealed)
 	if err != nil {
 		return "", err
 	}

@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/query"
+	"vard/api/kit/query"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 const targetType = "admin_user"

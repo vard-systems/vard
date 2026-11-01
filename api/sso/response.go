@@ -8,8 +8,8 @@ import (
 
 	"github.com/crewjam/saml"
 
-	"vard/internal/application/oidc"
-	"vard/internal/domain/model"
+	"vard/core/model"
+	"vard/core/oidc"
 )
 
 // connectionResponse is a connection as the panel shows it: settings without

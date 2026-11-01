@@ -135,12 +135,9 @@ What changes for applications and the people signing in:
 1.0.0 refuses to start with a weak `VARD_SECRET_KEY`, whatever else is set: a
 key made only of hex digits needs at least 64 characters, and any other key at
 least 43 characters and 16 distinct ones. A key made with `openssl rand -base64
-32` (what `make docker-env` writes) or `openssl rand -hex 32` passes. Rotate any
-other one before upgrading: put it in `VARD_SECRET_KEY_PREVIOUS`, a new one
-from `openssl rand -base64 32` in `VARD_SECRET_KEY`, start, run
-`docker compose -f compose.yaml --env-file compose.env exec api /app/vard secrets reseal`, then empty
-`VARD_SECRET_KEY_PREVIOUS` and restart. `VARD_SECRET_KEY_PREVIOUS` is not held
-to the rule, so 1.0.0 itself can do the rotation.
+32` (what `make docker-env` writes) or `openssl rand -hex 32` passes. The key
+cannot be changed: under a new one nothing stored opens, so an installation
+with a weak key starts again with a fresh database.
 
 An installation from before the migrations were squashed into one setup
 (`migrations/setup`) cannot be stepped forward: the server refuses its

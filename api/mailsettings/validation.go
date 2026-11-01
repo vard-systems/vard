@@ -3,11 +3,11 @@ package mailsettings
 import (
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/validate"
-	"vard/internal/jose"
+	"vard/api/kit/respond"
+	"vard/api/kit/validate"
+	"vard/core/mail"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 func (r *settingsRequest) applyTo(settings *model.MailSettings, sealer *jose.Sealer) ([]string, error) {
@@ -98,7 +98,7 @@ func (r *testRequest) settings(stored *model.MailSettings, sealer *jose.Sealer) 
 
 	password := ""
 	if len(stored.Password) > 0 {
-		plain, _, err := sealer.OpenFor(stored.PasswordWhere(), stored.Password)
+		plain, err := sealer.OpenFor(stored.PasswordWhere(), stored.Password)
 		if err != nil {
 			return mail.Settings{}, err
 		}

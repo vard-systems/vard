@@ -16,13 +16,10 @@ import (
 
 // A Sealer keeps secrets at rest. Each value is sealed with AES-256-GCM under
 // a key derived from VARD_SECRET_KEY with HKDF, and starts with a version and
-// the key's id, so a key can be rotated: the current one seals, a previous
-// one only opens. Each value is bound to where it is kept — its table, column
+// the key's id. Each value is bound to where it is kept — its table, column
 // and row — as additional data, so one moved anywhere else does not open.
-//
-// While VARD_SECRET_KEY_PREVIOUS is set, the server seals every stored value
-// again under the current key as it starts; `secrets reseal` does the same
-// offline.
+// VARD_SECRET_KEY never changes for an installation: under another key nothing
+// stored opens.
 
 // sealedVersion starts every sealed value: the format, then the key's id.
 var sealedVersion = []byte{'v', 1}
@@ -46,34 +43,20 @@ type sealingKey struct {
 }
 
 type Sealer struct {
-	current  sealingKey
-	previous []sealingKey
+	current sealingKey
 	// tagKey keys Tag once UseTagKey has given it the installation's own;
 	// until then the current key's is used.
 	tagKey []byte
 }
 
-// NewSealer seals with secret and opens with it or any of previous, the
-// secrets it replaced.
-func NewSealer(secret string, previous ...string) (*Sealer, error) {
+// NewSealer seals and opens with secret.
+func NewSealer(secret string) (*Sealer, error) {
 	current, err := deriveKey(secret)
 	if err != nil {
 		return nil, err
 	}
 
-	s := &Sealer{current: current}
-	for _, old := range previous {
-		if old == "" || old == secret {
-			continue
-		}
-		key, err := deriveKey(old)
-		if err != nil {
-			return nil, err
-		}
-		s.previous = append(s.previous, key)
-	}
-
-	return s, nil
+	return &Sealer{current: current}, nil
 }
 
 func deriveKey(secret string) (sealingKey, error) {
@@ -112,9 +95,8 @@ func newGCM(key []byte) (cipher.AEAD, error) {
 
 // Tag is a keyed hash for values that are compared, not read back, and too
 // short for a bare hash to survive a database dump. `purpose` separates uses.
-// It is keyed by the installation's own tag key (UseTagKey), which is kept
-// sealed and resealed with everything else, so rotating VARD_SECRET_KEY
-// leaves every stored tag — a recovery code's — as it was.
+// It is keyed by the installation's own tag key (UseTagKey), kept sealed with
+// everything else.
 func (s *Sealer) Tag(purpose string, data []byte) []byte {
 	key := s.tagKey
 	if key == nil {
@@ -149,22 +131,18 @@ func (s *Sealer) SealFor(where Context, plain []byte) ([]byte, error) {
 	return s.current.aead.Seal(out, nonce, plain, []byte(where)), nil
 }
 
-// OpenFor opens a value kept where it says. stale is true when it was sealed
-// under a previous key, and is worth sealing again.
-func (s *Sealer) OpenFor(where Context, sealed []byte) (plain []byte, stale bool, err error) {
+// OpenFor opens a value kept where it says.
+func (s *Sealer) OpenFor(where Context, sealed []byte) ([]byte, error) {
 	if body, ok := bytes.CutPrefix(sealed, sealedVersion); ok && len(body) > keyIDSize {
 		id, rest := body[:keyIDSize], body[keyIDSize:]
-		for i, key := range append([]sealingKey{s.current}, s.previous...) {
-			if !bytes.Equal(id, key.id) {
-				continue
-			}
-			if plain, err := openWith(key.aead, rest, []byte(where)); err == nil {
-				return plain, i > 0, nil
+		if bytes.Equal(id, s.current.id) {
+			if plain, err := openWith(s.current.aead, rest, []byte(where)); err == nil {
+				return plain, nil
 			}
 		}
 	}
 
-	return nil, false, ErrWrongSecret
+	return nil, ErrWrongSecret
 }
 
 func openWith(aead cipher.AEAD, sealed, context []byte) ([]byte, error) {
@@ -175,7 +153,7 @@ func openWith(aead cipher.AEAD, sealed, context []byte) ([]byte, error) {
 	return aead.Open(nil, sealed[:size], sealed[size:], context)
 }
 
-var ErrWrongSecret = errors.New("jose: a sealed value could not be opened; is VARD_SECRET_KEY (or VARD_SECRET_KEY_PREVIOUS) the one it was sealed with, and is it where it was sealed for?")
+var ErrWrongSecret = errors.New("jose: a sealed value could not be opened; is VARD_SECRET_KEY the one it was sealed with, and is it where it was sealed for?")
 
 // Seal seals a private key, bound to where it will be kept.
 func (s *Sealer) Seal(where Context, key crypto.Signer) ([]byte, error) {
@@ -187,22 +165,22 @@ func (s *Sealer) Seal(where Context, key crypto.Signer) ([]byte, error) {
 	return s.SealFor(where, der)
 }
 
-// Open opens a private key kept where it says, and says whether it is stale.
-func (s *Sealer) Open(where Context, sealed []byte) (crypto.Signer, bool, error) {
-	der, stale, err := s.OpenFor(where, sealed)
+// Open opens a private key kept where it says.
+func (s *Sealer) Open(where Context, sealed []byte) (crypto.Signer, error) {
+	der, err := s.OpenFor(where, sealed)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	key, err := x509.ParsePKCS8PrivateKey(der)
 	if err != nil {
-		return nil, false, fmt.Errorf("jose: decode private key: %w", err)
+		return nil, fmt.Errorf("jose: decode private key: %w", err)
 	}
 
 	signer, ok := key.(crypto.Signer)
 	if !ok {
-		return nil, false, fmt.Errorf("jose: stored key of type %T cannot sign", key)
+		return nil, fmt.Errorf("jose: stored key of type %T cannot sign", key)
 	}
 
-	return signer, stale, nil
+	return signer, nil
 }

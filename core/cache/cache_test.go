@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/brand"
-	"vard/internal/config"
+	"vard/core/brand"
+	"vard/core/config"
 )
 
 // The tests that need a Redis name it in VARD_TEST_REDIS, as host:port,

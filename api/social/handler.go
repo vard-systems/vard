@@ -9,11 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/audit"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/jose"
+	"vard/api/kit/audit"
+	"vard/api/kit/respond"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 type Handler struct {
@@ -182,7 +182,7 @@ func (h *Handler) Secret(c *gin.Context) {
 		return
 	}
 
-	secret, _, err := h.sealer.OpenFor(where, sealed)
+	secret, err := h.sealer.OpenFor(where, sealed)
 	if err != nil {
 		respond.Failure(c, h.log, err, "opening a social provider secret failed")
 		return

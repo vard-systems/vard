@@ -135,8 +135,6 @@ services:
       VARD_ISSUER: ${PUBLIC_URL:?set PUBLIC_URL in compose.env}
       VARD_ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in compose.env}
       VARD_SECRET_KEY: ${VARD_SECRET_KEY:?set VARD_SECRET_KEY in compose.env}
-      # The key VARD_SECRET_KEY replaced, only while rotating (DEPLOY.md).
-      VARD_SECRET_KEY_PREVIOUS: ${VARD_SECRET_KEY_PREVIOUS:-}
       # The server runs as vard_app, which reads and writes rows and nothing
       # else; it migrates as vard, the owner, and makes vard_app on the way.
       VARD_DB_DSN: postgres://vard_app:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in compose.env}@postgres:5432/vard?sslmode=disable

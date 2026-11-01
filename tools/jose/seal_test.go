@@ -36,7 +36,7 @@ func TestASealedValueOpensOnlyWhereItWasSealedFor(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			plain, _, err := sealer.OpenFor(c.where, sealed)
+			plain, err := sealer.OpenFor(c.where, sealed)
 			if c.opens != (err == nil) {
 				t.Fatalf("OpenFor = %q, %v; want it to open: %v", plain, err, c.opens)
 			}
@@ -47,53 +47,14 @@ func TestASealedValueOpensOnlyWhereItWasSealedFor(t *testing.T) {
 	}
 }
 
-// A key rotated out still opens what it sealed, which is stale; it seals
-// nothing new, and without it nothing it sealed opens.
-func TestARotatedKeyStillOpensWhatItSealed(t *testing.T) {
-	before, err := NewSealer(secretBefore)
-	if err != nil {
-		t.Fatal(err)
-	}
-	where := Bind("social_providers", "client_secret", "1")
-	sealed, err := before.SealFor(where, []byte("client secret"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rotated, err := NewSealer(secretNow, secretBefore)
-	if err != nil {
-		t.Fatal(err)
-	}
-	plain, stale, err := rotated.OpenFor(where, sealed)
-	if err != nil || string(plain) != "client secret" || !stale {
-		t.Errorf("opened with the previous key = %q, stale %v, %v; want it, stale", plain, stale, err)
-	}
-
-	resealed, err := rotated.SealFor(where, plain)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, stale, err := rotated.OpenFor(where, resealed); err != nil || stale {
-		t.Errorf("sealed again = stale %v, %v; want fresh", stale, err)
-	}
-	if _, _, err := before.OpenFor(where, resealed); err == nil {
-		t.Error("the previous key opened what the current one sealed")
-	}
-
-	if _, _, err := mustSealer(t, secretNow).OpenFor(where, sealed); err == nil {
-		t.Error("the previous key's value opened once the previous key was dropped")
-	}
-}
-
 // The installation's tag key makes a keyed hash the same under any
-// VARD_SECRET_KEY, so a recovery code hashed before a rotation still matches
-// after it; without it, a hash follows the secret.
-func TestATagSurvivesARotation(t *testing.T) {
+// VARD_SECRET_KEY; without it, a hash follows the secret.
+func TestATagFollowsTheTagKeyNotTheSecret(t *testing.T) {
 	tagKey := []byte("the installation's own tag key, 32b")
 
 	before := mustSealer(t, secretBefore)
 	before.UseTagKey(tagKey)
-	after := mustSealer(t, secretNow, secretBefore)
+	after := mustSealer(t, secretNow)
 	after.UseTagKey(tagKey)
 
 	if !bytes.Equal(before.Tag("purpose", []byte("code")), after.Tag("purpose", []byte("code"))) {
@@ -104,9 +65,9 @@ func TestATagSurvivesARotation(t *testing.T) {
 	}
 }
 
-func mustSealer(t *testing.T, secret string, previous ...string) *Sealer {
+func mustSealer(t *testing.T, secret string) *Sealer {
 	t.Helper()
-	s, err := NewSealer(secret, previous...)
+	s, err := NewSealer(secret)
 	if err != nil {
 		t.Fatal(err)
 	}

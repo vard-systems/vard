@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // WriteAudit adds a line to the activity log, first fitting outside input to

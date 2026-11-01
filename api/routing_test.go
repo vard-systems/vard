@@ -21,8 +21,8 @@ func TestEveryRouteIsReachableThroughItsApp(t *testing.T) {
 		engine *gin.Engine
 		source string
 	}{
-		{"the public API, through the id app", testEngine(), "../../../web/id/src/lib/server/api.ts"},
-		{"the admin API, through the console", testAdminEngine(), "../../../web/console/src/lib/server/api.ts"},
+		{"the public API, through the id app", testEngine(), "../web/id/src/lib/server/api.ts"},
+		{"the admin API, through the console", testAdminEngine(), "../web/console/src/lib/server/api.ts"},
 	}
 
 	for _, test := range tests {
@@ -49,12 +49,12 @@ func TestEveryRouteIsReachableThroughItsApp(t *testing.T) {
 // that check off — which is safe only while the app has no form action or
 // endpoint of its own for the check to protect.
 func TestTheIDAppLetsTheProviderTakeFormPosts(t *testing.T) {
-	config := read(t, "../../../web/id/vite.config.ts")
+	config := read(t, "../web/id/vite.config.ts")
 	if !regexp.MustCompile(`csrf:\s*\{\s*trustedOrigins:\s*\['\*'\]\s*\}`).MatchString(config) {
 		t.Error("web/id/vite.config.ts does not set csrf: { trustedOrigins: ['*'] }; the token endpoint answers 403 through the built app")
 	}
 
-	err := filepath.WalkDir("../../../web/id/src/routes", func(path string, entry fs.DirEntry, err error) error {
+	err := filepath.WalkDir("../web/id/src/routes", func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ func TestTheIDAppLetsTheProviderTakeFormPosts(t *testing.T) {
 // typed to another site, and no frame around it.
 func TestTheAppsPoliciesHoldTheirPagesIn(t *testing.T) {
 	for _, app := range []string{"id", "console"} {
-		config := read(t, "../../../web/"+app+"/vite.config.ts")
+		config := read(t, "../web/"+app+"/vite.config.ts")
 		for _, directive := range []string{
 			`'script-src': ['self']`,
 			`'object-src': ['none']`,
@@ -99,18 +99,18 @@ func TestTheAppsPoliciesHoldTheirPagesIn(t *testing.T) {
 // is built, and the stack builds each with its own address.
 func TestEachAppIsBuiltWithItsOwnAddress(t *testing.T) {
 	for _, app := range []string{"id", "console"} {
-		if config := read(t, "../../../web/"+app+"/vite.config.ts"); !strings.Contains(config, "paths: { origin: process.env.ORIGIN") {
+		if config := read(t, "../web/"+app+"/vite.config.ts"); !strings.Contains(config, "paths: { origin: process.env.ORIGIN") {
 			t.Errorf("web/%s/vite.config.ts does not take its origin from ORIGIN as it is built", app)
 		}
 	}
 
-	compose := read(t, "../../../compose.yaml")
+	compose := read(t, "../compose.yaml")
 	for app, url := range map[string]string{"web/id": "PUBLIC_URL", "web/console": "ADMIN_URL"} {
 		if !strings.Contains(compose, "APP: "+app+`, VERSION: "${VERSION:-dev}", ORIGIN: "${`+url+`}"`) {
 			t.Errorf("compose.yaml does not build %s with ORIGIN ${%s}", app, url)
 		}
 	}
-	if dockerfile := read(t, "../../../web/Dockerfile"); !strings.Contains(dockerfile, `ORIGIN="${ORIGIN}" bun run build`) {
+	if dockerfile := read(t, "../web/Dockerfile"); !strings.Contains(dockerfile, `ORIGIN="${ORIGIN}" bun run build`) {
 		t.Error("web/Dockerfile does not build the app with its ORIGIN")
 	}
 }

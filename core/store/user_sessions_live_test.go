@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/cache"
-	"vard/internal/infrastructure/cache/cachetest"
-	"vard/internal/infrastructure/database/databasetest"
+	"vard/core/cache"
+	"vard/core/cache/cachetest"
+	"vard/core/database/databasetest"
+	"vard/core/model"
 )
 
 // A step-up is one conditional UPDATE: a session that ended after it was read

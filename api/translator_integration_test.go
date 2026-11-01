@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // The emails are a super admin's, on the Mail page: the reset email puts a

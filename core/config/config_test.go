@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 // clearEnv unsets every VARD_ variable for the duration of the test, so a
@@ -392,7 +392,7 @@ func TestLoadRefusesInsecureProductionSettings(t *testing.T) {
 		{
 			name:    "a weak key with the escape, which is for http alone",
 			env:     "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=0123456789abcdef0123456789abcdef\n" + escape,
-			wantErr: "VARD_SECRET_KEY_PREVIOUS",
+			wantErr: "VARD_SECRET_KEY",
 		},
 		{
 			name: "a 64-digit hex key missing one digit",
@@ -407,11 +407,6 @@ func TestLoadRefusesInsecureProductionSettings(t *testing.T) {
 			name:    "a long key with too few distinct characters",
 			env:     "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=xyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxyxy\n",
 			wantErr: "VARD_SECRET_KEY",
-		},
-		{
-			name: "a weak key being rotated out",
-			env: "VARD_DB_DSN=postgres://localhost/x\nVARD_SECRET_KEY=xFvEeWE5CSVXvWtMDuNo2yKZnyFGHndPbCkRtUnL5QQ=\n" +
-				"VARD_SECRET_KEY_PREVIOUS=0123456789abcdef0123456789abcdef\n",
 		},
 	}
 

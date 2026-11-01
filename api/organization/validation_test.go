@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
+	"vard/core/model"
 )
 
 // stored is the organisation a request in these tests is applied to.

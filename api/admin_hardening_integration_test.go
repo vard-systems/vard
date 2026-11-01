@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 // adminCookie is the administrator's session cookie this client holds.

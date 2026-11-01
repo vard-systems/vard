@@ -13,10 +13,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"vard/internal/config"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/database"
-	"vard/internal/infrastructure/store"
+	"vard/core/config"
+	"vard/core/database"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // adminCommand sets the panel up from the command line, for an installation

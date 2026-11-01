@@ -3,9 +3,9 @@ package oidc
 import (
 	"context"
 
+	"vard/core/model"
+	"vard/core/store"
 	"vard/i18n"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
 )
 
 // PublicLanguage is one language in the picker: its code and its English and

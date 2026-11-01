@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // providerResponse is a provider as the panel sees it: only whether secrets

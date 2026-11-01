@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/infrastructure/store"
+	"vard/core/mail"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 // The emailed code step: after the password is accepted, a code is sent to the

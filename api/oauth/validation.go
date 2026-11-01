@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"vard/internal/application/oidc"
+	"vard/core/oidc"
 )
 
 func invalidRequest(description string) error {

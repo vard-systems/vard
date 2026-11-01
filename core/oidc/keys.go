@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 // Signing key lifecycle: a key is published keyPublishLead before it signs, so
@@ -184,7 +184,7 @@ func (ks *keySet) reload(ctx context.Context) error {
 	byID := make(map[string]jose.Key, len(stored))
 
 	for _, row := range stored {
-		private, _, err := ks.sealer.Open(signingKeySecret(row.KID), row.PrivateKey)
+		private, err := ks.sealer.Open(signingKeySecret(row.KID), row.PrivateKey)
 		if err != nil {
 			return err
 		}

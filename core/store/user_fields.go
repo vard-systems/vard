@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 func (s *Store) UserFields(ctx context.Context) ([]model.UserField, error) {

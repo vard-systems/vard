@@ -3,9 +3,9 @@ package adminroles
 import (
 	"net/http"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/interfaces/api/kit/validate"
+	"vard/api/kit/respond"
+	"vard/api/kit/validate"
+	"vard/core/model"
 )
 
 var (

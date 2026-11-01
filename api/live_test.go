@@ -19,21 +19,21 @@ import (
 
 	"gorm.io/gorm"
 
-	"vard/internal/application/oidc"
-	"vard/internal/config"
-	"vard/internal/infrastructure/cache"
-	"vard/internal/infrastructure/cache/cachetest"
-	"vard/internal/infrastructure/database/databasetest"
-	"vard/internal/infrastructure/mail"
-	"vard/internal/infrastructure/store"
-	"vard/internal/jose"
+	"vard/core/cache"
+	"vard/core/cache/cachetest"
+	"vard/core/config"
+	"vard/core/database/databasetest"
+	"vard/core/mail"
+	"vard/core/oidc"
+	"vard/core/store"
+	"vard/tools/jose"
 )
 
 // These tests run the whole server — routes, permission checks, store and
 // migrations — against a real Postgres. They need a database server to make
 // throwaway databases on, named by VARD_TEST_DB_DSN:
 //
-//	VARD_TEST_DB_DSN=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable go test ./internal/interfaces/api/
+//	VARD_TEST_DB_DSN=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable go test ./api/
 //
 // Without it they are skipped, so `go test ./...` still passes anywhere.
 

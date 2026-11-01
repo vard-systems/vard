@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"vard/core/model"
+	"vard/core/store"
 	"vard/i18n"
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
 )
 
 // Enterprise SSO over OpenID Connect or SAML 2.0 (model.SSOConnection). This
@@ -280,7 +280,7 @@ func (s *Service) CompleteSSOAssertion(ctx context.Context, slug, binding string
 	if err != nil {
 		return nil, err
 	}
-	response, _, err := s.sealer.OpenFor(model.SAMLResponseWhere(login.RelayHash), sealed)
+	response, err := s.sealer.OpenFor(model.SAMLResponseWhere(login.RelayHash), sealed)
 	if err != nil {
 		return nil, err
 	}

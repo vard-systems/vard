@@ -10,7 +10,7 @@ Run the checks, in this order, and fix what they find:
    `lint-web`, `test-go` or `test-web` reruns just that part.
 2. `make test-integration` — the `TestLive…` tests, on throwaway Postgres
    databases. Run it when the change touched a migration, the store, or the
-   route table in `internal/interfaces/api/server.go`; say so if you skip it.
+   route table in `api/server.go`; say so if you skip it.
 
 Formatting is not a judgement call: `make fmt` formats everything, or
 `gofmt -w <file>` and, inside the app the file belongs to,

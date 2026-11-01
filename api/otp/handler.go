@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/audit"
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/audit"
+	"vard/api/kit/respond"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 type Handler struct {

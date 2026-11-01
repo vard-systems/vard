@@ -11,10 +11,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/domain/totp"
-	"vard/internal/infrastructure/cache"
-	"vard/internal/interfaces/api/kit/session"
+	"vard/api/kit/session"
+	"vard/core/cache"
+	"vard/core/model"
+	"vard/tools/totp"
 )
 
 // An application whose login flow requires a second factor, beside the

@@ -1,7 +1,7 @@
 /**
  * The console's brand: what it calls the product, its mark, the links in its Help menu, its
  * favicon, and every name it builds from the slug. The sign-in pages keep their own
- * (web/id/src/lib/brand.ts) and the server its own (internal/brand); internal/brand's tests hold
+ * (web/id/src/lib/brand.ts) and the server its own (core/brand); core/brand's tests hold
  * the three to the same slug and to the cookie names the server reads back. `make rename` renames
  * all three.
  *

@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"vard/internal/brand"
+	"vard/core/brand"
 )
 
 // UserCookie carries a user's own session for single sign-on. It is

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"vard/internal/domain/model"
-	"vard/internal/jose"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 // DPoP (RFC 9449): a client proves, with each request, that it holds a key,

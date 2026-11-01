@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"vard/internal/domain/model"
+	"vard/core/model"
 )
 
 // What the store caches goes to Redis as JSON, and a field JSON leaves out

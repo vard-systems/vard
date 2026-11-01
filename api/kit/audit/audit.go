@@ -8,9 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/infrastructure/store"
-	"vard/internal/interfaces/api/kit/session"
+	"vard/api/kit/session"
+	"vard/core/model"
+	"vard/core/store"
 )
 
 type Recorder struct {

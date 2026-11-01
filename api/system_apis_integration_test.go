@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	"vard/internal/brand"
-	"vard/internal/domain/model"
+	"vard/core/brand"
+	"vard/core/model"
 )
 
 // These tests call this server's own two APIs the way other software does:

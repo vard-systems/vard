@@ -5,8 +5,7 @@
 // up, down, status or reset steps the database through the migrations
 // compiled in (migrations/), and migrate new <name> writes the next
 // changelog. admin create makes the first
-// administrator from the command line, and secrets reseal seals every stored
-// secret again under the current key.
+// administrator from the command line.
 package main
 
 import (
@@ -25,7 +24,6 @@ const usage = `usage: %s [command]
             take them all down and up again; new <name> for a changelog
   admin     create the first administrator: admin create -email … -first-name …,
             with the password on standard input
-  secrets   reseal: every stored secret sealed again under VARD_SECRET_KEY
 `
 
 func main() {
@@ -42,8 +40,6 @@ func main() {
 		os.Exit(migrateCommand(args))
 	case "admin":
 		os.Exit(adminCommand(args))
-	case "secrets":
-		os.Exit(secretsCommand(args))
 	case "help", "-h", "-help", "--help":
 		fmt.Fprintf(os.Stdout, usage, os.Args[0])
 	default:

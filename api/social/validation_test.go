@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
-	"vard/internal/jose"
+	"vard/api/kit/respond"
+	"vard/core/model"
+	"vard/tools/jose"
 )
 
 func sealer(t *testing.T) *jose.Sealer {
@@ -214,7 +214,7 @@ func TestProviderRequestReplacesSecrets(t *testing.T) {
 		t.Fatalf("applyTo() = %v", err)
 	}
 
-	opened, _, err := seal.OpenFor(provider.ClientSecretWhere(), provider.ClientSecret)
+	opened, err := seal.OpenFor(provider.ClientSecretWhere(), provider.ClientSecret)
 	if err != nil {
 		t.Fatalf("the new secret cannot be opened: %v", err)
 	}

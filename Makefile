@@ -8,8 +8,8 @@ MAKEFLAGS     += --no-print-directory
 
 APPS    := console id
 # Not ./...: that walks into web/*/node_modules.
-PKGS    := ./cmd/... ./internal/... ./migrations/... ./i18n/...
-GO_DIRS := cmd internal migrations i18n
+PKGS    := . ./cmd/... ./api/... ./core/... ./tools/... ./migrations/... ./i18n/...
+GO_DIRS := cmd api core tools migrations i18n layers_test.go
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 # The end-to-end tests borrow the console's Prettier and TypeScript, with
 # settings of their own.
@@ -70,7 +70,7 @@ generate: ## Rewrite the console's generated files: theme tokens and fonts
 clean: ## Remove build output and logs
 	rm -rf bin .logs $(foreach app,$(APPS),web/$(app)/build web/$(app)/.svelte-kit)
 
-rename: ## Rename the project — make rename name="Acme ID" slug=acme (each brand: internal/brand, web/*/src/lib/brand.ts)
+rename: ## Rename the project — make rename name="Acme ID" slug=acme (each brand: core/brand, web/*/src/lib/brand.ts)
 	@[[ -n "$(name)" && -n "$(slug)" ]] || { echo 'usage: make rename name="Acme ID" slug=acme'; exit 1; }
 	@scripts/rename.sh "$(name)" "$(slug)"
 
@@ -112,7 +112,7 @@ test-integration: ## Run the TestLive… tests against Postgres and Redis (throw
 		{ [[ -n "$$dsn" ]] || { echo "test-integration: no database to test against: set VARD_DB_DSN in .env, or VARD_TEST_DB_DSN" >&2; exit 1; }; } && \
 		VARD_TEST_DB_DSN="$$dsn" \
 		VARD_TEST_REDIS="$${VARD_TEST_REDIS:-$${VARD_REDIS_HOST:+$$VARD_REDIS_HOST:$${VARD_REDIS_PORT:-6379}}}" \
-		go test -count=1 -run Live ./internal/...
+		go test -count=1 -run Live ./api/... ./core/... ./tools/...
 
 bench: ## Run the Go benchmarks
 	go test -run '^$$' -bench . -benchmem $(PKGS)

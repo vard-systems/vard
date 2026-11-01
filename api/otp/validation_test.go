@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"vard/internal/domain/model"
-	"vard/internal/interfaces/api/kit/respond"
+	"vard/api/kit/respond"
+	"vard/core/model"
 )
 
 func TestSettingsRequestApplyTo(t *testing.T) {
