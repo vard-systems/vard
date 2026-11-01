@@ -4,6 +4,7 @@ import { adminAPI, call, ID, makeUser, pkce, signIn, totp, visit, withSteps } fr
 const CALLBACK = 'https://vault.example.test/callback';
 const MARGARET = { email: 'margaret@example.com', password: 'margaret-password-123' };
 const KATHERINE = { email: 'katherine@example.com', password: 'katherine-password-123' };
+const DOROTHY = { email: 'dorothy@example.com', password: 'dorothy-password-123' };
 
 let client: { id: string; secret: string };
 
@@ -13,6 +14,7 @@ test.beforeAll(async () => {
 	await withSteps(api, 'identifier', 'password', 'social', 'totp');
 	await makeUser(api, MARGARET.email, MARGARET.password);
 	await makeUser(api, KATHERINE.email, KATHERINE.password);
+	await makeUser(api, DOROTHY.email, DOROTHY.password);
 
 	const { flow } = await call<{ flow: { id: string } }>(
 		api,
@@ -112,7 +114,7 @@ test('a signed-in person steps up for an application that requires a second fact
 	await expect(page.getByLabel('Email')).toHaveCount(0);
 	// Somebody signed in has no sign-in to go back to.
 	await expect(page.getByRole('link', { name: 'Back to sign in' })).toHaveCount(0);
-	await expect(page.getByRole('link', { name: 'Not now' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Not now' })).toBeVisible();
 	await page.getByLabel('Code from your authenticator app').fill(totp(key, Date.now() + 30_000));
 	await page.getByRole('button', { name: 'Continue' }).click();
 
@@ -144,4 +146,22 @@ test('a person without a second factor sets one up while signing in', async ({ p
 	const claims = await redeem(page, verifier);
 	expect(claims.email).toBe(KATHERINE.email);
 	expect(claims.amr).toEqual(['pwd', 'otp', 'mfa']);
+});
+
+// "Not now" on a step-up sends the person back to the application, which is
+// told they did not continue, with the state it sent.
+test('not now returns to the application with access_denied', async ({ page }) => {
+	await visit(page, `${ID}/login`);
+	await signIn(page, DOROTHY.email, DOROTHY.password);
+	await expect(page).not.toHaveURL(/\/login/);
+
+	await authorize(page);
+	await expect(page.getByRole('heading', { name: 'Set up two-step verification' })).toBeVisible();
+	await page.getByRole('button', { name: 'Not now' }).click();
+
+	await page.waitForURL(`${CALLBACK}*`);
+	const back = new URL(page.url());
+	expect(back.searchParams.get('error')).toBe('access_denied');
+	expect(back.searchParams.get('state')).toBe('vault-state');
+	expect(back.searchParams.get('code')).toBeNull();
 });

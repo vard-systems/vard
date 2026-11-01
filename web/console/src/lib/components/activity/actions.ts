@@ -131,6 +131,12 @@ const actions: Record<string, Action> = {
 		tone: 'success',
 		icon: 'ri-login-box-line'
 	},
+	'user.second_factor_declined': {
+		label: 'Second factor declined',
+		verb: 'left a second factor for later, and the application was told',
+		category: 'access',
+		icon: 'ri-shield-cross-line'
+	},
 	'user.step_up': {
 		label: 'Second factor passed',
 		verb: 'passed a second factor to continue in a session',
@@ -785,6 +791,7 @@ const selfTargeted = new Set([
 	'admin.recovery_codes_regenerated',
 	'user.login',
 	'user.step_up',
+	'user.second_factor_declined',
 	'user.logout',
 	'user.login_failed',
 	'user.login_blocked',

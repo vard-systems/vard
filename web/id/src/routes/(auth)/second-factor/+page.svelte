@@ -46,6 +46,21 @@
 		await arrive(result);
 	}
 
+	let leaving = $state(false);
+
+	/** "Not now": the waiting sign-in ends, and the application hears so. */
+	async function notNow() {
+		error = '';
+		leaving = true;
+		try {
+			const { redirect_to } = await signIn.leaveSecondFactor();
+			if (redirect_to) leaveTo(redirect_to);
+		} catch (err) {
+			error = messageOf(err, t);
+			leaving = false;
+		}
+	}
+
 	async function arrive(result: SignedIn) {
 		if (result.redirect_to) {
 			leaveTo(result.redirect_to);
@@ -165,7 +180,9 @@
 			? t(challenge.step_up ? 'second_factor.step_up_app' : 'second_factor.subtitle_app', {
 					app: app.name
 				})
-			: undefined}
+			: challenge.step_up
+				? t('second_factor.step_up_subtitle')
+				: undefined}
 	>
 		{#if error}<Alert tone="danger">{error}</Alert>{/if}
 
@@ -230,11 +247,13 @@
 	</AuthCard>
 {/if}
 
-<!-- A step-up is asked of somebody already signed in: there is no sign-in to go back to, only
-     their account. -->
+<!-- A step-up is asked of somebody already signed in: there is no sign-in to go back to.
+     Leaving tells the application they did not continue, or goes to their account. -->
 {#snippet leave(stepUp: boolean)}
 	{#if stepUp}
-		<a href={resolve('/(account)')}>{t('second_factor.not_now')}</a>
+		<button type="button" class="switch" disabled={leaving} onclick={notNow}>
+			{t('second_factor.not_now')}
+		</button>
 	{:else}
 		<a href={resolve('/(auth)/login')}>{t('action.back_to_sign_in')}</a>
 	{/if}

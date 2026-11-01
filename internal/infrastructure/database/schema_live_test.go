@@ -435,7 +435,7 @@ func TestLiveStepUpUpgradesAnExistingDatabase(t *testing.T) {
 	if err := db.Omit(clause.Associations, "Remember").Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Omit(clause.Associations, "StepUpSessionID").Create(waiting).Error; err != nil {
+	if err := db.Omit(clause.Associations, "StepUpSessionID", "ApplicationID").Create(waiting).Error; err != nil {
 		t.Fatal(err)
 	}
 	flows := rows(t, db, "SELECT id::text FROM login_flows")
@@ -512,5 +512,53 @@ func TestLiveRememberSessionUpgradesAnExistingDatabase(t *testing.T) {
 	}
 	if left := rows(t, db, "SELECT token_hash FROM user_sessions ORDER BY 1"); !slices.Equal(left, []string{"kept", "open"}) {
 		t.Errorf("down left the sessions %v, want both", left)
+	}
+}
+
+// Sign-ins waiting before 00008 name no application; going down deletes only
+// those that name one, which the default flow would otherwise hold.
+func TestLiveSignInApplicationUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 7)
+	column := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'pending_sign_ins' AND column_name = 'application_id'`
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Fatalf("before 00008, pending_sign_ins has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{Name: "Telly", ClientID: "telly", Type: model.AppNative, TokenAuthMethod: model.AuthNone, IsEnabled: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "ApplicationID").Create(waiting).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00008: %v", err)
+	}
+	if named := rows(t, db, "SELECT handle_hash FROM pending_sign_ins WHERE application_id IS NOT NULL"); len(named) != 0 {
+		t.Errorf("after the upgrade, %v name an application", named)
+	}
+
+	device := &model.PendingSignIn{HandleHash: "device", UserID: user.ID, ApplicationID: &app.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(device).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 7)
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM pending_sign_ins ORDER BY 1"); !slices.Equal(left, []string{"waiting"}) {
+		t.Errorf("down left the waiting sign-ins %v, want only the one naming no application", left)
 	}
 }

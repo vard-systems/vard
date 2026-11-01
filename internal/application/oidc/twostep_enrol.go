@@ -87,7 +87,7 @@ func (s *Service) enrolling(ctx context.Context, handle string, current *Session
 		return factorOwner{}, nil, ErrTwoStepNotOffered
 	}
 
-	flow, err := s.flowFor(ctx, pending.Request)
+	flow, err := s.flowOf(ctx, pending)
 	if err != nil {
 		return factorOwner{}, nil, err
 	}
@@ -132,7 +132,7 @@ func (s *Service) finishEnrolment(ctx context.Context, owner factorOwner, curren
 		return nil, err
 	}
 
-	flow, err := s.flowFor(ctx, pending.Request)
+	flow, err := s.flowOf(ctx, pending)
 	if err != nil {
 		return nil, err
 	}

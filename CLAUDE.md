@@ -227,7 +227,16 @@ code near it, and add a test when adding a case.
   at a proved address (the verification email goes first), never for a
   sign-in holding an SSO link, and the setup endpoints refuse a bearer token.
   Every factor confirmed, there or on the account page, mails the account
-  (`confirmFactor`, `mailFactorAdded`).
+  (`confirmFactor`, `mailFactorAdded`). A first factor set up while signing
+  in is confirmed under a per-user advisory lock, only while the account has
+  none (`ConfirmUserFactor(…, onlyFirst)`), so two setups at once keep one.
+  Allowing a device (`AnswerDevice`) meets the device application's flow as
+  authorize does (`step_up_required`, then `POST /api/v1/account/step-up`,
+  whose waiting sign-in names the application, `flowOf`), and a refresh
+  family that never passed a factor gets `invalid_grant` once its flow
+  requires one. "Not now" (`LeaveSignIn`) spends the waiting sign-in and its
+  authorization request, each by one conditional UPDATE, and answers the
+  client `access_denied`.
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.

@@ -257,6 +257,17 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 		return nil, oauthError(ErrInvalidGrant, "the refresh token is bound to a DPoP key; send a proof from it")
 	}
 
+	// A flow that has come to require a second factor since the family began
+	// ends a family that never passed one, a retry included: the person signs
+	// in again, and nothing is revoked meanwhile.
+	flow, err := s.store.EffectiveLoginFlow(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	if flow.RequireSecondFactor && !model.ProvedSecondFactor(old.Methods) {
+		return nil, oauthError(ErrInvalidGrant, "the application now requires a second factor; sign in again")
+	}
+
 	original := strings.Fields(old.Scope)
 	scopes := original
 	if p.Scope != "" {

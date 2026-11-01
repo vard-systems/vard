@@ -75,10 +75,15 @@ the emailed code proves only the mailbox a password reset also goes to. An
 application that reads `mfa` to decide anything gets it less often; one that
 needs it can ask for it with a login flow that requires a second factor.
 
-Migrations `00006_step_up` and `00007_remember_session` run on start. A
-login flow can now require a second factor (the Two-step verification
-step, "Require it"); every existing flow requires none. Someone without a
-factor sets one up while signing in, once their address is confirmed.
+Migrations `00006_step_up`, `00007_remember_session` and
+`00008_sign_in_application` run on start. A login flow can now require a
+second factor (the Two-step verification step, "Require it"); every
+existing flow requires none. Someone without a factor sets one up while
+signing in, once their address is confirmed. Turning the requirement on
+for a flow in use asks its applications' existing sessions for a factor at
+their next sign-in, and their refresh tokens that never passed one are
+refused at the next refresh (`invalid_grant`): the application signs the
+person in again. Allowing a device is held to the same rule.
 
 Every second factor added from now on, from the account page or while
 signing in, emails its account a notice ("Two-step verification turned

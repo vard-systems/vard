@@ -81,9 +81,10 @@
 		"passkey_sign_in_failed": "Your passkey didn’t sign you in. Try again, or sign in another way.",
 		"device_code_invalid": "That code doesn’t match a device waiting to sign in. Check it and try again, or start again on the device.",
 		"device_refused": "Your account can’t use this application, so the device was not signed in.",
-		"sign_in_again": "For your security, sign in again before changing how you sign in.",
+		"sign_in_again": "For your security, sign in again first.",
 		"account_token_refused": "This access token is not accepted by the account API: it has expired, is for another API, or its user can no longer sign in.",
 		"account_scope_missing": "This access token needs the {scope} scope.",
-		"organization_logo_not_found": "There is no logo."
+		"organization_logo_not_found": "There is no logo.",
+		"step_up_required": "This application asks for two-step verification in this session first."
 	}
 }

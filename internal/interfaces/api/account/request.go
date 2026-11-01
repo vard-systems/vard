@@ -98,3 +98,8 @@ type enrolPasskeyRequest struct {
 	Label    string          `json:"label" validate:"max=100"`
 	Response json.RawMessage `json:"response"`
 }
+
+// stepUpRequest names the device a step-up is for, by the code it shows.
+type stepUpRequest struct {
+	UserCode string `json:"user_code" validate:"required,max=32"`
+}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/google/uuid"
 
 	"vard/internal/domain/model"
 	"vard/internal/domain/recovery"
@@ -189,6 +190,18 @@ func (s *Service) holdStepUp(ctx context.Context, request string, session *Sessi
 		return withQuery(s.accountURL+PageLogin, url.Values{"request": {request}}), nil
 	}
 
+	handle, err := s.waitForStepUp(ctx, session, request, nil)
+	if err != nil {
+		return "", err
+	}
+	*held = handle
+
+	return withQuery(s.accountURL+PageSecondFactor, url.Values{"request": {request}}), nil
+}
+
+// waitForStepUp keeps a step-up of the session waiting, for an authorization
+// request or, with none, the application named, and returns its handle.
+func (s *Service) waitForStepUp(ctx context.Context, session *Session, request string, app *uuid.UUID) (string, error) {
 	handle, hash, err := model.NewSecret()
 	if err != nil {
 		return "", err
@@ -200,15 +213,57 @@ func (s *Service) holdStepUp(ctx context.Context, request string, session *Sessi
 		Request:         request,
 		Methods:         session.Record.Methods,
 		StepUpSessionID: &session.Record.ID,
+		ApplicationID:   app,
 		ExpiresAt:       s.now().Add(model.PendingSignInLifetime),
 	}
 	if err := s.store.CreatePendingSignIn(ctx, &pending); err != nil {
 		return "", err
 	}
 
-	*held = handle
+	return handle, nil
+}
 
-	return withQuery(s.accountURL+PageSecondFactor, url.Values{"request": {request}}), nil
+// LeaveSignIn gives up a waiting sign-in ("Not now") and says where the
+// browser goes: back to the application with access_denied when it is for an
+// authorization request, else the account page. The waiting sign-in and the
+// request are each taken by one conditional UPDATE, so leaving cannot be
+// repeated, nor race a second factor answered or set up at the same time.
+func (s *Service) LeaveSignIn(ctx context.Context, handle string, current *Session, client Client) (string, error) {
+	pending, err := s.signInFor(ctx, handle, current)
+	if err != nil {
+		return "", err
+	}
+
+	used, err := s.store.ConsumePendingSignIn(ctx, pending, s.now())
+	if err != nil {
+		return "", err
+	}
+	if !used {
+		return "", ErrSecondFactorExpired
+	}
+
+	if pending.Request == "" {
+		return s.accountURL + "/", nil
+	}
+
+	// A request that has run out has nobody waiting for its answer.
+	req, err := s.pending(ctx, pending.Request)
+	if errors.Is(err, ErrRequestExpired) {
+		return s.accountURL + "/", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if err := s.store.CompleteAuthorizationRequest(ctx, req, s.now()); errors.Is(err, store.ErrAlreadyUsed) {
+		return "", ErrSecondFactorExpired
+	} else if err != nil {
+		return "", err
+	}
+
+	s.record(ctx, pending.User, pending.User.Email, "user.second_factor_declined", client,
+		map[string]any{"application": req.Application.Name})
+
+	return s.redirectError(req.RedirectURI, req.State, ErrAccessDenied, "the person did not continue with two-step verification"), nil
 }
 
 // SecondFactorFor is what the second-factor page offers for a waiting
@@ -313,7 +368,7 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, current
 		return nil, err
 	}
 
-	flow, err := s.flowFor(ctx, pending.Request)
+	flow, err := s.flowOf(ctx, pending)
 	if err != nil {
 		return nil, err
 	}

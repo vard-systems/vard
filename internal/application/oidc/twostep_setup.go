@@ -343,9 +343,15 @@ func (s *Service) confirmFactor(ctx context.Context, owner factorOwner, factor *
 		return nil, err
 	}
 
-	if err := s.store.ConfirmUserFactor(ctx, factor, s.now()); errors.Is(err, store.ErrAlreadyUsed) {
+	// Set up while signing in, it is the account's first or nothing: of two
+	// sign-ins setting one up at once, only one keeps its factor.
+	err = s.store.ConfirmUserFactor(ctx, factor, s.now(), owner.signIn != nil)
+	switch {
+	case errors.Is(err, store.ErrAlreadyUsed):
 		return nil, ErrSecondFactorExpired
-	} else if err != nil {
+	case errors.Is(err, store.ErrHasFactor):
+		return nil, ErrTwoStepNotOffered
+	case err != nil:
 		return nil, err
 	}
 

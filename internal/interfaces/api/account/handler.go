@@ -532,7 +532,7 @@ func (h *Handler) SubmitSecondFactor(c *gin.Context) {
 // changes how they sign in, so an application's token is refused outright.
 
 func (h *Handler) BeginEnrolAuthenticator(c *gin.Context) {
-	current, ok := h.enrolling(c)
+	current, ok := h.waitingBrowser(c)
 	if !ok {
 		return
 	}
@@ -557,7 +557,7 @@ func (h *Handler) EnrolAuthenticator(c *gin.Context) {
 		return
 	}
 
-	current, ok := h.enrolling(c)
+	current, ok := h.waitingBrowser(c)
 	if !ok {
 		return
 	}
@@ -573,7 +573,7 @@ func (h *Handler) EnrolAuthenticator(c *gin.Context) {
 }
 
 func (h *Handler) BeginEnrolPasskey(c *gin.Context) {
-	current, ok := h.enrolling(c)
+	current, ok := h.waitingBrowser(c)
 	if !ok {
 		return
 	}
@@ -598,7 +598,7 @@ func (h *Handler) EnrolPasskey(c *gin.Context) {
 		return
 	}
 
-	current, ok := h.enrolling(c)
+	current, ok := h.waitingBrowser(c)
 	if !ok {
 		return
 	}
@@ -613,9 +613,56 @@ func (h *Handler) EnrolPasskey(c *gin.Context) {
 	h.signedIn(c, result.Request, result)
 }
 
-// enrolling refuses a call carrying an application's token, and loads the
-// session the browser's cookie names, nil for none.
-func (h *Handler) enrolling(c *gin.Context) (*oidc.Session, bool) {
+// LeaveSecondFactor gives up the waiting sign-in the browser's cookie names
+// ("Not now"), and answers where to go: the application, told access_denied,
+// or the account page.
+func (h *Handler) LeaveSecondFactor(c *gin.Context) {
+	current, ok := h.waitingBrowser(c)
+	if !ok {
+		return
+	}
+
+	location, err := h.provider.LeaveSignIn(c.Request.Context(), session.SecondFactor(c), current, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "leaving a sign-in failed")
+		return
+	}
+
+	session.ClearSecondFactor(c, h.secure)
+	c.JSON(http.StatusOK, signedInResponse{RedirectTo: location})
+}
+
+// StepUp starts a step-up of the signed-in session for the application a
+// device asks for: the cookie names it, and the second-factor page finishes
+// it. Nothing is started when the session already meets the flow.
+func (h *Handler) StepUp(c *gin.Context) {
+	var req stepUpRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+	if err := req.validate(); err != nil {
+		respond.Failure(c, h.log, err, "validating a step-up failed")
+		return
+	}
+
+	handle, err := h.provider.StepUpForDevice(c.Request.Context(), req.UserCode, signedin.Session(c), signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "starting a step-up failed")
+		return
+	}
+	if handle == "" {
+		c.JSON(http.StatusOK, signedInResponse{})
+		return
+	}
+
+	session.SetSecondFactor(c, handle, time.Now().Add(model.PendingSignInLifetime), h.secure)
+	c.JSON(http.StatusOK, signedInResponse{SecondFactor: true})
+}
+
+// waitingBrowser refuses a call carrying an application's token, and loads
+// the session the browser's cookie names, nil for none.
+func (h *Handler) waitingBrowser(c *gin.Context) (*oidc.Session, bool) {
 	if session.Bearer(c) != "" {
 		respond.Fail(c, signedin.Problem(oidc.ErrBrowserRequired))
 		return nil, false

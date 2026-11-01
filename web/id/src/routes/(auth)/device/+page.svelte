@@ -5,6 +5,7 @@
 	import { AuthCard, Decision, ScopeList } from '#lib/components/auth/index.js';
 	import { Alert, Button, Form, Note, PageTitle, TextField } from '#lib/components/ui/index.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { secondFactorHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -31,6 +32,17 @@
 		await goto(`${resolve('/(auth)/device')}?${query}`, { replace: true });
 	}
 
+	/** Starts the step-up and goes to finish it; false when there was nothing to start. */
+	async function stepUp(): Promise<boolean> {
+		const { second_factor } = await account.stepUp(data.code);
+		if (!second_factor) return false;
+
+		const back = `${resolve('/(auth)/device')}?${new URLSearchParams({ user_code: data.code })}`;
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- secondFactorHref resolves it
+		await goto(secondFactorHref(null, back));
+		return true;
+	}
+
 	async function answer(yes: boolean) {
 		error = '';
 		sending = yes ? 'yes' : 'no';
@@ -39,6 +51,9 @@
 			await account.answerDevice({ user_code: data.code, yes });
 			answered = yes ? 'allowed' : 'denied';
 		} catch (err) {
+			// The application asks for a second factor this session has not
+			// passed: pass it (or set one up), then come back to allow it.
+			if (err instanceof ApiError && err.code === 'step_up_required' && (await stepUp())) return;
 			error = messageOf(err, t);
 		} finally {
 			sending = null;

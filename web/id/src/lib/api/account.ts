@@ -290,6 +290,11 @@ export const signIn = {
 	finishEnrolPasskey: (body: { label: string; response: unknown }) =>
 		request<SignedIn>('/account/login/second-factor/passkeys/finish', { method: 'POST', body }),
 
+	/** Gives up the waiting sign-in ("Not now"); `redirect_to` is the application, told the
+	    person did not continue, or the account page. */
+	leaveSecondFactor: () =>
+		request<SignedIn>('/account/login/second-factor/leave', { method: 'POST' }),
+
 	/** Signs this browser out. The confirmation page passes on what the
 	    application's logout named; `location` is where the server says to go. */
 	logout: (body?: { client_id: string; post_logout_redirect_uri: string; state: string }) =>
@@ -315,6 +320,11 @@ export const account = {
 
 	answerDevice: (body: { user_code: string; yes: boolean }) =>
 		request<void>('/account/device', { method: 'POST', body }),
+
+	/** Starts a step-up of this session for the application a device asks for; `second_factor`
+	    when the second-factor page is to finish it. */
+	stepUp: (userCode: string) =>
+		request<SignedIn>('/account/step-up', { method: 'POST', body: { user_code: userCode } }),
 
 	twoStep: (fetch?: Fetch) => request<{ two_step: TwoStep }>('/account/two-step', { fetch }),
 

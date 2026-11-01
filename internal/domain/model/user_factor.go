@@ -108,6 +108,12 @@ type PendingSignIn struct {
 	StepUpSessionID *uuid.UUID   `gorm:"type:uuid;index"`
 	StepUpSession   *UserSession `gorm:"constraint:OnDelete:CASCADE"`
 
+	// ApplicationID is the application a sign-in with no authorization
+	// request is for (a device being allowed), whose login flow holds it;
+	// nil otherwise.
+	ApplicationID *uuid.UUID   `gorm:"type:uuid;index"`
+	Application   *Application `gorm:"constraint:OnDelete:CASCADE"`
+
 	ExpiresAt time.Time `gorm:"not null;index"`
 	UsedAt    *time.Time
 }

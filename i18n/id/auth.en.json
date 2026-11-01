@@ -141,6 +141,7 @@
 		"subtitle_app": "to continue to {app}",
 		"step_up_title": "This application asks for more",
 		"step_up_app": "{app} asks for two-step verification. Use your second factor to continue.",
+		"step_up_subtitle": "This asks for two-step verification. Use your second factor to continue.",
 		"enrol_title": "Set up two-step verification",
 		"enrol_app": "{app} asks for two-step verification. Set it up now to continue.",
 		"enrol_subtitle": "This sign-in asks for two-step verification. Set it up now to continue.",
