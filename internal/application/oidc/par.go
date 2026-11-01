@@ -26,8 +26,10 @@ type PushedRequest struct {
 
 // PushAuthorization checks an authorization request as the authorization
 // endpoint would and keeps it for the browser. Every refusal is the client's
-// to read, since no browser is involved yet.
-func (s *Service) PushAuthorization(ctx context.Context, client ClientAuth, p AuthorizeParams) (*PushedRequest, error) {
+// to read, since no browser is involved yet. proof is the push's DPoP proof,
+// "" when it sent none: with one, the code is bound to its key (RFC 9449
+// §10.1), as dpop_jkt would bind it.
+func (s *Service) PushAuthorization(ctx context.Context, client ClientAuth, p AuthorizeParams, proof string) (*PushedRequest, error) {
 	app, err := s.authenticate(ctx, client)
 	if err != nil {
 		return nil, err
@@ -50,6 +52,19 @@ func (s *Service) PushAuthorization(ctx context.Context, client ClientAuth, p Au
 	}
 	if code != "" {
 		return nil, oauthError(code, description)
+	}
+
+	if proof != "" {
+		thumbprint, err := s.checkDPoP(ctx, proof, "POST", s.issuer+PathPushedAuthorization, "")
+		if err != nil {
+			return nil, err
+		}
+		switch {
+		case p.DPoPKey == "":
+			p.DPoPKey = thumbprint
+		case p.DPoPKey != thumbprint:
+			return nil, oauthError(ErrInvalidDPoPProof, "the DPoP proof is from another key than dpop_jkt names")
+		}
 	}
 
 	params, err := json.Marshal(p)

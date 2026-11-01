@@ -8,23 +8,41 @@ with two web apps:
 | `web/id`      | Hosted sign-in pages and each user's own account |
 | `web/console` | The admin panel                                  |
 
-**Features:** authorization code with PKCE (always, for clients without
-credentials), pushed authorization requests (PAR), the device authorization
-grant (sign-in on TVs and command lines), refresh token rotation with reuse
-detection and a short grace for a retried refresh, client credentials,
-DPoP-bound tokens, native apps'
-redirects (private-use schemes, `127.0.0.1` / `[::1]` loopback on any port,
-Expo Go's `exp://` for an app marked as in development),
-dynamic client registration, userinfo, introspection, revocation, ID tokens
-that say how the person signed in (`amr`: `pwd`, `otp`, `hwk`, `user`, `mfa`),
-logout (RP-initiated, back-channel and front-channel), a consent page, terms
-acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
-OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
-configurable login flows, emailed one-time codes, TOTP for administrators,
-optional two-step verification (authenticator app or passkeys) for users,
-passwordless sign-in with a passkey, roles and API scopes, an activity log, and
-the sign-in pages in English, with more languages added, translated and made the
-default from the panel.
+**Features:**
+
+- **OAuth 2.0:** authorization code with PKCE (always, for clients without
+  credentials), pushed authorization requests (PAR), the device
+  authorization grant (sign-in on TVs and command lines), refresh token
+  rotation with reuse detection and a short grace for a retried refresh,
+  client credentials, dynamic client registration, introspection and
+  revocation.
+- **DPoP:** sender-constrained tokens, and authorization codes bound to a
+  key (`dpop_jkt`, or a pushed request's own proof).
+- **Native apps:** private-use scheme redirects, `127.0.0.1` / `[::1]`
+  loopback on any port, Expo Go's `exp://` for an app marked as in
+  development.
+- **OpenID Connect:** ID tokens that say how the person signed in (`amr`:
+  `pwd`, `otp`, `hwk`, `user`, and `mfa` only once one of the account's own
+  second factors was passed), userinfo, and logout (RP-initiated,
+  back-channel and front-channel).
+- **Signing in:** configurable login flows, a consent page, terms
+  acceptance, emailed one-time codes, passwordless sign-in with a passkey,
+  social sign-in (Google, Apple, Facebook, Yandex, VK, any OIDC/OAuth
+  provider; id_tokens checked against the provider's published keys where
+  it publishes them) and enterprise SSO (OpenID Connect and SAML 2.0).
+- **Two-step verification** with an authenticator app or passkeys,
+  optional or required by a login flow: set up while signing in where it is
+  required, asked of a signed-in person in the session they have (devices
+  and refresh tokens included), answered by an SSO provider's own second
+  factor where a connection trusts it, and emailed to the account each time
+  a factor is added. TOTP and passkeys for administrators too.
+- **Administration:** roles and API scopes, an activity log, and the
+  sign-in pages in English, with more languages added, translated and made
+  the default from the panel.
+- **Hardening:** throttled (never locked) sign-in, keys from outside capped
+  at 4096-bit RSA, outbound calls to providers that refuse private and
+  metadata addresses, and a provider's keys fetched again at most once a
+  minute.
 
 ## Quick start
 
@@ -67,7 +85,7 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | `VARD_ADMIN_URL`           | The console's URL; only this origin may change things via the admin API.                 |
 | `VARD_REDIS_HOST`          | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
 | `VARD_TRUSTED_PROXIES`     | Who may say who the caller is: the apps' servers, and nothing else.                      |
-| `VARD_RATE_LIMIT`          | Attempts per minute per address on password and email endpoints.                         |
+| `VARD_RATE_LIMIT`          | Attempts per minute per address on sign-in, password and email endpoints.                |
 | `VARD_ADMIN_MFA`           | `optional` (the default; `required` in `compose.env.example`), seeded on first start.    |
 | `VARD_ALLOW_INSECURE_HTTP` | Lets plain http beyond localhost through, for test setups; nothing else. Never set live.  |
 
@@ -153,6 +171,11 @@ for whatever starts and routes to it.
   Every copy a client holds stays good, the retry is held to the same client
   authentication and DPoP binding as any refresh, and the
   family still has exactly one live token.
+- A code asked for with `dpop_jkt`, or pushed with a DPoP proof, is
+  redeemed only with a proof from that key; tried without it, the code is
+  spent. `dpop_jkt` in a plain authorization request travels through the
+  browser and can be stripped on the way, so for a binding that cannot be
+  removed in transit a client pushes its request (PAR) with a DPoP proof.
 - A refresh token is issued only for `offline_access`, and only to an
   application an administrator gave the refresh-token grant, for APIs that
   allow offline access. OpenID Connect Core §11 asks for `prompt=consent`

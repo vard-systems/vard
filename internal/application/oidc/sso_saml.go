@@ -220,6 +220,7 @@ func (s *Service) completeSAML(ctx context.Context, connection *model.SSOConnect
 		Email:     first(connection.Attribute("email")),
 		FirstName: first(connection.Attribute("first_name")),
 		LastName:  first(connection.Attribute("last_name")),
+		Proved:    authnContexts(assertion),
 		Sent:      slices.Sorted(maps.Keys(attributes)),
 	}
 	for _, name := range connection.Attribute("groups") {
@@ -238,6 +239,21 @@ func (s *Service) completeSAML(ctx context.Context, connection *model.SSOConnect
 	}
 
 	return person, nil
+}
+
+// authnContexts are the AuthnContextClassRef values of the assertion the
+// library verified: only what its signature covers, never anything else the
+// response carries.
+func authnContexts(assertion *saml.Assertion) []string {
+	var contexts []string
+	for _, statement := range assertion.AuthnStatements {
+		if ref := statement.AuthnContext.AuthnContextClassRef; ref != nil {
+			if value := strings.TrimSpace(ref.Value); value != "" {
+				contexts = append(contexts, value)
+			}
+		}
+	}
+	return contexts
 }
 
 const samlBearer = "urn:oasis:names:tc:SAML:2.0:cm:bearer"

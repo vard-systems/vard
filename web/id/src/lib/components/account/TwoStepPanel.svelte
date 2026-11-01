@@ -70,7 +70,12 @@
 
 {#snippet authenticatorSetup()}
 	{#if confirmed}
-		<AuthenticatorSetup {password} onadded={added} oncancel={close} />
+		<AuthenticatorSetup
+			begin={() => account.beginAuthenticator(password)}
+			confirm={account.confirmAuthenticator}
+			onadded={({ recovery_codes }) => added(recovery_codes ?? [])}
+			oncancel={close}
+		/>
 	{:else}
 		{@render confirm()}
 	{/if}
@@ -78,7 +83,12 @@
 
 {#snippet passkeyAdd()}
 	{#if confirmed}
-		<PasskeyAdd {password} onadded={added} oncancel={close} />
+		<PasskeyAdd
+			begin={() => account.beginPasskey(password)}
+			finish={account.finishPasskey}
+			onadded={({ recovery_codes }) => added(recovery_codes ?? [])}
+			oncancel={close}
+		/>
 	{:else}
 		{@render confirm()}
 	{/if}

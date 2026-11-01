@@ -1,20 +1,20 @@
 package oidc
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"io"
-	"log/slog"
 	"testing"
 	"time"
 
 	"vard/internal/domain/model"
+	"vard/internal/jose"
 )
 
-// unsignedIDToken is a JWT with these claims and nothing else worth reading:
-// idTokenClaims does not check the signature, so a header and a payload are
-// all it takes.
+// unsignedIDToken is a JWT with these claims and nothing else worth reading,
+// as a provider that publishes no keys is trusted to send: a header and a
+// payload are all it takes.
 func unsignedIDToken(t *testing.T, claims map[string]any) string {
 	t.Helper()
 
@@ -28,6 +28,68 @@ func unsignedIDToken(t *testing.T, claims map[string]any) string {
 	return b64.EncodeToString([]byte(`{"alg":"none"}`)) + "." + b64.EncodeToString(payload) + ".not-checked"
 }
 
+func signedIDToken(t *testing.T, key jose.Key, claims map[string]any) string {
+	t.Helper()
+
+	token, err := jose.Sign(key, "JWT", claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return token
+}
+
+// A provider that publishes its keys has its id_tokens' signatures checked
+// against them, so a token from anyone else is refused even when it comes
+// back through the token endpoint. A key the provider has rotated in since
+// the keys were fetched makes them be fetched again, once; a key already
+// held does not.
+func TestIDTokenClaimsChecksThePublishedSignature(t *testing.T) {
+	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	const nonce = "this-sign-in"
+	apple := &model.SocialProvider{Kind: model.SocialApple, Slug: "apple", ClientID: "com.example.app"}
+	claims := map[string]any{
+		"iss": "https://appleid.apple.com", "aud": "com.example.app", "sub": "000123",
+		"exp": now.Add(time.Hour).Unix(), "nonce": nonce,
+	}
+
+	current, rotated := signingKey(t, "apple-1"), signingKey(t, "apple-2")
+	impostor := signingKey(t, "apple-1")
+
+	tests := []struct {
+		name    string
+		token   string
+		want    error
+		fetches int
+	}{
+		{name: "signed with the published key", token: signedIDToken(t, current, claims), fetches: 1},
+		{name: "signed by somebody else under the published kid", token: signedIDToken(t, impostor, claims), want: ErrSocialUpstream, fetches: 1},
+		{name: "not signed at all", token: unsignedIDToken(t, claims), want: ErrSocialUpstream, fetches: 2},
+		{name: "signed with a key published since", token: signedIDToken(t, rotated, claims), fetches: 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			published := &publishedKeys{keys: []jose.Key{current}}
+			service := serviceWithKeys(published, &clock{at: now})
+			if _, err := service.providerKeys(context.Background(), apple.Spec().JWKSURL, false); err != nil {
+				t.Fatal(err)
+			}
+			published.publish(current, rotated)
+
+			got, err := service.idTokenClaims(context.Background(), apple, tt.token, nonce)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("idTokenClaims = %v, want %v", err, tt.want)
+			}
+			if tt.want == nil && claimString(got, "sub") != "000123" {
+				t.Errorf("claims = %v", got)
+			}
+			if fetches := published.count(); fetches != tt.fetches {
+				t.Errorf("fetches = %d, want %d", fetches, tt.fetches)
+			}
+		})
+	}
+}
+
 // An id_token the identity is read out of is held to the client it was issued
 // for, to the issuer its kind is known to have, to the sign-in it was asked
 // for (its nonce), and to the clock. The token
@@ -35,10 +97,8 @@ func unsignedIDToken(t *testing.T, claims map[string]any) string {
 // not say the token inside it is one of theirs.
 func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
 	now := time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC)
-	service := &Service{
-		log: slog.New(slog.NewTextHandler(io.Discard, nil)),
-		now: func() time.Time { return now },
-	}
+	appleKey := signingKey(t, "apple-1")
+	service := serviceWithKeys(&publishedKeys{keys: []jose.Key{appleKey}}, &clock{at: now})
 
 	apple := &model.SocialProvider{Kind: model.SocialApple, Slug: "apple", ClientID: "com.example.app"}
 	inHouse := &model.SocialProvider{Kind: model.SocialOIDC, Slug: "in-house", ClientID: "in-house-app"}
@@ -135,7 +195,11 @@ func TestIDTokenClaimsHoldsATokenToItsProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := service.idTokenClaims(tt.provider, unsignedIDToken(t, tt.claims), nonce)
+			token := unsignedIDToken(t, tt.claims)
+			if tt.provider.Spec().JWKSURL != "" {
+				token = signedIDToken(t, appleKey, tt.claims)
+			}
+			_, err := service.idTokenClaims(context.Background(), tt.provider, token, nonce)
 			if !errors.Is(err, tt.want) {
 				t.Errorf("idTokenClaims = %v, want %v", err, tt.want)
 			}

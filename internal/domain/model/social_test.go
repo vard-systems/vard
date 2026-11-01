@@ -2,6 +2,7 @@ package model
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -143,6 +144,16 @@ func TestSocialSpecsAreComplete(t *testing.T) {
 
 			if spec.Claims.Subject == "" {
 				t.Errorf("%s does not say where the subject is", spec.Kind)
+			}
+
+			// A kind whose identity is in its id_token and whose provider is
+			// known has that token's signature checked, and its keys are
+			// fetched over TLS.
+			if spec.IdentityInIDToken && !spec.Custom && spec.JWKSURL == "" {
+				t.Errorf("%s reads the identity from an id_token without a key set to check it against", spec.Kind)
+			}
+			if spec.JWKSURL != "" && !strings.HasPrefix(spec.JWKSURL, "https://") {
+				t.Errorf("%s publishes its keys at %q, not over https", spec.Kind, spec.JWKSURL)
 			}
 
 			// A provider of this kind, filled in the way the panel fills one,

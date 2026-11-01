@@ -4,9 +4,13 @@ import { describe, it } from 'vitest';
 import type { Admin } from '#lib/api/index.js';
 import { expectAccessible } from '#lib/testing/a11y.js';
 import IntrospectorList from './apis/IntrospectorList.svelte';
+import Inspector from './flows/editor/Inspector.svelte';
+import { TEMPLATES } from './flows/steps';
 import LogoField from './organization/LogoField.svelte';
 import RoleCodes from './profile/RoleCodes.svelte';
 import DomainProofList from './sso/DomainProofList.svelte';
+import SSOSignInTab from './sso/SSOSignInTab.svelte';
+import { SSOForm } from './sso/form.svelte';
 import Button from './ui/Button.svelte';
 import EmptyState from './ui/EmptyState.svelte';
 import Input from './ui/Input.svelte';
@@ -69,7 +73,55 @@ describe('the panel is usable without seeing it', () => {
 	it('the logo picker showing the default, read only', () =>
 		expectAccessible(LogoField, { version: '', editable: false, onsaved: () => {} }));
 
+	it("a flow's two-step step, with a second factor required", () =>
+		expectAccessible(Inspector, {
+			draft: {
+				...TEMPLATES[0].draft,
+				name: 'Staff',
+				slug: 'staff',
+				steps: ['identifier', 'password', 'totp'],
+				require_second_factor: true
+			},
+			kinds: [
+				{
+					step: 'totp',
+					label: 'Two-step verification',
+					description: 'An authenticator app or passkeys.',
+					fixed: false,
+					implemented: true
+				}
+			],
+			selected: 'totp',
+			editable: true,
+			creating: false,
+			savedDefault: false,
+			applications: 1,
+			onRemove: () => {}
+		}));
+
 	it('a text input', () => expectAccessible(Input, { label: 'Name', value: '' }));
+
+	it("a connection's sign-in settings, trusting the provider's second factor", () =>
+		expectAccessible(SSOSignInTab, {
+			form: Object.assign(new SSOForm(), {
+				name: 'Acme',
+				domains: ['acme.com'],
+				secondFactor: 'provider'
+			}),
+			readOnly: false
+		}));
+
+	it("a SAML connection's authentication contexts", () =>
+		expectAccessible(SSOSignInTab, {
+			form: Object.assign(new SSOForm(), {
+				name: 'Globex',
+				protocol: 'saml',
+				domains: ['globex.com'],
+				secondFactor: 'provider',
+				mfaContexts: 'urn:example:mfa'
+			}),
+			readOnly: false
+		}));
 
 	it("a connection's domain proofs: proved and waiting for its record", () =>
 		expectAccessible(DomainProofList, {

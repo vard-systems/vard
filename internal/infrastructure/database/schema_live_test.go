@@ -334,3 +334,326 @@ func TestLiveADatabaseFromBeforeTheSquashIsRefused(t *testing.T) {
 		t.Errorf("migrating it = %v, want ErrSquashedHistory", err)
 	}
 }
+
+// An installation upgraded to the DPoP binding keeps the requests and codes
+// it had, each bound to no key, which is what they were; going back down
+// keeps them too, without the column.
+func TestLiveTheDPoPBindingUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 4)
+	if has := rows(t, db, `SELECT table_name FROM information_schema.columns
+		WHERE column_name = 'dpop_key' AND table_name IN ('authorization_requests', 'authorization_codes')`); len(has) != 0 {
+		t.Fatalf("before the binding, dpop_key is on %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{Name: "Shop", ClientID: "shop", Type: model.AppWeb, TokenAuthMethod: model.AuthNone, IsEnabled: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	request := &model.AuthorizationRequest{HandleHash: "request", ApplicationID: app.ID, RedirectURI: "https://shop.example/cb", Scope: "openid", ExpiresAt: later}
+	code := &model.AuthorizationCode{CodeHash: "code", ApplicationID: app.ID, UserID: user.ID, RedirectURI: "https://shop.example/cb", Scope: "openid", AuthenticatedAt: time.Now(), ExpiresAt: later}
+	for _, row := range []any{request, code} {
+		if err := db.Omit(clause.Associations, "DPoPKey").Create(row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to the binding: %v", err)
+	}
+	for _, table := range []string{"authorization_requests", "authorization_codes"} {
+		if keys := rows(t, db, "SELECT dpop_key FROM "+table); !slices.Equal(keys, []string{""}) {
+			t.Errorf("%s after the upgrade holds keys %q, want the one row, bound to none", table, keys)
+		}
+	}
+
+	migrateDownTo(t, db, log, 4)
+	if has := rows(t, db, `SELECT table_name FROM information_schema.columns
+		WHERE column_name = 'dpop_key' AND table_name IN ('authorization_requests', 'authorization_codes')`); len(has) != 0 {
+		t.Errorf("down left dpop_key on %v", has)
+	}
+	for _, table := range []string{"authorization_requests", "authorization_codes"} {
+		if left := rows(t, db, "SELECT id::text FROM "+table); len(left) != 1 {
+			t.Errorf("down left %d rows in %s, want 1", len(left), table)
+		}
+	}
+}
+
+// migrateDownTo takes the migrations down, one at a time, until version is
+// the last one applied.
+func migrateDownTo(t *testing.T, db *gorm.DB, log *slog.Logger, version int64) {
+	t.Helper()
+
+	applied := func() int64 {
+		var at int64
+		if err := db.Raw("SELECT COALESCE(MAX(version_id), 0) FROM goose_db_version WHERE is_applied").Scan(&at).Error; err != nil {
+			t.Fatal(err)
+		}
+		return at
+	}
+	for applied() > version {
+		if err := database.MigrateDown(db, log); err != nil {
+			t.Fatalf("down from %d: %v", applied(), err)
+		}
+	}
+	if at := applied(); at != version {
+		t.Fatalf("the database is at %d, want %d", at, version)
+	}
+}
+
+// An installation from before a flow could require a second factor upgrades
+// with every flow requiring none and every waiting sign-in its own; going
+// back down removes the step-ups still waiting, which would otherwise read
+// as sign-ins their first factor never proved.
+func TestLiveStepUpUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 5)
+	stepUpColumns := `SELECT table_name || '.' || column_name FROM information_schema.columns
+		WHERE (table_name = 'login_flows' AND column_name = 'require_second_factor')
+			OR (table_name = 'pending_sign_ins' AND column_name = 'step_up_session_id')
+		ORDER BY 1`
+	if has := rows(t, db, stepUpColumns); len(has) != 0 {
+		t.Fatalf("before step-up, the database has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	session := &model.UserSession{TokenHash: "session", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later}
+	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "Remember").Create(session).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Omit(clause.Associations, "StepUpSessionID", "ApplicationID", "DeviceAuthorizationID").Create(waiting).Error; err != nil {
+		t.Fatal(err)
+	}
+	flows := rows(t, db, "SELECT id::text FROM login_flows")
+	if len(flows) == 0 {
+		t.Fatal("the database has no login flow to upgrade")
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to step-up: %v", err)
+	}
+	if required := rows(t, db, "SELECT id::text FROM login_flows WHERE require_second_factor"); len(required) != 0 {
+		t.Errorf("after the upgrade, flows %v require a second factor", required)
+	}
+	if steps := rows(t, db, "SELECT handle_hash FROM pending_sign_ins WHERE step_up_session_id IS NOT NULL"); len(steps) != 0 {
+		t.Errorf("after the upgrade, %v are step-ups", steps)
+	}
+
+	stepUp := &model.PendingSignIn{HandleHash: "step-up", UserID: user.ID, StepUpSessionID: &session.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(stepUp).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 5)
+	if has := rows(t, db, stepUpColumns); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM pending_sign_ins ORDER BY 1"); !slices.Equal(left, []string{"waiting"}) {
+		t.Errorf("down left the waiting sign-ins %v, want only the one that was not a step-up", left)
+	}
+	if left := rows(t, db, "SELECT id::text FROM login_flows"); len(left) != len(flows) {
+		t.Errorf("down left %d login flows, want %d", len(left), len(flows))
+	}
+}
+
+// Sessions open before 00007 are recorded as not remembered, so a step-up of
+// one writes a cookie for the browser's lifetime, as before; going down keeps
+// every session.
+func TestLiveRememberSessionUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 6)
+	column := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'user_sessions' AND column_name = 'remember'`
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Fatalf("before 00007, user_sessions has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	open := &model.UserSession{TokenHash: "open", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "Remember").Create(open).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00007: %v", err)
+	}
+	if remembered := rows(t, db, "SELECT token_hash FROM user_sessions WHERE remember"); len(remembered) != 0 {
+		t.Errorf("after the upgrade, %v are remembered", remembered)
+	}
+
+	kept := &model.UserSession{TokenHash: "kept", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later, Remember: true}
+	if err := db.Omit(clause.Associations).Create(kept).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 6)
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT token_hash FROM user_sessions ORDER BY 1"); !slices.Equal(left, []string{"kept", "open"}) {
+		t.Errorf("down left the sessions %v, want both", left)
+	}
+}
+
+// Sign-ins waiting before 00008 name no application; going down deletes only
+// those that name one, which the default flow would otherwise hold.
+func TestLiveSignInApplicationUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 7)
+	column := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'pending_sign_ins' AND column_name = 'application_id'`
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Fatalf("before 00008, pending_sign_ins has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{Name: "Telly", ClientID: "telly", Type: model.AppNative, TokenAuthMethod: model.AuthNone, IsEnabled: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "ApplicationID", "DeviceAuthorizationID").Create(waiting).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00008: %v", err)
+	}
+	if named := rows(t, db, "SELECT handle_hash FROM pending_sign_ins WHERE application_id IS NOT NULL"); len(named) != 0 {
+		t.Errorf("after the upgrade, %v name an application", named)
+	}
+
+	device := &model.PendingSignIn{HandleHash: "device", UserID: user.ID, ApplicationID: &app.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "DeviceAuthorizationID").Create(device).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 7)
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM pending_sign_ins ORDER BY 1"); !slices.Equal(left, []string{"waiting"}) {
+		t.Errorf("down left the waiting sign-ins %v, want only the one naming no application", left)
+	}
+}
+
+// Step-ups waiting before 00009 name no device; going down keeps every
+// waiting sign-in, which then only stops naming its device.
+func TestLiveSignInDeviceUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 8)
+	column := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'pending_sign_ins' AND column_name = 'device_authorization_id'`
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Fatalf("before 00009, pending_sign_ins has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{Name: "Telly", ClientID: "telly", Type: model.AppNative, TokenAuthMethod: model.AuthNone, IsEnabled: true}
+	for _, row := range []any{user, app} {
+		if err := db.Create(row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	later := time.Now().Add(time.Hour)
+	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ApplicationID: &app.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "DeviceAuthorizationID").Create(waiting).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00009: %v", err)
+	}
+	if named := rows(t, db, "SELECT handle_hash FROM pending_sign_ins WHERE device_authorization_id IS NOT NULL"); len(named) != 0 {
+		t.Errorf("after the upgrade, %v name a device", named)
+	}
+
+	device := &model.DeviceAuthorization{DeviceCodeHash: "device", UserCodeHash: "user", ApplicationID: app.ID, Scope: "openid",
+		Status: model.DevicePending, Interval: 5, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(device).Error; err != nil {
+		t.Fatal(err)
+	}
+	stepUp := &model.PendingSignIn{HandleHash: "step-up", UserID: user.ID, ApplicationID: &app.ID, DeviceAuthorizationID: &device.ID, ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(stepUp).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 8)
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM pending_sign_ins ORDER BY 1"); !slices.Equal(left, []string{"step-up", "waiting"}) {
+		t.Errorf("down left the waiting sign-ins %v, want both", left)
+	}
+}
+
+// Connections from before 00010 answer for nobody's second factor: each is
+// local, accepts amr mfa should it be switched to its provider, and lists
+// no SAML context. Going down keeps every connection.
+func TestLiveSSOSecondFactorUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 9)
+	columns := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'sso_connections' AND column_name IN ('second_factor', 'accepted_amr', 'mfa_contexts')`
+	if has := rows(t, db, columns); len(has) != 0 {
+		t.Fatalf("before 00010, sso_connections has %v", has)
+	}
+
+	acme := &model.SSOConnection{Slug: "acme", Name: "Acme", Protocol: model.SSOProtocolOIDC, Domains: model.StringList{"acme.test"},
+		Issuer: "https://acme.test", ClientID: "acme", Matching: model.SSOMatchLink, RoleMappings: model.SSORoleMappings{}}
+	if err := db.Omit(clause.Associations, "SecondFactor", "AcceptedAMR", "MFAContexts").Create(acme).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00010: %v", err)
+	}
+	got := rows(t, db, "SELECT second_factor || ' ' || accepted_amr::text || ' ' || mfa_contexts::text FROM sso_connections")
+	if want := []string{`local ["mfa"] []`}; !slices.Equal(got, want) {
+		t.Errorf("after the upgrade the connection is %v, want %v", got, want)
+	}
+	if err := db.Exec(`UPDATE sso_connections SET second_factor = 'both'`).Error; err == nil {
+		t.Error("a second factor nobody named was stored")
+	}
+	if err := db.Exec(`UPDATE sso_connections SET second_factor = 'provider'`).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 9)
+	if has := rows(t, db, columns); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT slug FROM sso_connections"); !slices.Equal(left, []string{"acme"}) {
+		t.Errorf("down left the connections %v, want acme", left)
+	}
+}

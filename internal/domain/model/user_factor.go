@@ -102,6 +102,22 @@ type PendingSignIn struct {
 	LinkSubject      string         `gorm:"size:512;not null;default:''"`
 	LinkEmail        string         `gorm:"size:255;not null;default:''"`
 
+	// StepUpSessionID is the session a step-up adds its second factor to,
+	// nil for a sign-in that opens a new one. Only that session's own
+	// cookie may finish it.
+	StepUpSessionID *uuid.UUID   `gorm:"type:uuid;index"`
+	StepUpSession   *UserSession `gorm:"constraint:OnDelete:CASCADE"`
+
+	// ApplicationID is the application a sign-in with no authorization
+	// request is for (a device being allowed), whose login flow holds it;
+	// nil otherwise.
+	ApplicationID *uuid.UUID   `gorm:"type:uuid;index"`
+	Application   *Application `gorm:"constraint:OnDelete:CASCADE"`
+	// DeviceAuthorizationID is the device a step-up was started to allow,
+	// which leaving it ("Not now") denies; nil otherwise.
+	DeviceAuthorizationID *uuid.UUID           `gorm:"type:uuid;index"`
+	DeviceAuthorization   *DeviceAuthorization `gorm:"constraint:OnDelete:CASCADE"`
+
 	ExpiresAt time.Time `gorm:"not null;index"`
 	UsedAt    *time.Time
 }

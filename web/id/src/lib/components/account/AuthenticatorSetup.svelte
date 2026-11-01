@@ -1,20 +1,22 @@
-<script lang="ts">
+<script lang="ts" generics="Added">
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
-	import { account } from '#lib/api/index.js';
+	import type { AuthenticatorSecret } from '#lib/api/index.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
 	import { notify } from '#lib/state/toast.svelte.js';
 	import { Button, Form, TextField } from '../ui/index.js';
 
 	type Props = {
-		/** The password the person confirmed this with, "" for an account without one. */
-		password: string;
-		/** Called with the recovery codes, when this was the first factor. */
-		onadded: (codes: string[]) => unknown;
+		/** Starts the setup: the account page's call, or the waiting sign-in's. */
+		begin: () => Promise<{ authenticator: AuthenticatorSecret }>;
+		/** Confirms it with a code from the app. */
+		confirm: (code: string) => Promise<Added>;
+		/** Called with what confirming answered. */
+		onadded: (added: Added) => unknown;
 		oncancel: () => void;
 	};
 
-	let { password, onadded, oncancel }: Props = $props();
+	let { begin, confirm: send, onadded, oncancel }: Props = $props();
 
 	const t = useTranslator();
 
@@ -26,7 +28,7 @@
 
 	async function start() {
 		try {
-			const { authenticator } = await account.beginAuthenticator(password);
+			const { authenticator } = await begin();
 			secret = authenticator.secret;
 			qr = await QRCode.toString(authenticator.uri, { type: 'svg', margin: 1, width: 176 });
 		} catch (err) {
@@ -43,9 +45,9 @@
 		confirming = true;
 
 		try {
-			const { recovery_codes } = await account.confirmAuthenticator(code);
+			const added = await send(code);
 			notify.success(t('security.authenticator_added'));
-			await onadded(recovery_codes ?? []);
+			await onadded(added);
 		} catch (err) {
 			notify.error(messageOf(err, t));
 			confirming = false;

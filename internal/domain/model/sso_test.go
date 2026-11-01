@@ -12,6 +12,7 @@ func oidcConnection() SSOConnection {
 		Slug: "acme", Name: "Acme", Protocol: SSOProtocolOIDC,
 		Domains: StringList{"acme.com"}, Matching: SSOMatchLink,
 		Issuer: "https://acme.okta.com", ClientID: "acme-console",
+		SecondFactor: SSOSecondFactorLocal, AcceptedAMR: DefaultAcceptedAMR, MFAContexts: StringList{},
 	}
 }
 
@@ -29,6 +30,40 @@ func TestSSOConnectionValidate(t *testing.T) {
 			change: func(c *SSOConnection) {
 				c.Protocol, c.Metadata, c.NameIDFormat = SSOProtocolSAML, "<EntityDescriptor/>", SSONameIDEmail
 			},
+		},
+		{
+			name:   "trusting an OpenID Connect provider's mfa",
+			change: func(c *SSOConnection) { c.SecondFactor = SSOSecondFactorProvider },
+		},
+		{
+			name:    "trusting a provider's second factor with no amr value to accept",
+			change:  func(c *SSOConnection) { c.SecondFactor, c.AcceptedAMR = SSOSecondFactorProvider, StringList{} },
+			wantErr: true,
+		},
+		{
+			name: "trusting a SAML provider with no authentication context to accept",
+			change: func(c *SSOConnection) {
+				c.Protocol, c.Metadata, c.NameIDFormat = SSOProtocolSAML, "<EntityDescriptor/>", SSONameIDEmail
+				c.SecondFactor = SSOSecondFactorProvider
+			},
+			wantErr: true,
+		},
+		{
+			name: "trusting a SAML provider's listed context",
+			change: func(c *SSOConnection) {
+				c.Protocol, c.Metadata, c.NameIDFormat = SSOProtocolSAML, "<EntityDescriptor/>", SSONameIDEmail
+				c.SecondFactor, c.MFAContexts = SSOSecondFactorProvider, StringList{"urn:example:mfa"}
+			},
+		},
+		{
+			name:    "a second factor nobody named",
+			change:  func(c *SSOConnection) { c.SecondFactor = "both" },
+			wantErr: true,
+		},
+		{
+			name:    "an accepted value padded with spaces",
+			change:  func(c *SSOConnection) { c.AcceptedAMR = StringList{" mfa"} },
+			wantErr: true,
 		},
 		{
 			name:   "a provider on this machine, over plain http",
@@ -203,5 +238,62 @@ func TestSSOConnectionAskedScopes(t *testing.T) {
 	connection.Scopes = StringList{"email", "groups"}
 	if got := connection.AskedScopes(); !slices.Equal(got, []string{"openid", "email", "groups"}) {
 		t.Errorf("scopes = %v, want openid first and always", got)
+	}
+}
+
+// A provider's answer is a second factor only in provider mode, and only by
+// a value the connection lists for its protocol.
+func TestAProvidersAnswerProvesASecondFactorOnlyWhereListed(t *testing.T) {
+	oidc := oidcConnection()
+	saml := oidcConnection()
+	saml.Protocol, saml.MFAContexts = SSOProtocolSAML, StringList{"urn:example:mfa"}
+
+	tests := []struct {
+		name       string
+		connection SSOConnection
+		provider   bool
+		said       []string
+		want       bool
+	}{
+		{"amr mfa, provider mode", oidc, true, []string{"pwd", "mfa"}, true},
+		{"amr mfa, local mode", oidc, false, []string{"mfa"}, false},
+		{"amr without an accepted value", oidc, true, []string{"pwd", "otp"}, false},
+		{"no amr at all", oidc, true, nil, false},
+		{"a SAML context listed", saml, true, []string{"urn:example:mfa"}, true},
+		{"a SAML context not listed", saml, true, []string{"urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"}, false},
+		{"amr mfa at a SAML connection, which lists contexts", saml, true, []string{"mfa"}, false},
+		{"an empty value never matches", saml, true, []string{""}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			connection := tt.connection
+			if tt.provider {
+				connection.SecondFactor = SSOSecondFactorProvider
+			}
+			if got := connection.ProvedSecondFactor(tt.said); got != tt.want {
+				t.Errorf("ProvedSecondFactor(%v) = %v, want %v", tt.said, got, tt.want)
+			}
+		})
+	}
+}
+
+// A connection saved without its second-factor settings gets the safe ones.
+func TestAConnectionSavedWithoutSecondFactorSettingsIsLocal(t *testing.T) {
+	var connection SSOConnection
+	if err := connection.BeforeSave(nil); err != nil {
+		t.Fatal(err)
+	}
+	if connection.SecondFactor != SSOSecondFactorLocal || !slices.Equal(connection.AcceptedAMR, DefaultAcceptedAMR) ||
+		connection.MFAContexts == nil || len(connection.MFAContexts) != 0 {
+		t.Errorf("saved as %q, %v, %v; want local, [mfa], []", connection.SecondFactor, connection.AcceptedAMR, connection.MFAContexts)
+	}
+
+	trusted := SSOConnection{SecondFactor: SSOSecondFactorProvider, AcceptedAMR: StringList{"hwk"}, MFAContexts: StringList{"urn:a"}}
+	if err := trusted.BeforeSave(nil); err != nil {
+		t.Fatal(err)
+	}
+	if trusted.SecondFactor != SSOSecondFactorProvider || !slices.Equal(trusted.AcceptedAMR, StringList{"hwk"}) {
+		t.Errorf("settings given were changed: %q, %v", trusted.SecondFactor, trusted.AcceptedAMR)
 	}
 }

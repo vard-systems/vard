@@ -2,7 +2,9 @@
 import { createRawSnippet } from 'svelte';
 import { describe, it } from 'vitest';
 import { expectAccessible } from '#lib/testing/a11y.js';
+import AuthenticatorSetup from './account/AuthenticatorSetup.svelte';
 import Decision from './auth/Decision.svelte';
+import PasskeyAdd from './account/PasskeyAdd.svelte';
 import PresenceCheck from './account/PresenceCheck.svelte';
 import RecoveryCodeSheet from './account/RecoveryCodeSheet.svelte';
 import SessionList from './account/SessionList.svelte';
@@ -39,6 +41,22 @@ describe('the sign-in pages are usable without seeing them', () => {
 		expectAccessible(RecoveryCodeSheet, {
 			codes: ['abcde-fghjk', 'mnpqr-stuvw'],
 			ondone: nothing
+		}));
+
+	it('an authenticator being set up', () =>
+		expectAccessible(AuthenticatorSetup, {
+			begin: () => new Promise(nothing),
+			confirm: () => new Promise(nothing),
+			onadded: nothing,
+			oncancel: nothing
+		}));
+
+	it('a passkey being added', () =>
+		expectAccessible(PasskeyAdd, {
+			begin: () => new Promise(nothing),
+			finish: () => new Promise(nothing),
+			onadded: nothing,
+			oncancel: nothing
 		}));
 
 	it('a password asked before a change', () =>

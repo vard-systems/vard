@@ -252,7 +252,7 @@ func (h *Handler) signedIn(c *gin.Context, request string, result *oidc.SignInRe
 	session.SetUser(c, result.Token, result.Session.Record.ExpiresAt, result.Remember, h.secure)
 
 	if request == "" {
-		c.JSON(http.StatusOK, signedInResponse{})
+		c.JSON(http.StatusOK, signedInResponse{RecoveryCodes: result.RecoveryCodes})
 		return
 	}
 
@@ -262,7 +262,7 @@ func (h *Handler) signedIn(c *gin.Context, request string, result *oidc.SignInRe
 		return
 	}
 
-	c.JSON(http.StatusOK, signedInResponse{RedirectTo: location})
+	c.JSON(http.StatusOK, signedInResponse{RedirectTo: location, RecoveryCodes: result.RecoveryCodes})
 }
 
 // Code finishes a sign-in that was waiting for an emailed code, and answers
@@ -506,7 +506,14 @@ func (h *Handler) SubmitSecondFactor(c *gin.Context) {
 		return
 	}
 
-	result, err := h.provider.SubmitSecondFactor(c.Request.Context(), session.SecondFactor(c), oidc.SecondFactorAnswer{
+	ctx := c.Request.Context()
+	current, err := h.provider.SessionFor(ctx, session.UserToken(c))
+	if err != nil {
+		h.fail(c, err, "loading the user session failed")
+		return
+	}
+
+	result, err := h.provider.SubmitSecondFactor(ctx, session.SecondFactor(c), current, oidc.SecondFactorAnswer{
 		Code:    req.Code,
 		Passkey: req.Passkey,
 	}, signedin.Client(c))
@@ -517,6 +524,157 @@ func (h *Handler) SubmitSecondFactor(c *gin.Context) {
 
 	session.ClearSecondFactor(c, h.secure)
 	h.signedIn(c, result.Request, result)
+}
+
+// Setting up a second factor while signing in, for an application that
+// requires one: named by the waiting sign-in's cookie alone, with the
+// browser's session for a step-up. Only the person, in their own browser,
+// changes how they sign in, so an application's token is refused outright.
+
+func (h *Handler) BeginEnrolAuthenticator(c *gin.Context) {
+	current, ok := h.waitingBrowser(c)
+	if !ok {
+		return
+	}
+
+	setup, err := h.provider.BeginEnrolAuthenticator(c.Request.Context(), session.SecondFactor(c), current, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "starting an authenticator while signing in failed")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"authenticator": setup})
+}
+
+func (h *Handler) EnrolAuthenticator(c *gin.Context) {
+	var req enrolAuthenticatorRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+	if err := req.validate(); err != nil {
+		respond.Failure(c, h.log, err, "validating an authenticator code failed")
+		return
+	}
+
+	current, ok := h.waitingBrowser(c)
+	if !ok {
+		return
+	}
+
+	result, err := h.provider.EnrolAuthenticator(c.Request.Context(), session.SecondFactor(c), current, req.Code, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "setting up an authenticator while signing in failed")
+		return
+	}
+
+	session.ClearSecondFactor(c, h.secure)
+	h.signedIn(c, result.Request, result)
+}
+
+func (h *Handler) BeginEnrolPasskey(c *gin.Context) {
+	current, ok := h.waitingBrowser(c)
+	if !ok {
+		return
+	}
+
+	options, err := h.provider.BeginEnrolPasskey(c.Request.Context(), session.SecondFactor(c), current, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "starting a passkey while signing in failed")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"passkey": options})
+}
+
+func (h *Handler) EnrolPasskey(c *gin.Context) {
+	var req enrolPasskeyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+	if err := req.validate(); err != nil {
+		respond.Failure(c, h.log, err, "validating a passkey failed")
+		return
+	}
+
+	current, ok := h.waitingBrowser(c)
+	if !ok {
+		return
+	}
+
+	result, err := h.provider.EnrolPasskey(c.Request.Context(), session.SecondFactor(c), current, req.Label, req.Response, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "adding a passkey while signing in failed")
+		return
+	}
+
+	session.ClearSecondFactor(c, h.secure)
+	h.signedIn(c, result.Request, result)
+}
+
+// LeaveSecondFactor gives up the waiting sign-in the browser's cookie names
+// ("Not now"), and answers where to go: the application, told access_denied,
+// or the account page.
+func (h *Handler) LeaveSecondFactor(c *gin.Context) {
+	current, ok := h.waitingBrowser(c)
+	if !ok {
+		return
+	}
+
+	location, err := h.provider.LeaveSignIn(c.Request.Context(), session.SecondFactor(c), current, signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "leaving a sign-in failed")
+		return
+	}
+
+	session.ClearSecondFactor(c, h.secure)
+	c.JSON(http.StatusOK, signedInResponse{RedirectTo: location})
+}
+
+// StepUp starts a step-up of the signed-in session for the application a
+// device asks for: the cookie names it, and the second-factor page finishes
+// it. Nothing is started when the session already meets the flow.
+func (h *Handler) StepUp(c *gin.Context) {
+	var req stepUpRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respond.Fail(c, respond.InvalidBody)
+		return
+	}
+	if err := req.validate(); err != nil {
+		respond.Failure(c, h.log, err, "validating a step-up failed")
+		return
+	}
+
+	handle, err := h.provider.StepUpForDevice(c.Request.Context(), req.UserCode, signedin.Session(c), signedin.Client(c))
+	if err != nil {
+		h.fail(c, err, "starting a step-up failed")
+		return
+	}
+	if handle == "" {
+		c.JSON(http.StatusOK, signedInResponse{})
+		return
+	}
+
+	session.SetSecondFactor(c, handle, time.Now().Add(model.PendingSignInLifetime), h.secure)
+	c.JSON(http.StatusOK, signedInResponse{SecondFactor: true})
+}
+
+// waitingBrowser refuses a call carrying an application's token, and loads
+// the session the browser's cookie names, nil for none.
+func (h *Handler) waitingBrowser(c *gin.Context) (*oidc.Session, bool) {
+	if session.Bearer(c) != "" {
+		respond.Fail(c, signedin.Problem(oidc.ErrBrowserRequired))
+		return nil, false
+	}
+
+	current, err := h.provider.SessionFor(c.Request.Context(), session.UserToken(c))
+	if err != nil {
+		h.fail(c, err, "loading the user session failed")
+		return nil, false
+	}
+
+	return current, true
 }
 
 // BeginPasskey starts a sign-in with a passkey alone.

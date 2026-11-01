@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,29 +46,53 @@ func (s *Store) StartUserFactor(ctx context.Context, factor *model.UserFactor) e
 	})
 }
 
+// ErrHasFactor refuses a first factor to an account that has one by now.
+var ErrHasFactor = errors.New("the account already has a second factor")
+
 // ConfirmUserFactor finishes setting a factor up with what it holds from now
 // on. Only an unconfirmed one is changed, so a ceremony answered twice
-// confirms once: ErrAlreadyUsed otherwise.
-func (s *Store) ConfirmUserFactor(ctx context.Context, factor *model.UserFactor, at time.Time) error {
-	result := s.db.WithContext(ctx).Model(&model.UserFactor{}).
-		Where("id = ? AND confirmed_at IS NULL", factor.ID).
-		Updates(map[string]any{
-			"secret":        factor.Secret,
-			"credential_id": factor.CredentialID,
-			"label":         factor.Label,
-			"confirmed_at":  at,
-			"last_used_at":  factor.LastUsedAt,
-		})
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return ErrAlreadyUsed
-	}
+// confirms once: ErrAlreadyUsed otherwise. With onlyFirst, it is confirmed
+// only while the account has no other, ErrHasFactor otherwise: confirmations
+// for one account are taken one at a time, so two setups racing each see
+// what the other kept.
+func (s *Store) ConfirmUserFactor(ctx context.Context, factor *model.UserFactor, at time.Time, onlyFirst bool) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(hashtext(?))", "user factors "+factor.UserID.String()).Error; err != nil {
+			return translate(err)
+		}
 
-	factor.ConfirmedAt = &at
+		if onlyFirst {
+			var confirmed int64
+			if err := tx.Model(&model.UserFactor{}).
+				Where("user_id = ? AND confirmed_at IS NOT NULL", factor.UserID).
+				Count(&confirmed).Error; err != nil {
+				return err
+			}
+			if confirmed > 0 {
+				return ErrHasFactor
+			}
+		}
 
-	return nil
+		result := tx.Model(&model.UserFactor{}).
+			Where("id = ? AND confirmed_at IS NULL", factor.ID).
+			Updates(map[string]any{
+				"secret":        factor.Secret,
+				"credential_id": factor.CredentialID,
+				"label":         factor.Label,
+				"confirmed_at":  at,
+				"last_used_at":  factor.LastUsedAt,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrAlreadyUsed
+		}
+
+		factor.ConfirmedAt = &at
+
+		return nil
+	})
 }
 
 // ClaimUserFactorStep takes an authenticator's step, once: of two sign-ins

@@ -70,6 +70,18 @@ func TestLoginFlowValidate(t *testing.T) {
 			want:   "session_lifetime_hours must be between 1 and 2160",
 		},
 		{
+			name:   "requiring a second factor nobody can set up or answer",
+			change: func(f *LoginFlow) { f.RequireSecondFactor = true },
+			want:   "require_second_factor needs the totp step",
+		},
+		{
+			name: "requiring a second factor with the two-step step",
+			change: func(f *LoginFlow) {
+				f.Steps = append(f.Steps, StepTOTP)
+				f.RequireSecondFactor = true
+			},
+		},
+		{
 			name:   "turning off the flow everything falls back to",
 			change: func(f *LoginFlow) { f.IsEnabled = false },
 			want:   "the default flow cannot be turned off",

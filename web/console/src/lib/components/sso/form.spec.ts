@@ -17,7 +17,17 @@ describe('SSOForm.missing', () => {
 		['a new form', new SSOForm(), 'connection'],
 		['an OIDC connection with no issuer', oidc({ issuer: ' ' }), 'connection'],
 		['a SAML connection with no metadata', oidc({ protocol: 'saml' }), 'connection'],
-		['no domain and no sign-in button', oidc({ domains: [], showOnLogin: false }), 'signin']
+		['no domain and no sign-in button', oidc({ domains: [], showOnLogin: false }), 'signin'],
+		[
+			'trusting the provider with no amr value',
+			oidc({ secondFactor: 'provider', acceptedAmr: ' ' }),
+			'signin'
+		],
+		[
+			'trusting a SAML provider with no context',
+			oidc({ protocol: 'saml', metadata: '<EntityDescriptor/>', secondFactor: 'provider' }),
+			'signin'
+		]
 	])('%s names its tab', (_, form, tab) => expect(form.missing?.tab).toBe(tab));
 
 	it('a complete OIDC connection lacks nothing', () => expect(oidc().missing).toBeNull());
@@ -89,5 +99,42 @@ describe('SSOForm.fill', () => {
 
 		expect(form.metadata).toBe('');
 		expect(form.metadataUrl).toBe('https://idp.test/metadata');
+	});
+});
+
+describe('the second factor', () => {
+	it('is this server’s by default, with mfa ready to accept', () => {
+		const form = new SSOForm();
+		expect(form.secondFactor).toBe('local');
+		expect(form.acceptedAmr).toBe('mfa');
+	});
+
+	it('sends the list of its protocol, each value once', () => {
+		expect(
+			oidc({ secondFactor: 'provider', acceptedAmr: ' mfa  hwk mfa ' }).toInput(false)
+		).toMatchObject({ second_factor: 'provider', accepted_amr: ['mfa', 'hwk'] });
+
+		const saml = oidc({
+			protocol: 'saml',
+			metadata: '<EntityDescriptor/>',
+			secondFactor: 'provider',
+			mfaContexts: 'urn:example:mfa\n\nurn:example:mfa\nurn:example:hardware\n'
+		});
+		expect(saml.missing).toBeNull();
+		expect(saml.toInput(false)).toMatchObject({
+			mfa_contexts: ['urn:example:mfa', 'urn:example:hardware']
+		});
+		expect(saml.toInput(false)).not.toHaveProperty('accepted_amr');
+	});
+
+	it('is filled from a saved connection', () => {
+		const form = new SSOForm({
+			protocol: 'saml',
+			second_factor: 'provider',
+			accepted_amr: ['mfa'],
+			mfa_contexts: ['urn:a', 'urn:b']
+		} as SSOConnection);
+		expect(form.secondFactor).toBe('provider');
+		expect(form.mfaContexts).toBe('urn:a\nurn:b');
 	});
 });

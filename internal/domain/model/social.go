@@ -170,6 +170,12 @@ type SocialSpec struct {
 
 	IDTokenIssuer string `json:"-"`
 
+	// JWKSURL is where the provider publishes the keys its id_tokens are
+	// signed with. With it, an id_token the identity is read from has its
+	// signature checked; without it, only the TLS of the token endpoint
+	// vouches for the token (OpenID Connect Core 3.1.3.7).
+	JWKSURL string `json:"-"`
+
 	EmailInTokenResponse bool `json:"-"`
 
 	UserInfoScheme string `json:"-"`
@@ -208,6 +214,7 @@ var SocialSpecs = []SocialSpec{
 		AuthorizeURL: "https://accounts.google.com/o/oauth2/v2/auth",
 		TokenURL:     "https://oauth2.googleapis.com/token",
 		UserInfoURL:  "https://openidconnect.googleapis.com/v1/userinfo",
+		JWKSURL:      "https://www.googleapis.com/oauth2/v3/certs",
 		Scopes:       []string{"openid", "email", "profile"},
 		Claims: SocialClaims{
 			Subject:       "sub",
@@ -229,6 +236,7 @@ var SocialSpecs = []SocialSpec{
 		// person is in the id_token, and the name only the first time.
 		AuthorizeURL: "https://appleid.apple.com/auth/authorize",
 		TokenURL:     "https://appleid.apple.com/auth/token",
+		JWKSURL:      "https://appleid.apple.com/auth/keys",
 		Scopes:       []string{"name", "email"},
 		Claims: SocialClaims{
 			Subject:       "sub",

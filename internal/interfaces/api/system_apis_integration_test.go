@@ -292,9 +292,9 @@ func TestLiveAccountAPIWithAUserToken(t *testing.T) {
 		t.Errorf("POST /email with an account.write token = %d %v, want 403 email_change_not_offered", status, body)
 	}
 
-	// Nor may a token accept terms or allow an application for its user:
-	// those pages answer only to the person's own browser.
-	for _, path := range []string{"/consent", "/agreements", "/device"} {
+	// Nor may a token accept terms, allow an application or start a step-up
+	// for its user: those pages answer only to the person's own browser.
+	for _, path := range []string{"/consent", "/agreements", "/device", "/step-up"} {
 		if status, body := f.bearer(http.MethodPost, account+path, writer, map[string]any{
 			"request": "any", "user_code": "BCDF-GHJK", "yes": true,
 		}); status != http.StatusForbidden || body["code"] != "browser_session_required" {

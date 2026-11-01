@@ -32,6 +32,9 @@ type AuthorizationCode struct {
 	Audience            string     `gorm:"size:255;not null;default:''"`
 	AuthenticatedAt     time.Time  `gorm:"not null"`
 	Methods             StringList `gorm:"type:jsonb;serializer:json"`
+	// DPoPKey is the thumbprint of the DPoP key the code may only be
+	// redeemed with (RFC 9449 §10), "" when any proof, or none, will do.
+	DPoPKey string `gorm:"column:dpop_key;size:43;not null;default:''"`
 
 	ExpiresAt time.Time `gorm:"not null;index"`
 	// UsedAt is set on exchange. A second presentation is refused and revokes

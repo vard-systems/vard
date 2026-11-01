@@ -157,6 +157,10 @@ func (s *Service) exchangeCode(ctx context.Context, app *model.Application, p To
 		return nil, oauthError(ErrInvalidGrant, "code_verifier does not match the code_challenge")
 	case code.CodeChallenge == "" && p.CodeVerifier != "":
 		return nil, oauthError(ErrInvalidGrant, "code_verifier was sent, but the authorization request had no code_challenge")
+	case code.DPoPKey != "" && p.dpopKey != code.DPoPKey:
+		// Checked after the claim, as PKCE is, so a code tried without its
+		// key is spent and cannot be tried again with a stolen one.
+		return nil, oauthError(ErrInvalidGrant, "the authorization code is bound to a DPoP key: send a DPoP proof from that key")
 	}
 
 	user, err := s.store.User(ctx, code.UserID)
@@ -251,6 +255,17 @@ func (s *Service) refresh(ctx context.Context, app *model.Application, p TokenPa
 	// A family bound to a key goes on only with a proof of it.
 	if old.DPoPKey != "" && p.dpopKey != old.DPoPKey {
 		return nil, oauthError(ErrInvalidGrant, "the refresh token is bound to a DPoP key; send a proof from it")
+	}
+
+	// A flow that has come to require a second factor since the family began
+	// ends a family that never passed one, a retry included: the person signs
+	// in again, and nothing is revoked meanwhile.
+	flow, err := s.store.EffectiveLoginFlow(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	if flow.RequireSecondFactor && !model.ProvedSecondFactor(old.Methods) {
+		return nil, oauthError(ErrInvalidGrant, "the application now requires a second factor; sign in again")
 	}
 
 	original := strings.Fields(old.Scope)

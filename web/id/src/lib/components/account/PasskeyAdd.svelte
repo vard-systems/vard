@@ -1,19 +1,21 @@
-<script lang="ts">
+<script lang="ts" generics="Added">
 	import { browserSupportsWebAuthn, startRegistration } from '@simplewebauthn/browser';
-	import { account } from '#lib/api/index.js';
+	import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/browser';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
 	import { notify } from '#lib/state/toast.svelte.js';
 	import { Button, Form, TextField } from '../ui/index.js';
 
 	type Props = {
-		/** The password the person confirmed this with, "" for an account without one. */
-		password: string;
-		/** Called with the recovery codes, when this was the first factor. */
-		onadded: (codes: string[]) => unknown;
+		/** Starts the ceremony: the account page's call, or the waiting sign-in's. */
+		begin: () => Promise<{ passkey: PublicKeyCredentialCreationOptionsJSON }>;
+		/** Keeps the passkey the device made, under its name. */
+		finish: (body: { label: string; response: unknown }) => Promise<Added>;
+		/** Called with what finishing answered. */
+		onadded: (added: Added) => unknown;
 		oncancel: () => void;
 	};
 
-	let { password, onadded, oncancel }: Props = $props();
+	let { begin, finish, onadded, oncancel }: Props = $props();
 
 	const t = useTranslator();
 
@@ -29,7 +31,7 @@
 		adding = true;
 
 		try {
-			const { passkey } = await account.beginPasskey(password);
+			const { passkey } = await begin();
 
 			let response;
 			try {
@@ -41,9 +43,9 @@
 				return;
 			}
 
-			const { recovery_codes } = await account.finishPasskey({ label: label.trim(), response });
+			const added = await finish({ label: label.trim(), response });
 			notify.success(t('security.passkey_added'));
-			await onadded(recovery_codes ?? []);
+			await onadded(added);
 		} catch (err) {
 			notify.error(messageOf(err, t));
 			adding = false;

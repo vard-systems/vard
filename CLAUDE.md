@@ -184,7 +184,15 @@ code near it, and add a test when adding a case.
 - **Outbound requests to admin- or user-supplied URLs** (social, SSO, SAML
   metadata, back-channel logout) go through `newFederationClient` in
   `internal/application/oidc/outbound.go`, which refuses private, link-local and metadata
-  addresses at dial time. A logout token follows no redirect.
+  addresses at dial time. A logout token follows no redirect. A provider's
+  keys are fetched again only for a token naming a key not held (or none),
+  and at most once a `keyRefetchEvery` (a minute) per key set
+  (`verifyPublished`, `providerKeys`), and a social
+  id_token is checked against its kind's published keys
+  (`SocialSpec.JWKSURL`) wherever the kind names them.
+- **A key from outside is at most `jose.MaxRSABits` (4096) long.** A DPoP
+  proof brings a key of the sender's choosing, and verifying under a large
+  modulus costs the server; `ParseJWK` refuses a longer one.
 - **Redirect targets** are exact-matched redirect URIs
   (`Application.AllowsRedirect`: a native app's loopback URI on any port, RFC
   8252 §7.3, and nothing else loosened; Expo Go's `exp://` only for a native
@@ -203,6 +211,41 @@ code near it, and add a test when adding a case.
   or the address holds. Administrators are throttled the same way, on a keyed
   hash of the username typed, counted before it is looked up
   (`internal/application/auth/throttle.go`); nothing is ever locked.
+- **A flow that requires a second factor is met only by a session that
+  passed one of the account's own** (`model.MethodSecondFactor` in its
+  `Methods`, never an amr value; an emailed code is `otp` and does not
+  count), checked by `sessionMeets` and again in `finish` before any code.
+  A signed-in session without one steps up in place: the waiting sign-in
+  names it (`step_up_session_id`) and is finished only from a browser whose
+  session cookie names that session, for the same user, by one conditional
+  UPDATE that rotates its token and keeps its id and expiry. A step-up
+  renews `authenticated_at` (auth_time, `max_age`); the flow's lifetime runs
+  from `created_at`, and the new cookie is kept as the old one was
+  (`user_sessions.remember`). `amr` says `mfa` only with the marker.
+  An account without a factor sets one up in the waiting sign-in
+  (`twostep_enrol.go`, `enrolling`): only for a flow that requires one, only
+  at a proved address (the verification email goes first), never for a
+  sign-in holding an SSO link, and the setup endpoints refuse a bearer token.
+  Every factor confirmed, there or on the account page, mails the account
+  (`confirmFactor`, `mailFactorAdded`). A first factor set up while signing
+  in is confirmed under a per-user advisory lock, only while the account has
+  none (`ConfirmUserFactor(…, onlyFirst)`), so two setups at once keep one.
+  Allowing a device (`AnswerDevice`) meets the device application's flow as
+  authorize does (`step_up_required`, then `POST /api/v1/account/step-up`,
+  whose waiting sign-in names the application, `flowOf`), and a refresh
+  family that never passed a factor gets `invalid_grant` once its flow
+  requires one. "Not now" (`LeaveSignIn`) spends the waiting sign-in and its
+  authorization request, each by one conditional UPDATE, and answers the
+  client `access_denied`; a device's step-up names its device
+  (`device_authorization_id`), which leaving denies while unanswered.
+  Single sign-on meets the requirement by the account's own factor
+  (`second_factor = local`, the default), or by the provider's when the
+  connection trusts it (`provider`) and its signed answer shows a listed
+  value — an id_token's `amr` (`accepted_amr`, read before userinfo fills
+  anything in) or the verified assertion's `AuthnContextClassRef`
+  (`mfa_contexts`) — which gives the session only the marker, never an amr.
+  Otherwise it falls back to the account's own factor, and the fallback is
+  logged (`user.sso_second_factor_fallback`).
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.
@@ -213,6 +256,10 @@ code near it, and add a test when adding a case.
   and entering them is rate-limited.
 - **A DPoP-bound access token is never taken as a bearer token.** Userinfo
   checks its proof; the account and admin APIs, which do not, refuse it.
+  A code bound to a key (`dpop_jkt`, or a pushed request's proof, RFC 9449
+  §10; `DPoPKey`) is exchanged only with a proof from that key, checked
+  after the code is claimed, so a code tried without it is spent; a pushed
+  request whose proof and `dpop_jkt` disagree is refused.
 - **A client without credentials always uses PKCE** (`Application.MustUsePKCE`),
   whatever its `RequirePKCE` says, and a code asked for with a challenge is
   never exchanged without its verifier.

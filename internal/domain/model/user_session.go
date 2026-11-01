@@ -17,6 +17,9 @@ type UserSession struct {
 	// amr claim of every token issued in the session.
 	Methods   StringList `gorm:"type:jsonb;serializer:json"`
 	ExpiresAt time.Time  `gorm:"not null;index"`
+	// Remember is whether the cookie was kept past the browser's closing
+	// ("stay signed in"), so a step-up writes its new cookie the same way.
+	Remember  bool `gorm:"not null"`
 	RevokedAt *time.Time
 	IP        string `gorm:"size:45;not null;default:''"`
 	UserAgent string `gorm:"size:255;not null;default:''"`

@@ -46,6 +46,8 @@ type fakeOIDC struct {
 	mu     sync.Mutex
 	person map[string]any
 	codes  map[string]fakeCode
+	// userinfo, when set, is what its userinfo endpoint answers, unsigned.
+	userinfo map[string]any
 }
 
 type fakeCode struct {
@@ -69,14 +71,26 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		f.mu.Lock()
+		withUserinfo := f.userinfo != nil
+		f.mu.Unlock()
+		document := map[string]any{
 			"issuer":                                f.server.URL,
 			"authorization_endpoint":                f.server.URL + "/authorize",
 			"token_endpoint":                        f.server.URL + "/token",
 			"jwks_uri":                              f.server.URL + "/jwks",
 			"token_endpoint_auth_methods_supported": []string{"client_secret_basic"},
 			"scopes_supported":                      fakeScopes,
-		})
+		}
+		if withUserinfo {
+			document["userinfo_endpoint"] = f.server.URL + "/userinfo"
+		}
+		_ = json.NewEncoder(w).Encode(document)
+	})
+	mux.HandleFunc("GET /userinfo", func(w http.ResponseWriter, _ *http.Request) {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		_ = json.NewEncoder(w).Encode(f.userinfo)
 	})
 	mux.HandleFunc("GET /jwks", func(w http.ResponseWriter, _ *http.Request) {
 		var published []any

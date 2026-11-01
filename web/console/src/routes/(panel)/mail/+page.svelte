@@ -30,7 +30,7 @@
 
 <PageHeader
 	crumbs={['Dashboard', 'Mail']}
-	description="How this installation sends email — the server it hands a message to, and what each message says. Password resets, address confirmations and one-time codes all go this way."
+	description="How this installation sends email — the server it hands a message to, and what each message says. Password resets, address confirmations, one-time codes and two-step notices all go this way."
 >
 	{#snippet secondary()}
 		<IconButton icon="ri-refresh-line" label="Reload these settings" onclick={reload} />

@@ -15,6 +15,7 @@ import (
 	"vard/internal/domain/model"
 	"vard/internal/domain/recovery"
 	"vard/internal/domain/totp"
+	"vard/internal/infrastructure/mail"
 	"vard/internal/infrastructure/store"
 )
 
@@ -56,6 +57,23 @@ func (s *Service) TwoStep(ctx context.Context, session *Session) (*TwoStepStatus
 	return status, nil
 }
 
+// factorOwner is whose factor is being set up, and where: on the account
+// page, by a session whose password was just typed again, or while signing
+// in to an application that requires one, by the waiting sign-in its httpOnly
+// cookie names, whose first factor was proved minutes ago.
+type factorOwner struct {
+	user   *model.User
+	signIn *model.PendingSignIn
+}
+
+// during is where the factor was added, for the activity log.
+func (o factorOwner) during() string {
+	if o.signIn != nil {
+		return "sign_in"
+	}
+	return "account"
+}
+
 // BeginAuthenticator starts setting up an authenticator app: a fresh seed,
 // not used until a code from it is typed back. Adding a way to sign in asks
 // for the password, as taking one away does: otherwise a session left open,
@@ -69,6 +87,61 @@ func (s *Service) BeginAuthenticator(ctx context.Context, session *Session, pass
 	if err != nil {
 		return nil, err
 	}
+
+	return s.startAuthenticator(ctx, factorOwner{user: session.User}, factors)
+}
+
+// ConfirmAuthenticator finishes setting up the authenticator with a code from
+// it. When it is the user's first factor the answer carries their recovery
+// codes, the only time they are shown.
+func (s *Service) ConfirmAuthenticator(ctx context.Context, session *Session, code string, client Client) ([]string, error) {
+	if _, err := s.addingFactor(ctx, session); err != nil {
+		return nil, err
+	}
+
+	owner := factorOwner{user: session.User}
+	factor, err := s.checkAuthenticator(ctx, owner, code)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.confirmFactor(ctx, owner, factor, client)
+}
+
+// BeginPasskey starts adding a passkey: the request for
+// navigator.credentials.create, kept until the browser answers. A passkey
+// signs in on its own, so adding one asks for the password first.
+func (s *Service) BeginPasskey(ctx context.Context, session *Session, password string, client Client) (*protocol.PublicKeyCredentialCreationOptions, error) {
+	if err := s.provePresence(ctx, session, password, client); err != nil {
+		return nil, err
+	}
+
+	factors, err := s.addingFactor(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.startPasskey(ctx, factorOwner{user: session.User}, factors)
+}
+
+// FinishPasskey keeps the passkey the browser made, under the name the user
+// gave it.
+func (s *Service) FinishPasskey(ctx context.Context, session *Session, label string, response []byte, client Client) ([]string, error) {
+	if _, err := s.addingFactor(ctx, session); err != nil {
+		return nil, err
+	}
+
+	owner := factorOwner{user: session.User}
+	factor, err := s.checkNewPasskey(ctx, owner, label, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.confirmFactor(ctx, owner, factor, client)
+}
+
+// startAuthenticator keeps a fresh seed for the owner, unconfirmed.
+func (s *Service) startAuthenticator(ctx context.Context, owner factorOwner, factors []model.UserFactor) (*AuthenticatorSetup, error) {
 	if slices.ContainsFunc(factors, isAuthenticator) {
 		return nil, ErrAuthenticatorExists
 	}
@@ -87,7 +160,7 @@ func (s *Service) BeginAuthenticator(ctx context.Context, session *Session, pass
 		return nil, err
 	}
 
-	factor := model.UserFactor{UserID: session.User.ID, Method: model.MFAMethodTOTP, Secret: sealed}
+	factor := model.UserFactor{UserID: owner.user.ID, Method: model.MFAMethodTOTP, Secret: sealed}
 	factor.ID = id
 	if err := s.store.StartUserFactor(ctx, &factor); err != nil {
 		return nil, err
@@ -98,18 +171,13 @@ func (s *Service) BeginAuthenticator(ctx context.Context, session *Session, pass
 		organization = found.Name
 	}
 
-	return &AuthenticatorSetup{Secret: seed, URI: totp.URI(organization, session.User.Email, seed)}, nil
+	return &AuthenticatorSetup{Secret: seed, URI: totp.URI(organization, owner.user.Email, seed)}, nil
 }
 
-// ConfirmAuthenticator finishes setting up the authenticator with a code from
-// it. When it is the user's first factor the answer carries their recovery
-// codes, the only time they are shown.
-func (s *Service) ConfirmAuthenticator(ctx context.Context, session *Session, code string, client Client) ([]string, error) {
-	if _, err := s.addingFactor(ctx, session); err != nil {
-		return nil, err
-	}
-
-	factors, err := s.store.UserFactors(ctx, session.User.ID)
+// checkAuthenticator is the owner's unconfirmed authenticator, once a code
+// from it is right; nothing is confirmed yet.
+func (s *Service) checkAuthenticator(ctx context.Context, owner factorOwner, code string) (*model.UserFactor, error) {
+	factors, err := s.store.UserFactors(ctx, owner.user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,30 +194,18 @@ func (s *Service) ConfirmAuthenticator(ctx context.Context, session *Session, co
 		return nil, err
 	}
 
-	now := s.now()
-	step, ok := totp.Verify(string(seed), code, now, 0)
+	step, ok := totp.Verify(string(seed), code, s.now(), 0)
 	if !ok {
 		return nil, ErrSecondFactorInvalid
 	}
 	used := time.Unix(step*int64(totp.Period/time.Second), 0)
 	factor.LastUsedAt = &used
 
-	return s.confirmFactor(ctx, session, &factor, client)
+	return &factor, nil
 }
 
-// BeginPasskey starts adding a passkey: the request for
-// navigator.credentials.create, kept until the browser answers. A passkey
-// signs in on its own, so adding one asks for the password first.
-func (s *Service) BeginPasskey(ctx context.Context, session *Session, password string, client Client) (*protocol.PublicKeyCredentialCreationOptions, error) {
-	if err := s.provePresence(ctx, session, password, client); err != nil {
-		return nil, err
-	}
-
-	factors, err := s.addingFactor(ctx, session)
-	if err != nil {
-		return nil, err
-	}
-
+// startPasskey keeps a registration ceremony for the owner, unconfirmed.
+func (s *Service) startPasskey(ctx context.Context, owner factorOwner, factors []model.UserFactor) (*protocol.PublicKeyCredentialCreationOptions, error) {
 	credentials, err := s.passkeyCredentials(factors)
 	if err != nil {
 		return nil, err
@@ -163,7 +219,7 @@ func (s *Service) BeginPasskey(ctx context.Context, session *Session, password s
 		exclusions[i] = credential.Descriptor()
 	}
 
-	creation, ceremony, err := s.webauthn.BeginRegistration(passkeyUser{session.User, credentials},
+	creation, ceremony, err := s.webauthn.BeginRegistration(passkeyUser{owner.user, credentials},
 		webauthn.WithExclusions(exclusions),
 		webauthn.WithResidentKeyRequirement(protocol.ResidentKeyRequirementPreferred))
 	if err != nil {
@@ -179,7 +235,7 @@ func (s *Service) BeginPasskey(ctx context.Context, session *Session, password s
 		return nil, err
 	}
 
-	factor := model.UserFactor{UserID: session.User.ID, Method: model.MFAMethodWebAuthn, Secret: sealed}
+	factor := model.UserFactor{UserID: owner.user.ID, Method: model.MFAMethodWebAuthn, Secret: sealed}
 	factor.ID = id
 	if err := s.store.StartUserFactor(ctx, &factor); err != nil {
 		return nil, err
@@ -188,14 +244,10 @@ func (s *Service) BeginPasskey(ctx context.Context, session *Session, password s
 	return &creation.Response, nil
 }
 
-// FinishPasskey keeps the passkey the browser made, under the name the user
-// gave it.
-func (s *Service) FinishPasskey(ctx context.Context, session *Session, label string, response []byte, client Client) ([]string, error) {
-	if _, err := s.addingFactor(ctx, session); err != nil {
-		return nil, err
-	}
-
-	factors, err := s.store.UserFactors(ctx, session.User.ID)
+// checkNewPasskey is the owner's unconfirmed passkey holding the credential the
+// browser made, once it answers the ceremony; nothing is confirmed yet.
+func (s *Service) checkNewPasskey(ctx context.Context, owner factorOwner, label string, response []byte) (*model.UserFactor, error) {
+	factors, err := s.store.UserFactors(ctx, owner.user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +269,7 @@ func (s *Service) FinishPasskey(ctx context.Context, session *Session, label str
 		return nil, ErrPasskeyRefused
 	}
 
-	credential, err := s.webauthn.CreateCredential(passkeyUser{user: session.User}, ceremony, parsed)
+	credential, err := s.webauthn.CreateCredential(passkeyUser{user: owner.user}, ceremony, parsed)
 	if err != nil {
 		return nil, ErrPasskeyRefused
 	}
@@ -228,7 +280,7 @@ func (s *Service) FinishPasskey(ctx context.Context, session *Session, label str
 	factor.CredentialID = base64.RawURLEncoding.EncodeToString(credential.ID)
 	factor.Label = label
 
-	return s.confirmFactor(ctx, session, &factor, client)
+	return &factor, nil
 }
 
 // RemoveFactor removes one of the user's factors. Taking protection away
@@ -282,17 +334,24 @@ func (s *Service) NewRecoveryCodes(ctx context.Context, session *Session, passwo
 	return codes, nil
 }
 
-// confirmFactor makes a factor count, and hands out recovery codes with the
-// user's first.
-func (s *Service) confirmFactor(ctx context.Context, session *Session, factor *model.UserFactor, client Client) ([]string, error) {
-	had, err := s.store.HasUserFactor(ctx, session.User.ID)
+// confirmFactor makes a factor count, tells the account it was added, and
+// hands out recovery codes with the user's first.
+func (s *Service) confirmFactor(ctx context.Context, owner factorOwner, factor *model.UserFactor, client Client) ([]string, error) {
+	user := owner.user
+	had, err := s.store.HasUserFactor(ctx, user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.store.ConfirmUserFactor(ctx, factor, s.now()); errors.Is(err, store.ErrAlreadyUsed) {
+	// Set up while signing in, it is the account's first or nothing: of two
+	// sign-ins setting one up at once, only one keeps its factor.
+	err = s.store.ConfirmUserFactor(ctx, factor, s.now(), owner.signIn != nil)
+	switch {
+	case errors.Is(err, store.ErrAlreadyUsed):
 		return nil, ErrSecondFactorExpired
-	} else if err != nil {
+	case errors.Is(err, store.ErrHasFactor):
+		return nil, ErrTwoStepNotOffered
+	case err != nil:
 		return nil, err
 	}
 
@@ -300,13 +359,14 @@ func (s *Service) confirmFactor(ctx context.Context, session *Session, factor *m
 	if factor.Method == model.MFAMethodWebAuthn {
 		method = MethodPasskey
 	}
-	s.record(ctx, session.User, session.User.Email, "user.two_step_enabled", client, map[string]any{"method": method})
+	s.record(ctx, user, user.Email, "user.two_step_enabled", client, map[string]any{"method": method, "during": owner.during()})
+	s.mailFactorAdded(ctx, user, method, client)
 
 	if had {
 		return nil, nil
 	}
 
-	return s.replaceRecoveryCodes(ctx, session.User)
+	return s.replaceRecoveryCodes(ctx, user)
 }
 
 func (s *Service) replaceRecoveryCodes(ctx context.Context, user *model.User) ([]string, error) {
@@ -365,12 +425,42 @@ const presenceWindow = 10 * time.Minute
 var ErrSignInAgain = problem("sign_in_again")
 
 // twoStepOffered is whether the account page offers two-step verification:
-// the default flow has its step.
+// some flow in use has its step. The default flow is always in use; another
+// only while it is on, as only then do its applications sign in through it.
 func (s *Service) twoStepOffered(ctx context.Context) (bool, error) {
 	flow, err := s.flowFor(ctx, "")
 	if err != nil {
 		return false, err
 	}
+	if flow.Offers(model.StepTOTP) {
+		return true, nil
+	}
 
-	return flow.Offers(model.StepTOTP), nil
+	return s.store.EnabledLoginFlowOffers(ctx, model.StepTOTP)
+}
+
+// mailFactorAdded tells the account a second factor was added to it, from the
+// account page or a sign-in alike: whoever adds one is asked for it at every
+// sign-in after, so its owner hears of one they did not add. The factor is
+// already kept, so a failure to send is only logged.
+func (s *Service) mailFactorAdded(ctx context.Context, user *model.User, method string, client Client) {
+	text := s.textIn(ctx, client.Language)
+
+	params := map[string]any{
+		"email":  user.Email,
+		"method": text.Localize("email.two_step_on."+method, nil),
+		"ip":     client.IP,
+	}
+
+	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	err := s.mail.Send(sendCtx, mail.Message{
+		To:      user.Email,
+		Subject: text.Localize("email.two_step_on.subject", params),
+		Body:    text.Localize("email.two_step_on.body", params),
+	})
+	if err != nil {
+		s.log.Warn("sending the two-step notice failed", "user", user.ID, "error", err)
+	}
 }

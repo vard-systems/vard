@@ -101,6 +101,14 @@ func (r *connectionRequest) applyTo(connection *model.SSOConnection, sealer *jos
 	connection.LastNameAttribute = validate.Text(r.LastNameAttribute, connection.LastNameAttribute)
 	connection.GroupsAttribute = validate.Text(r.GroupsAttribute, connection.GroupsAttribute)
 
+	connection.SecondFactor = model.SSOSecondFactor(validate.Text(r.SecondFactor, string(connection.SecondFactor)))
+	if r.AcceptedAMR != nil {
+		connection.AcceptedAMR = acceptedValues(*r.AcceptedAMR)
+	}
+	if r.MFAContexts != nil {
+		connection.MFAContexts = acceptedValues(*r.MFAContexts)
+	}
+
 	if r.RoleMappings != nil {
 		mappings := model.SSORoleMappings{}
 		for _, mapping := range *r.RoleMappings {
@@ -161,6 +169,15 @@ func settle(connection *model.SSOConnection) error {
 	if connection.RoleMappings == nil {
 		connection.RoleMappings = model.SSORoleMappings{}
 	}
+	if connection.SecondFactor == "" {
+		connection.SecondFactor = model.SSOSecondFactorLocal
+	}
+	if connection.AcceptedAMR == nil {
+		connection.AcceptedAMR = slices.Clone(model.DefaultAcceptedAMR)
+	}
+	if connection.MFAContexts == nil {
+		connection.MFAContexts = model.StringList{}
+	}
 
 	if err := connection.Validate(); err != nil {
 		return respond.Invalid(err.Error())
@@ -188,6 +205,19 @@ func slugFrom(sent, name string) string {
 	}
 
 	return slug
+}
+
+// acceptedValues are the values typed, trimmed, each once; blank ones are
+// dropped.
+func acceptedValues(typed []string) model.StringList {
+	values := model.StringList{}
+	for _, value := range typed {
+		value = strings.TrimSpace(value)
+		if value != "" && !slices.Contains(values, value) {
+			values = append(values, value)
+		}
+	}
+	return values
 }
 
 func required(field string) respond.Fault { return requiredField.With("field", field) }

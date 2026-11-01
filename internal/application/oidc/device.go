@@ -239,6 +239,12 @@ func (s *Service) AnswerDevice(ctx context.Context, userCode string, session *Se
 
 	refused := false
 	if allow {
+		// Allowing a device is a sign-in to its application, held to that
+		// application's flow like any other.
+		if err := s.sessionMeetsFlowOf(ctx, device.Application, session); err != nil {
+			return err
+		}
+
 		token, err := s.evaluate(ctx, device.Application, session.User, strings.Fields(device.Scope), device.Audience)
 		if err != nil {
 			return err
@@ -286,4 +292,65 @@ func (s *Service) waitingDevice(ctx context.Context, userCode string) (*model.De
 // too few for a bare hash to keep.
 func (s *Service) userCodeHash(code string) string {
 	return hex.EncodeToString(s.sealer.Tag(userCodePurpose, []byte(model.NormalizeUserCode(code))))
+}
+
+// ErrStepUpRequired asks a signed-in person to pass a second factor in their
+// session (or set one up) before allowing a device for an application whose
+// flow requires one: POST /api/v1/account/step-up starts it.
+var ErrStepUpRequired = problem("step_up_required")
+
+// sessionMeetsFlowOf says whether the session meets the application's flow,
+// as authorize asks it: ErrSignInAgain or ErrStepUpRequired when it does not.
+func (s *Service) sessionMeetsFlowOf(ctx context.Context, app *model.Application, session *Session) error {
+	flow, err := s.store.EffectiveLoginFlow(ctx, app)
+	if err != nil {
+		return err
+	}
+
+	switch sessionMeets(flow, session, s.now()) {
+	case sessionSignInAgain:
+		return ErrSignInAgain
+	case sessionStepUp:
+		return ErrStepUpRequired
+	}
+
+	return nil
+}
+
+// StepUpForDevice holds a step-up of the browser's session for the
+// application a device asks for, and returns the handle for the browser's
+// cookie; "" when the session needs none. The person passes a second factor,
+// or sets one up, on the second-factor page and comes back to allow the
+// device.
+func (s *Service) StepUpForDevice(ctx context.Context, userCode string, session *Session, client Client) (string, error) {
+	if !session.InBrowser() {
+		return "", ErrBrowserRequired
+	}
+
+	device, err := s.waitingDevice(ctx, userCode)
+	if err != nil {
+		return "", err
+	}
+
+	err = s.sessionMeetsFlowOf(ctx, device.Application, session)
+	switch {
+	case err == nil:
+		return "", nil
+	case !errors.Is(err, ErrStepUpRequired):
+		return "", err
+	}
+
+	// Setting a factor up needs a proved address: the email goes first.
+	has, err := s.store.HasUserFactor(ctx, session.User.ID)
+	if err != nil {
+		return "", err
+	}
+	if !has && !session.User.IsEmailVerified {
+		if err := s.sendVerification(ctx, session.User, "", client); err != nil {
+			return "", err
+		}
+		return "", ErrEmailNotVerified
+	}
+
+	return s.waitForStepUp(ctx, session, "", &device.Application.ID, &device.ID)
 }

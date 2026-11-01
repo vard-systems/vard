@@ -173,6 +173,18 @@ var MailMessageSpecs = []MailMessageSpec{
 			{Name: "minutes", Description: "How long the code works, in minutes"},
 		},
 	},
+	{
+		Kind:        "two_step_on",
+		Label:       "Two-step verification turned on",
+		Description: "Sent to the account each time a second factor is added to it, from the account page or while signing in.",
+		SubjectKey:  "email.two_step_on.subject",
+		BodyKey:     "email.two_step_on.body",
+		Params: []MailParam{
+			{Name: "email", Description: "The address the message went to"},
+			{Name: "method", Description: "What was added: an authenticator app or a passkey"},
+			{Name: "ip", Description: "The network address it was added from"},
+		},
+	},
 }
 
 func MailMessageKeys() []string {

@@ -126,7 +126,7 @@ func (s *Service) signInThroughSSO(
 		return nil, err
 	}
 
-	result, err := s.startFederatedSession(ctx, user, flow, request, client)
+	result, err := s.startFederatedSession(ctx, user, flow, request, connection, person, client)
 	if err != nil {
 		return nil, err
 	}

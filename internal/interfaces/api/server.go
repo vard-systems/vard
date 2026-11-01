@@ -230,14 +230,14 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 	// Social sign-in. The callback also answers POST and sits outside CSRF
 	// because Apple posts its answer from its own form.
 	r.GET(oidc.PathSocialStart, h.limit, h.oauth.SocialStart)
-	r.GET(oidc.PathSocialCallback, h.oauth.SocialCallback)
-	r.POST(oidc.PathSocialCallback, h.oauth.SocialCallback)
+	r.GET(oidc.PathSocialCallback, h.limit, h.oauth.SocialCallback)
+	r.POST(oidc.PathSocialCallback, h.limit, h.oauth.SocialCallback)
 
 	// Enterprise SSO. The SAML ACS takes the provider's posted form, so it is
 	// outside CSRF, and the browser then comes back to it with a GET; start
 	// and ACS are rate limited because anyone can call them.
 	r.GET(oidc.PathSSOStart, h.limit, h.oauth.SSOStart)
-	r.GET(oidc.PathSSOCallback, h.oauth.SSOCallback)
+	r.GET(oidc.PathSSOCallback, h.limit, h.oauth.SSOCallback)
 	r.POST(oidc.PathSSOACS, h.limit, h.oauth.SSOAssertion)
 	r.GET(oidc.PathSSOACS, h.limit, h.oauth.SSOAssertionReturn)
 	r.GET(oidc.PathSSOMetadata, h.oauth.SSOMetadata)
@@ -265,6 +265,11 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 		accounts.POST("/login/code/resend", h.limit, h.account.ResendCode)
 		accounts.GET("/login/second-factor", h.account.SecondFactor)
 		accounts.POST("/login/second-factor", h.limit, h.account.SubmitSecondFactor)
+		accounts.POST("/login/second-factor/authenticator", h.limit, h.account.BeginEnrolAuthenticator)
+		accounts.POST("/login/second-factor/authenticator/confirm", h.limit, h.account.EnrolAuthenticator)
+		accounts.POST("/login/second-factor/passkeys", h.limit, h.account.BeginEnrolPasskey)
+		accounts.POST("/login/second-factor/passkeys/finish", h.limit, h.account.EnrolPasskey)
+		accounts.POST("/login/second-factor/leave", h.limit, h.account.LeaveSecondFactor)
 		accounts.POST("/login/passkey", h.limit, h.account.BeginPasskey)
 		accounts.POST("/login/passkey/finish", h.limit, h.account.FinishPasskey)
 		accounts.POST("/register", h.limit, h.account.Register)
@@ -288,6 +293,7 @@ func registerPublicRoutes(r *gin.Engine, h publicHandlers) {
 		own.POST("/agreements", h.steps.AnswerAgreements)
 		own.GET("/device", h.limit, h.steps.Device)
 		own.POST("/device", h.limit, h.steps.AnswerDevice)
+		own.POST("/step-up", h.limit, h.account.StepUp)
 		own.GET("/two-step", h.twoStep.TwoStep)
 		own.POST("/two-step/authenticator", h.limit, h.twoStep.BeginAuthenticator)
 		own.POST("/two-step/authenticator/confirm", h.limit, h.twoStep.ConfirmAuthenticator)

@@ -131,6 +131,25 @@ const actions: Record<string, Action> = {
 		tone: 'success',
 		icon: 'ri-login-box-line'
 	},
+	'user.sso_second_factor_fallback': {
+		label: 'Provider showed no second factor',
+		verb: 'signed in through single sign-on without the provider showing a second factor, and was asked for their own',
+		category: 'access',
+		icon: 'ri-shield-keyhole-line'
+	},
+	'user.second_factor_declined': {
+		label: 'Second factor declined',
+		verb: 'left a second factor for later, and the application was told',
+		category: 'access',
+		icon: 'ri-shield-cross-line'
+	},
+	'user.step_up': {
+		label: 'Second factor passed',
+		verb: 'passed a second factor to continue in a session',
+		category: 'access',
+		tone: 'success',
+		icon: 'ri-shield-check-line'
+	},
 	'user.logout': {
 		label: 'User signed out',
 		verb: 'signed out',
@@ -777,6 +796,9 @@ const selfTargeted = new Set([
 	'admin.passkey_removed',
 	'admin.recovery_codes_regenerated',
 	'user.login',
+	'user.step_up',
+	'user.second_factor_declined',
+	'user.sso_second_factor_fallback',
 	'user.logout',
 	'user.login_failed',
 	'user.login_blocked',

@@ -71,14 +71,20 @@ func (h *Handler) Authorize(c *gin.Context) {
 		return
 	}
 
-	location, err := h.provider.Authorize(ctx, params, current)
+	authorization, err := h.provider.Authorize(ctx, params, current)
 	if err != nil {
 		h.serverError(c, err, "authorization failed")
 		return
 	}
 
+	// A session that has to pass a second factor first: the cookie names
+	// the waiting step-up, and the second-factor page finishes it.
+	if authorization.SecondFactorHandle != "" {
+		session.SetSecondFactor(c, authorization.SecondFactorHandle, time.Now().Add(model.PendingSignInLifetime), h.secure)
+	}
+
 	c.Header("Cache-Control", "no-store")
-	c.Redirect(http.StatusFound, location)
+	c.Redirect(http.StatusFound, authorization.Location)
 }
 
 // SocialStart sends the browser to a provider and leaves the state in a cookie,
@@ -294,13 +300,13 @@ func (h *Handler) Token(c *gin.Context) {
 func (h *Handler) PushAuthorization(c *gin.Context) {
 	noStore(c)
 
-	client, params, err := pushedParams(c)
+	client, params, proof, err := pushedParams(c)
 	if err != nil {
 		h.oauthError(c, err)
 		return
 	}
 
-	pushed, err := h.provider.PushAuthorization(c.Request.Context(), client, params)
+	pushed, err := h.provider.PushAuthorization(c.Request.Context(), client, params, proof)
 	if err != nil {
 		h.oauthError(c, err)
 		return

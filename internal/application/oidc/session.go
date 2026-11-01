@@ -26,6 +26,9 @@ type SignInResult struct {
 	SecondFactorHandle string
 	Request            string
 	Remember           bool
+	// RecoveryCodes are shown once, with a first factor set up while signing
+	// in.
+	RecoveryCodes []string
 }
 
 func (s *Session) InBrowser() bool {
@@ -183,7 +186,8 @@ func (s *Service) finishSignIn(
 }
 
 // startSession is where every way of signing in ends: the flow's checks, the
-// user's second factor if they have one, then the session.
+// user's second factor if they have one (or setting one up, when the flow
+// requires one), then the session.
 func (s *Service) startSession(
 	ctx context.Context,
 	user *model.User,
@@ -203,24 +207,61 @@ func (s *Service) startSession(
 		return held, err
 	}
 
+	if flow.RequireSecondFactor {
+		return s.holdForEnrolment(ctx, user, request, remember, methods, client)
+	}
+
 	return s.openSession(ctx, user, flow, request, remember, methods, client, action)
 }
 
-// startFederatedSession is startSession for single sign-on, whose provider
-// answers for the second factor of the people it signs in.
+// startFederatedSession is startSession for single sign-on. What the provider
+// proved is its own to say, so the session's amr stays empty; but a
+// connection that trusts its provider's second factor marks the session as
+// having passed one when the provider's answer shows it. A flow that
+// requires a factor the provider did not show falls back to the account's
+// own: the sign-in is held for it, or for setting one up.
 func (s *Service) startFederatedSession(
 	ctx context.Context,
 	user *model.User,
 	flow *model.LoginFlow,
 	request string,
+	connection *model.SSOConnection,
+	person *ssoPerson,
 	client Client,
 ) (*SignInResult, error) {
 	if err := s.admit(ctx, user, flow, request, client); err != nil {
 		return nil, err
 	}
 
-	// What the provider proved is its own to say; nothing was proved here.
-	return s.openSession(ctx, user, flow, request, true, nil, client, "user.login")
+	var methods []string
+	if connection.ProvedSecondFactor(person.Proved) {
+		methods = []string{model.MethodSecondFactor}
+	}
+
+	if flow.RequireSecondFactor && methods == nil {
+		if connection.SecondFactor == model.SSOSecondFactorProvider {
+			s.ssoSecondFactorFellBack(ctx, user, connection, person, client)
+		}
+
+		held, err := s.holdForSecondFactor(ctx, user, request, true, methods)
+		if err != nil || held != nil {
+			return held, err
+		}
+		return s.holdForEnrolment(ctx, user, request, true, methods, client)
+	}
+
+	return s.openSession(ctx, user, flow, request, true, methods, client, "user.login")
+}
+
+// ssoSecondFactorFellBack records a sign-in whose provider was trusted for
+// the second factor but whose answer did not show one, so the account's own
+// was asked for instead.
+func (s *Service) ssoSecondFactorFellBack(ctx context.Context, user *model.User, connection *model.SSOConnection, person *ssoPerson, client Client) {
+	s.log.Info("an identity provider's answer showed no second factor; the account's own is asked for",
+		"connection", connection.Slug, "user", user.ID, "proved", person.Proved)
+	s.record(ctx, user, user.Email, "user.sso_second_factor_fallback", client, map[string]any{
+		"connection": connection.Name, "proved": person.Proved,
+	})
 }
 
 // admit is what the flow asks of everyone, checked here because every way in
@@ -261,12 +302,16 @@ func (s *Service) openSession(
 		return nil, err
 	}
 
+	// CreatedAt is set here, not by the database layer, because a flow's
+	// session lifetime is measured from it on the service's clock.
 	record := model.UserSession{
+		Base:            model.Base{CreatedAt: now},
 		TokenHash:       hash,
 		UserID:          user.ID,
 		AuthenticatedAt: now,
 		Methods:         methods,
 		ExpiresAt:       now.Add(time.Duration(flow.SessionLifetimeHours) * time.Hour),
+		Remember:        remember && flow.AllowRememberMe,
 		IP:              client.IP,
 		UserAgent:       model.Truncate(client.UserAgent, 255),
 	}
@@ -284,7 +329,7 @@ func (s *Service) openSession(
 		Session:  &Session{Record: record, User: user},
 		Token:    token,
 		Request:  request,
-		Remember: remember && flow.AllowRememberMe,
+		Remember: record.Remember,
 	}, nil
 }
 

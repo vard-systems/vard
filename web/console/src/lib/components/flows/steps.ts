@@ -41,6 +41,7 @@ export type FlowDraft = {
 	allow_remember_me: boolean;
 	verify_email_on_register: boolean;
 	require_verified_email: boolean;
+	require_second_factor: boolean;
 	allow_email_change: boolean;
 	session_lifetime_hours: number;
 };
@@ -59,6 +60,7 @@ export function draftOf(flow: FlowDraft): FlowDraft {
 		allow_remember_me: flow.allow_remember_me,
 		verify_email_on_register: flow.verify_email_on_register,
 		require_verified_email: flow.require_verified_email,
+		require_second_factor: flow.require_second_factor,
 		allow_email_change: flow.allow_email_change,
 		session_lifetime_hours: flow.session_lifetime_hours
 	};
@@ -78,6 +80,8 @@ export function problemsOf(draft: FlowDraft): string[] {
 		problems.push('The identifier has to be lower case letters, numbers and dashes.');
 	if (!draft.steps.some((step) => PROOF_STEPS.includes(step)))
 		problems.push('Add Password or Other accounts: without one, nobody can sign in.');
+	if (draft.require_second_factor && !draft.steps.includes('totp'))
+		problems.push('Add Two-step verification: a second factor is set up and asked for there.');
 	if (draft.is_default && !draft.is_enabled)
 		problems.push('The default flow cannot be turned off.');
 	if (
@@ -127,6 +131,7 @@ const base: Omit<FlowDraft, 'name' | 'slug' | 'steps'> = {
 	allow_remember_me: true,
 	verify_email_on_register: false,
 	require_verified_email: false,
+	require_second_factor: false,
 	allow_email_change: false,
 	session_lifetime_hours: 24 * 14
 };
@@ -193,6 +198,7 @@ export function toFile(draft: FlowDraft): FlowFile {
 		allow_remember_me: copy.allow_remember_me,
 		verify_email_on_register: copy.verify_email_on_register,
 		require_verified_email: copy.require_verified_email,
+		require_second_factor: copy.require_second_factor,
 		allow_email_change: copy.allow_email_change,
 		session_lifetime_hours: copy.session_lifetime_hours
 	};
@@ -233,6 +239,7 @@ export function fromFile(text: string, kinds: LoginStepSpec[]): FlowDraft {
 		allow_remember_me: file.allow_remember_me !== false,
 		verify_email_on_register: file.verify_email_on_register === true,
 		require_verified_email: file.require_verified_email === true,
+		require_second_factor: file.require_second_factor === true,
 		allow_email_change: file.allow_email_change === true,
 		session_lifetime_hours:
 			typeof file.session_lifetime_hours === 'number' ? file.session_lifetime_hours : 24 * 14

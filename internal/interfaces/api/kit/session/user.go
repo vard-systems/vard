@@ -97,7 +97,12 @@ func writeSignInState(c *gin.Context, value string, maxAge int, secure bool) {
 // read it.
 const SecondFactorCookie = brand.SecondFactorCookie
 
-const secondFactorPath = "/api/v1/account/login/second-factor"
+// secondFactorPath is the whole host, over plain http as over https (where
+// __Host- requires it): the page a sign-in lands on is rendered on the
+// server, which sees only the cookies sent with the page, so a cookie kept to
+// the API's path would leave a second factor reached by a redirect (a step-up,
+// a provider's callback) looking expired in development alone.
+const secondFactorPath = "/"
 
 func SetSecondFactor(c *gin.Context, handle string, expires time.Time, secure bool) {
 	writeSecondFactor(c, handle, int(time.Until(expires).Seconds()), secure)

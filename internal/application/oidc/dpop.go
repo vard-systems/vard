@@ -111,6 +111,16 @@ func (s *Service) checkDPoP(ctx context.Context, proof, method, target, accessTo
 	return thumbprint, nil
 }
 
+// isThumbprint says whether a value has the shape of a JWK SHA-256
+// thumbprint (RFC 7638): 43 characters of unpadded base64url.
+func isThumbprint(value string) bool {
+	if len(value) != 43 {
+		return false
+	}
+	sum, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	return err == nil && len(sum) == sha256.Size
+}
+
 // presented checks that a token bound to a key came with a proof from it,
 // and that one not bound to a key did not come as DPoP.
 func (s *Service) presented(ctx context.Context, token string, raw map[string]any, how Presentation) error {

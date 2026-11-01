@@ -86,3 +86,20 @@ type passkeyFinishRequest struct {
 	Handle   string          `json:"handle" validate:"required,max=64"`
 	Response json.RawMessage `json:"response"`
 }
+
+// enrolAuthenticatorRequest is a code from the authenticator being set up.
+type enrolAuthenticatorRequest struct {
+	Code string `json:"code" validate:"required,max=16"`
+}
+
+// enrolPasskeyRequest is the passkey the browser made, under the name the
+// person gave it.
+type enrolPasskeyRequest struct {
+	Label    string          `json:"label" validate:"max=100"`
+	Response json.RawMessage `json:"response"`
+}
+
+// stepUpRequest names the device a step-up is for, by the code it shows.
+type stepUpRequest struct {
+	UserCode string `json:"user_code" validate:"required,max=32"`
+}

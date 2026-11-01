@@ -29,6 +29,7 @@ func TestEachCheckListsWhatGoAccepts(t *testing.T) {
 		{&SSOConnection{}, "Protocol", "protocol", texts([]SSOProtocol{SSOProtocolOIDC, SSOProtocolSAML})},
 		{&SSOConnection{}, "NameIDFormat", "name_id_format", texts([]SSONameIDFormat{"", SSONameIDEmail, SSONameIDPersistent, SSONameIDUnspecified})},
 		{&SSOConnection{}, "Matching", "matching", texts([]SSOMatching{SSOMatchLink, SSOMatchDeny})},
+		{&SSOConnection{}, "SecondFactor", "second_factor", texts([]SSOSecondFactor{SSOSecondFactorLocal, SSOSecondFactorProvider})},
 		{&SocialProvider{}, "Kind", "kind", texts([]SocialKind{SocialGoogle, SocialApple, SocialFacebook, SocialYandex, SocialVK, SocialOIDC})},
 		{&SocialProvider{}, "TokenAuth", "token_auth", append([]string{""}, texts(SocialTokenAuths)...)},
 		{&UserField{}, "Type", "type", texts(FieldTypes)},
