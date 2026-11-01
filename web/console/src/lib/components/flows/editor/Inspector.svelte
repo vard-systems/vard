@@ -227,8 +227,8 @@
 				/>
 				{#if draft.require_second_factor}
 					<Note>
-						An emailed code does not count. Until people can set a factor up while signing in, an
-						account without one is turned away and told to turn it on from its account page.
+						An emailed code does not count. Someone without a factor sets one up before going on,
+						once their address is confirmed; each new factor is emailed to the account.
 					</Note>
 				{/if}
 			{:else if step === 'social'}

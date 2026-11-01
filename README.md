@@ -24,8 +24,9 @@ acceptance, social sign-in (Google, Apple, Facebook, Yandex, VK, any
 OIDC/OAuth provider), enterprise SSO (OpenID Connect and SAML 2.0),
 configurable login flows, emailed one-time codes, TOTP for administrators,
 two-step verification (authenticator app or passkeys) for users, optional
-or required by a login flow, with a signed-in person asked for it in the
-session they have,
+or required by a login flow — set up while signing in where it is required,
+asked of a signed-in person in the session they have, and emailed to the
+account each time a factor is added —
 passwordless sign-in with a passkey, roles and API scopes, an activity log, and
 the sign-in pages in English, with more languages added, translated and made the
 default from the panel.

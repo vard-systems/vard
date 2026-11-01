@@ -69,3 +69,16 @@ func (r *passkeyFinishRequest) validate() error {
 	}
 	return validate.Struct(r)
 }
+
+func (r *enrolAuthenticatorRequest) validate() error {
+	r.Code = strings.ReplaceAll(strings.TrimSpace(r.Code), " ", "")
+	return validate.Struct(r)
+}
+
+func (r *enrolPasskeyRequest) validate() error {
+	r.Label = strings.TrimSpace(r.Label)
+	if len(r.Response) > maxPasskeyResponse {
+		return respond.InvalidBody.With()
+	}
+	return validate.Struct(r)
+}

@@ -6,3 +6,6 @@ export { default as ProfileForm } from './ProfileForm.svelte';
 export { default as ProfileIntro } from './ProfileIntro.svelte';
 export { default as SessionList } from './SessionList.svelte';
 export { default as TwoStepPanel } from './TwoStepPanel.svelte';
+export { default as AuthenticatorSetup } from './AuthenticatorSetup.svelte';
+export { default as PasskeyAdd } from './PasskeyAdd.svelte';
+export { default as RecoveryCodeSheet } from './RecoveryCodeSheet.svelte';

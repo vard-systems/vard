@@ -220,7 +220,14 @@ code near it, and add a test when adding a case.
   session cookie names that session, for the same user, by one conditional
   UPDATE that rotates its token and keeps its id and expiry. A step-up
   renews `authenticated_at` (auth_time, `max_age`); the flow's lifetime runs
-  from `created_at`. `amr` says `mfa` only with the marker.
+  from `created_at`, and the new cookie is kept as the old one was
+  (`user_sessions.remember`). `amr` says `mfa` only with the marker.
+  An account without a factor sets one up in the waiting sign-in
+  (`twostep_enrol.go`, `enrolling`): only for a flow that requires one, only
+  at a proved address (the verification email goes first), never for a
+  sign-in holding an SSO link, and the setup endpoints refuse a bearer token.
+  Every factor confirmed, there or on the account page, mails the account
+  (`confirmFactor`, `mailFactorAdded`).
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
   to two-step verification, refuse an application's access token.

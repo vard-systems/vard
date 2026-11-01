@@ -112,7 +112,7 @@ var LoginStepSpecs = []LoginStepSpec{
 	{
 		Step:        StepTOTP,
 		Label:       "Two-step verification",
-		Description: "Let users turn on an authenticator app or passkeys from their account. Whoever turns it on is asked for it at every sign-in.",
+		Description: "An authenticator app or passkeys, asked at every sign-in of anyone who has one. Set up on the account page, or while signing in where required.",
 		Implemented: true,
 	},
 	{

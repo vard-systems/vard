@@ -265,7 +265,7 @@ func TestLiveAStepUpNeverStretchesASession(t *testing.T) {
 }
 
 // A sign-in to an application that requires a second factor passes one, or
-// is refused when the account has none; an emailed code is not one.
+// sets one up when the account has none; an emailed code is not one.
 func TestLiveARequiredSecondFactorIsAskedAtSignIn(t *testing.T) {
 	f := newOAuthFixture(t)
 	f.withSteps("identifier", "password", "email_code", "totp")
@@ -300,23 +300,27 @@ func TestLiveARequiredSecondFactorIsAskedAtSignIn(t *testing.T) {
 		t.Errorf("a password and an emailed code: amr = %v, want %v", got, want)
 	}
 
-	refused := owner.visit(vault.authorizeURL(challenge, nil))
-	if !strings.HasPrefix(refused.String(), vaultRedirect+"?") || refused.Query().Get("error") != "access_denied" {
-		t.Errorf("the emailed-code session at the requiring application went to %s, want access_denied", refused)
+	// That session has passed no factor of the account's own, which has
+	// none: the requiring application has one set up in the session.
+	page(t, owner.visit(vault.authorizeURL(challenge, nil)), "/second-factor")
+	var offer enrolOffer
+	if owner.account(http.MethodGet, "/login/second-factor", nil, &offer); !offer.SecondFactor.Enrol || !offer.SecondFactor.StepUp {
+		t.Errorf("the emailed-code session at the requiring application = %+v, want a factor set up in it", offer.SecondFactor)
 	}
 
-	// Signing in to it without a factor is refused before any session.
+	// Signing in to it without a factor waits for one to be set up, before
+	// any session.
 	fresh := f.s.browser()
 	at := fresh.visit(vault.authorizeURL(challenge, nil))
-	var problem problemBody
-	status := fresh.account(http.MethodPost, "/login", map[string]any{
-		"request": page(t, at, "/login"), "email": adaEmail, "password": adaPassword,
-	}, &problem)
-	if status != http.StatusForbidden || problem.Code != "second_factor_required" {
-		t.Errorf("signing in without a factor = %d %+v, want second_factor_required", status, problem)
+	var setUp struct {
+		SecondFactor bool `json:"second_factor"`
+	}
+	fresh.signInAs(adaEmail, adaPassword, page(t, at, "/login"), false, &setUp)
+	if !setUp.SecondFactor {
+		t.Error("signing in without a factor did not wait for one to be set up")
 	}
 	if status := fresh.account(http.MethodGet, "/me", nil, nil); status == http.StatusOK {
-		t.Error("the refused sign-in made a session")
+		t.Error("the sign-in waiting for a factor made a session")
 	}
 
 	// With a factor, the sign-in waits for it, then reaches the application.

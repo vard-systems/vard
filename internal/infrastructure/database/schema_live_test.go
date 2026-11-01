@@ -432,7 +432,7 @@ func TestLiveStepUpUpgradesAnExistingDatabase(t *testing.T) {
 	later := time.Now().Add(time.Hour)
 	session := &model.UserSession{TokenHash: "session", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later}
 	waiting := &model.PendingSignIn{HandleHash: "waiting", UserID: user.ID, ExpiresAt: later}
-	if err := db.Omit(clause.Associations).Create(session).Error; err != nil {
+	if err := db.Omit(clause.Associations, "Remember").Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Omit(clause.Associations, "StepUpSessionID").Create(waiting).Error; err != nil {
@@ -467,5 +467,50 @@ func TestLiveStepUpUpgradesAnExistingDatabase(t *testing.T) {
 	}
 	if left := rows(t, db, "SELECT id::text FROM login_flows"); len(left) != len(flows) {
 		t.Errorf("down left %d login flows, want %d", len(left), len(flows))
+	}
+}
+
+// Sessions open before 00007 are recorded as not remembered, so a step-up of
+// one writes a cookie for the browser's lifetime, as before; going down keeps
+// every session.
+func TestLiveRememberSessionUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 6)
+	column := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'user_sessions' AND column_name = 'remember'`
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Fatalf("before 00007, user_sessions has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Hour)
+	open := &model.UserSession{TokenHash: "open", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "Remember").Create(open).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00007: %v", err)
+	}
+	if remembered := rows(t, db, "SELECT token_hash FROM user_sessions WHERE remember"); len(remembered) != 0 {
+		t.Errorf("after the upgrade, %v are remembered", remembered)
+	}
+
+	kept := &model.UserSession{TokenHash: "kept", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later, Remember: true}
+	if err := db.Omit(clause.Associations).Create(kept).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	migrateDownTo(t, db, log, 6)
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT token_hash FROM user_sessions ORDER BY 1"); !slices.Equal(left, []string{"kept", "open"}) {
+		t.Errorf("down left the sessions %v, want both", left)
 	}
 }

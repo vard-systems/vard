@@ -68,6 +68,18 @@ func (s *Store) EffectiveLoginFlow(ctx context.Context, app *model.Application) 
 	return s.DefaultLoginFlow(ctx)
 }
 
+// EnabledLoginFlowOffers reports whether a flow that is on has the step.
+func (s *Store) EnabledLoginFlowOffers(ctx context.Context, step model.LoginStep) (bool, error) {
+	return cached(ctx, s, cache.LoginFlows, "offers:"+string(step), func() (bool, error) {
+		var flows int64
+		err := s.db.WithContext(ctx).Model(&model.LoginFlow{}).
+			Where("is_enabled AND steps @> ?::jsonb", `["`+string(step)+`"]`).
+			Count(&flows).Error
+
+		return flows > 0, err
+	})
+}
+
 func (s *Store) CreateLoginFlow(ctx context.Context, flow *model.LoginFlow) error {
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(flow).Error; err != nil {

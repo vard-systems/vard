@@ -81,6 +81,8 @@ export type SignedIn = {
 	code?: CodeChallenge;
 	/** The sign-in waits for the user's second factor, on the second-factor page. */
 	second_factor?: boolean;
+	/** Shown once, with a first factor set up while signing in. */
+	recovery_codes?: string[];
 };
 
 export type SecondFactorMethod = 'totp' | 'passkey' | 'recovery_code';
@@ -92,6 +94,9 @@ export type SecondFactorChallenge = {
 	expires_at: string;
 	/** A signed-in person asked for a second factor in the session they have. */
 	step_up: boolean;
+	/** The account has no second factor and the application requires one: `methods` are what
+	    may be set up, and setting one up finishes the sign-in. */
+	enrol: boolean;
 	passkey?: PublicKeyCredentialRequestOptionsJSON;
 };
 
@@ -117,6 +122,9 @@ export type TwoStep = {
 
 /** Recovery codes, the one time they are shown; empty when none were made. */
 export type RecoveryCodes = { recovery_codes: string[] | null };
+
+/** An authenticator being set up: the key, and the address its QR code draws. */
+export type AuthenticatorSecret = { secret: string; uri: string };
 
 export type User = {
 	id: string;
@@ -260,6 +268,28 @@ export const signIn = {
 	submitSecondFactor: (body: SecondFactorAnswer) =>
 		request<SignedIn>('/account/login/second-factor', { method: 'POST', body }),
 
+	/** Setting up a first factor while signing in, for an application that requires one; the
+	    waiting sign-in's cookie names whose. */
+	beginEnrolAuthenticator: () =>
+		request<{ authenticator: AuthenticatorSecret }>('/account/login/second-factor/authenticator', {
+			method: 'POST'
+		}),
+
+	confirmEnrolAuthenticator: (code: string) =>
+		request<SignedIn>('/account/login/second-factor/authenticator/confirm', {
+			method: 'POST',
+			body: { code }
+		}),
+
+	beginEnrolPasskey: () =>
+		request<{ passkey: PublicKeyCredentialCreationOptionsJSON }>(
+			'/account/login/second-factor/passkeys',
+			{ method: 'POST' }
+		),
+
+	finishEnrolPasskey: (body: { label: string; response: unknown }) =>
+		request<SignedIn>('/account/login/second-factor/passkeys/finish', { method: 'POST', body }),
+
 	/** Signs this browser out. The confirmation page passes on what the
 	    application's logout named; `location` is where the server says to go. */
 	logout: (body?: { client_id: string; post_logout_redirect_uri: string; state: string }) =>
@@ -289,7 +319,7 @@ export const account = {
 	twoStep: (fetch?: Fetch) => request<{ two_step: TwoStep }>('/account/two-step', { fetch }),
 
 	beginAuthenticator: (currentPassword: string) =>
-		request<{ authenticator: { secret: string; uri: string } }>('/account/two-step/authenticator', {
+		request<{ authenticator: AuthenticatorSecret }>('/account/two-step/authenticator', {
 			method: 'POST',
 			body: { current_password: currentPassword }
 		}),

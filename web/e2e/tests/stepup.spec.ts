@@ -3,6 +3,7 @@ import { adminAPI, call, ID, makeUser, pkce, signIn, totp, visit, withSteps } fr
 
 const CALLBACK = 'https://vault.example.test/callback';
 const MARGARET = { email: 'margaret@example.com', password: 'margaret-password-123' };
+const KATHERINE = { email: 'katherine@example.com', password: 'katherine-password-123' };
 
 let client: { id: string; secret: string };
 
@@ -11,6 +12,7 @@ test.beforeAll(async () => {
 	const api = await adminAPI();
 	await withSteps(api, 'identifier', 'password', 'social', 'totp');
 	await makeUser(api, MARGARET.email, MARGARET.password);
+	await makeUser(api, KATHERINE.email, KATHERINE.password);
 
 	const { flow } = await call<{ flow: { id: string } }>(
 		api,
@@ -108,10 +110,38 @@ test('a signed-in person steps up for an application that requires a second fact
 	await expect(page.getByRole('heading', { name: 'This application asks for more' })).toBeVisible();
 	await expect(page.getByText('Vault asks for two-step verification.')).toBeVisible();
 	await expect(page.getByLabel('Email')).toHaveCount(0);
+	// Somebody signed in has no sign-in to go back to.
+	await expect(page.getByRole('link', { name: 'Back to sign in' })).toHaveCount(0);
+	await expect(page.getByRole('link', { name: 'Not now' })).toBeVisible();
 	await page.getByLabel('Code from your authenticator app').fill(totp(key, Date.now() + 30_000));
 	await page.getByRole('button', { name: 'Continue' }).click();
 
 	const claims = await redeem(page, verifier);
 	expect(claims.email).toBe(MARGARET.email);
+	expect(claims.amr).toEqual(['pwd', 'otp', 'mfa']);
+});
+
+// Somebody without a second factor sets one up while signing in to an
+// application that requires one, keeps the recovery codes, and arrives.
+test('a person without a second factor sets one up while signing in', async ({ page }) => {
+	const verifier = await authorize(page);
+	await signIn(page, KATHERINE.email, KATHERINE.password);
+
+	await expect(page.getByRole('heading', { name: 'Set up two-step verification' })).toBeVisible();
+	await expect(page.getByText('Vault asks for two-step verification.')).toBeVisible();
+	await page.getByRole('button', { name: 'Use an authenticator app' }).click();
+
+	const keyField = page.getByLabel('Key');
+	await expect(keyField).not.toHaveValue('');
+	const key = await keyField.inputValue();
+	await page.getByLabel('Code from the app').fill(totp(key));
+	await page.getByRole('button', { name: 'Turn on' }).click();
+
+	await expect(page.getByText('Two-step verification is on.')).toBeVisible();
+	await expect(page.locator('ol code')).toHaveCount(10);
+	await page.getByRole('button', { name: 'I’ve saved them' }).click();
+
+	const claims = await redeem(page, verifier);
+	expect(claims.email).toBe(KATHERINE.email);
 	expect(claims.amr).toEqual(['pwd', 'otp', 'mfa']);
 });

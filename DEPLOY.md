@@ -75,9 +75,15 @@ the emailed code proves only the mailbox a password reset also goes to. An
 application that reads `mfa` to decide anything gets it less often; one that
 needs it can ask for it with a login flow that requires a second factor.
 
-Migration `00006_step_up` runs on start. A login flow can now require a
-second factor (the Two-step verification step, "Require it"); every
-existing flow requires none.
+Migrations `00006_step_up` and `00007_remember_session` run on start. A
+login flow can now require a second factor (the Two-step verification
+step, "Require it"); every existing flow requires none. Someone without a
+factor sets one up while signing in, once their address is confirmed.
+
+Every second factor added from now on, from the account page or while
+signing in, emails its account a notice ("Two-step verification turned
+on" on the Mail page, where its text can be changed). With SMTP not
+configured it only reaches the log, like the other emails.
 
 ### Upgrading to 1.0.0
 

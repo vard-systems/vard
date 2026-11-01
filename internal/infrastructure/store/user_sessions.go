@@ -199,6 +199,7 @@ type userSession struct {
 	AuthenticatedAt time.Time        `json:"authenticated_at"`
 	Methods         model.StringList `json:"methods"`
 	ExpiresAt       time.Time        `json:"expires_at"`
+	Remember        bool             `json:"remember"`
 	RevokedAt       *time.Time       `json:"revoked_at"`
 	IP              string           `json:"ip"`
 	UserAgent       string           `json:"user_agent"`
@@ -212,6 +213,7 @@ func newUserSession(session model.UserSession) userSession {
 		AuthenticatedAt: session.AuthenticatedAt,
 		Methods:         session.Methods,
 		ExpiresAt:       session.ExpiresAt,
+		Remember:        session.Remember,
 		RevokedAt:       session.RevokedAt,
 		IP:              session.IP,
 		UserAgent:       session.UserAgent,
@@ -225,6 +227,7 @@ func (u userSession) model(hash string) model.UserSession {
 		AuthenticatedAt: u.AuthenticatedAt,
 		Methods:         u.Methods,
 		ExpiresAt:       u.ExpiresAt,
+		Remember:        u.Remember,
 		RevokedAt:       u.RevokedAt,
 		IP:              u.IP,
 		UserAgent:       u.UserAgent,

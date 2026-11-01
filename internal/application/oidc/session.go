@@ -26,6 +26,9 @@ type SignInResult struct {
 	SecondFactorHandle string
 	Request            string
 	Remember           bool
+	// RecoveryCodes are shown once, with a first factor set up while signing
+	// in.
+	RecoveryCodes []string
 }
 
 func (s *Session) InBrowser() bool {
@@ -183,7 +186,8 @@ func (s *Service) finishSignIn(
 }
 
 // startSession is where every way of signing in ends: the flow's checks, the
-// user's second factor if they have one, then the session.
+// user's second factor if they have one (or setting one up, when the flow
+// requires one), then the session.
 func (s *Service) startSession(
 	ctx context.Context,
 	user *model.User,
@@ -204,9 +208,7 @@ func (s *Service) startSession(
 	}
 
 	if flow.RequireSecondFactor {
-		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "no second factor"})
-
-		return nil, ErrSecondFactorRequired
+		return s.holdForEnrolment(ctx, user, request, remember, methods, client)
 	}
 
 	return s.openSession(ctx, user, flow, request, remember, methods, client, action)
@@ -276,6 +278,7 @@ func (s *Service) openSession(
 		AuthenticatedAt: now,
 		Methods:         methods,
 		ExpiresAt:       now.Add(time.Duration(flow.SessionLifetimeHours) * time.Hour),
+		Remember:        remember && flow.AllowRememberMe,
 		IP:              client.IP,
 		UserAgent:       model.Truncate(client.UserAgent, 255),
 	}
@@ -293,7 +296,7 @@ func (s *Service) openSession(
 		Session:  &Session{Record: record, User: user},
 		Token:    token,
 		Request:  request,
-		Remember: remember && flow.AllowRememberMe,
+		Remember: record.Remember,
 	}, nil
 }
 

@@ -38,4 +38,6 @@ type signedInResponse struct {
 	// SecondFactor says the sign-in waits for the user's second factor, on
 	// the second-factor page; the cookie set with it names the sign-in.
 	SecondFactor bool `json:"second_factor,omitempty"`
+	// RecoveryCodes come once, with a first factor set up while signing in.
+	RecoveryCodes []string `json:"recovery_codes,omitempty"`
 }

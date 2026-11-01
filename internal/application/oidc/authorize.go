@@ -205,7 +205,7 @@ func (s *Service) authorize(ctx context.Context, p AuthorizeParams, session *Ses
 			return back(silentRefusal(PageSecondFactor))
 		}
 
-		return s.holdStepUp(ctx, req, handle, session, held)
+		return s.holdStepUp(ctx, handle, session, held)
 	}
 
 	if session != nil {

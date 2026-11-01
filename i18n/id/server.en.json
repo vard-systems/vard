@@ -74,7 +74,7 @@
 		"second_factor_invalid": "That is not right. Try the newest code from your app, a recovery code, or your passkey again.",
 		"second_factor_expired": "This sign-in has timed out. Sign in again.",
 		"two_step_not_offered": "Two-step verification is not offered here.",
-		"second_factor_required": "This application asks for two-step verification. Turn it on from your account page, then sign in again.",
+		"second_factor_required": "This application asks for two-step verification. Sign in again to set it up.",
 		"authenticator_exists": "You already have an authenticator app. Remove it first to set up another.",
 		"passkey_limit": "You have as many passkeys as an account may have. Remove one to add another.",
 		"passkey_refused": "That passkey could not be added. Try again, or use another device.",

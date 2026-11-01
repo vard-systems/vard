@@ -12,6 +12,12 @@
 		"code": {
 			"subject": "Your sign-in code",
 			"body": "Your code for {app} is:\n\n{code}\n\nIt works for {minutes} minutes, for the sign-in you started as {email}. If you did not try to sign in, ignore this email — nobody can use the code without your browser.\n"
+		},
+		"two_step_on": {
+			"subject": "Two-step verification was turned on",
+			"body": "Two-step verification is now on for {email}: {method} was added, from the address {ip}.\n\nEvery sign-in to this account now asks for it after the password. If you did not add it, contact your administrator straight away: they can turn it off, and you can then reset your password.\n",
+			"totp": "an authenticator app",
+			"passkey": "a passkey"
 		}
 	}
 }

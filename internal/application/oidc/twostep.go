@@ -18,12 +18,13 @@ import (
 )
 
 // A user's own two-step verification. It is theirs to turn on, from the
-// account page, where the flow offers it (the "totp" step): an authenticator
-// app, passkeys, or both, with recovery codes for when neither is at hand.
-// Once a user has a confirmed factor, every sign-in with a password, an
-// emailed code or another account waits for one before its session starts —
-// whichever flow it comes through, so turning the step off later does not
-// undo anyone's protection. Single sign-on is left to the enterprise's own
+// account page, where a flow offers it (the "totp" step): an authenticator
+// app, passkeys, or both, with recovery codes for when neither is at hand. A
+// flow that requires it has the people without one set one up as they sign
+// in, on the second-factor page. Once a user has a confirmed factor, every
+// sign-in with a password, an emailed code or another account waits for one
+// before its session starts — whichever flow it comes through, so turning
+// the step off later does not undo anyone's protection. Single sign-on is left to the enterprise's own
 // provider, which answers for its people's second factor.
 
 // PageSecondFactor is where a sign-in waiting for its second factor is
@@ -57,8 +58,8 @@ var (
 	ErrAuthenticatorExists = problem("authenticator_exists")
 	ErrPasskeyLimit        = problem("passkey_limit")
 	ErrPasskeyRefused      = problem("passkey_refused")
-	// ErrSecondFactorRequired refuses a sign-in to an application whose flow
-	// requires a second factor the account does not have.
+	// ErrSecondFactorRequired refuses a code for an application whose flow
+	// requires a second factor the session has not passed.
 	ErrSecondFactorRequired = problem("second_factor_required")
 )
 
@@ -70,6 +71,10 @@ type SecondFactorChallenge struct {
 	// StepUp is a signed-in person asked for a second factor in the session
 	// they have, for an application that requires one.
 	StepUp bool `json:"step_up"`
+	// Enrol is a person without a second factor signing in to an application
+	// that requires one: Methods are what they may set up, and setting one up
+	// finishes the sign-in.
+	Enrol bool `json:"enrol"`
 	// Passkey is the request for navigator.credentials.get, when the user
 	// has a passkey.
 	Passkey *protocol.PublicKeyCredentialRequestOptions `json:"passkey,omitempty"`
@@ -124,6 +129,27 @@ func (s *Service) hold(ctx context.Context, user *model.User, request string, re
 		return nil, err
 	}
 
+	return s.keepWaiting(ctx, user, request, remember, methods, link)
+}
+
+// holdForEnrolment keeps a sign-in waiting while a person without a second
+// factor sets one up, for a flow that requires one. Only at a proved
+// address: otherwise the verification email goes first, since whoever
+// registered an address nobody proved may not be its owner.
+func (s *Service) holdForEnrolment(ctx context.Context, user *model.User, request string, remember bool, methods []string, client Client) (*SignInResult, error) {
+	if !user.IsEmailVerified {
+		if err := s.sendVerification(ctx, user, request, client); err != nil {
+			return nil, err
+		}
+		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "email not verified"})
+
+		return nil, ErrEmailNotVerified
+	}
+
+	return s.keepWaiting(ctx, user, request, remember, methods, nil)
+}
+
+func (s *Service) keepWaiting(ctx context.Context, user *model.User, request string, remember bool, methods []string, link *model.SSOIdentity) (*SignInResult, error) {
 	handle, hash, err := model.NewSecret()
 	if err != nil {
 		return nil, err
@@ -150,16 +176,17 @@ func (s *Service) hold(ctx context.Context, user *model.User, request string, re
 }
 
 // holdStepUp sends a signed-in browser to pass a second factor in the
-// session it has, for an application whose flow requires one. held gets the
-// handle for the browser's cookie.
-func (s *Service) holdStepUp(ctx context.Context, req *model.AuthorizationRequest, request string, session *Session, held *string) (string, error) {
+// session it has, or to set one up there when the account has none, for an
+// application whose flow requires one. held gets the handle for the
+// browser's cookie. An account without a factor at an unproved address signs
+// in again instead, which sends the verification email first.
+func (s *Service) holdStepUp(ctx context.Context, request string, session *Session, held *string) (string, error) {
 	has, err := s.store.HasUserFactor(ctx, session.User.ID)
 	if err != nil {
 		return "", err
 	}
-	if !has {
-		return s.redirectError(req.RedirectURI, req.State, ErrAccessDenied,
-			"the application requires two-step verification, which this account has not turned on"), nil
+	if !has && !session.User.IsEmailVerified {
+		return withQuery(s.accountURL+PageLogin, url.Values{"request": {request}}), nil
 	}
 
 	handle, hash, err := model.NewSecret()
@@ -200,6 +227,12 @@ func (s *Service) SecondFactorFor(ctx context.Context, handle string) (*SecondFa
 
 	challenge := &SecondFactorChallenge{Methods: []string{}, ExpiresAt: pending.ExpiresAt, StepUp: pending.StepUpSessionID != nil}
 
+	if len(factors) == 0 {
+		challenge.Enrol = true
+		challenge.Methods = append(challenge.Methods, MethodAuthenticator, MethodPasskey)
+		return challenge, nil
+	}
+
 	if slices.ContainsFunc(factors, isAuthenticator) {
 		challenge.Methods = append(challenge.Methods, MethodAuthenticator)
 	}
@@ -237,17 +270,11 @@ func (s *Service) SecondFactorFor(ctx context.Context, handle string) (*SecondFa
 // current is the session the browser's cookie names, nil for none: a step-up
 // is finished only in the session it was started for.
 func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, current *Session, answer SecondFactorAnswer, client Client) (*SignInResult, error) {
-	pending, err := s.waitingSignIn(ctx, handle)
+	pending, err := s.signInFor(ctx, handle, current)
 	if err != nil {
 		return nil, err
 	}
-
-	// A step-up's cookie alone upgrades nothing: the browser must still hold
-	// the session it was for, as the same person.
 	stepUp := pending.StepUpSessionID != nil
-	if stepUp && (current == nil || current.Record.ID != *pending.StepUpSessionID || current.User.ID != pending.UserID) {
-		return nil, ErrSecondFactorExpired
-	}
 
 	user := pending.User
 	now := s.now()
@@ -309,8 +336,8 @@ func (s *Service) SubmitSecondFactor(ctx context.Context, handle string, current
 // stepUp adds a second factor to the session the browser has, under a new
 // token: a cookie seen before the factor is worth nothing after it. The
 // session keeps its id, so nothing issued in it ends, and its expiry, so a
-// step-up never makes it last longer. The new cookie lasts as long as the
-// browser does: whether the old one was kept longer is not recorded.
+// step-up never makes it last longer. The new cookie is kept as the old one
+// was: past the browser's closing only if the session was "stay signed in".
 func (s *Service) stepUp(ctx context.Context, current *Session, request, proved, method string, client Client) (*SignInResult, error) {
 	token, hash, err := model.NewSecret()
 	if err != nil {
@@ -328,7 +355,24 @@ func (s *Service) stepUp(ctx context.Context, current *Session, request, proved,
 
 	s.record(ctx, current.User, current.User.Email, "user.step_up", client, map[string]any{"method": method})
 
-	return &SignInResult{Session: &Session{Record: record, User: current.User}, Token: token, Request: request}, nil
+	return &SignInResult{Session: &Session{Record: record, User: current.User}, Token: token, Request: request, Remember: record.Remember}, nil
+}
+
+// signInFor is the waiting sign-in the handle names, as the browser that
+// holds current may finish it. A step-up's cookie alone upgrades nothing: the
+// browser must still hold the session it was for, as the same person.
+func (s *Service) signInFor(ctx context.Context, handle string, current *Session) (*model.PendingSignIn, error) {
+	pending, err := s.waitingSignIn(ctx, handle)
+	if err != nil {
+		return nil, err
+	}
+
+	if pending.StepUpSessionID != nil &&
+		(current == nil || current.Record.ID != *pending.StepUpSessionID || current.User.ID != pending.UserID) {
+		return nil, ErrSecondFactorExpired
+	}
+
+	return pending, nil
 }
 
 func (s *Service) waitingSignIn(ctx context.Context, handle string) (*model.PendingSignIn, error) {
