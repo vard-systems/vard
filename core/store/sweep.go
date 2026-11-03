@@ -5,9 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"gorm.io/gorm"
-
-	"vard/core/cache"
 	"vard/core/model"
 )
 
@@ -45,7 +42,7 @@ func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, e
 	var removed int64
 
 	for _, table := range expiring {
-		n, err := s.deleteInBatches(ctx, table, sessionKinds[tableName(s.db, table)], "expires_at < ?", now)
+		n, err := s.deleteInBatches(ctx, table, "expires_at < ?", now)
 		removed += n
 		if err != nil {
 			return removed, err
@@ -59,7 +56,7 @@ func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, e
 	}
 
 	if !auditBefore.IsZero() {
-		n, err := s.deleteInBatches(ctx, &model.AuditLog{}, "", "created_at < ?", auditBefore)
+		n, err := s.deleteInBatches(ctx, &model.AuditLog{}, "created_at < ?", auditBefore)
 		removed += n
 		if err != nil {
 			return removed, err
@@ -69,47 +66,19 @@ func (s *Store) Sweep(ctx context.Context, now, auditBefore time.Time) (int64, e
 	return removed, nil
 }
 
-var sessionKinds = map[string]string{
-	"user_sessions":  cache.UserSession,
-	"admin_sessions": cache.AdminSession,
-}
-
-func tableName(db *gorm.DB, model any) string {
-	statement := &gorm.Statement{DB: db}
-	if err := statement.Parse(model); err != nil {
-		return ""
-	}
-	return statement.Schema.Table
-}
-
-func (s *Store) deleteInBatches(ctx context.Context, table any, kind, where string, arg any) (int64, error) {
+func (s *Store) deleteInBatches(ctx context.Context, table any, where string, arg any) (int64, error) {
 	var removed int64
 
 	for {
 		batch := s.db.Model(table).Select("id").Where(where, arg).Limit(sweepBatch)
 
-		var (
-			deleted int64
-			err     error
-		)
-		if kind == "" {
-			result := s.db.WithContext(ctx).Where("id IN (?)", batch).Delete(table)
-			deleted, err = result.RowsAffected, result.Error
-		} else {
-			// The table name is the model's, never anything a request said.
-			var hashes []string
-			err = s.db.WithContext(ctx).
-				Raw("DELETE FROM "+tableName(s.db, table)+" WHERE id IN (?) RETURNING token_hash", batch).
-				Scan(&hashes).Error
-			deleted = int64(len(hashes))
-			s.sessions.DropSessions(ctx, kind, hashes...)
-		}
-		if err != nil {
-			return removed, translate(err)
+		result := s.db.WithContext(ctx).Where("id IN (?)", batch).Delete(table)
+		if result.Error != nil {
+			return removed, translate(result.Error)
 		}
 
-		removed += deleted
-		if deleted < sweepBatch {
+		removed += result.RowsAffected
+		if result.RowsAffected < sweepBatch {
 			return removed, nil
 		}
 	}

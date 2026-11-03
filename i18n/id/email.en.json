@@ -18,6 +18,10 @@
 			"body": "Two-step verification is now on for {email}: {method} was added, from the address {ip}.\n\nEvery sign-in to this account now asks for it after the password. If you did not add it, contact your administrator straight away: they can turn it off, and you can then reset your password.\n",
 			"totp": "an authenticator app",
 			"passkey": "a passkey"
+		},
+		"registered_again": {
+			"subject": "Someone tried to register with your address",
+			"body": "Someone tried to create a new account for {app} with {email}, from the address {ip}. This address already has an account, so no new one was made and nothing about yours changed.\n\nIf it was you, sign in with your password instead, or choose \"Forgot password\" on the sign-in page to set a new one. If it was not you, you can ignore this message.\n"
 		}
 	}
 }

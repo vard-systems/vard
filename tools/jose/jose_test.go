@@ -279,13 +279,27 @@ func TestParseJWK(t *testing.T) {
 }
 
 func TestParseJWKRefuses(t *testing.T) {
+	// A 1024-bit modulus, and the same padded with zero bytes to the 256
+	// bytes a 2048-bit one takes.
+	short := append([]byte{0x80}, bytes.Repeat([]byte{0x01}, 127)...)
+	padded := append(make([]byte, 256-len(short)), short...)
+	// A 2048-bit modulus, for the exponents.
+	long := append([]byte{0x80}, bytes.Repeat([]byte{0x01}, 255)...)
+
 	tests := []struct {
 		name string
 		jwk  JWK
 	}{
 		{name: "a symmetric key", jwk: JWK{KeyType: "oct"}},
 		{name: "a curve not supported", jwk: JWK{KeyType: "EC", Curve: "P-521"}},
-		{name: "a short RSA key", jwk: JWK{KeyType: "RSA", N: b64.EncodeToString(make([]byte, 128)), E: "AQAB"}},
+		{name: "a short RSA key", jwk: JWK{KeyType: "RSA", N: b64.EncodeToString(short), E: "AQAB"}},
+		{name: "a short RSA key padded with zero bytes to look long", jwk: JWK{KeyType: "RSA", N: b64.EncodeToString(padded), E: "AQAB"}},
+		{name: "an exponent of 1", jwk: JWK{KeyType: "RSA", N: b64.EncodeToString(long), E: b64.EncodeToString([]byte{1})}},
+		{name: "an exponent of 0", jwk: JWK{KeyType: "RSA", N: b64.EncodeToString(long), E: b64.EncodeToString([]byte{0})}},
+		{name: "an even exponent", jwk: JWK{KeyType: "RSA", N: b64.EncodeToString(long), E: b64.EncodeToString([]byte{1, 0, 0})}},
+		{name: "an exponent past 2^31-1", jwk: JWK{KeyType: "RSA", N: b64.EncodeToString(long), E: b64.EncodeToString([]byte{0xff, 0xff, 0xff, 0xff})}},
+		{name: "a point on no curve at all", jwk: JWK{KeyType: "EC", Curve: "P-256", X: b64.EncodeToString(bytes.Repeat([]byte{0xff}, 32)), Y: b64.EncodeToString(bytes.Repeat([]byte{0xff}, 32))}},
+		{name: "a point too short", jwk: JWK{KeyType: "EC", Curve: "P-256", X: b64.EncodeToString(make([]byte, 31)), Y: b64.EncodeToString(make([]byte, 32))}},
 		{name: "a point off the curve", jwk: JWK{KeyType: "EC", Curve: "P-256", X: b64.EncodeToString(make([]byte, 32)), Y: b64.EncodeToString(make([]byte, 32))}},
 	}
 
@@ -312,6 +326,34 @@ func TestThumbprint(t *testing.T) {
 	}
 	if want := "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"; got != want {
 		t.Errorf("Thumbprint = %s, want %s", got, want)
+	}
+}
+
+// Zero bytes in front of n or e change the encoding, not the key, so they do
+// not change the thumbprint a token is bound to either.
+func TestThumbprintIgnoresLeadingZeros(t *testing.T) {
+	key := testKey(t, RS256, "")
+	public, err := key.Public()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := Thumbprint(public)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	n, _ := b64.DecodeString(public.N)
+	e, _ := b64.DecodeString(public.E)
+	padded := public
+	padded.N = b64.EncodeToString(append([]byte{0, 0}, n...))
+	padded.E = b64.EncodeToString(append([]byte{0}, e...))
+
+	got, err := Thumbprint(padded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("Thumbprint of the padded key = %s, want %s", got, want)
 	}
 }
 

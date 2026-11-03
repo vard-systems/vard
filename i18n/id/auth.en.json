@@ -88,7 +88,9 @@
 		"done_title": "Your address is confirmed",
 		"done_body": "Thank you. You can sign in now.",
 		"continue": "Sign in",
-		"continue_app": "Continue to {app}"
+		"continue_app": "Continue to {app}",
+		"password_hint": "The password this account was created with. Never chose one? Somebody else may have used your address: set your own password instead, and nothing they set up stays.",
+		"set_password": "Set a new password"
 	},
 	"logout": {
 		"head": "Sign out",

@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"vard/core/cache"
 	"vard/core/model"
 )
 
@@ -91,42 +90,51 @@ func (s *Store) SignOutUser(ctx context.Context, user uuid.UUID, at time.Time) (
 }
 
 func (s *Store) CreateUserSession(ctx context.Context, session *model.UserSession) error {
-	if err := translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(session).Error); err != nil {
-		return err
-	}
-
-	s.putUserSessions(ctx, *session)
-
-	return nil
+	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(session).Error)
 }
 
+// UserSessionByHash reads a session from the database every time, never from
+// Redis: a revocation has to hold on every server at once, and a copy in a
+// cache that one server could not reach to update would outvote it.
 func (s *Store) UserSessionByHash(ctx context.Context, hash string) (*model.UserSession, error) {
-	var kept userSession
-	if s.sessions.Session(ctx, cache.UserSession, hash, &kept) {
-		session := kept.model(hash)
-		return &session, nil
-	}
-
 	var session model.UserSession
 	if err := s.db.WithContext(ctx).First(&session, "token_hash = ?", hash).Error; err != nil {
 		return nil, translate(err)
 	}
 
-	s.sessions.FillSession(ctx, cache.UserSession, hash, newUserSession(session), session.ExpiresAt)
-
 	return &session, nil
 }
 
+// RevokeUserSession signs a browser out, as a logout does. The refresh tokens
+// issued in it are left alone: offline_access outlives the browser's session
+// (OpenID Connect Core §11), and an application that signs the browser out
+// ends its own refresh tokens.
 func (s *Store) RevokeUserSession(ctx context.Context, id uuid.UUID, at time.Time) error {
-	return s.revokeUserSessions(ctx, at, "id = ?", id)
+	return s.revokeUserSessions(ctx, at, false, "id = ?", id)
 }
 
-func (s *Store) revokeUserSessions(ctx context.Context, at time.Time, condition string, args ...any) error {
+// EndUserSession ends a session its owner or an administrator chose to end,
+// from the account page or the panel: the browser, and every refresh family
+// issued in it, so the device that session was on is shut out of its
+// applications too.
+func (s *Store) EndUserSession(ctx context.Context, id uuid.UUID, at time.Time) error {
+	return s.revokeUserSessions(ctx, at, true, "id = ?", id)
+}
+
+func (s *Store) revokeUserSessions(ctx context.Context, at time.Time, withRefresh bool, condition string, args ...any) error {
 	var ended endedSessions
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var err error
 		ended, err = revokeUserSessionsIn(tx, at, condition, args...)
-		return err
+		if err != nil || !withRefresh || len(ended.sessions) == 0 {
+			return err
+		}
+
+		ids := make([]uuid.UUID, len(ended.sessions))
+		for i, session := range ended.sessions {
+			ids[i] = session.ID
+		}
+		return revokeSessionRefreshIn(tx, at, ids)
 	})
 	if err == nil {
 		s.sessionsEnded(ctx, ended)
@@ -175,8 +183,6 @@ type endedSessions struct {
 }
 
 func (s *Store) sessionsEnded(ctx context.Context, ended endedSessions) {
-	s.putUserSessions(ctx, ended.sessions...)
-
 	if s.onLogout != nil && len(ended.notices) > 0 {
 		s.onLogout(ctx, ended.notices)
 	}
@@ -190,52 +196,6 @@ func (s *Store) ActiveUserSessions(ctx context.Context, user uuid.UUID, now time
 		Find(&sessions).Error
 
 	return sessions, err
-}
-
-type userSession struct {
-	ID              uuid.UUID        `json:"id"`
-	CreatedAt       time.Time        `json:"created_at"`
-	UserID          uuid.UUID        `json:"user_id"`
-	AuthenticatedAt time.Time        `json:"authenticated_at"`
-	Methods         model.StringList `json:"methods"`
-	ExpiresAt       time.Time        `json:"expires_at"`
-	Remember        bool             `json:"remember"`
-	RevokedAt       *time.Time       `json:"revoked_at"`
-	IP              string           `json:"ip"`
-	UserAgent       string           `json:"user_agent"`
-}
-
-func newUserSession(session model.UserSession) userSession {
-	return userSession{
-		ID:              session.ID,
-		CreatedAt:       session.CreatedAt,
-		UserID:          session.UserID,
-		AuthenticatedAt: session.AuthenticatedAt,
-		Methods:         session.Methods,
-		ExpiresAt:       session.ExpiresAt,
-		Remember:        session.Remember,
-		RevokedAt:       session.RevokedAt,
-		IP:              session.IP,
-		UserAgent:       session.UserAgent,
-	}
-}
-
-func (u userSession) model(hash string) model.UserSession {
-	session := model.UserSession{
-		TokenHash:       hash,
-		UserID:          u.UserID,
-		AuthenticatedAt: u.AuthenticatedAt,
-		Methods:         u.Methods,
-		ExpiresAt:       u.ExpiresAt,
-		Remember:        u.Remember,
-		RevokedAt:       u.RevokedAt,
-		IP:              u.IP,
-		UserAgent:       u.UserAgent,
-
-		ID:        u.ID,
-		CreatedAt: u.CreatedAt}
-
-	return session
 }
 
 func revokeUserSessionsIn(tx *gorm.DB, at time.Time, condition string, args ...any) (endedSessions, error) {
@@ -274,15 +234,6 @@ func revokeUserSessionsIn(tx *gorm.DB, at time.Time, condition string, args ...a
 		Scan(&ended.notices).Error
 
 	return ended, err
-}
-
-func (s *Store) putUserSessions(ctx context.Context, sessions ...model.UserSession) {
-	ctx, cancel := afterCommit(ctx)
-	defer cancel()
-
-	for _, session := range sessions {
-		s.sessions.PutSession(ctx, cache.UserSession, session.TokenHash, newUserSession(session), session.ExpiresAt)
-	}
 }
 
 // FrontchannelTarget is an application to load in the browser's frame when a
@@ -360,12 +311,7 @@ func (s *Store) StepUpUserSession(ctx context.Context, session *model.UserSessio
 		return false, nil
 	}
 
-	// The old token is written as ended, never only dropped, so a reader
-	// that loaded it a moment ago cannot put it back.
-	old := *session
-	old.RevokedAt = &at
 	session.TokenHash, session.Methods, session.AuthenticatedAt = hash, methods, at
-	s.putUserSessions(ctx, old, *session)
 
 	return true, nil
 }

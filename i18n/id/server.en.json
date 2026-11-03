@@ -63,6 +63,8 @@
 		"password_not_offered": "This sign-in does not use a password. Continue with one of the accounts below.",
 		"email_not_verified": "Confirm your email address first: we have just sent you a link. Open it, then sign in again.",
 		"verification_invalid": "This confirmation link has expired or has already been used. Sign in to get a new one.",
+		"verification_password_required": "Type this account's password to confirm the address.",
+		"verification_sign_in_required": "Sign in to this account first, then open the link again.",
 		"social_not_offered": "This sign-in does not offer other accounts. Sign in with your email address instead.",
 		"code_invalid": "That code is not the one we sent. Check the message and try again.",
 		"code_expired": "That code has expired. Sign in again to get a new one.",

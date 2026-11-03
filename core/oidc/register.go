@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
+	"vard/core/mail"
 	"vard/core/model"
 	"vard/core/store"
 )
@@ -90,12 +92,28 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 	user.Roles = roles
 
 	if err := s.store.CreateUser(ctx, user); errors.Is(err, store.ErrDuplicate) {
-		return nil, ErrEmailTaken
+		return nil, s.registeredAgain(ctx, user.Email, app, flow, client)
 	} else if err != nil {
 		return nil, err
 	}
 
 	s.record(ctx, user, user.Email, "user.registered", client, map[string]any{"application": app.Name})
+
+	// A flow that requires a verified address answers every registration
+	// "check your email", a taken address's too (registeredAgain); the mail
+	// goes after the answer in both, so neither takes longer than the other.
+	if flow.RequireVerifiedEmail {
+		if !flow.AllowSignIn {
+			return nil, ErrSignInClosed
+		}
+		s.record(ctx, user, user.Email, "user.login_blocked", client, map[string]any{"reason": "email not verified"})
+		s.afterAnswer(func(ctx context.Context) {
+			if err := s.sendVerification(ctx, user, r.Request, client); err != nil {
+				s.log.Error("sending a verification email failed", "error", err, "user", user.ID)
+			}
+		})
+		return nil, ErrEmailNotVerified
+	}
 
 	if flow.VerifyEmailOnRegister && !user.IsEmailVerified {
 		if err := s.sendVerification(ctx, user, r.Request, client); err != nil {
@@ -104,4 +122,84 @@ func (s *Service) Register(ctx context.Context, r Registration, client Client) (
 	}
 
 	return s.finishSignIn(ctx, user, flow, r.Request, r.Remember, []string{model.AMRPassword}, client, "user.login")
+}
+
+// registeredAgain answers a registration for an address that already has an
+// account. Where the flow tells a fresh account to confirm its address before
+// anything else, this one is told the same, in the same time, and the
+// address's owner is mailed a notice instead of a link — at most once every
+// model.RegisteredAgainNoticeEvery, so the form cannot be used to flood an
+// inbox: the answer then says nothing about which addresses have accounts. A
+// flow that signs a fresh account in at once cannot hide it — the stranger
+// would be signed in, or would see they were not — so there it says the
+// address is taken.
+func (s *Service) registeredAgain(ctx context.Context, email string, app *model.Application, flow *model.LoginFlow, client Client) error {
+	// What a fresh account is answered in the same flow (Register).
+	switch {
+	case !flow.RequireVerifiedEmail:
+		return ErrEmailTaken
+	case !flow.AllowSignIn:
+		return ErrSignInClosed
+	}
+
+	// A lookup and a write, as the fresh account's record costs; the rest
+	// waits for the answer to be gone.
+	owner, err := s.store.UserByEmail(ctx, email)
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		// Deleted between the insert and now: nobody to tell.
+		return ErrEmailNotVerified
+	case err != nil:
+		return err
+	}
+	s.record(ctx, owner, owner.Email, "user.registration_repeated", client, map[string]any{"application": app.Name})
+
+	s.afterAnswer(func(ctx context.Context) {
+		due, err := s.store.ClaimOnceEvery(ctx, "notice:"+s.accountKey(email), s.now(), model.RegisteredAgainNoticeEvery)
+		if err != nil {
+			s.log.Error("checking the repeated-registration notice's limit failed", "error", err, "user", owner.ID)
+			return
+		}
+		if due {
+			s.mailRegisteredAgain(ctx, owner, app, client)
+		}
+	})
+
+	return ErrEmailNotVerified
+}
+
+// afterAnswer runs work a request must not wait on, or be timed by: what one
+// address costs that another does not, done once the answer is on its way.
+func (s *Service) afterAnswer(work func(ctx context.Context)) {
+	background := context.WithoutCancel(context.Background())
+	go func() {
+		ctx, cancel := context.WithTimeout(background, 30*time.Second)
+		defer cancel()
+		work(ctx)
+	}()
+}
+
+// mailRegisteredAgain tells an account's owner that somebody tried to make
+// another account with their address. A failure is only logged: the answer
+// to the stranger must not change with it.
+func (s *Service) mailRegisteredAgain(ctx context.Context, owner *model.User, app *model.Application, client Client) {
+	text := s.textIn(ctx, client.Language)
+
+	params := map[string]any{
+		"app":   app.Name,
+		"email": owner.Email,
+		"ip":    client.IP,
+	}
+
+	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	err := s.mail.Send(sendCtx, mail.Message{
+		To:      owner.Email,
+		Subject: text.Localize("email.registered_again.subject", params),
+		Body:    text.Localize("email.registered_again.body", params),
+	})
+	if err != nil {
+		s.log.Warn("sending the repeated-registration notice failed", "user", owner.ID, "error", err)
+	}
 }

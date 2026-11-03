@@ -37,6 +37,11 @@ func RevokedGrant(user uuid.UUID, clientID string) string {
 
 func RevokedToken(jti string) string { return "jti:" + jti }
 
+// RevokedUser ends every access token issued for the user, whatever session
+// or family it names: what a password change, a reset, a sign-out everywhere,
+// a deactivation or a deletion means.
+func RevokedUser(user uuid.UUID) string { return "user:" + user.String() }
+
 // NewTokenRevocation is a revocation at `at`, remembered as long as any token
 // issued before it can live.
 func NewTokenRevocation(key string, at time.Time) TokenRevocation {

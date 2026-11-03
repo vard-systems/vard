@@ -51,6 +51,8 @@ func requestParams(form url.Values) oidc.AuthorizeParams {
 		LoginHint:           form.Get("login_hint"),
 		RequestURI:          form.Get("request_uri"),
 		DPoPKey:             form.Get("dpop_jkt"),
+		RequestObject:       form.Get("request"),
+		Registration:        form.Get("registration"),
 	}
 }
 

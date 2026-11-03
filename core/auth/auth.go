@@ -73,13 +73,16 @@ func (s *Service) MFARequired(ctx context.Context) bool {
 type Request struct {
 	IP        string
 	UserAgent string
+	// KnownBrowser is the browser's known-browser cookie, "" for none
+	// (model.KnownBrowser).
+	KnownBrowser string
 }
 
 func (s *Service) Login(ctx context.Context, username, password string, req Request) (string, *model.Admin, State, error) {
 	// The attempt is reserved before anything is looked up or compared, so
 	// parallel guesses cannot pass the throttle, and an unknown username, a
 	// waiting one and a wrong password all cost the same to refuse.
-	allowed, err := s.reserve(ctx, username)
+	allowed, err := s.reserve(ctx, username, req)
 	if err != nil {
 		return "", nil, StateNone, err
 	}
@@ -130,7 +133,7 @@ func (s *Service) Login(ctx context.Context, username, password string, req Requ
 	// would otherwise make the throttle unreachable. The code itself clears
 	// them (signedIn).
 	if state != StateMFA {
-		if err := s.succeeded(ctx, admin); err != nil {
+		if err := s.succeeded(ctx, admin, req); err != nil {
 			return "", nil, StateNone, err
 		}
 	}

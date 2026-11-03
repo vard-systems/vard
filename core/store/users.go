@@ -89,15 +89,20 @@ func (s *Store) SaveUserProfile(ctx context.Context, user *model.User) error {
 	}).Error)
 }
 
-// DeleteUser removes a user. Their sessions are ended first, so the
-// applications they were signed in to hear of it before the record of which
-// ones goes with the rows.
+// DeleteUser removes a user. Their sessions and refresh families are ended
+// first, with their access tokens' revocations, so the applications they were
+// signed in to hear of it before the record of which ones goes with the rows,
+// and no token issued to them reads as live anywhere this server answers.
 func (s *Store) DeleteUser(ctx context.Context, user *model.User) error {
 	var ended endedSessions
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var err error
-		if ended, err = revokeUserSessionsIn(tx, time.Now(), "user_id = ?", user.ID); err != nil {
+		at := time.Now()
+		if ended, err = revokeUserSessionsIn(tx, at, "user_id = ?", user.ID); err != nil {
+			return err
+		}
+		if _, err := revokeUserRefreshIn(tx, at, user.ID); err != nil {
 			return err
 		}
 

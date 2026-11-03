@@ -47,6 +47,13 @@ const (
 	// factor, so only the browser that signed in can finish it.
 	SecondFactorCookie = Slug + "_second_factor"
 
+	// KnownBrowserCookie and AdminKnownBrowserCookie mark a browser that has
+	// signed in to an account before, so a stranger's failed attempts at the
+	// account are not counted against it. Two names: on plain-http
+	// development both apps share localhost, whose cookies ignore the port.
+	KnownBrowserCookie      = Slug + "_known_browser"
+	AdminKnownBrowserCookie = Slug + "_admin_known_browser"
+
 	LanguageCookie = Slug + "-account-language"
 )
 

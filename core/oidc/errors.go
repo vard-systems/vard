@@ -17,6 +17,10 @@ const (
 	ErrLoginRequired           = "login_required"
 	ErrInvalidToken            = "invalid_token"
 	ErrInsufficientScope       = "insufficient_scope"
+
+	// OpenID Connect Core §3.1.2.6: parameters the provider does not take.
+	ErrRequestNotSupported      = "request_not_supported"
+	ErrRegistrationNotSupported = "registration_not_supported"
 )
 
 type Error struct {

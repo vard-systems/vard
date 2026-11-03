@@ -944,7 +944,7 @@ export type OTPSettingsInput = Partial<OTPSettings>;
 
 export type CacheDatabaseName = 'cache' | 'sessions';
 
-export type CacheKind = 'entry' | 'stale' | 'generation' | 'session' | 'ratelimit' | 'other';
+export type CacheKind = 'entry' | 'stale' | 'generation' | 'ratelimit' | 'other';
 
 export type CacheGroup = {
 	name: string;
@@ -961,7 +961,6 @@ export type CacheDatabase = {
 	keys: number;
 	kinds: Partial<Record<CacheKind, number>>;
 	groups: CacheGroup[];
-	sessions: Record<string, number>;
 	editable: boolean;
 	memory_bytes: number;
 	version: string;

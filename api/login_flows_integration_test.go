@@ -65,7 +65,13 @@ func TestLiveLoginFlowsDecideSignIn(t *testing.T) {
 	}
 	token := tokenIn(t, sent.Body, "/verify-email")
 
-	if status := b.account(http.MethodPost, "/verify-email", map[string]string{"token": token}, nil); status != http.StatusOK {
+	// Proving the address for the first time takes the account's password
+	// too: the inbox alone does not show who chose it.
+	var asked problemBody
+	if status := b.account(http.MethodPost, "/verify-email", map[string]string{"token": token}, &asked); status != http.StatusForbidden || asked.Code != "verification_password_required" {
+		t.Fatalf("verifying without the password = %d %+v, want verification_password_required", status, asked)
+	}
+	if status := b.account(http.MethodPost, "/verify-email", map[string]string{"token": token, "password": "ada-password-1"}, nil); status != http.StatusOK {
 		t.Fatalf("verifying the address = %d, want 200", status)
 	}
 	var reused problemBody

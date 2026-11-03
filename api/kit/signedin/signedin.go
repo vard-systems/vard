@@ -48,7 +48,7 @@ func Session(c *gin.Context) *oidc.Session {
 
 // Client is who is calling, as the provider records it.
 func Client(c *gin.Context) oidc.Client {
-	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c)}
+	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c), KnownBrowser: session.KnownBrowser(c)}
 }
 
 // Problem is the API problem a provider problem is answered with.
@@ -79,32 +79,34 @@ func Fail(c *gin.Context, log *slog.Logger, err error, note string) {
 // sentence. Defined once here, since a code can only be defined once.
 var problems = func() map[string]respond.Problem {
 	statuses := map[string]int{
-		oidc.ErrInvalidCredentials.Code:    http.StatusUnauthorized,
-		oidc.ErrRequestExpired.Code:        http.StatusGone,
-		oidc.ErrResetInvalid.Code:          http.StatusGone,
-		oidc.ErrRegistrationClosed.Code:    http.StatusForbidden,
-		oidc.ErrEmailTaken.Code:            http.StatusConflict,
-		oidc.ErrNotYours.Code:              http.StatusNotFound,
-		oidc.ErrSSORequired.Code:           http.StatusForbidden,
-		oidc.ErrSSOUnknown.Code:            http.StatusNotFound,
-		oidc.ErrPasswordNotOffered.Code:    http.StatusForbidden,
-		oidc.ErrEmailNotVerified.Code:      http.StatusForbidden,
-		oidc.ErrVerificationInvalid.Code:   http.StatusGone,
-		oidc.ErrCodeExpired.Code:           http.StatusGone,
-		oidc.ErrCodeAttemptsUsed.Code:      http.StatusGone,
-		oidc.ErrCodeTooSoon.Code:           http.StatusTooManyRequests,
-		oidc.ErrSignInClosed.Code:          http.StatusForbidden,
-		oidc.ErrEmailChangeNotOffered.Code: http.StatusForbidden,
-		oidc.ErrBrowserRequired.Code:       http.StatusForbidden,
-		oidc.ErrSecondFactorExpired.Code:   http.StatusGone,
-		oidc.ErrTwoStepNotOffered.Code:     http.StatusForbidden,
-		oidc.ErrAuthenticatorExists.Code:   http.StatusConflict,
-		oidc.ErrPasskeyLimit.Code:          http.StatusConflict,
-		oidc.ErrDeviceCodeInvalid.Code:     http.StatusNotFound,
-		oidc.ErrDeviceRefused.Code:         http.StatusForbidden,
-		oidc.ErrSignInAgain.Code:           http.StatusForbidden,
-		oidc.ErrSecondFactorRequired.Code:  http.StatusForbidden,
-		oidc.ErrStepUpRequired.Code:        http.StatusForbidden,
+		oidc.ErrInvalidCredentials.Code:           http.StatusUnauthorized,
+		oidc.ErrRequestExpired.Code:               http.StatusGone,
+		oidc.ErrResetInvalid.Code:                 http.StatusGone,
+		oidc.ErrRegistrationClosed.Code:           http.StatusForbidden,
+		oidc.ErrEmailTaken.Code:                   http.StatusConflict,
+		oidc.ErrNotYours.Code:                     http.StatusNotFound,
+		oidc.ErrSSORequired.Code:                  http.StatusForbidden,
+		oidc.ErrSSOUnknown.Code:                   http.StatusNotFound,
+		oidc.ErrPasswordNotOffered.Code:           http.StatusForbidden,
+		oidc.ErrEmailNotVerified.Code:             http.StatusForbidden,
+		oidc.ErrVerificationInvalid.Code:          http.StatusGone,
+		oidc.ErrVerificationPasswordRequired.Code: http.StatusForbidden,
+		oidc.ErrVerificationSignInRequired.Code:   http.StatusForbidden,
+		oidc.ErrCodeExpired.Code:                  http.StatusGone,
+		oidc.ErrCodeAttemptsUsed.Code:             http.StatusGone,
+		oidc.ErrCodeTooSoon.Code:                  http.StatusTooManyRequests,
+		oidc.ErrSignInClosed.Code:                 http.StatusForbidden,
+		oidc.ErrEmailChangeNotOffered.Code:        http.StatusForbidden,
+		oidc.ErrBrowserRequired.Code:              http.StatusForbidden,
+		oidc.ErrSecondFactorExpired.Code:          http.StatusGone,
+		oidc.ErrTwoStepNotOffered.Code:            http.StatusForbidden,
+		oidc.ErrAuthenticatorExists.Code:          http.StatusConflict,
+		oidc.ErrPasskeyLimit.Code:                 http.StatusConflict,
+		oidc.ErrDeviceCodeInvalid.Code:            http.StatusNotFound,
+		oidc.ErrDeviceRefused.Code:                http.StatusForbidden,
+		oidc.ErrSignInAgain.Code:                  http.StatusForbidden,
+		oidc.ErrSecondFactorRequired.Code:         http.StatusForbidden,
+		oidc.ErrStepUpRequired.Code:               http.StatusForbidden,
 	}
 
 	out := map[string]respond.Problem{}

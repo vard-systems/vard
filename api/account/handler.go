@@ -250,6 +250,7 @@ func (h *Handler) signedIn(c *gin.Context, request string, result *oidc.SignInRe
 	}
 
 	session.SetUser(c, result.Token, result.Session.Record.ExpiresAt, result.Remember, h.secure)
+	session.SetKnownBrowser(c, result.KnownBrowser, h.secure)
 
 	if request == "" {
 		c.JSON(http.StatusOK, signedInResponse{RecoveryCodes: result.RecoveryCodes})
@@ -376,7 +377,13 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	if err := h.provider.VerifyEmail(c.Request.Context(), req.Token, signedin.Client(c)); err != nil {
+	current, err := h.provider.SessionFor(c.Request.Context(), session.UserToken(c))
+	if err != nil {
+		h.fail(c, err, "loading the user session failed")
+		return
+	}
+
+	if err := h.provider.VerifyEmail(c.Request.Context(), req.Token, req.Password, current, signedin.Client(c)); err != nil {
 		h.fail(c, err, "verifying an email failed")
 		return
 	}

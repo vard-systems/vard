@@ -19,13 +19,13 @@
 		note={`database ${database.number}${database.version ? ` · Redis ${database.version}` : ''}`}
 	/>
 
+	<StatCard
+		label="Cached values"
+		value={values}
+		icon="ri-file-list-3-line"
+		note={stale > 0 ? `${stale} stale, left to expire` : 'none stale'}
+	/>
 	{#if database.name === 'sessions'}
-		<StatCard
-			label="Administrators’ sessions"
-			value={database.sessions.admin ?? 0}
-			icon="ri-shield-user-line"
-		/>
-		<StatCard label="Users’ sessions" value={database.sessions.user ?? 0} icon="ri-user-line" />
 		<StatCard
 			label="Rate limits"
 			value={database.kinds.ratelimit ?? 0}
@@ -34,24 +34,18 @@
 		/>
 	{:else}
 		<StatCard
-			label="Cached values"
-			value={values}
-			icon="ri-file-list-3-line"
-			note={stale > 0 ? `${stale} stale, left to expire` : 'none stale'}
-		/>
-		<StatCard
 			label="Groups"
 			value={database.groups.length}
 			icon="ri-database-2-line"
 			note="each cleared as one"
 		/>
-		<StatCard
-			label="Memory, MB"
-			value={megabytes}
-			icon="ri-hard-drive-2-line"
-			note="the whole Redis server"
-		/>
 	{/if}
+	<StatCard
+		label="Memory, MB"
+		value={megabytes}
+		icon="ri-hard-drive-2-line"
+		note="the whole Redis server"
+	/>
 </div>
 
 <style>

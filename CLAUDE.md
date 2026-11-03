@@ -64,7 +64,11 @@ core/                    the server itself, in layers (layers_test.go):
                            one file per table; every model listed in model.All
   store                    every query in the project, one file per subject
   database                 the Postgres connection and the migration runner
-  cache                    Redis: the cache and session databases, rate-limit counts
+  cache                    Redis, two databases: "cache" (what every page
+                           reads) and "sessions" — despite its name, only
+                           administrators, clients, grants and the rate-limit
+                           counts; sessions themselves are always read from
+                           Postgres
   mail, passkey            sending email; the WebAuthn relying party
   oidc                     the provider (authorize, tokens, userinfo, logout,
                            social, SSO) and how users sign themselves in:
@@ -193,14 +197,20 @@ code near it, and add a test when adding a case.
   (`verifyPublished`, `providerKeys`), and a social
   id_token is checked against its kind's published keys
   (`SocialSpec.JWKSURL`) wherever the kind names them.
-- **A key from outside is at most `jose.MaxRSABits` (4096) long.** A DPoP
-  proof brings a key of the sender's choosing, and verifying under a large
-  modulus costs the server; `ParseJWK` refuses a longer one.
+- **A key from outside is between `jose.MinRSABits` (2048) and
+  `jose.MaxRSABits` (4096) long.** A DPoP proof brings a key of the sender's
+  choosing, and verifying under a large modulus costs the server; `ParseJWK`
+  measures the modulus itself, never its encoding, so zero bytes in front of
+  a short key do not pass it, and `Thumbprint` takes n and e in their
+  minimal encoding, so one key has one `jkt`.
 - **Redirect targets** are exact-matched redirect URIs
   (`Application.AllowsRedirect`: a native app's loopback URI on any port, RFC
   8252 §7.3, and nothing else loosened; Expo Go's `exp://` only for a native
   app with `allow_development_redirects`), or a path checked by
   `safePath` (Go) / `safeNext` (`web/id`). Never redirect to a raw parameter.
+  A `request` object or `registration` parameter is refused
+  (`request_not_supported`, `registration_not_supported`), never ignored: a
+  client must not believe a redirect URI or state it put there enforced.
 - **A user's sign-in is throttled, never locked, and a second factor is
   guessed against the same count.** Every answer — password, second factor,
   current password — is counted before it is checked (`ReserveSignIn`, rows
@@ -213,7 +223,13 @@ code near it, and add a test when adding a case.
   waiting sign-in is named by an httpOnly cookie, never by anything the page
   or the address holds. Administrators are throttled the same way, on a keyed
   hash of the username typed, counted before it is looked up
-  (`core/auth/throttle.go`); nothing is ever locked.
+  (`core/auth/throttle.go`); nothing is ever locked. A browser that has
+  signed in to the account before carries a known-browser cookie
+  (`model.KnownBrowser`: a keyed hash of a random id, its issue time and the
+  account, for 180 days) and is counted on a budget of its own instead of
+  the address's or username's, so a stranger's failures at an account keep
+  only strangers waiting; the cookie is issued by every finished sign-in
+  (`openSession`, the panel's handlers) and buys nothing but that budget.
 - **A flow that requires a second factor is met only by a session that
   passed one of the account's own** (`model.MethodSecondFactor` in its
   `Methods`, never an amr value; an emailed code is `otp` and does not
@@ -281,6 +297,13 @@ code near it, and add a test when adding a case.
   `constants.ts` (`TestThePagesKnowThePasswordLengths`).
 - **Unknown accounts cost the same as wrong passwords** (`CompareDummyPassword`),
   and sign-in failures give one answer, so timing and wording reveal nothing.
+  Registering a taken address, in a flow that requires a verified one, is
+  answered as a fresh account would be (check your email), in the same
+  time — both send their mail after the answer (`afterAnswer`) — and mails
+  the owner a notice instead of a link, at most once every
+  `model.RegisteredAgainNoticeEvery` (`ClaimOnceEvery`); registering again
+  answers the same either way (`registeredAgain`). A flow that signs a new
+  account in at once cannot hide it and answers `email_taken`.
 - **Browsers are held to exact origin lists** (`api/kit/cors`, `api/kit/csrf`): no
   wildcards, no suffix matching. State-changing requests must be JSON.
   `web/id` turns SvelteKit's own CSRF check off (`csrf.trustedOrigins: ['*']`)
@@ -315,14 +338,29 @@ code near it, and add a test when adding a case.
   identities, factors, recovery codes, consents and waiting sign-ins, and
   ends its sessions, refresh tokens, login codes and devices — whoever
   registered the address first may not have been its owner. Social sign-in
-  never makes an account for an address the provider has not verified.
+  never makes an account for an address the provider has not verified. A
+  verification link proves the inbox, not who chose the password, so one
+  that would give anything — a first proof, or a new address — is taken only
+  with the account's password or from a browser signed in to it
+  (`heldByTheirOwner`), checked before the link is spent and counted like a
+  sign-in; the owner of an address somebody else registered proves it with a
+  reset instead, which replaces the stranger's password.
 - **An access token ends with what it was issued in.** It carries `sid`
   and `fid`; whatever ends a session, a refresh family or a grant writes a
   `token_revocations` row in the same transaction (`revokeTokensIn`,
   `revokeUserRefreshIn`, `familiesRevokedIn`), and `verifyAccessToken` —
   userinfo, introspection, the account and admin APIs — refuses a token any
   of whose keys was revoked at or after its `iat`. Read from the database,
-  never a cache. `aud` is never empty.
+  never a cache. `aud` is never empty. A session ended on purpose — by its
+  owner on the account page or by an administrator (`EndUserSession`) —
+  takes the refresh families issued in it along (`revokeSessionRefreshIn`);
+  a logout (`RevokeUserSession`) leaves an application's `offline_access`,
+  which outlives the browser's session (OpenID Connect Core §11). Whatever
+  ends a user's access as a whole — a password change or reset, a sign-out
+  everywhere, turning the user off, deleting them — goes through
+  `revokeUserRefreshIn`, which also writes `model.RevokedUser`, so every
+  access token of theirs ends, a long-expired session's included, and
+  turning the user on again brings none of it back.
 - **An administrator's session is new once its second factor passes.**
   `PassAdminSessionMFA` ends the session the password opened and starts its
   successor in one transaction, and the handler sets the new cookie, so a
@@ -426,7 +464,9 @@ only for what every request asks for and almost nothing changes. A new group
 is a constant in `core/cache` listed in `cache.Groups`. Every write calls
 `s.forget(ctx, group)` (or returns `s.forgetting(ctx, err, group)`) after it
 commits. Cache a projection, never a model carrying a secret, and add it to
-`TestCachedTypesSurviveJSON`. Never cache users, codes or refresh tokens.
+`TestCachedTypesSurviveJSON`. Never cache users, sessions, codes or refresh
+tokens: a session is read from Postgres on every request, so ending one holds
+on every server at once, even one that cannot reach Redis.
 Everything must work with a nil cache.
 
 **A brand.** Each application has its own: the server's in `core/brand`

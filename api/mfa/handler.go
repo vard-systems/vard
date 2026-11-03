@@ -70,8 +70,14 @@ func (h *Handler) Confirm(c *gin.Context) {
 		h.fail(c, err, "confirming an authenticator failed")
 		return
 	}
+	// Confirmed while enrolling, it finishes the sign-in it was owed by.
 	if next != "" {
 		session.Set(c, next, h.secure)
+		if value, err := h.auth.KnownBrowser(session.Admin(c)); err == nil {
+			session.SetAdminKnownBrowser(c, value, h.secure)
+		} else {
+			h.log.Error("marking a known browser failed", "error", err)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"recovery_codes": codes})

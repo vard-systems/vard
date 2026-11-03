@@ -609,7 +609,7 @@ func (c accessClaims) revocationKeys() []string {
 		keys = append(keys, model.RevokedFamily(id))
 	}
 	if user, err := uuid.Parse(c.Subject); err == nil && c.Subject != c.ClientID {
-		keys = append(keys, model.RevokedGrant(user, c.ClientID))
+		keys = append(keys, model.RevokedGrant(user, c.ClientID), model.RevokedUser(user))
 	}
 	return keys
 }

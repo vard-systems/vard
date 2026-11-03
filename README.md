@@ -82,7 +82,7 @@ variables win). `.env.example` documents all of them. The ones that matter most:
 | `VARD_DB_DSN`              | PostgreSQL connection string.                                                            |
 | `VARD_ISSUER`              | Public URL of the provider (the id app's origin).                                        |
 | `VARD_ADMIN_URL`           | The console's URL; only this origin may change things via the admin API.                 |
-| `VARD_REDIS_HOST`          | Redis for caching, sessions and shared rate limits. Empty runs without.                  |
+| `VARD_REDIS_HOST`          | Redis for caching and shared rate limits. Empty runs without.                            |
 | `VARD_TRUSTED_PROXIES`     | Who may say who the caller is: the apps' servers, and nothing else.                      |
 | `VARD_RATE_LIMIT`          | Attempts per minute per address on sign-in, password and email endpoints.                |
 | `VARD_ADMIN_MFA`           | `optional` (the default; `required` in `compose.env.example`), seeded on first start.    |
@@ -154,13 +154,19 @@ for whatever starts and routes to it.
 - Signing keys rotate automatically and stay published until their tokens expire.
 - Access tokens are short-lived JWTs that name the session and refresh family
   they were issued in; ending either ends them at this server's endpoints.
+  Ending a session from the account page or the panel ends the refresh
+  tokens issued in it too; an application's own logout leaves its
+  `offline_access`. Sessions are read from Postgres on every request, never
+  from Redis.
 - Passwords use Argon2id (OWASP's parameters), at least 12 characters (14 for
   administrators) and at most 128; unknown accounts take as long to refuse
   as wrong passwords. New ones can be checked against known breaches.
 - Sign-in attempts and one-time-code guesses are counted atomically in the
   database, so parallel guessing cannot slip past them. Sign-ins, users'
   and administrators' alike, are throttled — each attempt past a few
-  failures waits longer — rather than locked.
+  failures waits longer — rather than locked, and a browser that has signed
+  in to the account before is counted on its own, so a stranger's guesses
+  never keep the owner waiting there.
 - The admin API runs on its own listener and is never served on the public one.
 - Outbound calls to identity providers refuse private, link-local and cloud
   metadata addresses.
@@ -189,6 +195,10 @@ for whatever starts and routes to it.
   verification link) ends everything the account held before it — linked
   identities, second factors, recovery codes, consents, sessions and refresh
   tokens — so whoever registered somebody else's address first keeps nothing.
+  A verification link also asks for the account's password (unless opened
+  where the account is signed in), so nobody confirms an account, or an
+  address change, whose password a stranger chose; its owner resets it
+  instead.
 - An SSO connection links to an existing account only at a domain it lists
   and has proved with a DNS TXT record, and the first time it is linked to an
   account with a second factor, that factor is asked for.

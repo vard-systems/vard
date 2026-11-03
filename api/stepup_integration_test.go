@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"slices"
@@ -12,7 +11,6 @@ import (
 	"github.com/google/uuid"
 
 	"vard/api/kit/session"
-	"vard/core/cache"
 	"vard/core/model"
 	"vard/tools/totp"
 )
@@ -107,16 +105,13 @@ func (b *browser) setCookie(name, path, value string) {
 }
 
 // ageSession moves the start of the session the browser holds back by d,
-// leaving when it last authenticated alone, past any copy in the cache.
+// leaving when it last authenticated alone.
 func (f *oauthFixture) ageSession(t *testing.T, b *browser, d time.Duration) {
 	t.Helper()
 
 	hash := model.HashSecret(b.cookieOf(session.UserCookie, "/"))
 	if err := f.s.db.Exec("UPDATE user_sessions SET created_at = created_at - make_interval(secs => ?) WHERE token_hash = ?", d.Seconds(), hash).Error; err != nil {
 		t.Fatal(err)
-	}
-	if f.s.cache != nil {
-		f.s.cache.SessionDB().DropSessions(context.Background(), cache.UserSession, hash)
 	}
 }
 

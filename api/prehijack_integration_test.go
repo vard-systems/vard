@@ -14,10 +14,10 @@ import (
 )
 
 // Pre-hijacking: someone registers an address before its owner does, gives
-// the account a way back in, and waits. When the owner later proves the
-// address — with a reset link or the verification link — everything the
-// account held before that moment goes, so the stranger's way back in goes
-// with it.
+// the account a way back in, and waits. The owner cannot confirm the address
+// with the verification link alone — it asks for a password the stranger
+// chose — so they prove it with a reset link, and everything the account
+// held before that moment goes, the stranger's password with it.
 
 const victimEmail = "victim@example.com"
 
@@ -79,11 +79,28 @@ func TestLiveProvingAnAddressEndsWhatAStrangerSetUpBeforeIt(t *testing.T) {
 			t.Fatalf("the owner's reset = %d", status)
 		}
 	}
+	// The verification link does not take the owner in: it asks for the
+	// stranger's password, which they cannot give, and proves nothing until
+	// they do — so they set their own with a reset instead.
 	ownerVerifies := func(t *testing.T, f *oauthFixture) {
 		token := tokenIn(t, f.s.mail.waitFor(t, victimEmail, "/verify-email").Body, "/verify-email")
-		if status := f.s.browser().account(http.MethodPost, "/verify-email", map[string]string{"token": token}, nil); status != http.StatusOK {
-			t.Fatalf("the owner's verification = %d", status)
+		owner := f.s.browser()
+		for _, attempt := range []struct {
+			body map[string]string
+			code string
+		}{
+			{map[string]string{"token": token}, "verification_password_required"},
+			{map[string]string{"token": token, "password": "a-guess-at-theirs"}, "wrong_password"},
+		} {
+			var refused problemBody
+			if status := owner.account(http.MethodPost, "/verify-email", attempt.body, &refused); status < 400 || refused.Code != attempt.code {
+				t.Fatalf("the owner's verification = %d %+v, want %s", status, refused, attempt.code)
+			}
 		}
+		if left := f.held(t, "user_factors"); left == 0 {
+			t.Fatal("the refused link cleared what the stranger set up, which only a proof may do")
+		}
+		ownerResets(t, f)
 	}
 
 	cases := []struct {
@@ -100,7 +117,7 @@ func TestLiveProvingAnAddressEndsWhatAStrangerSetUpBeforeIt(t *testing.T) {
 			prove: ownerResets,
 		},
 		{
-			name:  "a passkey, then the owner verifies the address",
+			name:  "a passkey, then the owner, refused at the verification link, resets the password",
 			setUp: addPasskey,
 			prove: ownerVerifies,
 		},
@@ -110,7 +127,7 @@ func TestLiveProvingAnAddressEndsWhatAStrangerSetUpBeforeIt(t *testing.T) {
 			prove: ownerResets,
 		},
 		{
-			name: "an authenticator, then the owner verifies the address",
+			name: "an authenticator, then the owner, refused at the verification link, resets the password",
 			setUp: func(t *testing.T, stranger *browser) *virtualKey {
 				addAuthenticator(t, stranger)
 				return nil
@@ -141,6 +158,9 @@ func TestLiveProvingAnAddressEndsWhatAStrangerSetUpBeforeIt(t *testing.T) {
 			}
 			if status := stranger.account(http.MethodGet, "/me", nil, nil); status != http.StatusUnauthorized {
 				t.Errorf("the stranger's session = %d after the owner proved the address, want 401", status)
+			}
+			if status := f.s.browser().account(http.MethodPost, "/login", map[string]string{"email": victimEmail, "password": adaPassword}, nil); status == http.StatusOK {
+				t.Error("the stranger's password still signs in after the owner proved the address")
 			}
 
 			if key != nil {
@@ -376,4 +396,52 @@ func (m *mailbox) waitFor(t *testing.T, to, page string) mail.Message {
 
 	t.Fatalf("no email to %s with a %s link", to, page)
 	return mail.Message{}
+}
+
+// A verification link takes its account's holder as well as the inbox: the
+// account's password, or a browser signed in to it. Without, a stranger who
+// changed their own account's address to somebody else's would have that
+// person confirm it — and move into an account whose password the stranger
+// knows. The holder themselves confirms as before.
+func TestLiveAVerificationLinkTakesTheAccountsHolder(t *testing.T) {
+	f := newOAuthFixture(t)
+	f.super.must(http.StatusOK, http.MethodPatch, "/login-flows/"+defaultFlow(t, f.super), map[string]any{
+		"require_verified_email": false, "allow_email_change": true,
+	}, nil)
+
+	// A stranger's own account, signed in, asks to move to the victim's
+	// address with its own password; the link goes to the victim.
+	var made struct {
+		User idOnly `json:"user"`
+	}
+	f.super.must(http.StatusCreated, http.MethodPost, "/users", map[string]any{
+		"email": "stranger@example.com", "password": "stranger-password-1", "confirm_password": "stranger-password-1", "email_verified": true,
+	}, &made)
+	stranger := f.s.browser()
+	if status := stranger.account(http.MethodPost, "/login", map[string]string{"email": "stranger@example.com", "password": "stranger-password-1"}, nil); status != http.StatusOK {
+		t.Fatalf("the stranger signing in = %d", status)
+	}
+	if status := stranger.account(http.MethodPost, "/email", map[string]string{"email": victimEmail, "current_password": "stranger-password-1"}, nil); status != http.StatusAccepted {
+		t.Fatalf("asking to move to the victim's address = %d", status)
+	}
+	token := tokenIn(t, f.s.mail.wait(t, victimEmail).Body, "/verify-email")
+
+	// The victim, curious, follows it: refused, and the link still waits.
+	var refused problemBody
+	if status := f.s.browser().account(http.MethodPost, "/verify-email", map[string]string{"token": token}, &refused); status != http.StatusForbidden || refused.Code != "verification_password_required" {
+		t.Errorf("the victim following the link = %d %+v, want verification_password_required", status, refused)
+	}
+	var moved int64
+	if err := f.s.db.Raw("SELECT count(*) FROM users WHERE email = ?", victimEmail).Scan(&moved).Error; err != nil {
+		t.Fatal(err)
+	}
+	if moved != 0 {
+		t.Fatal("the stranger's account moved to the victim's address without its password")
+	}
+
+	// The account's holder, in the browser signed in to it, confirms with
+	// nothing more.
+	if status := stranger.account(http.MethodPost, "/verify-email", map[string]string{"token": token}, nil); status != http.StatusOK {
+		t.Errorf("the holder's own browser confirming = %d, want 200", status)
+	}
 }

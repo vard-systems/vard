@@ -37,6 +37,12 @@ type AuthorizeParams struct {
 	RequestURI string `json:"-"`
 	// Repeated names a parameter the request gave more than once.
 	Repeated string `json:"-"`
+	// RequestObject and Registration are the request and registration
+	// parameters (OpenID Connect Core §6, §7.2.1), which are not supported
+	// and so are refused rather than ignored: a client that put redirect_uri
+	// or state in a request object must not believe them enforced.
+	RequestObject string `json:"-"`
+	Registration  string `json:"-"`
 }
 
 const (
@@ -248,6 +254,10 @@ func (s *Service) requestProblem(ctx context.Context, app *model.Application, p 
 	switch {
 	case !app.IsEnabled:
 		return ErrUnauthorizedClient, "the application is disabled", nil
+	case p.RequestObject != "":
+		return ErrRequestNotSupported, "request objects are not supported: send the parameters themselves, or push them first", nil
+	case p.Registration != "":
+		return ErrRegistrationNotSupported, "the registration parameter is not supported: register the client first", nil
 	case p.ResponseType != "code":
 		return ErrUnsupportedResponseType, "response_type must be code", nil
 	case p.ResponseMode != "" && p.ResponseMode != "query":

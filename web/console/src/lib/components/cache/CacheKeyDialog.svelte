@@ -98,8 +98,6 @@
 
 	const consequence = $derived.by(() => {
 		switch (current?.kind) {
-			case 'session':
-				return 'The next request with this session reads it from the database again. Nobody is signed out.';
 			case 'ratelimit':
 				return 'This address starts counting again from nothing.';
 			case 'stale':

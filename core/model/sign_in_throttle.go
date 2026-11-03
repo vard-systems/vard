@@ -35,6 +35,10 @@ const (
 	ThrottleFree        = 5
 	ThrottleFreeNetwork = 50
 
+	// RegisteredAgainNoticeEvery is how often at most an account's owner is
+	// told that somebody registered their address again.
+	RegisteredAgainNoticeEvery = time.Hour
+
 	// The first wait, doubled at each failure past the free ones up to
 	// ThrottleLongest.
 	ThrottleFirst   = 30 * time.Second

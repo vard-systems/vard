@@ -27,8 +27,11 @@ const (
 
 var Algorithms = []string{RS256, PS256, ES256}
 
-// MaxRSABits is the longest RSA modulus ParseJWK takes from outside.
-const MaxRSABits = 4096
+// MinRSABits and MaxRSABits bound the RSA modulus ParseJWK takes from outside.
+const (
+	MinRSABits = 2048
+	MaxRSABits = 4096
+)
 
 var ErrInvalid = errors.New("invalid token")
 
@@ -268,17 +271,26 @@ func ParseJWK(jwk JWK) (Key, error) {
 		if err != nil || len(e) == 0 || len(e) > 4 {
 			return Key{}, fmt.Errorf("jose: the key's exponent is not usable")
 		}
-		if len(n) < 256 {
-			return Key{}, fmt.Errorf("jose: an RSA key shorter than 2048 bits is not trusted")
+		// Both bounds are on the modulus itself, never its encoding: zero
+		// bytes in front of a short key would otherwise pass for a long one.
+		modulus := new(big.Int).SetBytes(n)
+		if modulus.BitLen() < MinRSABits {
+			return Key{}, fmt.Errorf("jose: an RSA key shorter than %d bits is not trusted", MinRSABits)
 		}
 		// Anyone may put a key in a DPoP proof, and verifying under a huge
 		// modulus costs the server, not the sender, so the size is capped.
-		modulus := new(big.Int).SetBytes(n)
 		if modulus.BitLen() > MaxRSABits {
 			return Key{}, fmt.Errorf("jose: an RSA key longer than %d bits is not accepted", MaxRSABits)
 		}
 
-		key.PublicKey = &rsa.PublicKey{N: modulus, E: int(new(big.Int).SetBytes(e).Int64())}
+		// An exponent of 1 makes every signature its own message, an even one
+		// is no RSA key, and Go verifies none past 2^31-1.
+		exponent := new(big.Int).SetBytes(e).Int64()
+		if exponent < 3 || exponent%2 == 0 || exponent > 1<<31-1 {
+			return Key{}, fmt.Errorf("jose: the key's exponent is not usable")
+		}
+
+		key.PublicKey = &rsa.PublicKey{N: modulus, E: int(exponent)}
 		if key.Algorithm == "" {
 			key.Algorithm = RS256
 		}
@@ -334,20 +346,36 @@ func VerifyEmbedded(token string, claims any) (Header, error) {
 }
 
 // Thumbprint is a public key's JWK SHA-256 thumbprint (RFC 7638): its
-// required members only, in order, without whitespace.
+// required members only, in order, without whitespace. RSA's n and e are
+// taken in their minimal encoding (RFC 7638 §3.2), so one key has one
+// thumbprint however many zero bytes a sender put in front of it.
 func Thumbprint(jwk JWK) (string, error) {
 	var canonical string
 	switch jwk.KeyType {
 	case "EC":
 		canonical = fmt.Sprintf(`{"crv":%q,"kty":"EC","x":%q,"y":%q}`, jwk.Curve, jwk.X, jwk.Y)
 	case "RSA":
-		canonical = fmt.Sprintf(`{"e":%q,"kty":"RSA","n":%q}`, jwk.E, jwk.N)
+		n, errN := minimal(jwk.N)
+		e, errE := minimal(jwk.E)
+		if errN != nil || errE != nil {
+			return "", fmt.Errorf("jose: the key's modulus or exponent is not base64url")
+		}
+		canonical = fmt.Sprintf(`{"e":%q,"kty":"RSA","n":%q}`, e, n)
 	default:
 		return "", fmt.Errorf("jose: the key type %q has no thumbprint here", jwk.KeyType)
 	}
 
 	sum := sha256.Sum256([]byte(canonical))
 	return b64.EncodeToString(sum[:]), nil
+}
+
+// minimal re-encodes a base64url unsigned integer without leading zero bytes.
+func minimal(value string) (string, error) {
+	raw, err := b64.DecodeString(value)
+	if err != nil {
+		return "", err
+	}
+	return b64.EncodeToString(bytes.TrimLeft(raw, "\x00")), nil
 }
 
 // HalfHash is at_hash (OpenID Connect Core 3.1.3.6): the base64url left half of

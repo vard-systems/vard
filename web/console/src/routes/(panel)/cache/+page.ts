@@ -8,7 +8,7 @@ import { CACHE_PAGE_SIZE } from '#lib/query/index.js';
 import { fromApi, requirePermission } from '#lib/api/load.js';
 import type { PageLoad } from './$types';
 
-const kinds: CacheKind[] = ['entry', 'stale', 'generation', 'session', 'ratelimit', 'other'];
+const kinds: CacheKind[] = ['entry', 'stale', 'generation', 'ratelimit', 'other'];
 
 export const load: PageLoad = async ({ fetch, parent, url }) => {
 	requirePermission((await parent()).admin, 'super_admin');

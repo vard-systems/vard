@@ -1,8 +1,14 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"testing"
+	"time"
+
+	"vard/core/mail"
 )
 
 // The switches a login flow carries decide what a sign-in allows, and the
@@ -169,4 +175,103 @@ func TestLiveVerifyEmailOnRegister(t *testing.T) {
 
 	// linkIn fails the test when the message carries none.
 	linkIn(t, f.s.mail.wait(t, "grace@example.com").Body, "/verify-email")
+}
+
+// Where a flow requires a verified address, a new account is told to check
+// its email before anything else, so registering an address that already has
+// an account is told exactly the same, in the same time, and the owner is
+// mailed a notice rather than a link — once an hour at most, however often
+// it is tried. Registering again, which is how a newcomer asks for another
+// link, answers the same as well.
+func TestLiveRegisteringATakenAddressSaysNothingOfIt(t *testing.T) {
+	f := newOAuthFixture(t)
+	f.super.must(http.StatusOK, http.MethodPatch, "/applications/"+f.appID, map[string]any{
+		"name": "Shop", "type": "web",
+		"grant_types":        []string{"authorization_code", "refresh_token"},
+		"redirect_uris":      []string{shopRedirect},
+		"scopes":             []string{"openid", "profile", "email", "offline_access", "roles"},
+		"allow_registration": true,
+	}, nil)
+
+	_, challenge := pkce(t)
+	handle := f.s.browser().visit(f.authorizeURL(challenge, nil)).Query().Get("request")
+
+	register := func(email string) (int, string, time.Duration) {
+		t.Helper()
+		var body map[string]any
+		start := time.Now()
+		status := f.s.browser().account(http.MethodPost, "/register", map[string]any{
+			"request": handle, "email": email, "password": "a-new-password-1",
+		}, &body)
+		took := time.Since(start)
+		encoded, _ := json.Marshal(body)
+		return status, string(encoded), took
+	}
+
+	freshStatus, freshBody, _ := register("grace@example.com")
+	takenStatus, takenBody, _ := register(adaEmail)
+	if takenStatus != freshStatus || takenBody != freshBody {
+		t.Errorf("a taken address = %d %s, a new one = %d %s; want the same answer", takenStatus, takenBody, freshStatus, freshBody)
+	}
+
+	// The newcomer gets a link to confirm with; the owner, a notice and no
+	// link, so nobody else's registration can be finished from their inbox.
+	linkIn(t, f.s.mail.wait(t, "grace@example.com").Body, "/verify-email")
+	notice := f.s.mail.wait(t, adaEmail)
+	if !strings.Contains(notice.Body, "already has an account") || strings.Contains(notice.Body, "/verify-email") {
+		t.Errorf("the owner's notice = %q, want one saying the address has an account, with no link", notice.Body)
+	}
+
+	// Registering again, a newcomer's way to another link, answers as the
+	// first time did, for either address.
+	againStatus, againBody, _ := register("grace@example.com")
+	if againStatus != freshStatus || againBody != freshBody {
+		t.Errorf("registering a new address again = %d %s, want %d %s", againStatus, againBody, freshStatus, freshBody)
+	}
+
+	// However often it is tried, the owner hears of it once an hour.
+	for range 5 {
+		register(adaEmail)
+	}
+	time.Sleep(300 * time.Millisecond)
+	if sent := f.s.mail.to(adaEmail); len(sent) != 1 {
+		t.Errorf("%d notices to the owner after six attempts, want 1", len(sent))
+	}
+
+	// The same time for either: the fastest of several of each, which is
+	// the work itself rather than the machine's noise.
+	fastest := func(email func(int) string) time.Duration {
+		best := time.Hour
+		for i := range 12 {
+			_, _, took := register(email(i))
+			best = min(best, took)
+		}
+		return best
+	}
+	fresh := fastest(func(i int) string { return fmt.Sprintf("newcomer-%d@example.com", i) })
+	taken := fastest(func(int) string { return adaEmail })
+	if ratio := float64(max(fresh, taken)) / float64(min(fresh, taken)); ratio > 1.5 {
+		t.Errorf("a new address took %v and a taken one %v, want about the same", fresh, taken)
+	}
+
+	// The owner's password still works.
+	b := f.s.browser()
+	_, again := pkce(t)
+	if back := f.signIn(b, again); back.Query().Get("code") == "" {
+		t.Errorf("the owner signing in after the attempts went to %s", back)
+	}
+}
+
+// to is every message sent to an address so far.
+func (m *mailbox) to(address string) []mail.Message {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var found []mail.Message
+	for _, msg := range m.messages {
+		if strings.EqualFold(msg.To, address) {
+			found = append(found, msg)
+		}
+	}
+	return found
 }

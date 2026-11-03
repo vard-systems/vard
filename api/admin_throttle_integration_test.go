@@ -121,8 +121,13 @@ func TestLiveAdminCurrentPasswordGuessesAreThrottled(t *testing.T) {
 	if status := root.do(http.MethodPost, "/me/password", map[string]string{"current_password": superPassword, "new_password": "taken-over-password-1"}, nil); status != http.StatusBadRequest {
 		t.Errorf("the right current password on a waiting account = %d, want 400", status)
 	}
-	if status := s.client().login(superEmail, superPassword); status == http.StatusOK {
-		t.Error("signing in after five wrong current passwords = 200, want the account waiting")
+	// The guesses were counted on this browser's own budget: it is the one
+	// that waits, signing in included, while another browser does not.
+	if status := root.login(superEmail, superPassword); status == http.StatusOK {
+		t.Error("signing in again in the guessing browser = 200, want it waiting")
+	}
+	if status := s.client().login(superEmail, superPassword); status != http.StatusOK {
+		t.Errorf("signing in from another browser = %d, want 200: a session's guesses keep only its own browser waiting", status)
 	}
 }
 
@@ -155,5 +160,35 @@ func TestLiveAnUnknownAdminUsernameIsCountedLikeAKnownOne(t *testing.T) {
 
 	if got := failures(); !slices.Equal(got, []int{2, 2}) {
 		t.Errorf("the counts = %v, want the known and the unknown username at 2 each", got)
+	}
+}
+
+// The panel's sign-in keeps a browser an administrator has signed in on off
+// the username's count, as the sign-in pages do: a stranger guessing at the
+// username keeps only strangers waiting.
+func TestLiveAKnownBrowserSignsAnAdministratorInPastAStrangersGuesses(t *testing.T) {
+	s := newLiveServer(t)
+	root := s.superAdmin()
+
+	stranger := s.client()
+	for range 6 {
+		if status := stranger.login(superEmail, "wrong-password"); status != http.StatusUnauthorized {
+			t.Fatalf("a stranger's guess = %d, want 401", status)
+		}
+	}
+
+	if status := s.client().login(superEmail, superPassword); status != http.StatusUnauthorized {
+		t.Errorf("the right password from a browser never signed in = %d, want it waiting", status)
+	}
+	if status := root.login(superEmail, superPassword); status != http.StatusOK {
+		t.Errorf("the right password from the administrator's browser = %d, want 200", status)
+	}
+
+	// Its own budget is a throttle still: its own failures make it wait.
+	for range 5 {
+		root.login(superEmail, "wrong-password")
+	}
+	if status := root.login(superEmail, superPassword); status != http.StatusUnauthorized {
+		t.Errorf("the right password after the browser's own five failures = %d, want it waiting", status)
 	}
 }

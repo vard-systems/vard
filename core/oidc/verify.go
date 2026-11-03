@@ -75,7 +75,22 @@ func (s *Service) mailVerification(
 	return nil
 }
 
-func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) error {
+// ErrVerificationPasswordRequired asks for the account's password before a
+// link that proves an address for it is taken, and ErrVerificationSignInRequired
+// for a browser signed in to it, where the account has no password.
+var (
+	ErrVerificationPasswordRequired = problem("verification_password_required")
+	ErrVerificationSignInRequired   = problem("verification_sign_in_required")
+)
+
+// VerifyEmail takes a verification link. Who follows it has to show they hold
+// the account as well as the inbox — its password, or a browser signed in to
+// it — whenever the link would hand them something: an address not proved
+// yet, or a new address. Otherwise whoever registered somebody else's address,
+// or changed their own account's to it, would have the owner confirm an
+// account whose password the stranger chose, and sign in to it afterwards.
+// password is "" when none was typed; session is the browser's, nil for none.
+func (s *Service) VerifyEmail(ctx context.Context, token, password string, session *Session, client Client) error {
 	if token == "" {
 		return ErrVerificationInvalid
 	}
@@ -107,6 +122,12 @@ func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) 
 		return err
 	}
 
+	// Checked before the link is spent, so a wrong password leaves it for
+	// the right one; each guess is counted as a sign-in's is.
+	if err := s.heldByTheirOwner(ctx, owner, verification, password, session, client); err != nil {
+		return err
+	}
+
 	err = s.store.VerifyEmail(ctx, verification, s.now(), proof(owner.Email, client))
 	switch {
 	case errors.Is(err, store.ErrAlreadyUsed):
@@ -135,4 +156,26 @@ func (s *Service) VerifyEmail(ctx context.Context, token string, client Client) 
 // the store writes in the transaction that clears what came before it.
 func proof(email string, client Client) model.AuditLog {
 	return model.AuditLog{ActorEmail: email, IP: client.IP, UserAgent: client.UserAgent}
+}
+
+// heldByTheirOwner says whether the person following a verification link holds
+// the account it is for, when the link would give them anything.
+func (s *Service) heldByTheirOwner(ctx context.Context, owner *model.User, verification *model.EmailVerification, password string, session *Session, client Client) error {
+	switch {
+	case session != nil && session.User.ID == owner.ID:
+		return nil
+	case !verification.IsChange() && owner.IsEmailVerified:
+		// Proved already: the link proves nothing new and clears nothing.
+		return nil
+	case !verification.IsChange() && owner.PasswordHash == "":
+		// No password a stranger could have chosen, and the first proof
+		// ends every other way in (clearBeforeProofIn).
+		return nil
+	case owner.PasswordHash == "":
+		return ErrVerificationSignInRequired
+	case password == "":
+		return ErrVerificationPasswordRequired
+	}
+
+	return s.checkCurrentPassword(ctx, owner, password, client)
 }
