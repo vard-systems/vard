@@ -217,7 +217,7 @@
 		onnodeclick={({ node }) => onSelect(node.id)}
 		onpaneclick={() => onSelect('start')}
 		onnodedragstop={reorder}
-		proOptions={{ hideAttribution: true }}
+		attributionPosition="bottom-left"
 	>
 		<Background gap={20} />
 		<Controls showLock={false} position="bottom-right" />
@@ -260,6 +260,17 @@
 		border: none;
 		background: transparent;
 		box-shadow: none;
+	}
+
+	/* Svelte Flow asks for its attribution unless one subscribes to Pro;
+	   kept, quietly, away from the zoom controls. */
+	.canvas :global(.svelte-flow__attribution) {
+		font-size: var(--text-xs);
+		color: var(--color-text-disabled);
+	}
+
+	.canvas :global(.svelte-flow__attribution a) {
+		color: inherit;
 	}
 
 	.canvas :global(.svelte-flow__controls) {
