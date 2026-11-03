@@ -217,7 +217,7 @@ func (s *Service) VerifySignInWithPasskey(ctx context.Context, token string, res
 		return nil, "", ErrNoSession
 	}
 
-	allowed, err := s.reserve(ctx, admin.Username)
+	allowed, err := s.reserve(ctx, admin.Username, req)
 	if err != nil {
 		return nil, "", err
 	}
@@ -243,7 +243,7 @@ func (s *Service) VerifySignInWithPasskey(ctx context.Context, token string, res
 		return nil, "", s.failed(ctx, admin, req, "wrong passkey")
 	}
 
-	if err := s.succeeded(ctx, admin); err != nil {
+	if err := s.succeeded(ctx, admin, req); err != nil {
 		return nil, "", err
 	}
 

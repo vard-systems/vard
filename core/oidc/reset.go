@@ -172,8 +172,9 @@ func (s *Service) ResetPassword(ctx context.Context, token, password string, cli
 	}
 
 	// Only the address's owner gets here, so the guesses a stranger made at
-	// it no longer keep them waiting.
-	if err := s.store.ClearSignIn(ctx, s.keysFor(user.Email, client).account); err != nil {
+	// it no longer keep them waiting, nor their own in this browser.
+	keys := s.keysFor(user.Email, client)
+	if err := s.store.ClearSignIn(ctx, keys.address, keys.account); err != nil {
 		return err
 	}
 

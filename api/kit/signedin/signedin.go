@@ -48,7 +48,7 @@ func Session(c *gin.Context) *oidc.Session {
 
 // Client is who is calling, as the provider records it.
 func Client(c *gin.Context) oidc.Client {
-	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c)}
+	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c), KnownBrowser: session.KnownBrowser(c)}
 }
 
 // Problem is the API problem a provider problem is answered with.

@@ -250,6 +250,7 @@ func (h *Handler) signedIn(c *gin.Context, request string, result *oidc.SignInRe
 	}
 
 	session.SetUser(c, result.Token, result.Session.Record.ExpiresAt, result.Remember, h.secure)
+	session.SetKnownBrowser(c, result.KnownBrowser, h.secure)
 
 	if request == "" {
 		c.JSON(http.StatusOK, signedInResponse{RecoveryCodes: result.RecoveryCodes})

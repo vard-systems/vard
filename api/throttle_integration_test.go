@@ -245,3 +245,55 @@ func TestLiveASignInWithASecondFactorLeavesItsNetworkAsItWas(t *testing.T) {
 		t.Errorf("the network's count went from %d to %d over a right sign-in, want it unchanged", before, after)
 	}
 }
+
+// A browser that has signed in to an address before is counted on a budget of
+// its own, so a stranger failing at the address over and over keeps only
+// strangers waiting: the owner signs in on their own browser at once. It is
+// still a throttle: the browser's own failures make it wait.
+func TestLiveAKnownBrowserIsNotKeptWaitingByStrangers(t *testing.T) {
+	f := throttledFixture(t)
+
+	owner := f.s.browser()
+	if status, code := owner.signInFrom("203.0.113.5", adaEmail, adaPassword); status != http.StatusOK {
+		t.Fatalf("the owner's first sign-in = %d %s", status, code)
+	}
+
+	for i := range 6 {
+		if status, _ := f.s.browser().signInFrom(fmt.Sprintf("198.51.100.%d", i+1), adaEmail, "wrong-password"); status != http.StatusUnauthorized {
+			t.Fatalf("guess %d = %d, want 401", i+1, status)
+		}
+	}
+
+	if status, code := f.s.browser().signInFrom("198.51.100.99", adaEmail, adaPassword); status != http.StatusUnauthorized || code != "invalid_credentials" {
+		t.Errorf("the right password from a browser never signed in = %d %s, want it waiting", status, code)
+	}
+	if status, code := owner.signInFrom("203.0.113.5", adaEmail, adaPassword); status != http.StatusOK {
+		t.Errorf("the right password from the owner's browser = %d %s, want 200: strangers' failures are not its", status, code)
+	}
+
+	for range 6 {
+		owner.signInFrom("203.0.113.5", adaEmail, "wrong-password")
+	}
+	if status, _ := owner.signInFrom("203.0.113.5", adaEmail, adaPassword); status != http.StatusUnauthorized {
+		t.Errorf("the right password after the browser's own six failures = %d, want it waiting", status)
+	}
+
+	// The mark is for the address it was earned at: at another address the
+	// browser is a stranger like any other.
+	if err := f.s.db.Exec("UPDATE sign_in_throttles SET failures = 0, blocked_until = NULL").Error; err != nil {
+		t.Fatal(err)
+	}
+	for range 6 {
+		f.s.browser().signInFrom("198.51.100.7", "grace@example.com", "wrong-password")
+	}
+	if status, _ := owner.signInFrom("203.0.113.5", "grace@example.com", "wrong-password"); status != http.StatusUnauthorized {
+		t.Fatalf("a guess at another address = %d, want 401", status)
+	}
+	var waits int64
+	if err := f.s.db.Raw("SELECT count(*) FROM sign_in_throttles WHERE key LIKE 'browser:%' AND failures > 0").Scan(&waits).Error; err != nil {
+		t.Fatal(err)
+	}
+	if waits != 0 {
+		t.Errorf("a guess at another address was counted on the browser's own budget (%d keys)", waits)
+	}
+}

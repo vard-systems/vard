@@ -147,6 +147,7 @@ func (h *Handler) SocialCallback(c *gin.Context) {
 	}
 
 	session.SetUser(c, result.SignIn.Token, result.SignIn.Session.Record.ExpiresAt, result.SignIn.Remember, h.secure)
+	session.SetKnownBrowser(c, result.SignIn.KnownBrowser, h.secure)
 
 	c.Redirect(http.StatusFound, h.provider.SocialLanding(ctx, result))
 }
@@ -263,6 +264,7 @@ func (h *Handler) ssoFinished(c *gin.Context, result *oidc.SocialResult, err err
 	}
 
 	session.SetUser(c, result.SignIn.Token, result.SignIn.Session.Record.ExpiresAt, result.SignIn.Remember, h.secure)
+	session.SetKnownBrowser(c, result.SignIn.KnownBrowser, h.secure)
 
 	c.Redirect(http.StatusFound, h.provider.SocialLanding(c.Request.Context(), result))
 }
@@ -491,7 +493,7 @@ func cookie(c *gin.Context) string {
 }
 
 func client(c *gin.Context) oidc.Client {
-	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c)}
+	return oidc.Client{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Language: session.Language(c), KnownBrowser: session.KnownBrowser(c)}
 }
 
 // FrontchannelLogout is the page that tells a signing-out browser's

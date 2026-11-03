@@ -185,6 +185,18 @@ var MailMessageSpecs = []MailMessageSpec{
 			{Name: "ip", Description: "The network address it was added from"},
 		},
 	},
+	{
+		Kind:        "registered_again",
+		Label:       "Someone registered a taken address",
+		Description: "Sent to an account's owner when somebody tries to register a new account with its address, in a flow that requires a verified address. The person registering is told to check their email either way, so the answer says nothing about which addresses have accounts.",
+		SubjectKey:  "email.registered_again.subject",
+		BodyKey:     "email.registered_again.body",
+		Params: []MailParam{
+			{Name: "app", Description: "The application being registered for"},
+			{Name: "email", Description: "The address the message went to"},
+			{Name: "ip", Description: "The network address the attempt came from"},
+		},
+	},
 }
 
 func MailMessageKeys() []string {

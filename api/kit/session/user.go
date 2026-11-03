@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"vard/core/brand"
+	"vard/core/model"
 )
 
 // UserCookie carries a user's own session for single sign-on. It is
@@ -120,4 +121,43 @@ func SecondFactor(c *gin.Context) string {
 
 func writeSecondFactor(c *gin.Context, value string, maxAge int, secure bool) {
 	writeCookie(c, cookie{name: SecondFactorCookie, path: secondFactorPath, sameSite: http.SameSiteLaxMode}, value, maxAge, secure)
+}
+
+// KnownBrowserCookie marks a browser that has signed in to the account it
+// names (model.KnownBrowser): its attempts at that account are counted on a
+// budget of its own. Only the sign-in endpoints read it.
+const KnownBrowserCookie = brand.KnownBrowserCookie
+
+// knownBrowserPath is where the person signs in, proves a password or passes
+// a second factor; the cookie is sent nowhere else over plain http.
+const knownBrowserPath = "/api/v1/account"
+
+func SetKnownBrowser(c *gin.Context, value string, secure bool) {
+	writeKnownBrowser(c, cookie{name: KnownBrowserCookie, path: knownBrowserPath, sameSite: http.SameSiteLaxMode}, value, secure)
+}
+
+// KnownBrowser is the browser's known-browser cookie, or "" when absent or
+// duplicated.
+func KnownBrowser(c *gin.Context) string {
+	return read(c, KnownBrowserCookie)
+}
+
+// AdminKnownBrowserCookie is KnownBrowserCookie for the panel's sign-in.
+const AdminKnownBrowserCookie = brand.AdminKnownBrowserCookie
+
+const adminKnownBrowserPath = "/api/v1/admin"
+
+func SetAdminKnownBrowser(c *gin.Context, value string, secure bool) {
+	writeKnownBrowser(c, cookie{name: AdminKnownBrowserCookie, path: adminKnownBrowserPath, sameSite: http.SameSiteLaxMode}, value, secure)
+}
+
+func AdminKnownBrowser(c *gin.Context) string {
+	return read(c, AdminKnownBrowserCookie)
+}
+
+func writeKnownBrowser(c *gin.Context, which cookie, value string, secure bool) {
+	if value == "" {
+		return
+	}
+	writeCookie(c, which, value, int(model.KnownBrowserLifetime.Seconds()), secure)
 }

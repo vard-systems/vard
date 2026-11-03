@@ -143,7 +143,7 @@ func (s *Service) EndSession(ctx context.Context, session *Session, id uuid.UUID
 		return ErrNotYours
 	}
 
-	if err := s.store.RevokeUserSession(ctx, id, s.now()); err != nil {
+	if err := s.store.EndUserSession(ctx, id, s.now()); err != nil {
 		return err
 	}
 

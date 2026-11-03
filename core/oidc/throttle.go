@@ -12,27 +12,45 @@ import (
 // it is checked, against the address typed and the caller's network; past a
 // few failures each waits longer. Keyed by the address typed rather than the
 // account, an address nobody has is throttled exactly like one somebody has.
+//
+// A browser that has signed in to the address before (model.KnownBrowser) is
+// counted on a budget of its own instead of the address's, so a stranger
+// failing at the address over and over keeps only strangers waiting.
 
-const throttlePurpose = "sign-in throttle"
+const (
+	throttlePurpose     = "sign-in throttle"
+	knownBrowserPurpose = "user known browser"
+)
 
 // signInKeys are what an attempt for `email` from `client` is counted
-// against: the address typed, and the caller's network.
+// against: the address typed, or the browser's own budget when it is known
+// to the address; and the caller's network.
 type signInKeys struct {
 	keys []model.ThrottleKey
 	// account is the key a success forgets; network is the one it only
-	// gives its attempt back to.
+	// gives its attempt back to; address is the address typed, which a
+	// proof of the address forgets too.
 	account string
 	network model.ThrottleKey
+	address string
 }
 
 func (s *Service) keysFor(email string, client Client) signInKeys {
-	account := "email:" + s.accountKey(email)
+	address := "email:" + s.accountKey(email)
+	account := address
+
+	normalized := model.NormalizeEmail(email)
+	if browser := model.KnownBrowser(s.sealer, knownBrowserPurpose, client.KnownBrowser, normalized, s.now()); browser != "" {
+		account = "browser:" + s.browserKey(browser, normalized)
+	}
+
 	network := model.ThrottleKey{Key: "network:" + networkOf(client.IP), Free: model.ThrottleFreeNetwork}
 
 	return signInKeys{
 		keys:    []model.ThrottleKey{{Key: account, Free: model.ThrottleFree}, network},
 		account: account,
 		network: network,
+		address: address,
 	}
 }
 
@@ -62,6 +80,12 @@ func (s *Service) passwordRight(ctx context.Context, keys signInKeys) error {
 // as it is compared.
 func (s *Service) accountKey(email string) string {
 	tag := s.sealer.Tag(throttlePurpose, []byte(model.NormalizeEmail(email)))
+	return hex.EncodeToString(tag[:16])
+}
+
+// browserKey names one known browser's budget at one address.
+func (s *Service) browserKey(browser, normalized string) string {
+	tag := s.sealer.Tag(throttlePurpose, []byte("browser\x00"+browser+"\x00"+normalized))
 	return hex.EncodeToString(tag[:16])
 }
 

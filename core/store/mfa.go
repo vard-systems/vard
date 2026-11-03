@@ -104,8 +104,6 @@ func (s *Store) SetRecoveryCodes(ctx context.Context, factor *model.MFA) error {
 }
 
 func (s *Store) RemoveMFA(ctx context.Context, admin uuid.UUID, keep *uuid.UUID, at time.Time) error {
-	var ended []model.AdminSession
-
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("admin_id = ?", admin).Delete(&model.MFA{}).Error; err != nil {
 			return err
@@ -116,8 +114,7 @@ func (s *Store) RemoveMFA(ctx context.Context, admin uuid.UUID, keep *uuid.UUID,
 			condition, args = "admin_id = ? AND id <> ?", []any{admin, *keep}
 		}
 
-		var err error
-		ended, err = revokeAdminSessionsIn(tx, at, condition, args...)
+		_, err := revokeAdminSessionsIn(tx, at, condition, args...)
 		return err
 	})
 	if err != nil {
@@ -125,7 +122,6 @@ func (s *Store) RemoveMFA(ctx context.Context, admin uuid.UUID, keep *uuid.UUID,
 	}
 
 	s.forget(ctx, cache.Admins)
-	s.putAdminSessions(ctx, ended...)
 
 	return nil
 }

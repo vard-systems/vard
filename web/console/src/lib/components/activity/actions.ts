@@ -177,6 +177,13 @@ const actions: Record<string, Action> = {
 		tone: 'success',
 		icon: 'ri-user-line'
 	},
+	'user.registration_repeated': {
+		label: 'Registration for a taken address',
+		verb: 'was sent a notice: somebody tried to register their address again',
+		category: 'access',
+		tone: 'warning',
+		icon: 'ri-user-shared-line'
+	},
 	'user.password_reset_requested': {
 		label: 'Password reset requested',
 		verb: 'asked to reset their password',
@@ -347,6 +354,13 @@ const actions: Record<string, Action> = {
 		category: 'users',
 		tone: 'danger',
 		icon: 'ri-user-line'
+	},
+	'user.deactivated': {
+		label: 'User turned off',
+		verb: 'turned off, and signed out everywhere,',
+		category: 'users',
+		tone: 'warning',
+		icon: 'ri-user-unfollow-line'
 	},
 	'user.password_changed': {
 		label: 'Password changed',
@@ -803,6 +817,7 @@ const selfTargeted = new Set([
 	'user.login_failed',
 	'user.login_blocked',
 	'user.registered',
+	'user.registration_repeated',
 	'user.password_reset_requested',
 	'user.password_reset',
 	'user.password_changed_self',

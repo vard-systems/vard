@@ -2,20 +2,21 @@
 //
 // The cache database holds what anybody may see and every page reads
 // (languages, the organisation, login flows, sign-in buttons). The session
-// database holds what decides who is signed in and what they may do (sessions,
-// administrators, client credentials, grants) and the rate limit's counts, so
-// flushing the cache never signs anybody out.
+// database holds what decides what the signed-in may do (administrators,
+// client credentials, grants) and the rate limit's counts, so flushing the
+// cache never changes what anybody may do. Sessions themselves are never
+// cached: they are read from Postgres on every request, so ending one holds
+// on every server at once.
 //
 // Keys, under the configured prefix:
 //
 //	<prefix>cache:<group>:generation            the group's current generation
 //	<prefix>cache:<group>:v<generation>:<entry> one cached value, as JSON
-//	<prefix>session:<kind>:<token hash>         one session, as JSON
 //	<prefix>ratelimit:<scope>:<address>         one rate-limit bucket
 //
 // A write forgets a whole group with one INCR of its generation, so a reader
 // that loaded a row just before the write stores it under a generation nobody
-// reads again. Sessions are handled differently; see sessions.go.
+// reads again.
 //
 // Redis is an optimisation, never needed for correctness: a nil *Cache is
 // always empty, and a Redis that stops answering is treated as a miss.
@@ -144,8 +145,7 @@ type Cache struct {
 	// pending is what a write could not forget because Redis did not answer.
 	// Until it is delivered this process neither reads nor writes the database,
 	// so an outage during a save cannot leave the old value served.
-	pending     map[string]bool
-	pendingKeys map[string]bool
+	pending map[string]bool
 }
 
 func Open(ctx context.Context, cfg config.Redis, log *slog.Logger) (*Redis, error) {

@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 
+	"vard/core/cache"
 	"vard/core/cache/cachetest"
 )
 
@@ -75,8 +77,8 @@ type cacheKey struct {
 }
 
 // A super admin sees both databases, can read and edit what the cache holds
-// and clear it, cannot edit what decides who is signed in, and flushing that
-// signs nobody out.
+// and clear it, cannot edit what decides what the signed-in may do, and
+// flushing that signs nobody out. No session is ever kept in Redis.
 func TestLiveCacheManagement(t *testing.T) {
 	s := newLiveServer(t)
 	if s.cache == nil {
@@ -90,10 +92,9 @@ func TestLiveCacheManagement(t *testing.T) {
 	var overview struct {
 		Configured bool `json:"configured"`
 		Databases  []struct {
-			Name      string           `json:"name"`
-			Available bool             `json:"available"`
-			Editable  bool             `json:"editable"`
-			Sessions  map[string]int64 `json:"sessions"`
+			Name      string `json:"name"`
+			Available bool   `json:"available"`
+			Editable  bool   `json:"editable"`
 		} `json:"databases"`
 	}
 	super.must(http.StatusOK, http.MethodGet, "/cache", nil, &overview)
@@ -101,8 +102,8 @@ func TestLiveCacheManagement(t *testing.T) {
 		t.Fatalf("overview = %+v, want both databases", overview)
 	}
 	if cacheDB, sessions := overview.Databases[0], overview.Databases[1]; cacheDB.Name != "cache" || !cacheDB.Editable ||
-		sessions.Name != "sessions" || sessions.Editable || sessions.Sessions["admin"] == 0 {
-		t.Errorf("databases = %+v, want the editable cache and the session database holding this session", overview.Databases)
+		sessions.Name != "sessions" || sessions.Editable {
+		t.Errorf("databases = %+v, want the editable cache and the read-only session database", overview.Databases)
 	}
 
 	var listing struct {
@@ -135,15 +136,28 @@ func TestLiveCacheManagement(t *testing.T) {
 	super.must(http.StatusNotFound, http.MethodPost, "/cache/cache/groups/admins/clear", nil, nil)
 	super.must(http.StatusNotFound, http.MethodGet, "/cache/elsewhere/keys", nil, nil)
 
-	// Nothing that decides who is signed in is edited by hand.
-	super.must(http.StatusOK, http.MethodGet, "/cache/sessions/keys?kind=session", nil, &listing)
-	if len(listing.Keys) == 0 {
-		t.Fatal("the session database lists no sessions")
+	// Sessions are read from Postgres every time: none is in Redis, though
+	// this administrator is signed in.
+	if held := s.cache.SessionDB(); held != nil {
+		keys, _, err := held.Keys(context.Background(), cache.KeyQuery{Search: "session:"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(keys) != 0 {
+			t.Errorf("Redis holds %d session keys, want none", len(keys))
+		}
 	}
-	session := url.QueryEscape(listing.Keys[0].Name)
-	super.must(http.StatusConflict, http.MethodPut, "/cache/sessions/key?name="+session, map[string]any{"value": map[string]any{}}, nil)
 
-	// Flushing it signs nobody out: the sessions are read again.
+	// Nothing that decides what the signed-in may do is edited by hand: the
+	// administrator this request read is cached, and stays as it is.
+	super.must(http.StatusOK, http.MethodGet, "/cache/sessions/keys?kind=entry&group=admins", nil, &listing)
+	if len(listing.Keys) == 0 {
+		t.Fatal("the session database holds no administrator")
+	}
+	admin := url.QueryEscape(listing.Keys[0].Name)
+	super.must(http.StatusConflict, http.MethodPut, "/cache/sessions/key?name="+admin, map[string]any{"value": map[string]any{}}, nil)
+
+	// Flushing it signs nobody out.
 	super.must(http.StatusNoContent, http.MethodDelete, "/cache/sessions", nil, nil)
 	super.must(http.StatusOK, http.MethodGet, "/me", nil, nil)
 

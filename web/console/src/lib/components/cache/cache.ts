@@ -10,7 +10,7 @@ export const databases: Record<CacheDatabaseName, { label: string; description: 
 	sessions: {
 		label: 'Sessions',
 		description:
-			'Who is signed in and what they may do: the sessions behind the cookies, the administrators with their roles, the applications by client id, and the rate limit’s counts. Nothing here is edited by hand; removing it signs nobody out.'
+			'What the signed-in may do: the administrators with their roles, the applications by client id and their grants, and the rate limit’s counts. Sessions themselves are always read from the database. Nothing here is edited by hand; removing it signs nobody out.'
 	}
 };
 
@@ -18,7 +18,6 @@ export const kinds: Record<CacheKind, { label: string; tone: ColorPalette }> = {
 	entry: { label: 'Value', tone: 'success' },
 	stale: { label: 'Stale', tone: 'neutral' },
 	generation: { label: 'Generation', tone: 'info' },
-	session: { label: 'Session', tone: 'warning' },
 	ratelimit: { label: 'Rate limit', tone: 'danger' },
 	other: { label: 'Other', tone: 'neutral' }
 };
@@ -31,7 +30,6 @@ export const kindFilters: Record<CacheDatabaseName, { value: CacheKind | ''; lab
 	],
 	sessions: [
 		{ value: '', label: 'Every kind' },
-		{ value: 'session', label: 'Sessions' },
 		{ value: 'entry', label: 'Values' },
 		{ value: 'ratelimit', label: 'Rate limits' },
 		{ value: 'generation', label: 'Generations' }

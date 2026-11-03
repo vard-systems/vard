@@ -98,39 +98,24 @@ func (c *Cache) settle(ctx context.Context) bool {
 	for group := range c.pending {
 		groups = append(groups, group)
 	}
-	keys := make([]string, 0, len(c.pendingKeys))
-	for key := range c.pendingKeys {
-		keys = append(keys, key)
-	}
 	c.mu.Unlock()
 
-	if len(groups) == 0 && len(keys) == 0 {
+	if len(groups) == 0 {
 		return true
 	}
 
-	if len(groups) > 0 {
-		if err := c.incr(ctx, groups); err != nil {
-			c.failed(err)
-			return false
-		}
-	}
-	if len(keys) > 0 {
-		if err := c.client.Unlink(ctx, keys...).Err(); err != nil {
-			c.failed(err)
-			return false
-		}
+	if err := c.incr(ctx, groups); err != nil {
+		c.failed(err)
+		return false
 	}
 
 	c.mu.Lock()
 	for _, group := range groups {
 		delete(c.pending, group)
 	}
-	for _, key := range keys {
-		delete(c.pendingKeys, key)
-	}
 	c.mu.Unlock()
 
-	c.log.Info("cache: forgot what a write changed while redis was away", "groups", groups, "keys", len(keys))
+	c.log.Info("cache: forgot what a write changed while redis was away", "groups", groups)
 
 	return true
 }

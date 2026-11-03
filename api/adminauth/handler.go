@@ -75,7 +75,20 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	h.knownBrowser(c, admin)
 	c.JSON(http.StatusOK, gin.H{"admin": newAdminResponse(admin)})
+}
+
+// knownBrowser marks this browser as one the administrator has signed in on,
+// once a sign-in is through every step. Failing that only leaves the browser
+// unmarked; the sign-in stands.
+func (h *Handler) knownBrowser(c *gin.Context, admin *model.Admin) {
+	value, err := h.auth.KnownBrowser(admin)
+	if err != nil {
+		h.log.Error("marking a known browser failed", "error", err)
+		return
+	}
+	session.SetAdminKnownBrowser(c, value, h.secure)
 }
 
 // State reports how far this browser's session has got (password, code,
@@ -129,6 +142,7 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 	}
 
 	session.Set(c, next, h.secure)
+	h.knownBrowser(c, admin)
 	c.JSON(http.StatusOK, gin.H{"admin": newAdminResponse(admin)})
 }
 
@@ -201,7 +215,7 @@ func (h *Handler) UpdateMe(c *gin.Context) {
 		AvatarURL: req.AvatarURL,
 	}
 
-	err := h.auth.UpdateProfile(c.Request.Context(), admin, profile, req.CurrentPassword)
+	err := h.auth.UpdateProfile(c.Request.Context(), admin, profile, req.CurrentPassword, session.RequestOf(c))
 	switch {
 	case errors.Is(err, auth.ErrWrongPassword):
 		respond.Fail(c, wrongPassword)
@@ -234,7 +248,7 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 
 	admin := session.Admin(c)
 
-	err := h.auth.ChangePassword(c.Request.Context(), admin, session.ID(c), req.CurrentPassword, req.NewPassword)
+	err := h.auth.ChangePassword(c.Request.Context(), admin, session.ID(c), req.CurrentPassword, req.NewPassword, session.RequestOf(c))
 	switch {
 	case errors.Is(err, auth.ErrWrongPassword):
 		respond.Fail(c, wrongPassword)

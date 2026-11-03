@@ -29,7 +29,7 @@ const maxTTL = 24 * time.Hour
 
 var kinds = []string{
 	cache.KindEntry, cache.KindStale, cache.KindGeneration,
-	cache.KindSession, cache.KindRateLimit, cache.KindOther,
+	cache.KindRateLimit, cache.KindOther,
 }
 
 func checkKind(kind string) error {

@@ -94,3 +94,24 @@ func (s *Store) ReturnSignIn(ctx context.Context, key model.ThrottleKey) error {
 			"blocked_until": gorm.Expr("CASE WHEN failures - 1 < ? THEN NULL ELSE blocked_until END", key.Free),
 		}).Error
 }
+
+// ClaimOnceEvery says whether `key` is due: true at most once every `every`,
+// by one conditional upsert, so servers racing for it let one through. Kept
+// with the throttles, and swept like them.
+func (s *Store) ClaimOnceEvery(ctx context.Context, key string, now time.Time, every time.Duration) (bool, error) {
+	until := now.Add(every)
+	row := model.SignInThrottle{Key: key, BlockedUntil: &until, ExpiresAt: until}
+
+	result := s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "key"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"blocked_until": until,
+			"expires_at":    until,
+		}),
+		Where: clause.Where{Exprs: []clause.Expression{
+			gorm.Expr("sign_in_throttles.blocked_until IS NULL OR sign_in_throttles.blocked_until <= ?", now),
+		}},
+	}).Create(&row)
+
+	return result.RowsAffected == 1, result.Error
+}

@@ -66,6 +66,19 @@ func familiesRevokedIn(tx *gorm.DB, at time.Time, condition string, args ...any)
 	return revokeTokensIn(tx, at, keys...)
 }
 
+// revokeSessionRefreshIn revokes the refresh families issued in these
+// sessions, and the access tokens of those families. Every token of a family
+// carries the session it began in, so the whole family is matched.
+func revokeSessionRefreshIn(tx *gorm.DB, at time.Time, sessions []uuid.UUID) error {
+	if err := familiesRevokedIn(tx, at, "session_id IN ?", sessions); err != nil {
+		return err
+	}
+
+	return tx.Model(&model.RefreshToken{}).
+		Where("session_id IN ? AND revoked_at IS NULL", sessions).
+		Update("revoked_at", at).Error
+}
+
 // revokeUserRefreshIn revokes every live refresh token of a user and the
 // access tokens of their families: a session that ended long ago may have
 // left a family that outlived it. Devices the user allowed that have not
@@ -73,6 +86,11 @@ func familiesRevokedIn(tx *gorm.DB, at time.Time, condition string, args ...any)
 // password reset would still be handed a fresh family afterwards.
 func revokeUserRefreshIn(tx *gorm.DB, at time.Time, user uuid.UUID) (int64, error) {
 	if err := familiesRevokedIn(tx, at, "user_id = ? AND revoked_at IS NULL", user); err != nil {
+		return 0, err
+	}
+	// Every access token too, the ones of sessions that had already expired
+	// and so are not ended here included.
+	if err := revokeTokensIn(tx, at, model.RevokedUser(user)); err != nil {
 		return 0, err
 	}
 

@@ -115,7 +115,7 @@
 <PageHeader
 	crumbs={['Dashboard', 'Cache']}
 	count={database?.keys}
-	description="What this server keeps in Redis, in two databases: a cache of what every page reads, and the sessions and who they belong to. Everything here is a copy the server can read from the database again."
+	description="What this server keeps in Redis, in two databases: a cache of what every page reads, and what the signed-in may do. Everything here is a copy the server can read from the database again; sessions are never kept here."
 >
 	{#snippet secondary()}
 		<IconButton
@@ -226,7 +226,7 @@
 		bind:open={flushing}
 		title={`Flush the ${label.toLowerCase()} database?`}
 		description={data.database === 'sessions'
-			? 'Every session, administrator and client kept here is removed and read from the database again on the next request — nobody is signed out. Every rate limit starts counting again from nothing.'
+			? 'Every administrator, client and grant kept here is removed and read from the database again on the next request — nobody is signed out. Every rate limit starts counting again from nothing.'
 			: 'Everything cached is removed, and each page reads the database again the first time it is asked for. Nobody notices but the next few pages, which are slower.'}
 		confirmLabel={`Flush ${label.toLowerCase()}`}
 		busy={flush.isPending}

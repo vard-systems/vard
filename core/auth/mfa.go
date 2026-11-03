@@ -286,7 +286,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 
 	// Reserved before comparing, so parallel guesses are bounded by the
 	// throttle.
-	allowed, err := s.reserve(ctx, admin.Username)
+	allowed, err := s.reserve(ctx, admin.Username, req)
 	if err != nil {
 		return "", err
 	}
@@ -301,7 +301,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 			return "", err
 		}
 		if ok {
-			return "recovery_code", s.succeeded(ctx, admin)
+			return "recovery_code", s.succeeded(ctx, admin, req)
 		}
 		return "", s.failed(ctx, admin, req, "wrong recovery code")
 	}
@@ -326,7 +326,7 @@ func (s *Service) check(ctx context.Context, admin *model.Admin, factor *model.M
 
 	// A right code gives back the attempt it took, so codes asked for by
 	// changes made while signed in do not add up to a wait.
-	return "totp", s.succeeded(ctx, admin)
+	return "totp", s.succeeded(ctx, admin, req)
 }
 
 func (s *Service) failed(ctx context.Context, admin *model.Admin, req Request, reason string) error {

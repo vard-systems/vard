@@ -33,13 +33,13 @@ type Profile struct {
 	AvatarURL string
 }
 
-func (s *Service) UpdateProfile(ctx context.Context, admin *model.Admin, profile Profile, currentPassword string) error {
+func (s *Service) UpdateProfile(ctx context.Context, admin *model.Admin, profile Profile, currentPassword string, req Request) error {
 	if err := s.withPassword(ctx, admin); err != nil {
 		return err
 	}
 
 	if profile.Email != admin.Email {
-		if err := s.checkPassword(ctx, admin, currentPassword); err != nil {
+		if err := s.checkPassword(ctx, admin, currentPassword, req); err != nil {
 			return err
 		}
 	}
@@ -53,12 +53,12 @@ func (s *Service) UpdateProfile(ctx context.Context, admin *model.Admin, profile
 	return s.store.SaveOwnAccount(ctx, admin)
 }
 
-func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, session uuid.UUID, current, next string) error {
+func (s *Service) ChangePassword(ctx context.Context, admin *model.Admin, session uuid.UUID, current, next string, req Request) error {
 	if err := s.withPassword(ctx, admin); err != nil {
 		return err
 	}
 
-	if err := s.checkPassword(ctx, admin, current); err != nil {
+	if err := s.checkPassword(ctx, admin, current, req); err != nil {
 		return err
 	}
 	if s.PasswordBreached(ctx, next) {
@@ -86,8 +86,8 @@ func (s *Service) withPassword(ctx context.Context, admin *model.Admin) error {
 // checkPassword says whether a password is the administrator's own. Each
 // guess is counted before comparing, like a sign-in, so a session left open
 // cannot be used to find the password; a waiting account is refused outright.
-func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, password string) error {
-	allowed, err := s.reserve(ctx, admin.Username)
+func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, password string, req Request) error {
+	allowed, err := s.reserve(ctx, admin.Username, req)
 	if err != nil {
 		return err
 	}
@@ -99,5 +99,5 @@ func (s *Service) checkPassword(ctx context.Context, admin *model.Admin, passwor
 		return ErrWrongPassword
 	}
 
-	return s.succeeded(ctx, admin)
+	return s.succeeded(ctx, admin, req)
 }

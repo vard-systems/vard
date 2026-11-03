@@ -42,6 +42,8 @@ func TestSessionCookiesAreHostOnlyOverHTTPS(t *testing.T) {
 		{"the user's session", UserCookie, "/", func(c *gin.Context, secure bool) { SetUser(c, "token", time.Now().Add(time.Hour), true, secure) }},
 		{"the sign-in state", SignInStateCookie, signInStatePath, func(c *gin.Context, secure bool) { SetSignInState(c, "state", secure) }},
 		{"the second factor", SecondFactorCookie, secondFactorPath, func(c *gin.Context, secure bool) { SetSecondFactor(c, "handle", time.Now().Add(time.Minute), secure) }},
+		{"a user's known browser", KnownBrowserCookie, knownBrowserPath, func(c *gin.Context, secure bool) { SetKnownBrowser(c, "id.1.tag", secure) }},
+		{"an administrator's known browser", AdminKnownBrowserCookie, adminKnownBrowserPath, func(c *gin.Context, secure bool) { SetAdminKnownBrowser(c, "id.1.tag", secure) }},
 	}
 
 	for _, w := range writers {
@@ -131,5 +133,18 @@ func TestTheLanguageIsReadUnderTheNameThePagesWrite(t *testing.T) {
 				t.Errorf("Language = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// A known-browser cookie outlives the session it came with — a browser stays
+// known after signing out — and a sign-in that issued none writes none.
+func TestKnownBrowserCookiesLastAndAreWrittenOnlyWithAValue(t *testing.T) {
+	cookies := set(func(c *gin.Context) { SetKnownBrowser(c, "id.1.tag", true) })
+	if known := cookies[brand.HostPrefix+KnownBrowserCookie]; known == nil || known.MaxAge < 100*24*60*60 || known.SameSite != http.SameSiteLaxMode {
+		t.Errorf("the known-browser cookie = %+v, want one kept for months, SameSite=Lax", known)
+	}
+
+	if cookies := set(func(c *gin.Context) { SetKnownBrowser(c, "", true) }); len(cookies) != 0 {
+		t.Errorf("an empty value wrote %v, want nothing", cookies)
 	}
 }

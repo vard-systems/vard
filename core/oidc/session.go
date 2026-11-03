@@ -29,6 +29,9 @@ type SignInResult struct {
 	// RecoveryCodes are shown once, with a first factor set up while signing
 	// in.
 	RecoveryCodes []string
+	// KnownBrowser marks the browser as one that has signed in to this
+	// account, for its cookie; set with every session.
+	KnownBrowser string
 }
 
 func (s *Session) InBrowser() bool {
@@ -325,11 +328,17 @@ func (s *Service) openSession(
 
 	s.record(ctx, user, user.Email, action, client, nil)
 
+	known, err := model.NewKnownBrowser(s.sealer, knownBrowserPurpose, model.NormalizeEmail(user.Email), now)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SignInResult{
-		Session:  &Session{Record: record, User: user},
-		Token:    token,
-		Request:  request,
-		Remember: record.Remember,
+		Session:      &Session{Record: record, User: user},
+		Token:        token,
+		Request:      request,
+		Remember:     record.Remember,
+		KnownBrowser: known,
 	}, nil
 }
 

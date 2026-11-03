@@ -295,6 +295,9 @@ type Client struct {
 	IP        string
 	UserAgent string
 	Language  string
+	// KnownBrowser is the browser's known-browser cookie, "" for none
+	// (model.KnownBrowser).
+	KnownBrowser string
 }
 
 const LanguageCookie = brand.LanguageCookie

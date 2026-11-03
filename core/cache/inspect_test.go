@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
-	"time"
 )
 
 func TestDescribeReadsWhatAKeyIs(t *testing.T) {
@@ -36,11 +35,6 @@ func TestDescribeReadsWhatAKeyIs(t *testing.T) {
 			name: "a generation counter",
 			key:  "cache:languages:generation",
 			want: Key{Kind: KindGeneration, Group: Languages},
-		},
-		{
-			name: "a session",
-			key:  "session:user:0123abcd",
-			want: Key{Kind: KindSession, Group: UserSession, Entry: "0123abcd"},
 		},
 		{
 			name: "a rate limit for an IPv6 address",
@@ -82,22 +76,22 @@ func TestLiveInspectAndManage(t *testing.T) {
 
 	c.Set(ctx, Languages, "all", []string{"en"})
 	c.Set(ctx, Organization, "settings", map[string]string{"name": "Acme"})
-	r.Sessions.FillSession(ctx, UserSession, "abc", map[string]string{"id": "s"}, time.Now().Add(time.Hour))
+	r.Sessions.Set(ctx, Admins, "ada", map[string]string{"username": "ada"})
 
 	stats, err := c.Stats(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stats.Kinds[KindEntry] != 2 || stats.Sessions[UserSession] != 0 {
-		t.Errorf("cache stats = %+v, want its two values and none of the sessions", stats)
+	if stats.Kinds[KindEntry] != 2 {
+		t.Errorf("cache stats = %+v, want its two values and nothing of the session database", stats)
 	}
 
-	sessions, err := r.Sessions.Stats(ctx)
+	authority, err := r.Sessions.Stats(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if sessions.Sessions[UserSession] != 1 {
-		t.Errorf("session stats = %+v, want the one session", sessions)
+	if authority.Kinds[KindEntry] != 1 {
+		t.Errorf("session database stats = %+v, want the one administrator", authority)
 	}
 
 	keys, _, err := c.Keys(ctx, KeyQuery{Kind: KindEntry, Group: Languages})
@@ -122,8 +116,12 @@ func TestLiveInspectAndManage(t *testing.T) {
 		t.Errorf("Read() = %+v, %v; want the value with its time to live kept", value, err)
 	}
 
-	if err := r.Sessions.Write(ctx, "session:user:abc", json.RawMessage(`{}`), 0); !errors.Is(err, ErrNotEditable) {
-		t.Errorf("writing a session = %v, want ErrNotEditable", err)
+	held, _, err := r.Sessions.Keys(ctx, KeyQuery{Kind: KindEntry, Group: Admins})
+	if err != nil || len(held) != 1 {
+		t.Fatalf("session database keys = %+v, %v; want the one administrator", held, err)
+	}
+	if err := r.Sessions.Write(ctx, held[0].Name, json.RawMessage(`{}`), 0); !errors.Is(err, ErrNotEditable) {
+		t.Errorf("writing an administrator by hand = %v, want ErrNotEditable", err)
 	}
 	if _, err := c.Delete(ctx, "cache:languages:generation"); !errors.Is(err, ErrGenerationKey) {
 		t.Errorf("removing a generation = %v, want ErrGenerationKey", err)
@@ -144,12 +142,12 @@ func TestLiveInspectAndManage(t *testing.T) {
 		t.Error("a cleared group still answered")
 	}
 
-	// Flushing the cache signs nobody out.
+	// Flushing the cache leaves the session database alone.
 	if err := c.Flush(ctx); err != nil {
 		t.Fatal(err)
 	}
-	var session map[string]string
-	if !r.Sessions.Session(ctx, UserSession, "abc", &session) {
-		t.Error("flushing the cache database removed a session")
+	var admin map[string]string
+	if !r.Sessions.Get(ctx, Admins, "ada", &admin) {
+		t.Error("flushing the cache database removed what the session database holds")
 	}
 }

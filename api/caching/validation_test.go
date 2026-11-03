@@ -43,7 +43,7 @@ func TestKeyNamesAndKinds(t *testing.T) {
 	}{
 		{name: "a key", err: checkName("cache:languages:v0:all")},
 		{name: "no key", err: checkName(""), wantErr: true},
-		{name: "a kind", err: checkKind("session")},
+		{name: "a kind", err: checkKind("ratelimit")},
 		{name: "no kind", err: checkKind("")},
 		{name: "an unknown kind", err: checkKind("everything"), wantErr: true},
 	}

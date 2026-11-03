@@ -233,6 +233,7 @@ func (h *Handler) Update(c *gin.Context) {
 	if !ok {
 		return
 	}
+	wasActive := user.IsActive
 
 	var req userRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -251,16 +252,23 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	h.audit.Record(c, "user.updated", targetType, user.ID.String())
-	if req.Password != "" {
-		// A new password usually answers a takeover, so existing sessions and
-		// refresh tokens end.
+
+	// A new password usually answers a takeover, and a user turned off is
+	// meant to be out: either way existing sessions and refresh tokens end,
+	// so turning the user on again later brings none of them back.
+	deactivated := wasActive && !user.IsActive
+	if req.Password != "" || deactivated {
 		sessions, tokens, err := h.store.SignOutUser(c.Request.Context(), user.ID, time.Now())
 		if err != nil {
 			respond.Failure(c, h.log, err, "ending the user's sessions failed")
 			return
 		}
 
-		h.audit.RecordWith(c, "user.password_changed", targetType, user.ID.String(), map[string]any{
+		action := "user.password_changed"
+		if deactivated {
+			action = "user.deactivated"
+		}
+		h.audit.RecordWith(c, action, targetType, user.ID.String(), map[string]any{
 			"sessions": sessions, "tokens": tokens,
 		})
 	}

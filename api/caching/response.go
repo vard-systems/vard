@@ -31,7 +31,6 @@ type databaseResponse struct {
 	Keys      int64            `json:"keys"`
 	Kinds     map[string]int64 `json:"kinds"`
 	Groups    []groupResponse  `json:"groups"`
-	Sessions  map[string]int64 `json:"sessions"`
 	// Editable says whether its cached values may be replaced by hand: the
 	// cache database's may, the session database's never.
 	Editable bool   `json:"editable"`
@@ -47,16 +46,12 @@ func newDatabaseResponse(stats cache.Stats) databaseResponse {
 		Keys:      stats.Keys,
 		Kinds:     stats.Kinds,
 		Groups:    make([]groupResponse, 0, len(stats.Groups)),
-		Sessions:  stats.Sessions,
 		Editable:  stats.Name == cache.CacheDatabase,
 		Memory:    stats.Memory,
 		Version:   stats.Version,
 	}
 	if out.Kinds == nil {
 		out.Kinds = map[string]int64{}
-	}
-	if out.Sessions == nil {
-		out.Sessions = map[string]int64{}
 	}
 
 	for _, group := range stats.Groups {

@@ -15,13 +15,12 @@ import (
 // What a super admin can see of Redis and do to it, always under this server's
 // prefix. A generation counter is never removed (generation zero would come
 // back), and nothing in the session database is written by hand, since that
-// would sign somebody in. Removing a key is always safe.
+// would change what somebody may do. Removing a key is always safe.
 
 const (
 	KindEntry      = "entry"
 	KindStale      = "stale"
 	KindGeneration = "generation"
-	KindSession    = "session"
 	KindRateLimit  = "ratelimit"
 	KindOther      = "other"
 )
@@ -63,7 +62,6 @@ type Stats struct {
 	Keys      int64
 	Kinds     map[string]int64
 	Groups    []GroupStats
-	Sessions  map[string]int64
 	Memory    int64
 	Version   string
 }
@@ -73,7 +71,7 @@ func (c *Cache) Stats(ctx context.Context) (Stats, error) {
 		return Stats{}, ErrNoRedis
 	}
 
-	stats := Stats{Name: c.name, Number: c.number, Kinds: map[string]int64{}, Sessions: map[string]int64{}}
+	stats := Stats{Name: c.name, Number: c.number, Kinds: map[string]int64{}}
 
 	generations, err := c.generations(ctx, Groups[c.name])
 	if err != nil {
@@ -92,8 +90,7 @@ func (c *Cache) Stats(ctx context.Context) (Stats, error) {
 		stats.Keys++
 		stats.Kinds[key.Kind]++
 
-		switch key.Kind {
-		case KindEntry, KindStale:
+		if key.Kind == KindEntry || key.Kind == KindStale {
 			group, ok := groups[key.Group]
 			if !ok {
 				group = &GroupStats{Name: key.Group}
@@ -104,8 +101,6 @@ func (c *Cache) Stats(ctx context.Context) (Stats, error) {
 			} else {
 				group.Stale++
 			}
-		case KindSession:
-			stats.Sessions[key.Group]++
 		}
 	}
 	if err := iter.Err(); err != nil {
@@ -331,8 +326,6 @@ func (c *Cache) describe(name string, generations map[string]int64) Key {
 		} else {
 			key.Kind = KindStale
 		}
-	case len(parts) >= 3 && parts[0] == "session":
-		key.Kind, key.Group, key.Entry = KindSession, parts[1], strings.Join(parts[2:], ":")
 	case len(parts) >= 3 && parts[0] == "ratelimit":
 		key.Kind, key.Group, key.Entry = KindRateLimit, parts[1], strings.Join(parts[2:], ":")
 	}
@@ -429,11 +422,6 @@ func keyPattern(kind, group string) string {
 		return "cache:*:v*"
 	case KindGeneration:
 		return "cache:*:generation"
-	case KindSession:
-		if group != "" {
-			return "session:" + escapeGlob(group) + ":*"
-		}
-		return "session:*"
 	case KindRateLimit:
 		if group != "" {
 			return "ratelimit:" + escapeGlob(group) + ":*"

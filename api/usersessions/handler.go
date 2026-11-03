@@ -81,7 +81,7 @@ func (h *Handler) End(c *gin.Context) {
 		return
 	}
 
-	if err := h.store.RevokeUserSession(ctx, session.ID, h.now()); err != nil {
+	if err := h.store.EndUserSession(ctx, session.ID, h.now()); err != nil {
 		respond.Failure(c, h.log, err, "ending a session failed")
 		return
 	}

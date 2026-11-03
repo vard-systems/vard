@@ -792,6 +792,22 @@ func TestLiveOAuthRefusesUntrustedRequests(t *testing.T) {
 		t.Errorf("missing code_challenge = %s", noPKCE)
 	}
 
+	// A request object, or client metadata in the request, is refused as
+	// not supported rather than ignored: a client that put its redirect_uri
+	// or state in one must not believe them enforced (OpenID Connect Core
+	// §3.1.2.6). The error goes to the registered redirect URI, never the
+	// object's.
+	unsupported := map[string]url.Values{
+		"request_not_supported":      {"request": {"eyJhbGciOiJub25lIn0.eyJyZWRpcmVjdF91cmkiOiJodHRwczovL2V2aWwuZXhhbXBsZS5jb20vY2IifQ."}},
+		"registration_not_supported": {"registration": {`{"client_name":"x"}`}},
+	}
+	for want, extra := range unsupported {
+		refused := b.visit(f.authorizeURL(challenge, extra))
+		if !strings.HasPrefix(refused.String(), shopRedirect+"?") || refused.Query().Get("error") != want || refused.Query().Get("state") != "state-123" {
+			t.Errorf("authorize with %v went to %s, want %s at the registered redirect URI", extra, refused, want)
+		}
+	}
+
 	// The token endpoint holds the client to its registered method.
 	post := f.token("/oauth2/token", f.clientID, "", url.Values{"grant_type": {"authorization_code"}, "client_secret": {f.clientSecret}, "code": {"x"}})
 	if post.status != http.StatusUnauthorized || post.str("error") != "invalid_client" {
