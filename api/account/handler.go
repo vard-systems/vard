@@ -377,7 +377,13 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	if err := h.provider.VerifyEmail(c.Request.Context(), req.Token, signedin.Client(c)); err != nil {
+	current, err := h.provider.SessionFor(c.Request.Context(), session.UserToken(c))
+	if err != nil {
+		h.fail(c, err, "loading the user session failed")
+		return
+	}
+
+	if err := h.provider.VerifyEmail(c.Request.Context(), req.Token, req.Password, current, signedin.Client(c)); err != nil {
 		h.fail(c, err, "verifying an email failed")
 		return
 	}

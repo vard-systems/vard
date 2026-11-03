@@ -338,7 +338,13 @@ code near it, and add a test when adding a case.
   identities, factors, recovery codes, consents and waiting sign-ins, and
   ends its sessions, refresh tokens, login codes and devices — whoever
   registered the address first may not have been its owner. Social sign-in
-  never makes an account for an address the provider has not verified.
+  never makes an account for an address the provider has not verified. A
+  verification link proves the inbox, not who chose the password, so one
+  that would give anything — a first proof, or a new address — is taken only
+  with the account's password or from a browser signed in to it
+  (`heldByTheirOwner`), checked before the link is spent and counted like a
+  sign-in; the owner of an address somebody else registered proves it with a
+  reset instead, which replaces the stranger's password.
 - **An access token ends with what it was issued in.** It carries `sid`
   and `fid`; whatever ends a session, a refresh family or a grant writes a
   `token_revocations` row in the same transaction (`revokeTokensIn`,

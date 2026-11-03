@@ -195,6 +195,10 @@ for whatever starts and routes to it.
   verification link) ends everything the account held before it — linked
   identities, second factors, recovery codes, consents, sessions and refresh
   tokens — so whoever registered somebody else's address first keeps nothing.
+  A verification link also asks for the account's password (unless opened
+  where the account is signed in), so nobody confirms an account, or an
+  address change, whose password a stranger chose; its owner resets it
+  instead.
 - An SSO connection links to an existing account only at a domain it lists
   and has proved with a DNS TXT record, and the first time it is linked to an
   account with a second factor, that factor is asked for.

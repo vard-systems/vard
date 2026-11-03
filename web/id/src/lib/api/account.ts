@@ -243,7 +243,7 @@ export const signIn = {
 	resetPassword: (body: { token: string; password: string }) =>
 		request<{ status: string }>('/account/reset-password', { method: 'POST', body }),
 
-	verifyEmail: (body: { token: string }) =>
+	verifyEmail: (body: { token: string; password?: string }) =>
 		request<{ status: string }>('/account/verify-email', { method: 'POST', body }),
 
 	consent: (handle: string, fetch?: Fetch) =>

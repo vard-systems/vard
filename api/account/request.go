@@ -51,6 +51,8 @@ type forgotRequest struct {
 // verifyRequest is the body of POST /account/verify-email.
 type verifyRequest struct {
 	Token string `json:"token" validate:"required,max=64"`
+	// Password is the account's, typed when the link asks for it.
+	Password string `json:"password" validate:"max=128"`
 }
 
 type resetRequest struct {
