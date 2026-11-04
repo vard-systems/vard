@@ -164,27 +164,38 @@ func TestLiveForgotPasswordTakesAsLongForAnyAddress(t *testing.T) {
 	f := newOAuthFixture(t)
 
 	ask := func(email string) time.Duration {
+		sent := len(f.s.mail.to(email))
 		start := time.Now()
 		if status := f.s.browser().account(http.MethodPost, "/forgot-password", map[string]string{"email": email}, nil); status != http.StatusAccepted {
 			t.Fatalf("forgot-password = %d", status)
 		}
-		return time.Since(start)
+		took := time.Since(start)
+
+		// The known address's work goes on after the answer; left running,
+		// it would slow the next request timed, and only on this side.
+		if email == adaEmail {
+			for deadline := time.Now().Add(3 * time.Second); len(f.s.mail.to(email)) == sent; time.Sleep(time.Millisecond) {
+				if time.Now().After(deadline) {
+					t.Fatalf("no reset link mailed to %s", email)
+				}
+			}
+		}
+		return took
 	}
 
 	// Warm both paths, then take the fastest of several, which is the
-	// work itself rather than the machine's noise.
+	// work itself rather than the machine's noise. The two are asked in
+	// turn, so a busy moment (other packages share the database) falls on
+	// both alike rather than on one run of either.
 	ask(adaEmail)
 	ask("nobody@example.com")
-	fastest := func(email string) time.Duration {
-		best := time.Hour
-		for range 15 {
-			f.s.db.Exec("DELETE FROM password_resets")
-			best = min(best, ask(email))
-		}
-		return best
+	known, unknown := time.Hour, time.Hour
+	for range 25 {
+		f.s.db.Exec("DELETE FROM password_resets")
+		known = min(known, ask(adaEmail))
+		unknown = min(unknown, ask("nobody@example.com"))
 	}
 
-	known, unknown := fastest(adaEmail), fastest("nobody@example.com")
 	if ratio := float64(known) / float64(unknown); ratio > 1.5 {
 		t.Errorf("an account's address took %v and nobody's %v, want about the same", known, unknown)
 	}
