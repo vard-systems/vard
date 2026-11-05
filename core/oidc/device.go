@@ -35,6 +35,11 @@ const (
 // which codes exist.
 var ErrDeviceCodeInvalid = problem("device_code_invalid")
 
+// ErrAgreementsRequired refuses allowing a device for an application whose
+// flow asks for the organization's terms while the person has not accepted
+// them: the device page asks, as authorize's Agreements page does.
+var ErrAgreementsRequired = problem("agreements_required")
+
 // ErrDeviceRefused is a device the person allowed but cannot use: the
 // application's rules give their account no token. The device is refused.
 var ErrDeviceRefused = problem("device_refused")
@@ -209,9 +214,16 @@ func (s *Service) deviceToken(ctx context.Context, app *model.Application, p Tok
 	return response, nil
 }
 
-// DeviceFor is what the person sees before allowing a device: the
-// application and what it asks for.
-func (s *Service) DeviceFor(ctx context.Context, userCode string, session *Session) (*ConsentPage, error) {
+// DevicePage is what the person sees before allowing a device: the
+// application, what it asks for, and whether allowing it also accepts the
+// organization's terms.
+type DevicePage struct {
+	ConsentPage
+	Agreements bool `json:"agreements"`
+}
+
+// DeviceFor is what the person sees before allowing a device.
+func (s *Service) DeviceFor(ctx context.Context, userCode string, session *Session) (*DevicePage, error) {
 	if !session.InBrowser() {
 		return nil, ErrBrowserRequired
 	}
@@ -221,13 +233,29 @@ func (s *Service) DeviceFor(ctx context.Context, userCode string, session *Sessi
 		return nil, err
 	}
 
-	return s.describeRequest(ctx, device.Application, device.Scope, device.Audience)
+	described, err := s.describeRequest(ctx, device.Application, device.Scope, device.Audience)
+	if err != nil {
+		return nil, err
+	}
+
+	flow, err := s.store.EffectiveLoginFlow(ctx, device.Application)
+	if err != nil {
+		return nil, err
+	}
+	needed, err := s.agreementsNeeded(ctx, flow, session.User)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DevicePage{ConsentPage: *described, Agreements: needed}, nil
 }
 
 // AnswerDevice allows or refuses a device for the signed-in person. Allowing
 // it is checked as a sign-in would be, so a user who could not get a token is
-// refused here rather than by the device's next ask.
-func (s *Service) AnswerDevice(ctx context.Context, userCode string, session *Session, allow bool, client Client) error {
+// refused here rather than by the device's next ask. acceptTerms is the
+// person accepting the organization's terms with it, which a flow with the
+// Agreements step asks for while they have not.
+func (s *Service) AnswerDevice(ctx context.Context, userCode string, session *Session, allow, acceptTerms bool, client Client) error {
 	if !session.InBrowser() {
 		return ErrBrowserRequired
 	}
@@ -242,6 +270,9 @@ func (s *Service) AnswerDevice(ctx context.Context, userCode string, session *Se
 		// Allowing a device is a sign-in to its application, held to that
 		// application's flow like any other.
 		if err := s.sessionMeetsFlowOf(ctx, device.Application, session); err != nil {
+			return err
+		}
+		if err := s.deviceAgreements(ctx, device.Application, session, acceptTerms, client); err != nil {
 			return err
 		}
 
@@ -270,6 +301,30 @@ func (s *Service) AnswerDevice(ctx context.Context, userCode string, session *Se
 	if refused {
 		return ErrDeviceRefused
 	}
+
+	return nil
+}
+
+// deviceAgreements holds allowing a device to the Agreements step of its
+// application's flow, as finish holds a code to it: refused until the terms
+// are accepted, and accepted here when the person said so.
+func (s *Service) deviceAgreements(ctx context.Context, app *model.Application, session *Session, accept bool, client Client) error {
+	flow, err := s.store.EffectiveLoginFlow(ctx, app)
+	if err != nil {
+		return err
+	}
+	needed, err := s.agreementsNeeded(ctx, flow, session.User)
+	if err != nil || !needed {
+		return err
+	}
+	if !accept {
+		return ErrAgreementsRequired
+	}
+
+	if err := s.store.AcceptAgreements(ctx, session.User, s.now()); err != nil {
+		return err
+	}
+	s.record(ctx, session.User, session.User.Email, "user.agreements_accepted", client, map[string]any{"application": app.Name})
 
 	return nil
 }

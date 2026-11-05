@@ -89,7 +89,7 @@ func (h *Handler) AnswerDevice(c *gin.Context) {
 		return
 	}
 
-	err := h.provider.AnswerDevice(c.Request.Context(), req.UserCode, signedin.Session(c), req.Yes, signedin.Client(c))
+	err := h.provider.AnswerDevice(c.Request.Context(), req.UserCode, signedin.Session(c), req.Yes, req.AcceptTerms, signedin.Client(c))
 	if err != nil {
 		signedin.Fail(c, h.log, err, "answering a device failed")
 		return

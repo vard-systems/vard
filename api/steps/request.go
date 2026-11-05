@@ -11,4 +11,7 @@ type stepRequest struct {
 type deviceRequest struct {
 	UserCode string `json:"user_code" validate:"required,max=16"`
 	Yes      bool   `json:"yes"`
+	// AcceptTerms accepts the organization's terms with the device, when
+	// its application's flow asks for them.
+	AcceptTerms bool `json:"accept_terms"`
 }

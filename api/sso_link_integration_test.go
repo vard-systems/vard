@@ -218,3 +218,56 @@ func TestLiveTheFirstSSOLinkAsksForTheAccountsSecondFactor(t *testing.T) {
 		t.Errorf("a later sign-in through the link = %q, want %s signed in at once", got, email)
 	}
 }
+
+// A connection turned off while its first link waits for the account's
+// second factor links nothing and signs nobody in, even with the right code:
+// an administrator may have turned it off because its provider can no
+// longer be trusted.
+func TestLiveAWaitingLinkEndsWhenItsConnectionIsTurnedOff(t *testing.T) {
+	s := newLiveServer(t)
+	super := s.superAdmin()
+	idp := newFakeOIDC(t)
+
+	const email = "ada@acme.test"
+	super.must(http.StatusCreated, http.MethodPost, "/users", map[string]any{
+		"email": email, "first_name": "Ada", "password": adaPassword, "confirm_password": adaPassword,
+		"is_email_verified": true,
+	}, nil)
+	super.must(http.StatusOK, http.MethodPatch, "/login-flows/"+defaultFlow(t, super), map[string]any{
+		"steps": []string{"identifier", "password", "totp"},
+	}, nil)
+
+	owner := s.browser()
+	if status := owner.account(http.MethodPost, "/login", map[string]string{"email": email, "password": adaPassword}, nil); status != http.StatusOK {
+		t.Fatalf("Ada's own sign-in = %d", status)
+	}
+	secret, _ := addAuthenticator(t, owner)
+
+	id := oidcConnection(t, super, idp, nil)
+	s.provedDomain(t, id, "acme.test")
+	idp.signs(map[string]any{"sub": "okta|ada", "email": email})
+
+	b := s.browser()
+	if result := idp.signInOIDC(b, "acme"); !strings.HasPrefix(result.landed.String(), testAccountURL+"/second-factor") {
+		t.Fatalf("the first link landed at %s, want the second-factor page", result.landed)
+	}
+
+	if err := s.db.Exec("UPDATE sso_connections SET is_enabled = false WHERE id = ?", id).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	status, code := answerSecondFactor(b, map[string]any{"code": codeAt(t, secret, totp.Step(time.Now()))})
+	if status != http.StatusGone || code != "second_factor_expired" {
+		t.Errorf("the code after the connection was turned off = %d %s, want 410 second_factor_expired", status, code)
+	}
+	if got := b.account(http.MethodGet, "/me", nil, nil); got == http.StatusOK {
+		t.Error("the waiting link signed in after its connection was turned off")
+	}
+	var links int64
+	if err := s.db.Table("sso_identities").Count(&links).Error; err != nil {
+		t.Fatal(err)
+	}
+	if links != 0 {
+		t.Errorf("%d identities were linked through a connection that was turned off", links)
+	}
+}

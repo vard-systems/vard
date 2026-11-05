@@ -1,4 +1,4 @@
-import { ApiError, account, type ConsentPage } from '#lib/api/index.js';
+import { ApiError, account, type DevicePage } from '#lib/api/index.js';
 import { requireUser } from '#lib/session.js';
 import type { PageLoad } from './$types';
 
@@ -7,7 +7,7 @@ export const load: PageLoad = async ({ url, fetch }) => {
 	const user = await requireUser(fetch, url);
 	const code = url.searchParams.get('user_code') ?? '';
 
-	let device: ConsentPage | null = null;
+	let device: DevicePage | null = null;
 	let problem: ApiError | null = null;
 	if (code) {
 		try {

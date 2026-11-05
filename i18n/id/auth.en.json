@@ -183,6 +183,8 @@
 		"allowed_title": "Your device is signed in",
 		"allowed_body": "You can go back to your device now, and close this page.",
 		"denied_title": "Your device was not signed in",
-		"denied_body": "You can close this page."
+		"denied_body": "You can close this page.",
+		"agreements": "Allowing it also accepts {org}’s terms:",
+		"accept_and_allow": "Accept and allow"
 	}
 }

@@ -87,6 +87,7 @@
 		"account_token_refused": "This access token is not accepted by the account API: it has expired, is for another API, or its user can no longer sign in.",
 		"account_scope_missing": "This access token needs the {scope} scope.",
 		"organization_logo_not_found": "There is no logo.",
-		"step_up_required": "This application asks for two-step verification in this session first."
+		"step_up_required": "This application asks for two-step verification in this session first.",
+		"agreements_required": "Accept the terms to allow this device."
 	}
 }
