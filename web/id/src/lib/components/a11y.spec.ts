@@ -4,6 +4,7 @@ import { describe, it } from 'vitest';
 import { expectAccessible } from '#lib/testing/a11y.js';
 import AuthenticatorSetup from './account/AuthenticatorSetup.svelte';
 import Decision from './auth/Decision.svelte';
+import LegalLinkList from './auth/LegalLinkList.svelte';
 import PasskeyAdd from './account/PasskeyAdd.svelte';
 import PresenceCheck from './account/PresenceCheck.svelte';
 import RecoveryCodeSheet from './account/RecoveryCodeSheet.svelte';
@@ -36,6 +37,14 @@ describe('the sign-in pages are usable without seeing them', () => {
 
 	it('a yes or no answer', () =>
 		expectAccessible(Decision, { yes: 'Allow', no: 'Deny', onanswer: nothing }));
+
+	it('the terms to accept', () =>
+		expectAccessible(LegalLinkList, {
+			links: [
+				{ label: 'Terms of service', href: 'https://example.com/terms' },
+				{ label: 'Privacy policy', href: 'https://example.com/privacy' }
+			]
+		}));
 
 	it('recovery codes shown once', () =>
 		expectAccessible(RecoveryCodeSheet, {

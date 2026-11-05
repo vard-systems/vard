@@ -170,6 +170,10 @@ export type ConsentPage = {
 	scopes: RequestedScope[];
 };
 
+/** A device waiting to be allowed; `agreements` when allowing it also accepts the
+    organization's terms, which its application's flow asks for. */
+export type DevicePage = ConsentPage & { agreements: boolean };
+
 /** The Agreements or Consent page's answer, for the sign-in it names. */
 export type StepAnswer = { request: string; yes: boolean };
 
@@ -318,9 +322,9 @@ export const account = {
 	sessions: (fetch?: Fetch) => request<{ sessions: Session[] }>('/account/sessions', { fetch }),
 
 	device: (userCode: string, fetch?: Fetch) =>
-		request<{ device: ConsentPage }>(`/account/device?user_code=${encode(userCode)}`, { fetch }),
+		request<{ device: DevicePage }>(`/account/device?user_code=${encode(userCode)}`, { fetch }),
 
-	answerDevice: (body: { user_code: string; yes: boolean }) =>
+	answerDevice: (body: { user_code: string; yes: boolean; accept_terms: boolean }) =>
 		request<void>('/account/device', { method: 'POST', body }),
 
 	/** Starts a step-up of this session for the application a device asks for; `second_factor`

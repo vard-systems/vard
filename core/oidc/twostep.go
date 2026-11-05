@@ -547,12 +547,17 @@ func (s *Service) linkHeld(ctx context.Context, user *model.User, pending *model
 		return nil
 	}
 
+	// A connection turned off while the link waited signs nobody in: an
+	// administrator may have turned it off because its provider can no
+	// longer be trusted.
 	connection, err := s.store.SSOConnection(ctx, *pending.LinkConnectionID)
-	if errors.Is(err, store.ErrNotFound) {
+	switch {
+	case errors.Is(err, store.ErrNotFound):
 		return ErrSecondFactorExpired
-	}
-	if err != nil {
+	case err != nil:
 		return err
+	case !connection.IsEnabled:
+		return ErrSecondFactorExpired
 	}
 
 	now := s.now()

@@ -2,14 +2,20 @@ package oidc
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"errors"
 	"io"
 	"log/slog"
+	"math/big"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/beevik/etree"
 	"github.com/crewjam/saml"
+	"github.com/crewjam/saml/xmlenc"
 	"github.com/google/uuid"
 
 	"vard/core/model"
@@ -122,5 +128,88 @@ func TestLiveSAMLAssertionsAreUsedOnce(t *testing.T) {
 
 	if err := s.useSAMLAssertion(ctx, acme, &saml.Assertion{Subject: &saml.Subject{}}); !errors.As(err, &refusal) {
 		t.Errorf("an assertion without an ID = %v, want refused", err)
+	}
+}
+
+// A signature is checked for SHA-1 inside an encrypted assertion too, once
+// it is opened with the connection's key, whether the key comes inside the
+// encrypted data or beside it.
+func TestCheckEncryptedAlgorithms(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	template := &x509.Certificate{SerialNumber: big.NewInt(1), NotBefore: time.Now(), NotAfter: time.Now().Add(time.Hour)}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	certificate, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertion := func(method string) []byte {
+		return []byte(`<saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">` +
+			`<ds:SignedInfo><ds:SignatureMethod Algorithm="` + method + `"/></ds:SignedInfo></ds:Signature></saml:Assertion>`)
+	}
+	response := func(plain []byte, keyBeside bool) []byte {
+		data, err := xmlenc.OAEP().Encrypt(certificate, plain, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encrypted := etree.NewElement("saml:EncryptedAssertion")
+		encrypted.CreateAttr("xmlns:saml", "urn:oasis:names:tc:SAML:2.0:assertion")
+		encrypted.AddChild(data)
+		if keyBeside {
+			// Some providers put the EncryptedKey beside the data, not in its KeyInfo.
+			info := data.FindElement("./KeyInfo")
+			wrapped := info.FindElement("./EncryptedKey")
+			info.RemoveChild(wrapped)
+			data.RemoveChild(info)
+			encrypted.AddChild(wrapped)
+		}
+		document := etree.NewDocument()
+		root := document.CreateElement("samlp:Response")
+		root.CreateAttr("xmlns:samlp", "urn:oasis:names:tc:SAML:2.0:protocol")
+		root.AddChild(encrypted)
+		out, err := document.WriteToBytes()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+
+	const (
+		rsa1 = "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+		rsa2 = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+	)
+	tests := []struct {
+		name    string
+		raw     []byte
+		key     *rsa.PrivateKey
+		refused string
+	}{
+		{name: "a SHA-256 signature inside", raw: response(assertion(rsa2), false), key: key},
+		{name: "a SHA-1 signature inside", raw: response(assertion(rsa1), false), key: key, refused: "SHA-1"},
+		{name: "a SHA-1 signature inside, the key beside the data", raw: response(assertion(rsa1), true), key: key, refused: "SHA-1"},
+		{name: "an assertion encrypted for another key", raw: response(assertion(rsa2), false), key: other, refused: "does not open"},
+		{name: "nothing encrypted", raw: assertion(rsa2), key: key},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := checkEncryptedAlgorithms(tt.raw, tt.key)
+			switch {
+			case tt.refused == "" && err != nil:
+				t.Errorf("refused: %v", err)
+			case tt.refused != "" && (err == nil || !strings.Contains(err.Error(), tt.refused)):
+				t.Errorf("= %v, want a refusal saying %q", err, tt.refused)
+			}
+		})
 	}
 }

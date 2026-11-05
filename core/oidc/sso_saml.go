@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"context"
+	"crypto"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -18,6 +19,7 @@ import (
 	"github.com/beevik/etree"
 	"github.com/crewjam/saml"
 	"github.com/crewjam/saml/samlsp"
+	"github.com/crewjam/saml/xmlenc"
 	dsig "github.com/russellhaering/goxmldsig"
 
 	"vard/core/model"
@@ -174,6 +176,9 @@ func (s *Service) completeSAML(ctx context.Context, connection *model.SSOConnect
 	if err != nil {
 		return nil, upstream("metadata", err)
 	}
+	if err := checkEncryptedAlgorithms(raw, provider.Key); err != nil {
+		return nil, upstream("response", err)
+	}
 
 	assertion, err := provider.ParseXMLResponse(raw, []string{login.SAMLRequestID}, provider.AcsURL)
 	if err != nil {
@@ -300,8 +305,8 @@ func (s *Service) useSAMLAssertion(ctx context.Context, connection *model.SSOCon
 // in a signature (collisions are practical), and RSA PKCS#1 v1.5 key
 // transport for an encrypted assertion (a padding oracle). The XML
 // signature library would accept both. OAEP's own digest is not a signature
-// and is left alone; a signature inside an encrypted assertion is only seen
-// once it is decrypted, and holds to the library's checks.
+// and is left alone; what an encrypted assertion signs inside is checked
+// once it is opened (checkEncryptedAlgorithms).
 func checkSAMLAlgorithms(raw []byte) error {
 	document := etree.NewDocument()
 	if err := document.ReadFromBytes(raw); err != nil {
@@ -316,6 +321,44 @@ func checkSAMLAlgorithms(raw []byte) error {
 			return fmt.Errorf("signed with SHA-1 (%s); ask the provider for SHA-256", algorithm)
 		case element.Tag == "EncryptionMethod" && strings.HasSuffix(algorithm, "#rsa-1_5"):
 			return fmt.Errorf("encrypted with RSA PKCS#1 v1.5 (%s); ask the provider for RSA-OAEP", algorithm)
+		}
+	}
+
+	return nil
+}
+
+// checkEncryptedAlgorithms holds what an encrypted assertion carries to
+// checkSAMLAlgorithms too: its signature is only seen once it is opened, and
+// the library would take SHA-1 there. Each is opened as the library opens it,
+// with the connection's own key; one that does not open is refused, as the
+// library would refuse it.
+func checkEncryptedAlgorithms(raw []byte, key crypto.Signer) error {
+	document := etree.NewDocument()
+	if err := document.ReadFromBytes(raw); err != nil {
+		return fmt.Errorf("the SAMLResponse is not XML: %w", err)
+	}
+
+	for _, encrypted := range document.FindElements("//EncryptedAssertion") {
+		data := encrypted.FindElement("./EncryptedData")
+		if data == nil {
+			return errors.New("an encrypted assertion holds no EncryptedData")
+		}
+
+		var opener any = key
+		if wrapped := encrypted.FindElement("./EncryptedKey"); wrapped != nil {
+			unwrapped, err := xmlenc.Decrypt(key, wrapped)
+			if err != nil {
+				return fmt.Errorf("the encrypted assertion's key does not open: %w", err)
+			}
+			opener = unwrapped
+		}
+
+		plain, err := xmlenc.Decrypt(opener, data)
+		if err != nil {
+			return fmt.Errorf("the encrypted assertion does not open: %w", err)
+		}
+		if err := checkSAMLAlgorithms(plain); err != nil {
+			return fmt.Errorf("inside the encrypted assertion: %w", err)
 		}
 	}
 

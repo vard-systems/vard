@@ -251,7 +251,8 @@ code near it, and add a test when adding a case.
   none (`ConfirmUserFactor(…, onlyFirst)`), so two setups at once keep one.
   Allowing a device (`AnswerDevice`) meets the device application's flow as
   authorize does (`step_up_required`, then `POST /api/v1/account/step-up`,
-  whose waiting sign-in names the application, `flowOf`), and a refresh
+  whose waiting sign-in names the application, `flowOf`; its Agreements
+  step too, accepted with the answer, `accept_terms`), and a refresh
   family that never passed a factor gets `invalid_grant` once its flow
   requires one. "Not now" (`LeaveSignIn`) spends the waiting sign-in and its
   authorization request, each by one conditional UPDATE, and answers the
@@ -324,7 +325,8 @@ code near it, and add a test when adding a case.
   on the sign-in its `RelayState` names (never the state cookie's value) and
   answers 303; the GET that follows brings the state cookie and does every
   check. Only the HTTP-POST binding (a `SAMLart` would make the library fetch
-  from the metadata outside `newFederationClient`), no SHA-1 signatures, no
+  from the metadata outside `newFederationClient`), no SHA-1 signatures
+  (inside an encrypted assertion too, `checkEncryptedAlgorithms`), no
   RSA-1_5 key transport, a bearer confirmation, and each assertion ID once
   (`saml_assertions`).
 - **An SSO connection signs in only addresses it may**: its own domains, or —
@@ -335,8 +337,8 @@ code near it, and add a test when adding a case.
   row proved by its DNS TXT record.
   The first link to an account with a second factor waits for that factor:
   the identity is held on the pending sign-in (`link_connection_id`) and
-  made only by `SubmitSecondFactor`, and the provider syncs nothing until
-  then.
+  made only by `SubmitSecondFactor`, while the connection is still on
+  (`linkHeld`), and the provider syncs nothing until then.
 - **The first proof of an address ends what came before it.** A reset or
   verification link that first marks an account verified also deletes, in
   the same transaction (`clearBeforeProofIn`), its social and SSO

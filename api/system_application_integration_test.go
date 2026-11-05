@@ -82,3 +82,39 @@ func TestLiveOnlyASuperAdminChangesAnApplicationTheAdminAPITrusts(t *testing.T) 
 	// to change again.
 	manager.must(http.StatusOK, http.MethodPost, "/applications/"+cliID+"/secret", nil, &rotated)
 }
+
+// Deleting an application the admin API trusts cuts its automation off as
+// revoking that access would, so only a super admin may: an administrator
+// with applications.write everywhere still deletes any other application.
+func TestLiveOnlyASuperAdminDeletesAnApplicationTheAdminAPITrusts(t *testing.T) {
+	f := newOAuthFixture(t)
+	_, _, robotID := f.register(map[string]any{
+		"name": "Robot", "type": "m2m", "grant_types": []string{"client_credentials"},
+	})
+	apiID, scopes := f.systemAPI(model.SystemAdminAPI)
+	f.allow(robotID, apiID, scopes, model.PermUsersRead)
+
+	const email, password = "apps@example.com", "apps-password-1"
+	var role struct {
+		Role idOnly `json:"role"`
+	}
+	f.super.must(http.StatusCreated, http.MethodPost, "/admin-roles", map[string]any{
+		"name": "app_admin", "permissions": []string{model.PermApplicationsRead, model.PermApplicationsWrite},
+	}, &role)
+	f.super.must(http.StatusCreated, http.MethodPost, "/admins", map[string]any{
+		"email": email, "first_name": "Apps", "status": "active",
+		"password": password, "confirm_password": password,
+		"assignments": []map[string]any{{"role_id": role.Role.ID}},
+	}, nil)
+	apps := f.s.client()
+	if status := apps.login(email, password); status != http.StatusOK {
+		t.Fatalf("login = %d", status)
+	}
+
+	var refused problemBody
+	if status := apps.do(http.MethodDelete, "/applications/"+robotID, nil, &refused); status != http.StatusForbidden || refused.Code != "system_application_change" {
+		t.Errorf("deleting an application the admin API trusts = %d %+v, want 403 system_application_change", status, refused)
+	}
+	apps.must(http.StatusNoContent, http.MethodDelete, "/applications/"+f.appID, nil, nil)
+	f.super.must(http.StatusNoContent, http.MethodDelete, "/applications/"+robotID, nil, nil)
+}

@@ -6,3 +6,4 @@ export { default as SSOButtons } from './SSOButtons.svelte';
 export { default as Decision } from './Decision.svelte';
 export { default as PasskeySignIn } from './PasskeySignIn.svelte';
 export { default as ScopeList } from './ScopeList.svelte';
+export { default as LegalLinkList } from './LegalLinkList.svelte';

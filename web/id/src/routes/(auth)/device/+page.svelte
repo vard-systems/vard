@@ -2,9 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { ApiError, account } from '#lib/api/index.js';
-	import { AuthCard, Decision, ScopeList } from '#lib/components/auth/index.js';
+	import { AuthCard, Decision, LegalLinkList, ScopeList } from '#lib/components/auth/index.js';
 	import { Alert, Button, Form, Note, PageTitle, TextField } from '#lib/components/ui/index.js';
 	import { messageOf, useTranslator } from '#lib/i18n/index.js';
+	import { legalLinks } from '#lib/utils/legal.js';
 	import { secondFactorHref } from '#lib/utils/links.js';
 	import type { PageProps } from './$types';
 
@@ -17,6 +18,13 @@
 	let sending = $state<'yes' | 'no' | null>(null);
 	let answered = $state<'allowed' | 'denied' | null>(null);
 	let error = $state('');
+
+	// The organization's own links: the step is about its terms, whatever the
+	// application has of its own.
+	const terms = $derived(
+		legalLinks(null, data.organization).map((link) => ({ label: t(link.key), href: link.href }))
+	);
+	const askTerms = $derived(data.device?.agreements ?? false);
 
 	const loadError = $derived(
 		data.problem ? messageOf(new ApiError(data.problem.status, '', data.problem.code), t) : ''
@@ -48,7 +56,7 @@
 		sending = yes ? 'yes' : 'no';
 
 		try {
-			await account.answerDevice({ user_code: data.code, yes });
+			await account.answerDevice({ user_code: data.code, yes, accept_terms: yes && askTerms });
 			answered = yes ? 'allowed' : 'denied';
 		} catch (err) {
 			// The application asks for a second factor this session has not
@@ -85,7 +93,17 @@
 		<p class="asks">{t('device.asks', { app: data.device.application.name })}</p>
 		<ScopeList scopes={data.device.scopes} />
 
-		<Decision yes={t('device.allow')} no={t('device.deny')} {sending} onanswer={answer} />
+		{#if askTerms}
+			<p>{t('device.agreements', { org: data.organization?.name ?? '' })}</p>
+			<LegalLinkList links={terms} />
+		{/if}
+
+		<Decision
+			yes={askTerms ? t('device.accept_and_allow') : t('device.allow')}
+			no={t('device.deny')}
+			{sending}
+			onanswer={answer}
+		/>
 	</AuthCard>
 {:else}
 	<AuthCard
@@ -115,5 +133,9 @@
 	.asks {
 		margin: 0;
 		font-weight: 600;
+	}
+
+	p {
+		margin: 0;
 	}
 </style>

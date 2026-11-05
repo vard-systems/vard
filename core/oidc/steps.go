@@ -40,14 +40,12 @@ func (s *Service) stepBefore(ctx context.Context, req *model.AuthorizationReques
 		return "", err
 	}
 
-	if flow.Offers(model.StepTerms) {
-		organization, err := s.store.Organization(ctx)
-		if err != nil {
-			return "", err
-		}
-		if !organization.AgreementsAccepted(user.AgreementsAcceptedAt) {
-			return PageAgreements, nil
-		}
+	needed, err := s.agreementsNeeded(ctx, flow, user)
+	if err != nil {
+		return "", err
+	}
+	if needed {
+		return PageAgreements, nil
 	}
 
 	if flow.Offers(model.StepConsent) {
@@ -67,6 +65,21 @@ func (s *Service) stepBefore(ctx context.Context, req *model.AuthorizationReques
 	}
 
 	return "", nil
+}
+
+// agreementsNeeded says whether the flow asks for the organization's terms
+// and the user has not accepted them as they stand.
+func (s *Service) agreementsNeeded(ctx context.Context, flow *model.LoginFlow, user *model.User) (bool, error) {
+	if !flow.Offers(model.StepTerms) {
+		return false, nil
+	}
+
+	organization, err := s.store.Organization(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return !organization.AgreementsAccepted(user.AgreementsAcceptedAt), nil
 }
 
 // silentRefusal is what prompt=none answers when the user would have to see

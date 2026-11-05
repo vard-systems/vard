@@ -199,6 +199,11 @@ func (h *Handler) Delete(c *gin.Context) {
 		respond.Fail(c, systemApplication)
 		return
 	}
+	// Deleting an application the admin API trusts cuts it off as revoking
+	// its access would, so it is as much a super admin's alone.
+	if !h.changeable(c, app) {
+		return
+	}
 
 	if err := h.store.DeleteApplication(c.Request.Context(), app); err != nil {
 		respond.Failure(c, h.log, err, "deleting application failed")
@@ -212,8 +217,8 @@ func (h *Handler) Delete(c *gin.Context) {
 
 var systemApplication = respond.Define(http.StatusConflict, "system_application", respond.Admin)
 
-// changeable reports whether the administrator may change this application or
-// rotate its secret, answering the request when not. For an application the
+// changeable reports whether the administrator may change this application,
+// rotate its secret or delete it, answering the request when not. For an application the
 // admin API trusts, its secret carries every permission a super admin granted
 // it, so only a super admin may change it.
 func (h *Handler) changeable(c *gin.Context, app *model.Application) bool {
