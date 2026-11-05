@@ -102,7 +102,7 @@ func (s *Service) ConsentFor(ctx context.Context, handle string, session *Sessio
 		return nil, ErrBrowserRequired
 	}
 
-	req, err := s.pending(ctx, handle)
+	req, err := s.pendingFor(ctx, handle, session)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (s *Service) AnswerConsent(ctx context.Context, handle string, session *Ses
 		return "", ErrBrowserRequired
 	}
 
-	req, err := s.pending(ctx, handle)
+	req, err := s.pendingFor(ctx, handle, session)
 	if err != nil {
 		return "", err
 	}
@@ -178,7 +178,7 @@ func (s *Service) AnswerAgreements(ctx context.Context, handle string, session *
 		return "", ErrBrowserRequired
 	}
 
-	req, err := s.pending(ctx, handle)
+	req, err := s.pendingFor(ctx, handle, session)
 	if err != nil {
 		return "", err
 	}
@@ -195,6 +195,22 @@ func (s *Service) AnswerAgreements(ctx context.Context, handle string, session *
 	s.record(ctx, session.User, session.User.Email, "user.agreements_accepted", client, nil)
 
 	return s.finish(ctx, req, handle, session.User, &session.Record)
+}
+
+// pendingFor is the sign-in waiting on a step page, when this is the session
+// finish sent there. Any other session — even the same user's, one the flow
+// would not have made — is answered as if the request had expired, so the
+// page cannot finish what authorize refused.
+func (s *Service) pendingFor(ctx context.Context, handle string, session *Session) (*model.AuthorizationRequest, error) {
+	req, err := s.pending(ctx, handle)
+	if err != nil {
+		return nil, err
+	}
+	if req.SessionID == nil || *req.SessionID != session.Record.ID {
+		return nil, ErrRequestExpired
+	}
+
+	return req, nil
 }
 
 // refuse ends a sign-in the user said no to, so the same request cannot be

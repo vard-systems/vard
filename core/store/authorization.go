@@ -88,6 +88,24 @@ func (s *Store) CompleteAuthorizationRequest(ctx context.Context, req *model.Aut
 	return nil
 }
 
+// BindAuthorizationRequest names the session sent to a sign-in's step page,
+// while the request is still open; ErrAlreadyUsed when it is not.
+func (s *Store) BindAuthorizationRequest(ctx context.Context, req *model.AuthorizationRequest, session uuid.UUID, now time.Time) error {
+	result := s.db.WithContext(ctx).Model(&model.AuthorizationRequest{}).
+		Where("id = ? AND completed_at IS NULL AND expires_at > ?", req.ID, now).
+		Update("session_id", session)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrAlreadyUsed
+	}
+
+	req.SessionID = &session
+
+	return nil
+}
+
 func (s *Store) CreateAuthorizationCode(ctx context.Context, code *model.AuthorizationCode) error {
 	return translate(s.db.WithContext(ctx).Omit(clause.Associations).Create(code).Error)
 }

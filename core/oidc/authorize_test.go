@@ -190,3 +190,34 @@ func TestSilentRefusalNamesWhatWasNeeded(t *testing.T) {
 		})
 	}
 }
+
+// max_age is a limit only while it fits a duration: one past it would wrap
+// into a negative duration and send every session to sign in again.
+func TestMaxAgeTooLargeForADurationIsNoLimit(t *testing.T) {
+	tests := []struct {
+		name    string
+		maxAge  string
+		want    time.Duration
+		limited bool
+	}{
+		{"absent", "", 0, false},
+		{"zero, sign in again", "0", 0, true},
+		{"an hour", "3600", time.Hour, true},
+		{"the largest that fits", "9223372036", 9223372036 * time.Second, true},
+		{"one past what fits", "9223372037", 0, false},
+		{"ten billion seconds", "10000000000", 0, false},
+		{"the largest int64", "9223372036854775807", 0, false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, limited := maxAgeLimit(test.maxAge)
+			if got != test.want || limited != test.limited {
+				t.Errorf("maxAgeLimit(%q) = %v, %v; want %v, %v", test.maxAge, got, limited, test.want, test.limited)
+			}
+			if limited && got < 0 {
+				t.Errorf("maxAgeLimit(%q) is negative", test.maxAge)
+			}
+		})
+	}
+}

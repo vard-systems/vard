@@ -267,7 +267,12 @@ code near it, and add a test when adding a case.
   logged (`user.sso_second_factor_fallback`).
 - **Only the person, in their own browser, accepts terms or allows an
   application.** The Agreements, Consent and device answers, and every change
-  to two-step verification, refuse an application's access token.
+  to two-step verification, refuse an application's access token. A Consent
+  or Agreements page is answered (and read) only by the session `finish`
+  sent there, having met the flow: `finish` records it on the request
+  (`authorization_requests.session_id`, by one conditional UPDATE) and
+  `pendingFor` refuses any other as `request_expired`, so a session the
+  flow would not make cannot finish through the page what authorize refused.
 - **Every one-time thing is taken with one conditional UPDATE**: a pushed
   request's `request_uri`, a device's approval and its tokens, a passkey
   sign-in's ceremony, a front-channel logout page; a DPoP proof's jti is
