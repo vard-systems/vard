@@ -29,6 +29,12 @@ type AuthorizationRequest struct {
 	// DPoPKey is the thumbprint of the DPoP key the code is bound to
 	// (dpop_jkt, RFC 9449 §10), "" when it is not bound.
 	DPoPKey string `gorm:"column:dpop_key;size:43;not null;default:''"`
+	// SessionID is the session finish sent to the Agreements or Consent
+	// page, having met the flow; only that session may answer it. Ending the
+	// session unbinds the request rather than deleting it, so a fresh
+	// sign-in from /login can still finish it.
+	SessionID *uuid.UUID   `gorm:"type:uuid;index"`
+	Session   *UserSession `gorm:"constraint:OnDelete:SET NULL"`
 
 	ExpiresAt   time.Time `gorm:"not null;index"`
 	CompletedAt *time.Time

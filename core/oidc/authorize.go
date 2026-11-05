@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"errors"
+	"math"
 	"net/url"
 	"slices"
 	"strconv"
@@ -141,10 +142,7 @@ func (s *Service) authorize(ctx context.Context, p AuthorizeParams, session *Ses
 	}
 
 	prompts := strings.Fields(p.Prompt)
-	maxAge := -1
-	if p.MaxAge != "" {
-		maxAge, _ = strconv.Atoi(p.MaxAge)
-	}
+	maxAge, limited := maxAgeLimit(p.MaxAge)
 
 	back := func(code, description string) (string, error) {
 		return s.redirectError(p.RedirectURI, p.State, code, description), nil
@@ -153,7 +151,7 @@ func (s *Service) authorize(ctx context.Context, p AuthorizeParams, session *Ses
 	now := s.now()
 
 	if session != nil {
-		tooOld := maxAge >= 0 && now.Sub(session.Record.AuthenticatedAt) > time.Duration(maxAge)*time.Second
+		tooOld := limited && now.Sub(session.Record.AuthenticatedAt) > maxAge
 		if tooOld || slices.Contains(prompts, "login") {
 			session = nil
 		}
@@ -298,6 +296,22 @@ func (s *Service) requestProblem(ctx context.Context, app *model.Application, p 
 	return "", "", nil
 }
 
+// maxAgeLimit is how long ago the user may have signed in, from max_age
+// (already checked to be a number of seconds). One too large for a duration
+// would overflow it into a negative one, making every session too old, so it
+// is no limit at all.
+func maxAgeLimit(maxAge string) (time.Duration, bool) {
+	if maxAge == "" {
+		return 0, false
+	}
+	seconds, err := strconv.ParseInt(maxAge, 10, 64)
+	if err != nil || seconds < 0 || seconds > int64(math.MaxInt64/time.Second) {
+		return 0, false
+	}
+
+	return time.Duration(seconds) * time.Second, true
+}
+
 // sessionVerdict is what an existing session needs before an application
 // may be signed in with it.
 type sessionVerdict int
@@ -417,6 +431,13 @@ func (s *Service) finish(ctx context.Context, req *model.AuthorizationRequest, h
 		return "", err
 	}
 	if page != "" {
+		// Only the session that got this far may answer the page: another,
+		// one this flow would not have made, would otherwise finish here.
+		if err := s.store.BindAuthorizationRequest(ctx, req, session.ID, s.now()); errors.Is(err, store.ErrAlreadyUsed) {
+			return "", ErrRequestExpired
+		} else if err != nil {
+			return "", err
+		}
 		return s.stepPage(page, handle), nil
 	}
 

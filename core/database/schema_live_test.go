@@ -360,7 +360,8 @@ func TestLiveTheDPoPBindingUpgradesAnExistingDatabase(t *testing.T) {
 	request := &model.AuthorizationRequest{HandleHash: "request", ApplicationID: app.ID, RedirectURI: "https://shop.example/cb", Scope: "openid", ExpiresAt: later}
 	code := &model.AuthorizationCode{CodeHash: "code", ApplicationID: app.ID, UserID: user.ID, RedirectURI: "https://shop.example/cb", Scope: "openid", AuthenticatedAt: time.Now(), ExpiresAt: later}
 	for _, row := range []any{request, code} {
-		if err := db.Omit(clause.Associations, "DPoPKey").Create(row).Error; err != nil {
+		// Columns added after version 4 (the request's session_id, 00011) are not there yet.
+		if err := db.Omit(clause.Associations, "DPoPKey", "SessionID").Create(row).Error; err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -655,5 +656,63 @@ func TestLiveSSOSecondFactorUpgradesAnExistingDatabase(t *testing.T) {
 	}
 	if left := rows(t, db, "SELECT slug FROM sso_connections"); !slices.Equal(left, []string{"acme"}) {
 		t.Errorf("down left the connections %v, want acme", left)
+	}
+}
+
+// Sign-ins waiting before 00011 name no session, so their step pages refuse
+// every answer until the user signs in again. Ending a session unbinds the
+// request it reached rather than deleting it, and going down keeps every
+// request.
+func TestLiveRequestSessionUpgradesAnExistingDatabase(t *testing.T) {
+	db, _ := databasetest.Open(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	migrateDownTo(t, db, log, 10)
+	column := `SELECT column_name FROM information_schema.columns
+		WHERE table_name = 'authorization_requests' AND column_name = 'session_id'`
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Fatalf("before 00011, authorization_requests has %v", has)
+	}
+
+	user := &model.User{Email: "ada@example.com", IsActive: true}
+	app := &model.Application{Name: "Shop", ClientID: "shop", Type: model.AppWeb, TokenAuthMethod: model.AuthClientSecretBasic, IsEnabled: true}
+	for _, row := range []any{user, app} {
+		if err := db.Create(row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	later := time.Now().Add(time.Hour)
+	waiting := &model.AuthorizationRequest{HandleHash: "waiting", ApplicationID: app.ID, RedirectURI: "https://shop.test/cb", Scope: "openid", ExpiresAt: later}
+	if err := db.Omit(clause.Associations, "SessionID").Create(waiting).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.Migrate(db, log); err != nil {
+		t.Fatalf("up to 00011: %v", err)
+	}
+	if named := rows(t, db, "SELECT handle_hash FROM authorization_requests WHERE session_id IS NOT NULL"); len(named) != 0 {
+		t.Errorf("after the upgrade, %v name a session", named)
+	}
+
+	session := &model.UserSession{TokenHash: "session", UserID: user.ID, AuthenticatedAt: time.Now(), ExpiresAt: later}
+	if err := db.Omit(clause.Associations).Create(session).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("UPDATE authorization_requests SET session_id = ? WHERE handle_hash = 'waiting'", session.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("DELETE FROM user_sessions WHERE id = ?", session.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM authorization_requests WHERE session_id IS NULL"); !slices.Equal(left, []string{"waiting"}) {
+		t.Errorf("after its session was deleted, the unbound requests are %v, want waiting", left)
+	}
+
+	migrateDownTo(t, db, log, 10)
+	if has := rows(t, db, column); len(has) != 0 {
+		t.Errorf("down left %v", has)
+	}
+	if left := rows(t, db, "SELECT handle_hash FROM authorization_requests"); !slices.Equal(left, []string{"waiting"}) {
+		t.Errorf("down left the requests %v, want waiting", left)
 	}
 }
